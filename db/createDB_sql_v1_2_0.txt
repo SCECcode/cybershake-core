@@ -1,0 +1,297 @@
+#
+#
+# OpenSHA-CyberShake Interface Definition
+# Version 1.1.0
+#
+#
+# Description of Changes:
+#
+# 1.2.0 - 16 May 2007
+#   Changed Rupture_Variation_IDs table to
+# Rupture_Variation_Scenario_IDs table for
+# clarity
+#
+# 1.1.0 - 14 May 2007
+#   Add OpenSHA_CyberShake Interface Version Table
+#   Add Site_Regions Table
+#   Add Site_Ruptures Table
+#   Add Rupture_Variation_IDs Table
+#   Add Rupture_Variations Table
+#   Renamed tables and standardized naming conventions
+#   Added autoincrement statements to sequence number fields
+#      
+#
+# 1.0.0 - 2 May 2007
+#   Initial Definition
+#
+#   Table Naming Conventions:
+#   1) First Letter of Each Table Name Capitilized
+#   2) mysql types not capitalized
+#   3) Use Underscores to connect words
+#   4) Tables should have plural names
+#   5) Use unsigned int for auto increment primary key except for very large datasets
+#
+
+CREATE DATABASE CyberShake;
+USE CyberShake;
+
+#
+# Create a table to track versions of CyberShake Interface. A smart client
+# could query for the version and exit if it can't work with the interface.
+# Use Major.Minor.Bugfix convention as a string in this table (e.g. 1.0.0)
+# 
+create OpenSHA_CyberShake_Interfaces
+(
+Interface_ID unsigned int auto_increment not null,
+Interface_Major_Version unsigned int not null,
+Interface_Minor_Version unsigned int not null,
+Interface_Bugfix_Version unsigned int not null,
+primary key (Interface_ID,Interface_Version),
+) engine=InnoDB;
+
+
+#
+# Create table to save information about the ERF which produced the ruptures
+# we are using for a CyberShake study. An ERF is identified by its type (e.g.
+# (e.g. WGCEP (2002)) together with the adjustable parameters used in this instance
+# of the ERF. Use of the same ERF, with difference adjustable parameters, will
+# result in two entries in this table with different ERF Identifiers.
+#
+
+CREATE TABLE ERF_IDs
+(
+ERF_ID unsigned int autoincrement not null,
+ERF_Name varchar(50) not null,
+ERF_Description varchar(150),
+primary key (ERF_ID)
+) ENGINE=InnoDB;
+
+#
+# For a given ERF, the adjustable parameters are stored for that ERF instance are 
+# stored in this ERF_Metadata table as attribute_name, attribute_value, attribute_type
+# tuples. Attribute_type should be a data type identifier (string,integer,float,double)
+# Units can be added optionally
+#
+
+CREATE TABLE ERF_Metadata
+(
+ERF_ID unsigned int not null,
+ERF_Attr_Name varchar(50) not null,
+ERF_Attr_Value varchar(50) not null,
+ERF_Attr_Type varchar(20),
+ERF_Attr_Units varchar(20),
+primary key (ERF_ID, ERF_Attr_Name,ERF_Attr_Value)
+foreign key (ERF_ID) references ERF_IDs(ERF_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a table that contains list of sites at which we calculating hazard curves.
+# Each site has a lat,lon and a unique short (5 char or less) name.
+#
+
+CREATE TABLE Sites
+(
+Site_ID unsigned int autoincrement not null,
+Site_Name varchar(50) not null,
+Short_Name varchar(5) not null unique,
+Site_Lat double not null,
+Site_Lon double not null,
+primary key (Site_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a table to identify which ruptures go with a particular site.
+# For each site, put in a list of ruptures that are within a specific cutoff distance.
+# Rupture lists for a site may be different for different ERFs.
+#
+
+CREATE TABLE Site_Ruptures
+(
+Site_ID unsigned int not null,
+ERF_ID unsigned int not null,
+Source_ID unsigned int not null,
+Rupture_ID unsigned int not null,
+Cutoff_Dist double not null,
+primary key (Site_ID,ERF_ID,Source_ID,Rupture_ID,Cutoff_Dist),
+foreign key (Site_ID) references Sites(Site_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (Source_ID,Rupture_ID) references Ruptures(Source_ID,Rupture_ID)
+) ENGINE=InnoDB;
+
+#
+# Create table to store the maximum dimensions for a Site_Rupture List. 
+# The list of all ruptures are searched and the max and min lat and lon are
+# saved in this table. For each max or min value, a reference to the rupture
+# that caused that particulat max or min is saved. The ERF_ID is listed only
+# once, and the Source_ID and Rupture_IDs are valid only for that ERF.
+#
+
+Create Table Site_Regions
+(
+Site_ID unsigned int not null,
+ERF_ID unsigned int not null,
+Cutoff_Dist double not null,
+
+Max_Lat double not null,
+Max_Lat_Source_ID unsigned int not null,
+Max_Lat_Rupture_ID unsigned int not null,
+
+Max_Lon double not null,
+Max_Lon_Source_ID unsigned int not null,
+Max_Lon_Rupture_ID unsigned int not null,
+
+Min_Lat double not null,
+Min_Lat_Source_ID unsigned int not null,
+Min_Lat_Rupture_ID unsigned int not null,
+
+Min_Lon double not null,
+Min_Lon_Source_ID unsigned int not null,
+Min_Lon_Rupture_ID unsigned int not null,
+
+primary key (Site_ID,ERF_ID,CutOff_Dist),
+foreign key (Site_ID) references Sites(Site_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (Cutoff_Dist) references Site_Ruptures(Cutoff_Dist)
+) ENGINE=InnoDB;
+
+
+#
+# Create a table to store a list of ruptures produced by a particular ERF. This 
+# represents the "master list" of all Ruptures in the ERF. If the ERF has been
+# bounded geographically, the bounds will be specified in the metadata for this
+# ERF.
+#
+
+CREATE TABLE Ruptures
+(
+ERF_ID unsigned int not null,
+Source_ID unsigned int not null,
+Rupture_ID unsigned int not null,
+Rupture_Name varchar(100),
+Rupture_Type varchar(20) not null,
+Mag double not null,
+Prob double not null,
+Grid_Spacing double not null,
+Num_Rows int not null,
+Num_Columns int not null,
+Num_Points int not null,
+Start_Lat double not null,
+Start_Lon double not null,
+Start_Depth double not null,
+End_Lat double not null,
+End_Lon double not null,
+End_Depth double not null,
+primary key (ERF_ID, Source_ID, Rupture_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a points table. Each rupture in the "master list" will have a set of
+# points and data values for rake,dip,strike at that point. This table will have
+# the most entries because it can have hunderds of points for each rupture. The
+# primary key is a bigint to handle the expected very large number of entries.
+#
+CREATE TABLE Points
+( 
+ERF_ID unsigned int not null,
+Source_ID unsigned int not null,
+Rupture_ID unsigned int not null,
+Point_ID unsigned bigint autoincrement,
+Lat double not null,
+Lon double not null,
+Depth double not null,
+Rake double not null,
+Dip double not null,
+Strike double not null,
+primary key (ERF_ID, Source_ID, Rupture_ID, Point_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (Source_ID, Rupture_ID) references Ruptures(Source_ID,Rupture_ID)
+) ENGINE=InnoDB;
+
+#
+# Create table that defines a rupture variation instance. For each ERF, we may
+# want to generate multiple list of variations, one with many variations, 
+# another with fewer variations. We will create a master set of variations for each
+# Rupture List and identifiy that set of variations with a Rupture_Varation_ID.
+# In this table, the primary key is the Rupture_Variation_ID and the ERF_ID. 
+# However since Rupture_Variation_ID is an alternate key, we will use that as
+# the unique identifier in other tables we we are trying to identify which rupture
+# variation is being used.
+#
+
+CREATE TABLE Rupture_Variation_Scenario_IDs
+(
+Rupture_Variation_Scenario_ID unsigned int autoincrement not null,
+ERF_ID unsigned int not null,
+Rupture_Variation_Scenario_Name varchar(50) not null,
+Rupture_Variation_Scenario_Description varchar(150),
+primary key (Rupture_Variation_Scenario_ID,ERF_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID)
+) ENGINE=InnoDB;
+
+#
+# For a given ERF, the adjustable parameters are stored for that ERF instance are 
+# stored in this ERF_Metadata table as attribute_name, attribute_value, attribute_type
+# tuples. Attribute_type should be a data type identifier (string,integer,float,double)
+# Units can be added optionally.
+#
+
+CREATE TABLE Rupture_Variation_Scenario_Metadata
+(
+Rupture_Variation_Scenario_ID unsigned int not null,
+Rupture_Variation_Scenario_Attr_Name varchar(50) not null,
+Rupture_Variation_Scenario_Attr_Value varchar(50) not null,
+Rupture_Variation_Scenario_Attr_Type varchar(20) not null,
+Rupture_Variation_Scenario_Attr_Units varchar(20),
+primary key (Rupture_Variation_Scenario_ID,
+  Rupture_Variation_Scenario_Attr_Name,Rupture_Variation_Scenario_Attr_Value),
+foreign key (Rupture_Variation_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rupture_Variation_Scenario_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a Rupture Variation table that identifies every variation for every rupture
+# for a given ERF and a given Rupture Variation. 
+# The table also stores an entry for the Logical File Name (LFN)
+# associated with the Variation file. 
+# To find the rupture variations associated with a site, you must select the site and
+# find all the ruptures associated with that site. Then, for each rupture, find all
+# rupture variations associated with that rupture.
+#
+
+CREATE TABLE Rupture_Variations
+(
+ERF_ID unsigned int not null,
+Source_ID unsigned int not null,
+Rupture_ID unsigned int not null,
+Rupture_Variation_Scenario_ID unsigned int not null,
+Rupture_Variation_ID unsigned int not null,
+Rupture_Variation_LFN varchar (50) not null, 
+primary key (ERF_ID, Source_ID, Rupture_ID, Rupture_Variation_Scenario_ID, Rupture_Variation_ID),
+foreign key (ERF_ID) references ERF_Identifiers(ERF_ID),
+foreign key (Source_ID, Rupture_ID) references Ruptures(Source_ID, Rupture_ID),
+foreign key (Rupture_Variation_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rupture_Variation_Scenario_ID)
+) ENGINE=InnoDB;
+
+#
+# Create an Intensity Measure (IM) table for storing the results of 
+# the CyberShake workflow.
+#
+
+CREATE TABLE PeakAmplitudes
+(
+ERF_ID unsigned int not null,
+Site_ID unsigned int not null,
+Source_ID unsigned int not null,
+Rupture_ID unsigned int not null,
+Rupture_Variation_ID unsigned bigint not null,
+IM_Type varchar(50) not null,
+IM_Value double not null,
+Units varchar(50) not null,
+primary key (ERF_ID, Site_ID, Source_ID, Rupture_ID, Variation_ID, IM_Type),
+foreign key (ERF_ID) references ERF_Identifiers(ERF_ID),
+foreign key (Site_ID) REFERENCES Sites(Site_ID),
+foreign key (Source_ID, Rupture_ID) references Ruptures(Source_ID, Rupture_ID),
+foreign key (Rupture_Variation_ID) references Rupture_Variations(Rupture_Variation_ID)
+) ENGINE=InnoDB;
+
+ 
