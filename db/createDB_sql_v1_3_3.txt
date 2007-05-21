@@ -5,6 +5,11 @@
 #
 # Description of Changes:
 #
+#
+# 1.3.3 - 21 May 2007
+#   Changed the Points_ID field in the Points table to auto_increment
+#     and changed Points_ID to primary key
+#
 # 1.3.2 - 18 May 2007
 #   Added the redundant foreign keys for additional integrity
 #
@@ -215,18 +220,18 @@ foreign key (CS_Site_ID, ERF_ID, Cutoff_Dist) references CyberShake_Site_Regions
 # primary key is a bigint to handle the expected very large number of entries.
 #
 CREATE TABLE Points
-( 
+(
+Point_ID bigint unsigned not null auto_increment,
 ERF_ID int unsigned not null,
 Source_ID int unsigned not null,
 Rupture_ID int unsigned not null,
-Point_ID bigint unsigned not null,
 Lat double not null,
 Lon double not null,
 Depth double not null,
 Rake double not null,
 Dip double not null,
 Strike double not null,
-primary key (ERF_ID, Source_ID, Rupture_ID, Point_ID),
+primary key (Point_ID),
 foreign key (ERF_ID) references ERF_IDs(ERF_ID),
 foreign key (ERF_ID, Source_ID, Rupture_ID) references Ruptures(ERF_ID, Source_ID,Rupture_ID)
 ) ENGINE=InnoDB;

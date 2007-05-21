@@ -18,5 +18,5 @@ public class TestDBConnect {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-	}
+	} 
 }
