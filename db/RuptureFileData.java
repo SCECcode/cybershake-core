@@ -42,12 +42,12 @@ public class RuptureFileData {
 	}
 	
 	private void print(PrintStream ps) {
-		ps.print("Probability = " + probability);
-		ps.print("Magnitude = " + magnitude);
-		ps.print("GridSpacing = " + gridSpacing);
-		ps.print("NumRows = " + numRows);
-		ps.print("NumCols = " + numCols);
-		ps.print("#    Lat      Lon      Depth      Rake   Dip   Strike");
+		ps.println("Probability = " + probability);
+		ps.println("Magnitude = " + magnitude);
+		ps.println("GridSpacing = " + gridSpacing);
+		ps.println("NumRows = " + numRows);
+		ps.println("NumCols = " + numCols);
+		ps.println("#   Lat         Lon         Depth      Rake    Dip     Strike");
 		for (RupturePointData data: points) {
 			data.print(ps);
 		}

@@ -20,7 +20,7 @@ public class RupturePointData {
 	}
 
 	public void print(PrintStream ps) {
-		ps.print(lat + "    " + lon + "    " + depth + "   " + rake + "    " + dip + "   " + strike);
+		ps.println(lat + "    " + lon + "    " + depth + "   " + rake + "    " + dip + "   " + strike);
 	}
 	
 	
