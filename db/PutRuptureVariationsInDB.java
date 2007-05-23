@@ -20,18 +20,25 @@ public class PutRuptureVariationsInDB {
 		traverse(file, 0);
 	}
     
-    private static void traverse(File file, int i) {
-        int id = i;
+    private static boolean traverse(File file, int id) {
         if (file.isDirectory()) {
             File[] contents = file.listFiles();
-            for (int j=0; j<contents.length; j++) {
-                traverse(contents[j], j);
+            int i = 0;
+            for (File f: contents) {
+             	if (traverse(f, i)) {
+             		i++;
+             	}
             }
+            System.out.println("Contents of directory " + file.getPath() + " are added to the DB");
+            return false;
         } else {
             String filename = file.getName();
-            if (filename.split("\\.").length==3) { //it's a variation
-                insertFile(filename, id);                
+            String[] pieces = filename.split("\\.");
+            if (pieces.length==3 && !pieces[2].equals("output")) { //it's a variation;  checking that it's not the .output summary file
+                insertFile(filename, id);
+                return true;
             }
+            return false;
         }
     }
     
@@ -41,7 +48,7 @@ public class PutRuptureVariationsInDB {
         String rupture_id = pieces[0].split("_")[1];
         
         String insertString = "insert into Rupture_Variations (Rup_Var_ID, Rup_Var_Scenario_ID, ERF_ID, Source_ID, Rupture_ID, Rup_Var_LFN) " +
-            " values (" + rup_var_id + ", " + rup_var_scenario_id + ", " + erf_id + ", " + source_id + ", " + rupture_id + ", " + filename + ")";
+            " values (" + rup_var_id + ", " + rup_var_scenario_id + ", " + erf_id + ", " + source_id + ", " + rupture_id + ", \"" + filename + "\")";
         
 //        System.out.println(insertString);
         if (!dbc.insertData(insertString)) {
