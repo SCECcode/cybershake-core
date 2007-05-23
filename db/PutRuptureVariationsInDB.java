@@ -14,7 +14,7 @@ public class PutRuptureVariationsInDB {
         rup_var_scenario_id = args[0];
         erf_id = args[1];
         String filename = args[2];
-//        dbc = new DBConnect("surface.usc.edu","CyberShake");
+        dbc = new DBConnect("surface.usc.edu","CyberShake");
         
         File file = new File(filename);
 		traverse(file, 0);
@@ -43,6 +43,9 @@ public class PutRuptureVariationsInDB {
         String insertString = "insert into Rupture_Variations (Rup_Var_ID, Rup_Var_Scenario_ID, ERF_ID, Source_ID, Rupture_ID, Rup_Var_LFN) " +
             " values (" + rup_var_id + ", " + rup_var_scenario_id + ", " + erf_id + ", " + source_id + ", " + rupture_id + ", " + filename + ")";
         
-        System.out.println(insertString);
+//        System.out.println(insertString);
+        if (!dbc.insertData(insertString)) {
+            System.err.println("Error inserting rup_var_scenario_id " + rup_var_scenario_id + ", erf_id " + erf_id + ", source_id " + source_id + ", rupture_id " + rupture_id + ", filename " + filename);
+        }
     }
 }
