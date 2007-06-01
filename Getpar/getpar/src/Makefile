@@ -88,6 +88,8 @@ FLAGS		= $(MFLAGS) "CC=$(CC)" "F77=$(F77)" "O=$O" \
 		  "PCC=$(PCC)"
 
 all:		$(LIBRARY)  $(MAN3)
+	rm -f ../lib/$(LIBRARY)
+	cp $(LIBRARY) ../lib
 
 $(COBJS) $(FOBJS): libget.h
 
