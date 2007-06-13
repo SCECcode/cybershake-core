@@ -5,6 +5,8 @@ import java.sql.SQLException;
 
 public class RetrieveRuptureFromDB {
 	private static DBConnect dbc;
+	private static final String DB_SERVER = "intensity.usc.edu";
+	private static final String DB = "CyberShake";
 	
 	public static void main(String[] args) {
 		if (args.length==1) {
@@ -32,7 +34,7 @@ public class RetrieveRuptureFromDB {
 	}
 	
 	private static void getOneRupture(String erf, String source, String rupture, String filename) {
-		dbc = new DBConnect("surface.usc.edu","CyberShake");
+		dbc = new DBConnect(DB_SERVER,DB);
 		RuptureFileData rfd = getRuptureFileData(erf, source, rupture);
 		if (rfd==null) {
 			System.exit(0);
@@ -46,7 +48,7 @@ public class RetrieveRuptureFromDB {
 	}
 
 	private static void getAllRuptures() {
-		dbc = new DBConnect("surface.usc.edu","CyberShake");
+		dbc = new DBConnect(DB_SERVER,DB);
 		String select = "select ERF_ID, Source_ID, Rupture_ID from Ruptures";
 		ResultSet rs = dbc.selectData(select);
 		try {

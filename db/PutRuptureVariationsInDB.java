@@ -4,6 +4,8 @@ public class PutRuptureVariationsInDB {
 	private static DBConnect dbc;
     private static String rup_var_scenario_id;
     private static String erf_id;
+	private static final String DB_SERVER = "intensity.usc.edu";
+	private static final String DB = "CyberShake";
     
 	public static void main(String[] args) {
 		if (args.length<3) {
@@ -14,7 +16,7 @@ public class PutRuptureVariationsInDB {
         rup_var_scenario_id = args[0];
         erf_id = args[1];
         String filename = args[2];
-        dbc = new DBConnect("surface.usc.edu","CyberShake");
+        dbc = new DBConnect(DB_SERVER,DB);
         
         File file = new File(filename);
 		traverse(file, 0);

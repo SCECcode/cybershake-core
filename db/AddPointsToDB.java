@@ -11,6 +11,8 @@ public class AddPointsToDB {
 	private static String rupture;
 	private static String filename;
 	private static DBConnect dbc;
+	private static final String DB_SERVER = "intensity.usc.edu";
+	private static final String DB = "CyberShake";
 	
 	public static void main(String[] args) {
 		if (args.length<4) {
@@ -23,7 +25,7 @@ public class AddPointsToDB {
 		rupture = args[2];
 		filename = args[3];
 		
-		dbc = new DBConnect("surface.usc.edu","CyberShake");
+		dbc = new DBConnect(DB_SERVER,DB);
 		
 		populate();
 	}
