@@ -1,3 +1,4 @@
+import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -9,9 +10,10 @@ public class RetrieveRuptureFromDB {
 	private static final String DB = "CyberShake";
 	
 	public static void main(String[] args) {
-		if (args.length==1) {
+		dbc = new DBConnect(DB_SERVER,DB);
+		if (args.length==2) {
 			if (args[0].equals("all")) {
-				getAllRuptures();
+				getAllRuptures(args[1]);
 				return;
 			} else {
 				//TODO:  read a file with erf, source, rupture, rupture file entries
@@ -34,7 +36,6 @@ public class RetrieveRuptureFromDB {
 	}
 	
 	private static void getOneRupture(String erf, String source, String rupture, String filename) {
-		dbc = new DBConnect(DB_SERVER,DB);
 		RuptureFileData rfd = getRuptureFileData(erf, source, rupture);
 		if (rfd==null) {
 			System.exit(0);
@@ -47,10 +48,11 @@ public class RetrieveRuptureFromDB {
 		}
 	}
 
-	private static void getAllRuptures() {
-		dbc = new DBConnect(DB_SERVER,DB);
+	private static void getAllRuptures(String path) {
+//		dbc = new DBConnect(DB_SERVER,DB);
 		String select = "select ERF_ID, Source_ID, Rupture_ID from Ruptures";
 		ResultSet rs = dbc.selectData(select);
+		
 		try {
 			rs.first();
 			if (rs.getRow()==0) {
@@ -61,7 +63,7 @@ public class RetrieveRuptureFromDB {
 					String erf_id = rs.getString("ERF_ID");
 					String source_id = rs.getString("Source_ID");
 					String rupture_id = rs.getString("Rupture_ID");
-					String filename = source_id + "_" + rupture_id + ".txt";
+					String filename = path + File.separatorChar + source_id + "_" + rupture_id + ".txt";
 					getOneRupture(erf_id, source_id, rupture_id, filename);
 					rs.next();
 				}
