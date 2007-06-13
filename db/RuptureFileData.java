@@ -11,6 +11,10 @@ public class RuptureFileData {
 	private int numCols;
 	private ArrayList<RupturePointData> points = new ArrayList<RupturePointData>();
 	
+	public RuptureFileData() {
+		
+	}
+	
 	public RuptureFileData(double pr, double ma, double gr, int nr, int nc) {
 		probability = pr;
 		magnitude = ma;
@@ -36,6 +40,7 @@ public class RuptureFileData {
 		try {
 			PrintStream ps = new PrintStream(new File(filename));
 			print(ps);
+			ps.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
@@ -51,5 +56,28 @@ public class RuptureFileData {
 		for (RupturePointData data: points) {
 			data.print(ps);
 		}
+		ps.flush();
+	}
+	public void setGridSpacing(double gridSpacing) {
+		this.gridSpacing = gridSpacing;
+	}
+	public void setMagnitude(double magnitude) {
+		this.magnitude = magnitude;
+	}
+	public void setNumCols(int numCols) {
+		this.numCols = numCols;
+	}
+	public void setNumRows(int numRows) {
+		this.numRows = numRows;
+	}
+	public void setPoints(ArrayList<RupturePointData> points) {
+		this.points = points;
+	}
+	public void setProbability(double probability) {
+		this.probability = probability;
+	}
+	
+	public void clearPoints() {
+		this.points.clear();
 	}
 }

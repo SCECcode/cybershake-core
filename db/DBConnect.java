@@ -49,7 +49,6 @@ public class DBConnect
       //System.out.println(query);
       //gets the resultSet after running the query
       result = stat.executeQuery(query+";");
-
     }
     catch (SQLException ex)
     {
@@ -216,5 +215,14 @@ public class DBConnect
                            "\nSQL State: "+E.getSQLState()+"\n");
      }
      return;
+  }
+  
+  public void closeConnection() {
+  	try {
+		conn.close();
+		conn = null;
+	} catch (SQLException e) {
+		e.printStackTrace();
+	}
   }
 }
