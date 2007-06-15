@@ -20,6 +20,7 @@ public class PutRuptureVariationsInDB {
         
         File file = new File(filename);
 		traverse(file, 0);
+		dbc.closeConnection();
 	}
     
     private static boolean traverse(File file, int id) {
