@@ -16,6 +16,9 @@ public class TestDBConnect {
 				System.out.println(rs.getString(1));
 				rs.next();
 			}
+            rs.close();
+            rs = dbc.selectData("select count(*) from CyberShake_Sites");
+            rs.getInt("count(*)");
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
