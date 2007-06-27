@@ -1,7 +1,8 @@
 COBJS = sacio.o iofunc.o fft1d.o geoproj_subs.o
 FOBJS = fourg.o
 
-GETPAR = ${HOME}/Getpar/getpar/lib
+#GETPAR = ${HOME}/Getpar/getpar/lib
+GETPAR = ../../Getpar/getpar/lib
 
 LIBS = -lm ${GETPAR}/libget.a
 LDLIBS = ${COBJS} ${FOBJS} ${LIBS}
@@ -22,14 +23,28 @@ BIN_LIST = gen_sgtgrid
 CFLAGS = ${UFLAGS} ${LF_FLAGS}
 FFLAGS = ${UFLAGS} -ffixed-line-length-132
 
-TARG = $@
+#TARG = $@
 
 ##### make options
 
-MAIN_TARG := ${MAKECMDGOALS}
-TARG_SRC := ${MAKECMDGOALS}.c
+#MAIN_TARG := ${MAKECMDGOALS}
+#TARG_SRC := ${MAKECMDGOALS}.c
 
-$(BIN_LIST) : ${TARG_SRC} ${COBJS} ${FOBJS}
+all: $(BIN_LIST)
+	for TARGET in $(BIN_LIST); do \
+		rm -f ../bin/$$TARGET ; \
+		cp $$TARGET ../bin ; \
+	done
+
+%: %.c
+
+gen_sgtgrid : ${COBJS} ${FOBJS}
 	${CC} -o $@ $@.c ${LDLIBS}
 
 ${COBJS} ${FOBJS} :
+
+clean :
+	-rm -f ${COBJS} ${FOBJS} $(BIN_LIST)
+	make all
+
+
