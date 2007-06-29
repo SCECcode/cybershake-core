@@ -15,6 +15,7 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 UFLAGS = -O3
 
 CC = gcc
+FC = g77
 
 BIN_LIST = gen_sgtgrid
 
@@ -36,15 +37,14 @@ all: $(BIN_LIST)
 		cp $$TARGET ../bin ; \
 	done
 
-%: %.c
-
-gen_sgtgrid : ${COBJS} ${FOBJS}
+%: %.c ${COBJS} ${FOBJS}
 	${CC} -o $@ $@.c ${LDLIBS}
+
+#gen_sgtgrid : ${COBJS} ${FOBJS}
+#	${CC} -o $@ $@.c ${LDLIBS}
 
 ${COBJS} ${FOBJS} :
 
 clean :
 	-rm -f ${COBJS} ${FOBJS} $(BIN_LIST)
-	make all
-
 
