@@ -53,9 +53,9 @@ MAN1DIR		= ../../doc/man/man1
 MAN3DIR		= ../../doc/man/man3
 CHANGESDIR	= ../../doc/Changes
 
-#CC		= cc
-CC		= gcc
-F77		= f77
+include ../../../Compilers.mk
+CC		= $(MY_CC)
+F77		= $(MY_FC)
 O		= -xO3 -xdepend -xlibmil -fsimple
 O		= -O3
 #O		= -g
