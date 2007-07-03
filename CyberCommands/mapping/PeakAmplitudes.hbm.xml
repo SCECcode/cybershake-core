@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping
+    PUBLIC "-//Hibernate/Hibernate Mapping DTD//EN"
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+    
+<hibernate-mapping>
+    <class name="mapping.PeakAmplitudes" 
+           table="PeakAmplitudes">
+           
+        <composite-id name="paPK" class="mapping.PeakAmplitudesPK">   
+    	    <key-property name="ERF_ID" column="ERF_ID"/>
+    	    <key-property name="Site_ID" column="Site_ID"/>
+    	    <key-property name="Source_ID" column="Source_ID"/>
+    	    <key-property name="Rupture_ID" column="Rupture_ID"/>
+    	    <key-property name="Rup_Var_ID" column="Rup_Var_ID"/>
+    	    <key-property name="Rup_Var_Scenario_ID" column="Rup_Var_Scenario_ID"/>
+    	    <key-property name="IM_Type" column="IM_Type"/>
+	    </composite-id>
+	    
+	    <property name="IM_Value"/>
+	    <property name="Units"/>
+       
+    </class>
+</hibernate-mapping>
