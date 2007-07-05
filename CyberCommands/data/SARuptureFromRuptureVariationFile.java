@@ -18,7 +18,7 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 		super.createRupVars(floats);
 		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationFile(bsaFile);
 		ruptureID = BSAFileUtil.getRuptureIDFromRuptureVariationFile(bsaFile);
-		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile) - 1;
+		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile);
 		createPeriods(floats);
 		try {
 			rupVar.computeGeomAvg();

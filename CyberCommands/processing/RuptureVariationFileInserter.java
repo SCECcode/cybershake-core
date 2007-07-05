@@ -28,7 +28,7 @@ public class RuptureVariationFileInserter {
 		File safiles = new File(pathName);
 		safilesLists = safiles.listFiles(new BSAFileFilter());
 		        
-		SessionFactory sf = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
+		SessionFactory sf = new Configuration().configure("surface.cfg.xml").buildSessionFactory();
 		Session retrieveSiteIDSess = sf.openSession();
 		
 		String query = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = '" + siteName + "'";
@@ -37,14 +37,14 @@ public class RuptureVariationFileInserter {
 		Object siteIDObject = siteIDList.get(0); 
 		siteID = (Integer)siteIDObject;
 		
-		//System.out.println(siteID);
+		System.out.println("Site_ID for " + siteName + ": " + siteID);
 		
 		retrieveSiteIDSess.close();
 		
 		
-/*		Session sess = sf.openSession();
+		Session sess = sf.openSession();
 		insertAllRuptureVariationFiles(sess);
-		sess.close();*/
+		sess.close();
 
 
 	}

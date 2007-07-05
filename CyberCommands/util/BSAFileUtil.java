@@ -5,8 +5,8 @@ import java.util.StringTokenizer;
 
 public class BSAFileUtil {
 	
-	private static String prefix = "PeakVals_allLBP";
-	private static String rupVarPrefix = "PeakVals_allLBP";
+	private static String prefix = "PeakVals_USC";
+	private static String rupVarPrefix = "PeakVals_USC";
 	
 	public static int getSourceIDFromFile(File file) {
 		return getIDFromTokens(file, 0);
