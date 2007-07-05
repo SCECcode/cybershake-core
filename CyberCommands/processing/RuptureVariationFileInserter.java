@@ -1,61 +1,73 @@
-package test.populatepeakamplitudes;
+package processing;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 
 import mapping.PeakAmplitudes;
 import mapping.PeakAmplitudesPK;
 
+import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
 import util.BSAFileFilter;
 import data.SAPeriods;
-import data.SARuptureFromFile;
 import data.SARuptureFromRuptureVariationFile;
 import data.SARuptureVariation;
 
-public class insertRuptureVariationsFiles {
-	/**
-	 * @param args
-	 * @throws IOException 
-	 */
-	public static void main(String[] args) throws IOException {
-		BufferedWriter filelistwriter = new BufferedWriter(new FileWriter("filelist"));
-
-
-		File safiles = new File("safiles/rupturevariations");
-		File[] safilesList =  safiles.listFiles(new BSAFileFilter());
-		//SARuptureFromFile saRupture = new SARuptureFromFile(floats);
-
-		//		 Fire up Hibernate        
+public class RuptureVariationFileInserter {
+	
+	public static int siteID = 18;
+	private static File[] safilesLists;
+	
+	
+	public RuptureVariationFileInserter(String pathName, String siteName) throws IOException {
+		File safiles = new File(pathName);
+		safilesLists = safiles.listFiles(new BSAFileFilter());
+		        
 		SessionFactory sf = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
-		Session sess = sf.openSession();
-
-		for (int i=0; i<safilesList.length; i++) {
-
-			//writeFileListToFile(filelistwriter, safilesList, i);
-
-			//System.out.println("Filename: " + safilesList[i].getName());
-			prepAndExecuteRuptureInsertion(safilesList, sess, i);
-		}
-
-		sess.close();
+		Session retrieveSiteIDSess = sf.openSession();
+		
+		String query = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = '" + siteName + "'";
+		//System.out.println(query);
+		List siteIDList = retrieveSiteIDSess.createSQLQuery(query).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
+		Object siteIDObject = siteIDList.get(0); 
+		siteID = (Integer)siteIDObject;
+		
+		//System.out.println(siteID);
+		
+		retrieveSiteIDSess.close();
+		
+		
+/*		Session sess = sf.openSession();
+		insertAllRuptureVariationFiles(sess);
+		sess.close();*/
 
 
 	}
 
+	private void insertAllRuptureVariationFiles(Session sess) {
+		for (int i=0; i<safilesLists.length; i++) {
+
+			//writeFileListToFile(filelistwriter, safilesList, i);
+
+			//System.out.println("Filename: " + safilesList[i].getName());
+			prepAndExecuteSingleRuptureVariationFileInsertion(sess, safilesLists[i]);
+		}
+	}
+
+	@SuppressWarnings("unused")
 	private static void writeFileListToFile(BufferedWriter filelistwriter, File[] safilesList, int i) throws IOException {
 		//System.out.println("Filename: " + safilesList[i].getName());
 		filelistwriter.write("Filename: " + safilesList[i].getName());
 		filelistwriter.newLine();
 	}
 
-	private static void prepAndExecuteRuptureInsertion(File[] safilesList, Session sess, int i) {
-		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(safilesList[i]);
+	private static void prepAndExecuteSingleRuptureVariationFileInsertion(Session sess, File bsaFile) {
+		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(bsaFile);
 		
 		//printEastandNorthComponents(saRupture);
 		saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
@@ -118,7 +130,7 @@ public class insertRuptureVariationsFiles {
 				PeakAmplitudesPK paPK = new PeakAmplitudesPK();
 				// Set values for the PeakAmplitudes Class
 				paPK.setERF_ID(currentERF_ID);
-				paPK.setSite_ID(18);				
+				paPK.setSite_ID(siteID);				
 				paPK.setSource_ID(currentSource_ID);				
 				paPK.setRupture_ID(currentRupture_ID);
 				paPK.setRup_Var_ID(currRupVar.variationNumber);

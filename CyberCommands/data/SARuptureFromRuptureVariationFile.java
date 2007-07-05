@@ -1,4 +1,4 @@
-package test.populatepeakamplitudes;
+package data;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -7,8 +7,6 @@ import util.BSAFileUtil;
 import util.SABinary2Float;
 import util.SwapBytes;
 
-import data.SARuptureFromFile;
-import data.SARuptureVariation;
 
 public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 
