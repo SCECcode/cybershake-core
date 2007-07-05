@@ -44,7 +44,7 @@ public class CreateFaultList {
 				//write path/sourceID/ruptureID/sourceID_ruptureID.txt
 				int sourceID = ruptures.getInt("Source_ID");
 				int ruptureID = ruptures.getInt("Rupture_ID");
-				bw.write(pathToVars + File.separator + sourceID + File.separator + ruptureID + File.separator + sourceID + "_" + ruptureID + ".txt nheader=6 latfirst=1");
+				bw.write(pathToVars + File.separator + sourceID + File.separator + ruptureID + File.separator + sourceID + "_" + ruptureID + ".txt nheader=6 latfirst=1\n");
 				ruptures.next();
 				count++;
 				if (count%100==0) System.out.println("Processed " + count + " ruptures.");
