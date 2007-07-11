@@ -2,27 +2,33 @@ package test.populatepeakamplitudes;
 
 import java.util.ArrayList;
 
+import junit.framework.JUnit4TestAdapter;
+
 import data.SARuptureVariation;
 import data.SARuptureFromFile;
 
 import util.SABinary2Float;
 import util.SwapBytes;
 
-public class readOneFile {
+import org.junit.Test;
+
+public class ReadOneFile {
+	private static SARuptureFromFile saRupture;
+
 	/**
 	 * @param args
 	 */
-	public static void main(String[] args) {
+	public void setUp() {
 		byte[] byteArrayFromFile = SwapBytes.swapBinaryFileToArrayForFloats("safiles/PeakVals_allUSC_100_0.bsa");
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(byteArrayFromFile);
-		SARuptureFromFile saRupture = new SARuptureFromFile(floats);
-		printEastandNorthComponents(saRupture);
+		saRupture = new SARuptureFromFile(floats);
+		printEastandNorthComponents();
 		saRupture.computeAllGeomAvgComponents();
-		printGeomAvgComponents(saRupture);
+		printGeomAvgComponents();
 		
 	}
 
-	private static void printGeomAvgComponents(SARuptureFromFile saRupture) {
+	@Test public void printGeomAvgComponents() {
 		System.out.println("number of rupture variations: " + saRupture.rupVars.size());
 		for (int rupVarIter=0;rupVarIter<saRupture.rupVars.size();rupVarIter++) {
 			//System.out.println("rupVarIter: " + rupVarIter);
@@ -36,7 +42,7 @@ public class readOneFile {
 		}
 	}
 
-	private static void printEastandNorthComponents(SARuptureFromFile saRupture) {
+	@Test public void printEastandNorthComponents() {
 		System.out.println("number of rupture variations: " + saRupture.rupVars.size());
 		for (int rupVarIter=0;rupVarIter<saRupture.rupVars.size();rupVarIter++) {
 			//System.out.println("rupVarIter: " + rupVarIter);
@@ -53,5 +59,9 @@ public class readOneFile {
 			}
 			
 		}
+	}
+	
+	public static junit.framework.Test suite() {
+		return new JUnit4TestAdapter (ReadOneFile.class);
 	}
 }
