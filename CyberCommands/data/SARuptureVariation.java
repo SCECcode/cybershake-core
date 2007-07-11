@@ -11,7 +11,7 @@ public class SARuptureVariation {
 			throw new Exception("Directional Component has north and east components of different lengths");
 		}
 		for (int i=0; i<northComp.periods.length; i++) {
-			geomAvgComp.periods[i] = (float) Math.sqrt(eastComp.periods[i]*eastComp.periods[i] + northComp.periods[i]*northComp.periods[i]);
+			geomAvgComp.periods[i] = (float) Math.sqrt(eastComp.periods[i]*northComp.periods[i]);
 			/*System.out.println("Rupture Variation " + variationNumber + ", Period " + (i + 1) + " : Square root of (" + eastComp.periods[i] + "*" + eastComp.periods[i] + "+" + northComp.periods[i] + "*" + northComp.periods[i] + ")");*/
 		}
 	}

@@ -1,10 +1,56 @@
 package util;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class BSAFileUtil {
 	
-	private static String siteName;
+	public static String siteName;
+	public static String pathLog;
+	public static ArrayList<String> totalFilenameList;
+	//public static File[] totalFileArray;
+	public static ArrayList<File> totalFileList;
+	
+	public static ArrayList<File> createTotalFileList(File saFile) {
+		createTotalFileListHelper(saFile);
+		return totalFileList;
+		
+	}
+	
+	public static void createTotalFileListHelper(File saFile) {
+		File[] safilesList = saFile.listFiles(new BSAFilenameFilter());
+		File[] sadirsList = saFile.listFiles(new DirFileFilter());
+		
+		System.out.println("Path: " + saFile.getPath() + saFile.getName());
+		if (pathLog == null) {
+			pathLog = saFile.getPath() + saFile.getName() + " ";
+		}
+		else {
+			pathLog += saFile.getPath() + saFile.getName() + " ";
+		}
+		
+		totalFileList.addAll(Arrays.asList(safilesList));
+		for (int filesIndex=0; filesIndex < safilesList.length; filesIndex++) {
+			System.out.println("\tFilename: " + safilesList[filesIndex].getName());
+			totalFilenameList.add(safilesList[filesIndex].getName());
+/*			File[] fileArrayDest = new File[safilesList.length + totalFileArray.length];
+			System.arraycopy(safilesList, 0, fileArrayDest, 0, safilesList.length);
+			System.arraycopy(totalFileArray, 0, fileArrayDest, safilesList.length, totalFileArray.length);
+			totalFileArray = fileArrayDest;*/
+		}
+		
+		if (sadirsList != null) {
+			for (int dirsIndex=0; dirsIndex<sadirsList.length; dirsIndex++) {
+				createTotalFileListHelper(sadirsList[dirsIndex]);
+			}
+		}
+		else {
+			return;
+		}
+		
+	}
+	
 	public static int getSourceIDFromFile(File file) {
 		return getIDFromTokens(file, 0);
 	
