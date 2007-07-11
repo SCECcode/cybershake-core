@@ -20,14 +20,16 @@ public class BSAFileUtil {
 	
 	public static void createTotalFileListHelper(File saFile) {
 		File[] safilesList = saFile.listFiles(new BSAFilenameFilter());
-		File[] sadirsList = saFile.listFiles(new DirFileFilter());
-		
-		System.out.println("Path: " + saFile.getPath() + saFile.getName());
-		if (pathLog == null) {
-			pathLog = saFile.getPath() + saFile.getName() + " ";
+		File[] sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
+		if (!saFile.getName().equals("CVS")) {
+			System.out.println("Path: " + saFile.getPath());
 		}
-		else {
-			pathLog += saFile.getPath() + saFile.getName() + " ";
+		
+		if (pathLog == null && !saFile.getName().equals("CVS")) {
+			pathLog = saFile.getPath() + " ";
+		}
+		else if (!saFile.getName().equals("CVS")) {
+			pathLog += saFile.getPath() + " ";
 		}
 		
 		totalFileList.addAll(Arrays.asList(safilesList));
