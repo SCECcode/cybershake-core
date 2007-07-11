@@ -63,7 +63,9 @@ public class BSAFileUtil {
 	private static int getIDFromTokens(File file, int indexToToken) {
 
 		String filename = file.getName();
+		System.out.println("BSAFileUtil::getIDFromTokens: filename: " + filename);
 		int lastIndex = filename.lastIndexOf(siteName);
+		System.out.println("BSAFileUtil::getIDFromTokens: lastIndex: " + lastIndex);
 
 		String endName = filename.substring(lastIndex+siteName.length()+1);
 		// System.out.println("endName: " + endName);

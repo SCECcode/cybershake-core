@@ -23,10 +23,11 @@ public class SARuptureFromFile {
 		createRupVars(floats);
 	}
 
-	public SARuptureFromFile(File bsaFile) {
+	public SARuptureFromFile(File bsaFile, String siteName) {
 		byte[] byteArrayFromFile = SwapBytes.swapBinaryFileToArrayForFloats(bsaFile.getPath());
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(byteArrayFromFile);
 		createRupVars(floats);
+		BSAFileUtil.setSiteName(siteName);
 		sourceID = BSAFileUtil.getSourceIDFromFile(bsaFile);
 		ruptureID = BSAFileUtil.getRuptureIDFromFile(bsaFile);
 	}

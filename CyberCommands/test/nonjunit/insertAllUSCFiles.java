@@ -49,7 +49,7 @@ public class insertAllUSCFiles {
 			writeFileListToFile(filelistwriter, safilesList, i);
 
 			//System.out.println("Filename: " + safilesList[i].getName());
-			prepAndExecuteRuptureInsertion(safilesList, sess, i);
+			prepAndExecuteRuptureInsertion(safilesList, sess, i, "LBP");
 		}
 
 		sess.close();
@@ -62,8 +62,8 @@ public class insertAllUSCFiles {
 		filelistwriter.newLine();
 	}
 
-	private static void prepAndExecuteRuptureInsertion(File[] safilesList, Session sess, int i) {
-		SARuptureFromFile saRupture = new SARuptureFromFile(safilesList[i]);
+	private static void prepAndExecuteRuptureInsertion(File[] safilesList, Session sess, int i, String siteName) {
+		SARuptureFromFile saRupture = new SARuptureFromFile(safilesList[i], siteName);
 		//printEastandNorthComponents(saRupture);
 		saRupture.computeAllGeomAvgComponents();
 		//printGeomAvgComponents(saRupture);
