@@ -39,7 +39,7 @@ public class ReadOneFile {
 	}
 
 	@Test public void geomAvgComponents() {
-		System.out.println("number of rupture variations: " + saRupture.rupVars.size());
+		//System.out.println("number of rupture variations: " + saRupture.rupVars.size());
 		/*assertEquals(8,saRupture.rupVars.size());*/
 		for (int rupVarIter=0;rupVarIter<saRupture.rupVars.size();rupVarIter++) {
 			//System.out.println("rupVarIter: " + rupVarIter);

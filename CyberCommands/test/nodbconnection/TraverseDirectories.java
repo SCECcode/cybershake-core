@@ -26,7 +26,7 @@ public class TraverseDirectories {
 	}
 	
 	@Test public void pathNames() {
-		System.out.println("pathLog: " + BSAFileUtil.pathLog);
+		//System.out.println("pathLog: " + BSAFileUtil.pathLog);
 		assertEquals("safiles\\traversetest safiles\\traversetest\\deeperpath ", BSAFileUtil.pathLog);
 	}
 	

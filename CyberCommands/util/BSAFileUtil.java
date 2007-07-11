@@ -22,7 +22,7 @@ public class BSAFileUtil {
 		File[] safilesList = saFile.listFiles(new BSAFilenameFilter());
 		File[] sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
 		if (!saFile.getName().equals("CVS")) {
-			System.out.println("Path: " + saFile.getPath());
+			//System.out.println("Path: " + saFile.getPath());
 		}
 		
 		if (pathLog == null && !saFile.getName().equals("CVS")) {
@@ -34,7 +34,7 @@ public class BSAFileUtil {
 		
 		totalFileList.addAll(Arrays.asList(safilesList));
 		for (int filesIndex=0; filesIndex < safilesList.length; filesIndex++) {
-			System.out.println("\tFilename: " + safilesList[filesIndex].getName());
+			//System.out.println("\tFilename: " + safilesList[filesIndex].getName());
 			totalFilenameList.add(safilesList[filesIndex].getName());
 /*			File[] fileArrayDest = new File[safilesList.length + totalFileArray.length];
 			System.arraycopy(safilesList, 0, fileArrayDest, 0, safilesList.length);
@@ -65,9 +65,9 @@ public class BSAFileUtil {
 	private static int getIDFromTokens(File file, int indexToToken) {
 
 		String filename = file.getName();
-		System.out.println("BSAFileUtil::getIDFromTokens: filename: " + filename);
+		//System.out.println("BSAFileUtil::getIDFromTokens: filename: " + filename);
 		int lastIndex = filename.lastIndexOf(siteName);
-		System.out.println("BSAFileUtil::getIDFromTokens: lastIndex: " + lastIndex);
+		//System.out.println("BSAFileUtil::getIDFromTokens: lastIndex: " + lastIndex);
 
 		String endName = filename.substring(lastIndex+siteName.length()+1);
 		// System.out.println("endName: " + endName);
