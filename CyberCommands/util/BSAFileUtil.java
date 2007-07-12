@@ -6,19 +6,20 @@ import java.util.Arrays;
 
 public class BSAFileUtil {
 	
-	public static String siteName;
 	public static String pathLog;
 	public static ArrayList<String> totalFilenameList;
 	//public static File[] totalFileArray;
 	public static ArrayList<File> totalFileList;
 	
 	public static ArrayList<File> createTotalFileList(File saFile) {
+		totalFilenameList = new ArrayList<String>();
+		totalFileList = new ArrayList<File>();
 		createTotalFileListHelper(saFile);
 		return totalFileList;
 		
 	}
 	
-	public static void createTotalFileListHelper(File saFile) {
+	private static void createTotalFileListHelper(File saFile) {
 		File[] safilesList = saFile.listFiles(new BSAFilenameFilter());
 		File[] sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
 		if (!saFile.getName().equals("CVS")) {
@@ -31,15 +32,16 @@ public class BSAFileUtil {
 		else if (!saFile.getName().equals("CVS")) {
 			pathLog += saFile.getPath() + " ";
 		}
-		
+/*		if (totalFileList == null) {
+			totalFileList = new ArrayList<File>();
+		}
+		else {
+			System.out.println("BSAFileUtil.totalFileList is NOT null");
+		}*/
 		totalFileList.addAll(Arrays.asList(safilesList));
 		for (int filesIndex=0; filesIndex < safilesList.length; filesIndex++) {
-			//System.out.println("\tFilename: " + safilesList[filesIndex].getName());
+			/*System.out.println("\tFilename: " + safilesList[filesIndex].getName());*/
 			totalFilenameList.add(safilesList[filesIndex].getName());
-/*			File[] fileArrayDest = new File[safilesList.length + totalFileArray.length];
-			System.arraycopy(safilesList, 0, fileArrayDest, 0, safilesList.length);
-			System.arraycopy(totalFileArray, 0, fileArrayDest, safilesList.length, totalFileArray.length);
-			totalFileArray = fileArrayDest;*/
 		}
 		
 		if (sadirsList != null) {
@@ -53,16 +55,16 @@ public class BSAFileUtil {
 		
 	}
 	
-	public static int getSourceIDFromFile(File file) {
-		return getIDFromTokens(file, 0);
+	public static int getSourceIDFromFile(File file, String siteName) {
+		return getIDFromTokens(file, 0, siteName);
 	
 	}
 	
-	public static int getRuptureIDFromFile(File file) {
-		return getIDFromTokens(file,1);
+	public static int getRuptureIDFromFile(File file, String siteName) {
+		return getIDFromTokens(file, 1, siteName);
 	}
 	
-	private static int getIDFromTokens(File file, int indexToToken) {
+	private static int getIDFromTokens(File file, int indexToToken, String siteName) {
 
 		String filename = file.getName();
 		//System.out.println("BSAFileUtil::getIDFromTokens: filename: " + filename);
@@ -81,21 +83,16 @@ public class BSAFileUtil {
 		
 	}
 
-	public static int getSourceIDFromRuptureVariationFile(File file) {
-		return getIDFromTokens(file, 0);
+	public static int getSourceIDFromRuptureVariationFile(File file, String siteName) {
+		return getIDFromTokens(file, 0, siteName);
 	}
 	
-	public static int getRuptureIDFromRuptureVariationFile(File file) {
-		return getIDFromTokens(file, 1);
+	public static int getRuptureIDFromRuptureVariationFile(File file, String siteName) {
+		return getIDFromTokens(file, 1, siteName);
 	}
 
-	public static int getRupVarIDFromRuptureVariationFile(File file) {
-		return getIDFromTokens(file, 2);
-	}
-	
-	public static void setSiteName(String newSiteName) {
-		siteName = newSiteName;
-		
+	public static int getRupVarIDFromRuptureVariationFile(File file, String siteName) {
+		return getIDFromTokens(file, 2, siteName);
 	}
 
 
