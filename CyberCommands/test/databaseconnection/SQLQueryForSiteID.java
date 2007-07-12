@@ -24,6 +24,8 @@ public class SQLQueryForSiteID {
 		Object siteIDObject = siteIDList.get(0); 
 		int siteID = (Integer)siteIDObject;
 		
+		retrieveSiteIDSess.close();
+		
 		assertEquals(18,siteID);
 	}
 	public static junit.framework.Test suite() {
