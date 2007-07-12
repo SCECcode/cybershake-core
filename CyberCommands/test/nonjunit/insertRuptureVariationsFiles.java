@@ -2,7 +2,6 @@ package test.nonjunit;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 
 import mapping.PeakAmplitudes;
@@ -14,7 +13,6 @@ import org.hibernate.cfg.Configuration;
 
 import util.BSAFilenameFilter;
 import data.SAPeriods;
-import data.SARuptureFromFile;
 import data.SARuptureFromRuptureVariationFile;
 import data.SARuptureVariation;
 
@@ -24,9 +22,6 @@ public class insertRuptureVariationsFiles {
 	 * @throws IOException 
 	 */
 	public static void main(String[] args) throws IOException {
-		BufferedWriter filelistwriter = new BufferedWriter(new FileWriter("filelist"));
-
-
 		File safiles = new File("safiles/rupturevariations");
 		File[] safilesList =  safiles.listFiles(new BSAFilenameFilter());
 		//SARuptureFromFile saRupture = new SARuptureFromFile(floats);
@@ -48,6 +43,7 @@ public class insertRuptureVariationsFiles {
 
 	}
 
+	@SuppressWarnings("unused")
 	private static void writeFileListToFile(BufferedWriter filelistwriter, File[] safilesList, int i) throws IOException {
 		//System.out.println("Filename: " + safilesList[i].getName());
 		filelistwriter.write("Filename: " + safilesList[i].getName());
@@ -55,7 +51,7 @@ public class insertRuptureVariationsFiles {
 	}
 
 	private static void prepAndExecuteRuptureInsertion(File[] safilesList, Session sess, int i) {
-		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(safilesList[i]);
+		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(safilesList[i], null);
 		
 		//printEastandNorthComponents(saRupture);
 		saRuptureWithSingleRupVar.computeAllGeomAvgComponents();

@@ -12,13 +12,13 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 
 	public SARuptureVariation rupVar = new SARuptureVariation();
 
-	public SARuptureFromRuptureVariationFile(File bsaFile) {
+	public SARuptureFromRuptureVariationFile(File bsaFile, String siteName) {
 		byte[] byteArrayFromFile = SwapBytes.swapBinaryFileToArrayForFloats(bsaFile.getPath());
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(byteArrayFromFile);
 		super.createRupVars(floats);
-		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationFile(bsaFile);
-		ruptureID = BSAFileUtil.getRuptureIDFromRuptureVariationFile(bsaFile);
-		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile);
+		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationFile(bsaFile, siteName);
+		ruptureID = BSAFileUtil.getRuptureIDFromRuptureVariationFile(bsaFile, siteName);
+		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile, siteName);
 		createPeriods(floats);
 		try {
 			rupVar.computeGeomAvg();

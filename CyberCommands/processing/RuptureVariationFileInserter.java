@@ -4,7 +4,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import mapping.PeakAmplitudes;
@@ -16,7 +15,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
 import util.BSAFileUtil;
-
 import data.SAPeriods;
 import data.SARuptureFromRuptureVariationFile;
 import data.SARuptureVariation;
@@ -27,12 +25,14 @@ public class RuptureVariationFileInserter {
 	private static ArrayList<File> totalFilesList;
 	private String siteIDQuery;
 	private SessionFactory sessFactory;
+	private static String siteName;
 	
 	
-	public RuptureVariationFileInserter(String pathName, String siteName) throws IOException {
+	public RuptureVariationFileInserter(String pathName, String newSiteName) throws IOException {
 		sessFactory = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
 		Session retrieveSiteIDSess = sessFactory.openSession();
 		
+		siteName = newSiteName;
 		siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = '" + siteName + "'";
 		//System.out.println(query);
 		List siteIDList = retrieveSiteIDSess.createSQLQuery(siteIDQuery).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
@@ -45,7 +45,6 @@ public class RuptureVariationFileInserter {
 		
 		BSAFileUtil.totalFilenameList = new ArrayList<String>();
 		BSAFileUtil.totalFileList = new ArrayList<File>();
-		BSAFileUtil.siteName = siteName;
 		File saFile = new File(pathName);
 		
 		totalFilesList = BSAFileUtil.createTotalFileList(saFile);
@@ -75,7 +74,7 @@ public class RuptureVariationFileInserter {
 	}
 
 	private static void prepAndExecuteSingleRuptureVariationFileInsertion(Session sess, File bsaFile) {
-		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(bsaFile);
+		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(bsaFile, siteName);
 		
 		//printEastandNorthComponents(saRupture);
 		saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
