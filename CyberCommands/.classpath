@@ -32,7 +32,6 @@
 	<classpathentry kind="lib" path="jdbc2_0-stdext.jar"/>
 	<classpathentry kind="lib" path="jgroups-2.2.8.jar"/>
 	<classpathentry kind="lib" path="jta.jar"/>
-	<classpathentry kind="lib" path="junit-3.8.1.jar"/>
 	<classpathentry kind="lib" path="log4j-1.2.11.jar"/>
 	<classpathentry kind="lib" path="mysql-connector-java-5.0.6-bin.jar"/>
 	<classpathentry kind="lib" path="oscache-2.1.jar"/>
@@ -43,6 +42,7 @@
 	<classpathentry kind="lib" path="xerces-2.6.2.jar"/>
 	<classpathentry kind="lib" path="xml-apis.jar"/>
 	<classpathentry kind="lib" path="commons-cli-1.0.jar"/>
+	<classpathentry kind="lib" path="junit-4.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path=""/>
 </classpath>
