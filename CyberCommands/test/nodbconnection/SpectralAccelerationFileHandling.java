@@ -18,8 +18,10 @@ public class SpectralAccelerationFileHandling {
 
 	private static File safiles;
 	private static File[] safilesList;
+	private static String siteName;
 
 	@BeforeClass public static void runOnceBeforeAllTests() {
+		siteName = "USC";
 		safiles = new File("safiles/loadampstest");
 		safilesList = safiles.listFiles(new BSAFilenameFilter());
 	}
@@ -34,10 +36,9 @@ public class SpectralAccelerationFileHandling {
 
 	@Test public void bsaFileUtilForRuptureVariationsFileTest() {
 		File bsaFile = new File("safiles/rupturevariations/PeakVals_USC_413_13_8.bsa");
-		BSAFileUtil.setSiteName("USC");
-		int source_ID = BSAFileUtil.getSourceIDFromRuptureVariationFile(bsaFile);
-		int rupture_ID = BSAFileUtil.getRuptureIDFromRuptureVariationFile(bsaFile);
-		int rupVar_ID = BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile);
+		int source_ID = BSAFileUtil.getSourceIDFromRuptureVariationFile(bsaFile, siteName);
+		int rupture_ID = BSAFileUtil.getRuptureIDFromRuptureVariationFile(bsaFile, siteName);
+		int rupVar_ID = BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile, siteName);
 		assertEquals(413, source_ID);
 		assertEquals(13,rupture_ID);
 		assertEquals(8,rupVar_ID);
@@ -45,9 +46,8 @@ public class SpectralAccelerationFileHandling {
 
 	@Test public void bsaFileUtilTest() {
 		File bsaFile = new File("safiles/PeakVals_allUSC_127_6.bsa");
-		BSAFileUtil.setSiteName("USC");
-		int source_ID = BSAFileUtil.getSourceIDFromFile(bsaFile);
-		int rupture_ID = BSAFileUtil.getRuptureIDFromFile(bsaFile);
+		int source_ID = BSAFileUtil.getSourceIDFromFile(bsaFile, siteName);
+		int rupture_ID = BSAFileUtil.getRuptureIDFromFile(bsaFile, siteName);
 		assertEquals(127, source_ID);
 		assertEquals(6,rupture_ID);
 	}

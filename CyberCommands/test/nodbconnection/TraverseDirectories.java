@@ -17,8 +17,6 @@ import util.NonCVSDirFileFilter;
 public class TraverseDirectories {
 	
 	@BeforeClass public static void runBeforeAllTests() {
-		BSAFileUtil.totalFilenameList = new ArrayList<String>();
-		BSAFileUtil.totalFileList = new ArrayList<File>();
 		File saFile = new File("safiles/traversetest");
 		BSAFileUtil.createTotalFileList(saFile);
 		
