@@ -18,7 +18,7 @@ public class SQLQueryForSiteID {
 		SessionFactory sessFactory = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
 		Session retrieveSiteIDSess = sessFactory.openSession();
 		
-		String siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = USC";
+		String siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = 'USC'";
 		//System.out.println(query);
 		List siteIDList = retrieveSiteIDSess.createSQLQuery(siteIDQuery).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
 		Object siteIDObject = siteIDList.get(0); 
