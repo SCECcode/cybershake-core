@@ -49,7 +49,7 @@ public class Cyber {
 					return;
 				}
 				
-				System.out.println("Got loadamps with directory: " + cmd.getOptionValue("p") + " and site: " + cmd.getOptionValue("site"));
+				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " and site: " + cmd.getOptionValue("site"));
 				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"));
 			}
 			

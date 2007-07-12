@@ -45,7 +45,7 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 				}
 			}
 			
-			System.out.println("SA for Rupture Variation " + rupVar.variationNumber + ", " + componentDirection + " Component, Period " + periodCount + " : " + floats.get(i) );
+			//System.out.println("SA for Rupture Variation " + rupVar.variationNumber + ", " + componentDirection + " Component, Period " + periodCount + " : " + floats.get(i) );
 
 			if (componentDirection.equals("North")) {
 				rupVar.northComp.periods[periodCount-1] = floats.get(i);

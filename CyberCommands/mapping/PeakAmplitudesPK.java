@@ -58,5 +58,24 @@ public class PeakAmplitudesPK implements Serializable {
 		Source_ID = source_ID;
 	}
 	
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true;
+		if((obj == null) || (obj.getClass() != this.getClass()))
+			return false;
+		// object must be PeakAmplitudesPK at this point
+		PeakAmplitudesPK papk = (PeakAmplitudesPK)obj;
+		return (ERF_ID == papk.getERF_ID() &&
+				Site_ID == papk.getSite_ID() &&
+				Source_ID == papk.getSource_ID() &&
+				Rupture_ID == papk.getRupture_ID() && 
+				Rup_Var_ID == papk.getRup_Var_ID() &&
+				Rup_Var_Scenario_ID == papk.getRup_Var_Scenario_ID() &&
+				IM_Type == papk.getIM_Type());
+	}
 	
+	public int hashCode() {
+		return 0;
+	}
 }

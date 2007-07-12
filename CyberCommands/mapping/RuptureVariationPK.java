@@ -45,5 +45,23 @@ public class RuptureVariationPK implements Serializable {
 		Source_ID = source_ID;
 	}
 	
+	public boolean equals(Object obj) {
+		if(this == obj)
+			return true;
+		if((obj == null) || (obj.getClass() != this.getClass()))
+			return false;
+		// object must be RuptureVariationPK at this point
+		RuptureVariationPK papk = (RuptureVariationPK)obj;
+		return (ERF_ID == papk.getERF_ID() &&
+				Source_ID == papk.getSource_ID() &&
+				Rupture_ID == papk.getRupture_ID() && 
+				Rup_Var_ID == papk.getRup_Var_ID() &&
+				Rup_Var_Scenario_ID == papk.getRup_Var_Scenario_ID());
+	}
+	
+	public int hashCode() {
+		return 0;
+	}
+	
 
 }

@@ -3,6 +3,8 @@ package processing;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import mapping.PeakAmplitudes;
@@ -13,9 +15,7 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
-import util.BSAFilenameFilter;
 import util.BSAFileUtil;
-
 
 import data.SAPeriods;
 import data.SARuptureFromRuptureVariationFile;
@@ -24,28 +24,33 @@ import data.SARuptureVariation;
 public class RuptureVariationFileInserter {
 	
 	public static int siteID = 18;
-	private static File[] totalFilesList;
+	private static ArrayList<File> totalFilesList;
+	private String siteIDQuery;
+	private SessionFactory sessFactory;
 	
 	
 	public RuptureVariationFileInserter(String pathName, String siteName) throws IOException {
-		File safiles = new File(pathName);
-		//totalFilesList = BSAFileUtil.createTotalFileListHelper(safiles);
-		        
-		SessionFactory sf = new Configuration().configure("surface.cfg.xml").buildSessionFactory();
-		Session retrieveSiteIDSess = sf.openSession();
+		sessFactory = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
+		Session retrieveSiteIDSess = sessFactory.openSession();
 		
-		String query = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = '" + siteName + "'";
+		siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = '" + siteName + "'";
 		//System.out.println(query);
-		List siteIDList = retrieveSiteIDSess.createSQLQuery(query).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
+		List siteIDList = retrieveSiteIDSess.createSQLQuery(siteIDQuery).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
 		Object siteIDObject = siteIDList.get(0); 
 		siteID = (Integer)siteIDObject;
 		
-		System.out.println("Site_ID for " + siteName + ": " + siteID);
+		//System.out.println("Site_ID for " + siteName + ": " + siteID);
 		
 		retrieveSiteIDSess.close();
 		
+		BSAFileUtil.totalFilenameList = new ArrayList<String>();
+		BSAFileUtil.totalFileList = new ArrayList<File>();
+		BSAFileUtil.siteName = siteName;
+		File saFile = new File(pathName);
 		
-		Session sess = sf.openSession();
+		totalFilesList = BSAFileUtil.createTotalFileList(saFile);
+		
+		Session sess = sessFactory.openSession();
 		insertAllRuptureVariationFiles(sess);
 		sess.close();
 
@@ -53,12 +58,12 @@ public class RuptureVariationFileInserter {
 	}
 
 	private void insertAllRuptureVariationFiles(Session sess) {
-		for (int i=0; i<totalFilesList.length; i++) {
+		for (int i=0; i<totalFilesList.size(); i++) {
 
 			//writeFileListToFile(filelistwriter, safilesList, i);
 
 			//System.out.println("Filename: " + safilesList[i].getName());
-			prepAndExecuteSingleRuptureVariationFileInsertion(sess, totalFilesList[i]);
+			prepAndExecuteSingleRuptureVariationFileInsertion(sess, totalFilesList.get(i));
 		}
 	}
 
@@ -75,9 +80,9 @@ public class RuptureVariationFileInserter {
 		//printEastandNorthComponents(saRupture);
 		saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
 		//printGeomAvgComponents(saRupture);
-		System.out.println("Source_ID: " + saRuptureWithSingleRupVar.getSourceID() + 
+		/*System.out.println("Source_ID: " + saRuptureWithSingleRupVar.getSourceID() + 
 				", Rupture_ID: " + saRuptureWithSingleRupVar.getRuptureID() + 
-				", Rup_Var_ID: " + saRuptureWithSingleRupVar.rupVar.variationNumber);
+				", Rup_Var_ID: " + saRuptureWithSingleRupVar.rupVar.variationNumber);*/
 
 		insertRupture(saRuptureWithSingleRupVar, sess);
 	}
@@ -124,9 +129,9 @@ public class RuptureVariationFileInserter {
 
 			int innerLoopMax = currRupVar.geomAvgComp.periods.length;
 			for (int periodIter=0;periodIter<innerLoopMax;periodIter++) {
-				System.out.println("SA for Rupture Variation " + currRupVar.variationNumber 
+				/*System.out.println("SA for Rupture Variation " + currRupVar.variationNumber 
 						+ ", Geometrically Averaged Component, Period " + (periodIter+1) + " : " 
-						+ currRupVar.geomAvgComp.periods[periodIter] );
+						+ currRupVar.geomAvgComp.periods[periodIter] );*/
 
 				// Initialize PeakAmplitudes class
 				PeakAmplitudes pa = new PeakAmplitudes();
