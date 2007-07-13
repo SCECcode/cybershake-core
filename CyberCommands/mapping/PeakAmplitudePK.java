@@ -2,7 +2,7 @@ package mapping;
 
 import java.io.Serializable;
 
-public class PeakAmplitudesPK implements Serializable {
+public class PeakAmplitudePK implements Serializable {
 	/**
 	 * 
 	 */
@@ -65,7 +65,7 @@ public class PeakAmplitudesPK implements Serializable {
 		if((obj == null) || (obj.getClass() != this.getClass()))
 			return false;
 		// object must be PeakAmplitudesPK at this point
-		PeakAmplitudesPK papk = (PeakAmplitudesPK)obj;
+		PeakAmplitudePK papk = (PeakAmplitudePK)obj;
 		return (ERF_ID == papk.getERF_ID() &&
 				Site_ID == papk.getSite_ID() &&
 				Source_ID == papk.getSource_ID() &&

@@ -1,7 +1,7 @@
 package mapping;
 
-public class PeakAmplitudes {
-	private PeakAmplitudesPK paPK;
+public class PeakAmplitude {
+	private PeakAmplitudePK paPK;
 	private double IM_Value;
 	private String Units;
 	
@@ -17,10 +17,10 @@ public class PeakAmplitudes {
 	public void setUnits(String units) {
 		Units = units;
 	}
-	public PeakAmplitudesPK getPaPK() {
+	public PeakAmplitudePK getPaPK() {
 		return paPK;
 	}
-	public void setPaPK(PeakAmplitudesPK paPK) {
+	public void setPaPK(PeakAmplitudePK paPK) {
 		this.paPK = paPK;
 	}
 	
@@ -30,7 +30,7 @@ public class PeakAmplitudes {
 		if((obj == null) || (obj.getClass() != this.getClass()))
 			return false;
 		// object must be PeakAmplitudesPK at this point
-		PeakAmplitudes pa = (PeakAmplitudes)obj;
+		PeakAmplitude pa = (PeakAmplitude)obj;
 		//return (paPK.equals(pa.getPaPK())  && IM_Value == pa.getIM_Value() && Units == pa.getUnits());
 		return (paPK.equals(pa.getPaPK()));
 	}

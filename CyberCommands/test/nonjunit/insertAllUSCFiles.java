@@ -7,8 +7,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import mapping.PeakAmplitudes;
-import mapping.PeakAmplitudesPK;
+import mapping.PeakAmplitude;
+import mapping.PeakAmplitudePK;
 import mapping.RuptureVariation;
 import mapping.RuptureVariationPK;
 
@@ -118,8 +118,8 @@ public class insertAllUSCFiles {
 						+ currRupVar.geomAvgComp.periods[periodIter] );*/
 
 				// Initialize PeakAmplitudes class
-				PeakAmplitudes pa = new PeakAmplitudes();
-				PeakAmplitudesPK paPK = new PeakAmplitudesPK();
+				PeakAmplitude pa = new PeakAmplitude();
+				PeakAmplitudePK paPK = new PeakAmplitudePK();
 				// Set values for the PeakAmplitudes Class
 				paPK.setERF_ID(currentERF_ID);
 				paPK.setSite_ID(11);				

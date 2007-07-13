@@ -2,8 +2,8 @@ package test.databaseconnection;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestCase;
-import mapping.PeakAmplitudes;
-import mapping.PeakAmplitudesPK;
+import mapping.PeakAmplitude;
+import mapping.PeakAmplitudePK;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -18,8 +18,8 @@ public class IntensityDBAndInsertOnePA {
 	 */
 	@Test public void testIntensityDBAndInsertOnePA() {
 		// 1. Create the PeakAmplitudes Class
-		PeakAmplitudes pa = new PeakAmplitudes();
-		PeakAmplitudesPK paPK = new PeakAmplitudesPK();
+		PeakAmplitude pa = new PeakAmplitude();
+		PeakAmplitudePK paPK = new PeakAmplitudePK();
 		paPK.setERF_ID(1);
 		paPK.setSite_ID(1);
 		paPK.setSource_ID(1);

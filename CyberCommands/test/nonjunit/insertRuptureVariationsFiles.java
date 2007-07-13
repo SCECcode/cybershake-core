@@ -4,8 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 
-import mapping.PeakAmplitudes;
-import mapping.PeakAmplitudesPK;
+import mapping.PeakAmplitude;
+import mapping.PeakAmplitudePK;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -110,8 +110,8 @@ public class insertRuptureVariationsFiles {
 						+ currRupVar.geomAvgComp.periods[periodIter] );
 
 				// Initialize PeakAmplitudes class
-				PeakAmplitudes pa = new PeakAmplitudes();
-				PeakAmplitudesPK paPK = new PeakAmplitudesPK();
+				PeakAmplitude pa = new PeakAmplitude();
+				PeakAmplitudePK paPK = new PeakAmplitudePK();
 				// Set values for the PeakAmplitudes Class
 				paPK.setERF_ID(currentERF_ID);
 				paPK.setSite_ID(18);				

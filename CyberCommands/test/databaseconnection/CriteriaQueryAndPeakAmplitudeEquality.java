@@ -5,8 +5,8 @@
 import java.io.File;
 import java.util.List;
 
-import mapping.PeakAmplitudes;
-import mapping.PeakAmplitudesPK;
+import mapping.PeakAmplitude;
+import mapping.PeakAmplitudePK;
 
 import org.hibernate.Criteria;
 import org.hibernate.Session;
@@ -23,11 +23,11 @@ import data.SARuptureFromRuptureVariationFile;
 
 import junit.framework.JUnit4TestAdapter;
 
-	public class CriteriaQuery {
+	public class CriteriaQueryAndPeakAmplitudeEquality {
 		
 		private static SessionFactory sf;
 		private static Session sess;
-		private static PeakAmplitudes expectedPA;
+		private static PeakAmplitude expectedPA;
 		private static SARuptureFromRuptureVariationFile saRupture;
 		private static SAPeriods saperiods;
 
@@ -36,8 +36,8 @@ import junit.framework.JUnit4TestAdapter;
 			sess = sf.openSession();
 			saperiods = new SAPeriods();
 			saRupture = new SARuptureFromRuptureVariationFile(new File("safiles/loadampstest/PeakVals_USC_104_12_3.bsa"),"USC");
-			expectedPA = new PeakAmplitudes();
-			PeakAmplitudesPK paPK = new PeakAmplitudesPK();
+			expectedPA = new PeakAmplitude();
+			PeakAmplitudePK paPK = new PeakAmplitudePK();
 			// Set values for the PeakAmplitudes Class
 			paPK.setERF_ID(29);
 			paPK.setSite_ID(18);
@@ -75,20 +75,20 @@ import junit.framework.JUnit4TestAdapter;
 		}
 		
 		@Test public void useExample() {
-			Criteria crit = sess.createCriteria(PeakAmplitudes.class);
+			Criteria crit = sess.createCriteria(PeakAmplitude.class);
 			crit.setMaxResults(50);
 			Example examplePA = Example.create(expectedPA);
 			crit.add(examplePA);
 			List peakamps = crit.list();
 			
-			PeakAmplitudes resultsPA = (PeakAmplitudes)peakamps.get(0);
+			PeakAmplitude resultsPA = (PeakAmplitude)peakamps.get(0);
 			/*System.out.println("-- results from example --");
 			System.out.println(resultsPA);*/
 			assertEquals(expectedPA, resultsPA);
 		}
 		
 		@Test public void useSQLRestriction() {
-			Criteria crit = sess.createCriteria(PeakAmplitudes.class);
+			Criteria crit = sess.createCriteria(PeakAmplitude.class);
 			crit.setMaxResults(50);
 			String sqlRestriction = "ERF_ID = 29 AND Site_ID = 18 AND Rup_Var_Scenario_ID = 1 AND Source_ID = "  + saRupture.getSourceID() 
 									+ " AND Rupture_ID = " + saRupture.getRuptureID() + " AND Rup_Var_ID = " + saRupture.rupVar.variationNumber
@@ -97,7 +97,7 @@ import junit.framework.JUnit4TestAdapter;
 			crit.add( Restrictions.sqlRestriction(sqlRestriction));
 			List peakamps = crit.list();
 			
-			PeakAmplitudes resultsPA = (PeakAmplitudes)peakamps.get(0);
+			PeakAmplitude resultsPA = (PeakAmplitude)peakamps.get(0);
 			/*System.out.println("-- results from sqlrestriction --");
 			System.out.println(resultsPA);*/
 			assertEquals(expectedPA, resultsPA);
@@ -110,6 +110,6 @@ import junit.framework.JUnit4TestAdapter;
 		}
 		
 		public static junit.framework.Test suite() {
-			return new JUnit4TestAdapter (CriteriaQuery.class);
+			return new JUnit4TestAdapter (CriteriaQueryAndPeakAmplitudeEquality.class);
 		}
 	}
