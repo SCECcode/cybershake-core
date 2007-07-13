@@ -11,4 +11,8 @@ public class SAPeriods {
 		//System.out.println("SAPeriods.values[" + (currentValueIndex-1) + "]: " + values[currentValueIndex-1]);
 		return values[currentValueIndex-1];
 	}
+
+	public double getCurrentValue() {
+		return values[currentValueIndex-1];
+	}
 }

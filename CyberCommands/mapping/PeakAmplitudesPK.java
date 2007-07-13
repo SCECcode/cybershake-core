@@ -72,10 +72,15 @@ public class PeakAmplitudesPK implements Serializable {
 				Rupture_ID == papk.getRupture_ID() && 
 				Rup_Var_ID == papk.getRup_Var_ID() &&
 				Rup_Var_Scenario_ID == papk.getRup_Var_Scenario_ID() &&
-				IM_Type == papk.getIM_Type());
+				IM_Type.equals(papk.getIM_Type()) );
 	}
 	
 	public int hashCode() {
 		return 0;
+	}
+	
+	public String toString() {
+		return "ERF_ID: " + ERF_ID + ", Site_ID: " + Site_ID + ", Source_ID: " + Source_ID + ", Rupture_ID: " + Rupture_ID
+		+ ", Rup_Var_ID: " + Rup_Var_ID + ", Rup_Var_Scenario_ID: " + Rup_Var_Scenario_ID + ", IM_Type: " + IM_Type;
 	}
 }

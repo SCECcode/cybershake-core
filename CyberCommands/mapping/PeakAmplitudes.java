@@ -24,4 +24,23 @@ public class PeakAmplitudes {
 		this.paPK = paPK;
 	}
 	
+	public boolean equals(Object obj) {
+		if(this == obj)
+			return true;
+		if((obj == null) || (obj.getClass() != this.getClass()))
+			return false;
+		// object must be PeakAmplitudesPK at this point
+		PeakAmplitudes pa = (PeakAmplitudes)obj;
+		//return (paPK.equals(pa.getPaPK())  && IM_Value == pa.getIM_Value() && Units == pa.getUnits());
+		return (paPK.equals(pa.getPaPK()));
+	}
+	
+	public int hashCode() {
+		return 0;
+	}
+	
+	public String toString() {
+		return paPK.toString() + ", IM_Value: " + IM_Value + ", Units: " + Units;
+	}
+	
 }
