@@ -46,6 +46,7 @@ public class ReadOneRuptureVariationFile {
 							+ ", Geometrically Averaged Component, Period " + (periodIter+1) + " : " 
 							+ currRupVar.geomAvgComp.periods[periodIter] );
 					assertTrue(currRupVar.geomAvgComp.periods[periodIter] > 0);
+					assertEquals(16, currRupVar.variationNumber);
 				}
 			}
 
@@ -72,6 +73,7 @@ public class ReadOneRuptureVariationFile {
 							+ ", North Component, Period " + (periodIter+1) + " : " 
 							+ currRupVar.northComp.periods[periodIter] );
 					assertTrue(currRupVar.northComp.periods[periodIter] > 0);
+					assertEquals(16, currRupVar.variationNumber);
 				}
 			}
 
