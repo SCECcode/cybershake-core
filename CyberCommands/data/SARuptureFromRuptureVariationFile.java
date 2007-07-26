@@ -14,6 +14,9 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 
 	public SARuptureFromRuptureVariationFile(File bsaFile, String siteName) {
 		byte[] byteArrayFromFile = SwapBytes.swapBinaryFileToArrayForFloats(bsaFile.getPath());
+		if (byteArrayFromFile == null) {
+			throw new NullPointerException("byteArrayFromFile is null; bsaFile.getPath(): " + bsaFile.getPath());
+		}
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(byteArrayFromFile);
 		super.createRupVars(floats);
 		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationFile(bsaFile, siteName);
@@ -25,6 +28,9 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	public SARuptureFromRuptureVariationFile() {
 	}
 
 	public void createPeriods(ArrayList<Float> floats) {

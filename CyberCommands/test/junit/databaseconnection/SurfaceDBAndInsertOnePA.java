@@ -1,4 +1,4 @@
-package test.databaseconnection;
+package test.junit.databaseconnection;
 
 import junit.framework.JUnit4TestAdapter;
 import junit.framework.TestCase;
@@ -11,12 +11,12 @@ import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 
-public class IntensityDBAndInsertOnePA {
+public class SurfaceDBAndInsertOnePA {
 
 	/**
 	 * @param args
 	 */
-	@Test public void testIntensityDBAndInsertOnePA() {
+	@Test public void testSurfaceDBAndInsertOnePA() {
 		// 1. Create the PeakAmplitudes Class
 		PeakAmplitude pa = new PeakAmplitude();
 		PeakAmplitudePK paPK = new PeakAmplitudePK();
@@ -32,7 +32,7 @@ public class IntensityDBAndInsertOnePA {
 		pa.setUnits("feet");
 		
 		// 2. Fire up Hibernate        
-        SessionFactory sf = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
+        SessionFactory sf = new Configuration().configure("surface.cfg.xml").buildSessionFactory();
         
         // 3. Save PeakAmplitude instance and close connection
         Session sess = sf.openSession();
@@ -44,7 +44,7 @@ public class IntensityDBAndInsertOnePA {
 	}
 	
 	public static junit.framework.Test suite() {
-		return new JUnit4TestAdapter (IntensityDBAndInsertOnePA.class);
+		return new JUnit4TestAdapter (SurfaceDBAndInsertOnePA.class);
 	}
 
 }

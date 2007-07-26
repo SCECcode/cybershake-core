@@ -47,6 +47,7 @@ public class SwapBytes {
 			return returnBytes;
 		} catch (FileNotFoundException e) {
 			System.err.println("File " + inputFile + " is missing, continuing.");
+			System.err.println("File's absolute path: " + inputFile.getAbsolutePath());
 		} catch (IOException e) {
 			e.printStackTrace();
 		} catch (IncorrectNumberOfBytesException e) {

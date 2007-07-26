@@ -1,4 +1,4 @@
-	package test.databaseconnection;
+	package test.junit.databaseconnection;
 	
 	import static org.junit.Assert.assertEquals;
 

@@ -1,4 +1,4 @@
-package test.nodbconnection;
+package test.junit.nodbconnection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -24,7 +24,7 @@ public class TraverseDirectories {
 	
 	@Test public void pathNames() {
 		//System.out.println("pathLog: " + BSAFileUtil.pathLog);
-		assertEquals("safiles\\traversetest safiles\\traversetest\\deeperpath ", BSAFileUtil.pathLog);
+		assertEquals("safiles\\loadampstest safiles\\traversetest safiles\\traversetest\\deeperpath ", BSAFileUtil.pathLog);
 	}
 	
 	@Test public void checkFileExtensions() {
