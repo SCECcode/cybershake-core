@@ -9,10 +9,12 @@ import java.util.List;
 import mapping.PeakAmplitude;
 import mapping.PeakAmplitudePK;
 
+import org.hibernate.Criteria;
 import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.criterion.Example;
 
 import util.BSAFileUtil;
 import data.SAPeriods;
@@ -51,6 +53,7 @@ public class RuptureVariationFileInserter {
 		
 		Session sess = sessFactory.openSession();
 		insertAllRuptureVariationFiles(sess);
+		sess.getTransaction().commit();
 		sess.close();
 
 
@@ -63,6 +66,15 @@ public class RuptureVariationFileInserter {
 
 			//System.out.println("Filename: " + safilesList[i].getName());
 			prepAndExecuteSingleRuptureVariationFileInsertion(sess, totalFilesList.get(i));
+			if ((i+1)%250==0) System.gc();
+			if ((i+1)%50==0) {
+				// flush a batch of inserts and release memory
+				sess.flush();
+				sess.clear();
+			}
+			/*if ((i+1)%1000==0) {
+				sess.getTransaction().commit();
+			}*/
 		}
 	}
 
@@ -98,7 +110,7 @@ public class RuptureVariationFileInserter {
 			//System.out.println("rupVarIter: " + rupVarIter);
 
 			// Do garbage collection
-			if ((rupVarIter+1)%250==0) System.gc();
+			//if ((rupVarIter+1)%250==0) System.gc();
 			int currentERF_ID = 29;
 			int currentSource_ID = saRuptureWithSingleRupVar.getSourceID();
 			int currentRupture_ID = saRuptureWithSingleRupVar.getRuptureID();
@@ -145,23 +157,31 @@ public class RuptureVariationFileInserter {
 				paPK.setIM_Type(new String("SA_Period_" + saPeriods.getNextValue()));
 				pa.setPaPK(paPK);
 				pa.setIM_Value(currRupVar.geomAvgComp.periods[periodIter]);
-				pa.setUnits("meters per second squared");
+				pa.setUnits("cm per second squared");
 
 
 				// 3. Save and Commit PeakAmplitude instance
 
 				//sess.beginTransaction();
-
+				
+				/*Criteria crit = sess.createCriteria(PeakAmplitude.class);
+				crit.setMaxResults(50);
+				Example examplePA = Example.create(pa).excludeProperty("IM_Value").excludeProperty("Units");
+				crit.add(examplePA);
+				List peakamps = crit.list();
+				
+				if (peakamps.size() == 0)  {
+					sess.save(pa);
+				}*/
+				
 				sess.save(pa);
-				if ((rupVarIter+1)%50==0) {
+				
+				/*if ((rupVarIter+1)%50==0) {
 					// flush a batch of inserts and release memory
 					sess.flush();
 					sess.clear();
-				}
+				}*/
 			}
-
-			sess.getTransaction().commit();
-
 		}
 	}
 }
