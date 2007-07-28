@@ -20,7 +20,7 @@
     <property name="jdbc.batch_size">50</property>
  
 	<!-- mapping files -->
-    <mapping resource="mapping/PeakAmplitudes.hbm.xml" />
+    <mapping resource="mapping/PeakAmplitude.hbm.xml" />
     <mapping resource="mapping/RuptureVariation.hbm.xml" />
 
 </session-factory>
