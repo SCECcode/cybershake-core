@@ -5,6 +5,12 @@
 #
 # Description of Changes:
 #
+# 1.4.0 - 30 July 2007
+#   Add table to describe SGT variations, to support studies with
+#     same rupture variations, but different SGT's. This table is
+#     analogous to Rupture Variation Scenario table, but for SGT's instead.
+#   Added table to describe SGT variations with attr_name, attr_value pairs
+#   Add SGT Variation ID as part of primary key in Peak Amplitudes Table
 #
 # 1.3.3 - 21 May 2007
 #   Changed the Points_ID field in the Points table to auto_increment
@@ -308,6 +314,42 @@ foreign key (Rup_Var_Scenario_ID) references
 ) ENGINE=InnoDB;
 
 #
+# Create table that defines a SGT instance. We may
+# want to generate multiple SGT's with differnt characteristics. For example, one may
+# use CVM3.0 and another may use CVM4.0. Because the SGT's currently contain
+# data only at the rupture surfaces we will associate an ERF with each SGT_Variation.
+#
+
+CREATE TABLE SGT_Variation_IDs
+(
+SGT_Variation_ID int unsigned not null auto_increment,
+ERF_ID int unsigned not null,
+SGT_Variation_Name varchar(50) not null,
+SGT_Variation_Description varchar(150),
+primary key (SGT_Variation_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID)
+) ENGINE=InnoDB;
+
+#
+# For a given SGT_Variation, the adjustable parameters are stored for that SGT_Variation
+# in this SGT_Variation_Metadata table as attribute_name, attribute_value, attribute_type
+# tuples. Attribute_type should be a data type identifier (string,integer,float,double)
+# Units can be added optionally.
+#
+
+CREATE TABLE SGT_Variation_Metadata
+(
+SGT_Variation_ID int unsigned not null,
+SGT_Variation_Attr_Name varchar(50) not null,
+SGT_Variation_Attr_Value varchar(50) not null,
+SGT_Variation_Attr_Type varchar(20) not null,
+SGT_Variation_Attr_Units varchar(20),
+primary key (SGT_Variation_ID, SGT_Variation_Attr_Name, SGT_Variation_Attr_Value),
+foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID)
+) ENGINE=InnoDB;
+
+
+#
 # Create an Intensity Measure (IM) table for storing the results of 
 # the CyberShake workflow.
 #
@@ -320,15 +362,17 @@ Source_ID int unsigned not null,
 Rupture_ID int unsigned not null,
 Rup_Var_ID bigint unsigned not null,
 Rup_Var_Scenario_ID int unsigned not null,
+SGT_Variation_ID int unsigned not null,
 IM_Type varchar(50) not null,
 IM_Value double not null,
 Units varchar(50) not null,
-primary key (ERF_ID, Site_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID, IM_Type),
+primary key (ERF_ID, Site_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID, SGT_Variation_ID, IM_Type),
 foreign key (ERF_ID) references ERF_IDs(ERF_ID),
 foreign key (ERF_ID, Source_ID, Rupture_ID) references Ruptures(ERF_ID, Source_ID, Rupture_ID),
 foreign key (Rup_Var_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID),
 foreign key (Site_ID) references CyberShake_Sites(CS_Site_ID),
-foreign key (ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID) references Rupture_Variations(ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID)
+foreign key (ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID) references Rupture_Variations(ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID),
+foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID)
 ) ENGINE=InnoDB;
 
  
