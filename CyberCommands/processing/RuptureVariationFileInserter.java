@@ -52,6 +52,8 @@ public class RuptureVariationFileInserter {
 		
 		totalFilesList = BSAFileUtil.createTotalFileList(saFile);
 		
+		currentSGT_Variation_ID = Integer.parseInt(sgtVariationID);
+		
 		/*performInsertions();*/
 
 
