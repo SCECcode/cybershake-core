@@ -54,6 +54,7 @@ public class CyberLoadamps {
 
 				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " and site: " + cmd.getOptionValue("site"));
 				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"));
+				rvfi.performInsertions();
 			}
 
 		} catch (IOException e) {

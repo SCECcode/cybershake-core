@@ -13,6 +13,7 @@
     	    <key-property name="Source_ID" column="Source_ID"/>
     	    <key-property name="Rupture_ID" column="Rupture_ID"/>
     	    <key-property name="Rup_Var_ID" column="Rup_Var_ID"/>
+    	    <key-property name="SGT_Variation_ID" column="SGT_Variation_ID"/>
     	    <key-property name="Rup_Var_Scenario_ID" column="Rup_Var_Scenario_ID"/>
     	    <key-property name="IM_Type" column="IM_Type"/>
 	    </composite-id>

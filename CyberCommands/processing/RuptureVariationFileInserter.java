@@ -51,12 +51,16 @@ public class RuptureVariationFileInserter {
 		
 		totalFilesList = BSAFileUtil.createTotalFileList(saFile);
 		
+		/*performInsertions();*/
+
+
+	}
+
+	public void performInsertions() {
 		Session sess = sessFactory.openSession();
 		insertAllRuptureVariationFiles(sess);
 		sess.getTransaction().commit();
 		sess.close();
-
-
 	}
 
 	private void insertAllRuptureVariationFiles(Session sess) {

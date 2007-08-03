@@ -12,6 +12,7 @@ public class PeakAmplitudePK implements Serializable {
 	private int Source_ID;
 	private int Rupture_ID;
 	private long Rup_Var_ID;
+	private int SGT_Variation_ID;
 	private int Rup_Var_Scenario_ID;
 	private String IM_Type;
 	
@@ -71,6 +72,7 @@ public class PeakAmplitudePK implements Serializable {
 				Source_ID == papk.getSource_ID() &&
 				Rupture_ID == papk.getRupture_ID() && 
 				Rup_Var_ID == papk.getRup_Var_ID() &&
+				SGT_Variation_ID == papk.getSGT_Variation_ID() &&
 				Rup_Var_Scenario_ID == papk.getRup_Var_Scenario_ID() &&
 				IM_Type.equals(papk.getIM_Type()) );
 	}
@@ -81,6 +83,12 @@ public class PeakAmplitudePK implements Serializable {
 	
 	public String toString() {
 		return "ERF_ID: " + ERF_ID + ", Site_ID: " + Site_ID + ", Source_ID: " + Source_ID + ", Rupture_ID: " + Rupture_ID
-		+ ", Rup_Var_ID: " + Rup_Var_ID + ", Rup_Var_Scenario_ID: " + Rup_Var_Scenario_ID + ", IM_Type: " + IM_Type;
+		+ ", Rup_Var_ID: " + Rup_Var_ID + ", SGT_Variation_ID: " + SGT_Variation_ID + ", Rup_Var_Scenario_ID: " + Rup_Var_Scenario_ID + ", IM_Type: " + IM_Type;
+	}
+	public int getSGT_Variation_ID() {
+		return SGT_Variation_ID;
+	}
+	public void setSGT_Variation_ID(int variation_ID) {
+		SGT_Variation_ID = variation_ID;
 	}
 }
