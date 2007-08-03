@@ -28,9 +28,10 @@ public class RuptureVariationFileInserter {
 	private String siteIDQuery;
 	private SessionFactory sessFactory;
 	private static String siteName;
+	private static int currentSGT_Variation_ID;
 	
 	
-	public RuptureVariationFileInserter(String pathName, String newSiteName) throws IOException {
+	public RuptureVariationFileInserter(String pathName, String newSiteName, String sgtVariationID) throws IOException {
 		sessFactory = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
 		Session retrieveSiteIDSess = sessFactory.openSession();
 		
@@ -158,6 +159,7 @@ public class RuptureVariationFileInserter {
 				paPK.setRupture_ID(currentRupture_ID);
 				paPK.setRup_Var_ID(currRupVar.variationNumber);
 				paPK.setRup_Var_Scenario_ID(currentRup_Var_Scenario_ID);
+				paPK.setSGT_Variation_ID(currentSGT_Variation_ID);
 				paPK.setIM_Type(new String("SA_Period_" + saPeriods.getNextValue()));
 				pa.setPaPK(paPK);
 				pa.setIM_Value(currRupVar.geomAvgComp.periods[periodIter]);

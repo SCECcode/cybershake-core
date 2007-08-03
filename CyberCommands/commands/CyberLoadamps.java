@@ -23,14 +23,18 @@ public class CyberLoadamps {
 	public static void main(String[] args) {
 		Options options = new Options();
 
-		Option p = OptionBuilder.withArgName("directory").hasArg().withDescription("file path with spectral acceleration files").create("p");
-		Option site = OptionBuilder.withArgName("name").hasArg().withDescription("site name for spectral acceleration files").create("site");
+		Option sgt = OptionBuilder.withArgName("ID").hasArg().withDescription("SGT Variation ID - this option is required").create("sgt");
+		Option p = OptionBuilder.withArgName("directory").hasArg().withDescription("file path with spectral acceleration files - this option is required").create("p");
+		Option site = OptionBuilder.withArgName("name").hasArg().withDescription("site name for spectral acceleration files - this option is required").create("site");
 
 		Option help = new Option("help", "print this message");
 
-		options.addOption(p);
+		
 		options.addOption(site);
+		options.addOption(sgt);
+		options.addOption(p);
 		options.addOption(help);
+		
 
 		CommandLineParser parser = new GnuParser();
 
@@ -51,9 +55,14 @@ public class CyberLoadamps {
 					System.out.println("Please use -site to specify a site name");
 					return;
 				}
+				
+				if (!cmd.hasOption("sgt")) {
+					System.out.println("Please use -sgt to specify an SGT Variation ID");
+					return;
+				}
 
-				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " and site: " + cmd.getOptionValue("site"));
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"));
+				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " as site: " + cmd.getOptionValue("site") + "and SGT Variation ID: " + cmd.getOptionValue("sgt"));
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"), cmd.getOptionValue("sgt"));
 				rvfi.performInsertions();
 			}
 
