@@ -1,0 +1,24 @@
+#!/bin/bash
+
+files="$(ls *.jar)"
+filesarray=($files)
+
+#filelist=""
+
+for file in ${filesarray[@]}
+do 
+  filelist=$filelist:$file
+done
+
+for args in $@
+do
+  arglist=$arglist' '$args
+done
+
+echo 'echo '$arglist
+
+java -cp .$filelist commands.CyberLoadamps $arglist #-p /home/scec-00/scottcal/CyberShake2007/results/USC/PeakVals -site USC
+#java -cp .$filelist org.junit.runner.JUnitCore test.junit.databaseconnection.SQLQueryForSiteID
+
+#echo ${filesarray[0]}
+#echo ${filesarray[1]}
