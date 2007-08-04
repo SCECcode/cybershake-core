@@ -1,4 +1,4 @@
-package test.junit.databaseconnection;
+package test.junit.dbconnection.basicdbops;
 
 import org.junit.Test;
 import static org.junit.Assert.assertTrue;
@@ -10,10 +10,10 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
 
-public class IntensityDBConnection {
-	@Test public void intensityDatabaseConnection() {
+public class SurfaceDBConnection {
+	@Test public void surfaceDatabaseConnection() {
 		// 2. Fire up Hibernate        
-	    SessionFactory sf = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
+	    SessionFactory sf = new Configuration().configure("surface.cfg.xml").buildSessionFactory();
 	    
 	    // 3. Save PeakAmplitude instance and close connection
 	    Session sess = sf.openSession();

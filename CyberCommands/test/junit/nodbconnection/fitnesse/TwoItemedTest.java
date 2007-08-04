@@ -1,4 +1,4 @@
-package test.junit.nodbconnection;
+package test.junit.nodbconnection.fitnesse;
 
 import static org.junit.Assert.assertEquals;
 
@@ -23,8 +23,8 @@ public class TwoItemedTest {
 	}
 	
 	@Test public void testParseAndToString() {
-		System.out.println(twoItemed.toString());
-		System.out.println(parseString);
+		/*System.out.println(twoItemed.toString());
+		System.out.println(parseString);*/
 		assertEquals(parseString,twoItemed.toString());
 		
 		twoItemed.multiply();

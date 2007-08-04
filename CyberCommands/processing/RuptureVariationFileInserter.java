@@ -27,15 +27,40 @@ public class RuptureVariationFileInserter {
 	private static ArrayList<File> totalFilesList;
 	private String siteIDQuery;
 	private SessionFactory sessFactory;
-	private static String siteName;
-	private static int currentSGT_Variation_ID;
 	
 	
-	public RuptureVariationFileInserter(String pathName, String newSiteName, String sgtVariationID) throws IOException {
-		sessFactory = new Configuration().configure("intensity.cfg.xml").buildSessionFactory();
+	private String siteName;
+	private String pathName;
+	private String hibernate_cfg_filename = "intensity.cfg.xml";
+	private int currentSGT_Variation_ID;
+	
+	
+	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName) throws IOException {
+		siteName = newSiteName;		
+		pathName = newPathName;
+		
+		if (serverName.equals("intensity")) {
+			hibernate_cfg_filename = "intensity.cfg.xml";
+		}
+		else if (serverName.equals("surface")) {
+			hibernate_cfg_filename = "surface.cfg.xml";
+		}
+		
+		currentSGT_Variation_ID = Integer.parseInt(sgtVariationID);
+
+	}
+
+	private void initFileList() {
+		BSAFileUtil.totalFilenameList = new ArrayList<String>();
+		BSAFileUtil.totalFileList = new ArrayList<File>();
+		File saFile = new File(pathName);
+		totalFilesList = BSAFileUtil.createTotalFileList(saFile);
+	}
+
+	private void retrieveSiteIDFromDB() {
+		initSessionFactory();
 		Session retrieveSiteIDSess = sessFactory.openSession();
 		
-		siteName = newSiteName;
 		siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = '" + siteName + "'";
 		//System.out.println(query);
 		List siteIDList = retrieveSiteIDSess.createSQLQuery(siteIDQuery).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
@@ -43,23 +68,17 @@ public class RuptureVariationFileInserter {
 		siteID = (Integer)siteIDObject;
 		
 		//System.out.println("Site_ID for " + siteName + ": " + siteID);
-		
 		retrieveSiteIDSess.close();
-		
-		BSAFileUtil.totalFilenameList = new ArrayList<String>();
-		BSAFileUtil.totalFileList = new ArrayList<File>();
-		File saFile = new File(pathName);
-		
-		totalFilesList = BSAFileUtil.createTotalFileList(saFile);
-		
-		currentSGT_Variation_ID = Integer.parseInt(sgtVariationID);
-		
-		/*performInsertions();*/
+	}
 
-
+	private void initSessionFactory() {
+		sessFactory = new Configuration().configure(hibernate_cfg_filename).buildSessionFactory();
 	}
 
 	public void performInsertions() {
+		retrieveSiteIDFromDB();
+		initFileList();
+		
 		Session sess = sessFactory.openSession();
 		insertAllRuptureVariationFiles(sess);
 		sess.getTransaction().commit();
@@ -92,7 +111,7 @@ public class RuptureVariationFileInserter {
 		filelistwriter.newLine();
 	}
 
-	private static void prepAndExecuteSingleRuptureVariationFileInsertion(Session sess, File bsaFile) {
+	private void prepAndExecuteSingleRuptureVariationFileInsertion(Session sess, File bsaFile) {
 		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(bsaFile, siteName);
 		
 		//printEastandNorthComponents(saRupture);
@@ -105,7 +124,7 @@ public class RuptureVariationFileInserter {
 		insertRupture(saRuptureWithSingleRupVar, sess);
 	}
 
-	private static void insertRupture(SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar, Session sess) {
+	private void insertRupture(SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar, Session sess) {
 
 		SAPeriods saPeriods = new SAPeriods();
 
@@ -191,5 +210,29 @@ public class RuptureVariationFileInserter {
 				}*/
 			}
 		}
+	}
+
+	public int getCurrentSGT_Variation_ID() {
+		return currentSGT_Variation_ID;
+	}
+
+	public void setCurrentSGT_Variation_ID(int currentSGT_Variation_ID) {
+		this.currentSGT_Variation_ID = currentSGT_Variation_ID;
+	}
+
+	public  String getSiteName() {
+		return siteName;
+	}
+
+	public void setSiteName(String siteName) {
+		this.siteName = siteName;
+	}
+
+	public String getPathName() {
+		return pathName;
+	}
+
+	public void setPathName(String pathName) {
+		this.pathName = pathName;
 	}
 }

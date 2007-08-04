@@ -1,4 +1,4 @@
-package test.junit.nodbconnection;
+package test.junit.nodbconnection.data;
 
 import static org.junit.Assert.assertEquals;
 import junit.framework.JUnit4TestAdapter;

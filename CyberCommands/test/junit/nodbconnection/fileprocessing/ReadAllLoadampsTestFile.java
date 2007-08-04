@@ -1,4 +1,4 @@
-package test.junit.nodbconnection;
+package test.junit.nodbconnection.fileprocessing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -19,7 +19,8 @@ import util.BSAFileUtil;
 public class ReadAllLoadampsTestFile {
 
 	private static ArrayList<File> totalFileList;
-	private static boolean showOutputForPeriodValues = true;
+	private static boolean showOutputForPeriodValues = false;
+	private static boolean showOutputForSourceIDAndRuptureID = false;
 
 	@BeforeClass public static void runBeforeAllTests() {
 		totalFileList = BSAFileUtil.createTotalFileList(new File("safiles/loadampstest"));
@@ -28,7 +29,9 @@ public class ReadAllLoadampsTestFile {
 	@Test public void loadAllSARuptureVariations() {
 		for (int i=0; i<totalFileList.size(); i++) {
 			SARuptureFromRuptureVariationFile saRupture = new SARuptureFromRuptureVariationFile(totalFileList.get(i),"USC");
-			System.out.println("Source_ID: " + saRupture.getSourceID() + ", Rupture_ID: " + saRupture.getRuptureID());
+			if (showOutputForSourceIDAndRuptureID) {
+					System.out.println("Source_ID: " + saRupture.getSourceID() + ", Rupture_ID: " + saRupture.getRuptureID());	
+			}
 			eastAndNorthComponents(saRupture);
 			saRupture.computeAllGeomAvgComponents();
 			geomAvgComponents(saRupture);

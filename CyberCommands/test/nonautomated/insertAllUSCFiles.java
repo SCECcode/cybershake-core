@@ -1,4 +1,4 @@
-package test.nonjunit;
+package test.nonautomated;
 
 import java.io.BufferedWriter;
 import java.io.File;

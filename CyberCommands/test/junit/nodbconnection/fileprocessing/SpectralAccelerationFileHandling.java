@@ -1,4 +1,4 @@
-package test.junit.nodbconnection;
+package test.junit.nodbconnection.fileprocessing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

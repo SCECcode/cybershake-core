@@ -11,6 +11,8 @@ public class BSAFileUtil {
 	//public static File[] totalFileArray;
 	public static ArrayList<File> totalFileList;
 	
+	public static boolean isInDebugMode = false;
+	
 	public static ArrayList<File> createTotalFileList(File saFile) {
 		totalFilenameList = new ArrayList<String>();
 		totalFileList = new ArrayList<File>();
@@ -22,25 +24,44 @@ public class BSAFileUtil {
 	private static void createTotalFileListHelper(File saFile) {
 		File[] safilesList = saFile.listFiles(new BSAFilenameFilter());
 		File[] sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
-		if (!saFile.getName().equals("CVS")) {
-			//System.out.println("Path: " + saFile.getPath());
+		
+		if (isInDebugMode) {
+			System.out.println("Printing all files in " + saFile.getName());
+			File[] totalSAFilesList = saFile.listFiles();
+			for (int i=0; i<totalSAFilesList.length; i++) {
+				System.out.println("totalSAFilesList[" + i + "]: " + totalSAFilesList[i].getName()); 
+			}
+		}
+		
+		if (isInDebugMode) {
+			for (int i=0; i < safilesList.length; i++) {
+				System.out.println("safilesList[" + i + "]: " + safilesList[i].getName());
+			}			
+		}
+		
+		if (isInDebugMode) {
+			for (int i=0; i < sadirsList.length; i++) {
+				System.out.println("sadirsList[" + i + "]: " + sadirsList[i].getName());
+			}			
+		}
+
+		
+		if (!saFile.getName().equals("CVS") && isInDebugMode) {
+			System.out.println("Path: " + saFile.getPath());
 		}
 		
 		if (pathLog == null && !saFile.getName().equals("CVS")) {
 			pathLog = saFile.getPath() + " ";
 		}
-		else if (!saFile.getName().equals("CVS")) {
+		else if (pathLog != null && !saFile.getName().equals("CVS")) {
 			pathLog += saFile.getPath() + " ";
 		}
-/*		if (totalFileList == null) {
-			totalFileList = new ArrayList<File>();
-		}
-		else {
-			System.out.println("BSAFileUtil.totalFileList is NOT null");
-		}*/
+		
 		totalFileList.addAll(Arrays.asList(safilesList));
 		for (int filesIndex=0; filesIndex < safilesList.length; filesIndex++) {
-			/*System.out.println("\tFilename: " + safilesList[filesIndex].getName());*/
+			if (isInDebugMode) {
+				System.out.println("\tFilename: " + safilesList[filesIndex].getName());
+			}
 			totalFilenameList.add(safilesList[filesIndex].getName());
 		}
 		
@@ -67,17 +88,30 @@ public class BSAFileUtil {
 	private static int getIDFromTokens(File file, int indexToToken, String siteName) {
 
 		String filename = file.getName();
-		//System.out.println("BSAFileUtil::getIDFromTokens: filename: " + filename);
+		if (isInDebugMode) {
+			System.out.println("BSAFileUtil::getIDFromTokens: filename: " + filename);
+		}
 		int lastIndex = filename.lastIndexOf(siteName);
-		//System.out.println("BSAFileUtil::getIDFromTokens: lastIndex: " + lastIndex);
+		
+		if (isInDebugMode) {
+			System.out.println("BSAFileUtil::getIDFromTokens: lastIndex: " + lastIndex);
+		}
 
 		String endName = filename.substring(lastIndex+siteName.length()+1);
-		// System.out.println("endName: " + endName);
+		
+		if (isInDebugMode) {
+			System.out.println("endName: " + endName);
+		}
+		
 
 		String[] tokens = endName.split("_|.bsa");
-		/*for (int i=0; i<tokens.length; i++) {
-			System.out.println("token " + i + ": " + tokens[i]);
-		}*/
+
+		if (isInDebugMode) {
+			for (int i=0; i<tokens.length; i++) {
+				System.out.println("token " + i + ": " + tokens[i]);
+			}			
+		}
+
 
 		return Integer.parseInt(tokens[indexToToken]);
 		
@@ -93,6 +127,14 @@ public class BSAFileUtil {
 
 	public static int getRupVarIDFromRuptureVariationFile(File file, String siteName) {
 		return getIDFromTokens(file, 2, siteName);
+	}
+
+	public static boolean isInDebugMode() {
+		return isInDebugMode;
+	}
+
+	public static void setInDebugMode(boolean isInDebugMode) {
+		BSAFileUtil.isInDebugMode = isInDebugMode;
 	}
 
 

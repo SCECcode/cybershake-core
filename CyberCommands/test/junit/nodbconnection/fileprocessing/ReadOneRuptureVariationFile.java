@@ -1,4 +1,4 @@
-package test.junit.nodbconnection;
+package test.junit.nodbconnection.fileprocessing;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -10,11 +10,11 @@ import junit.framework.JUnit4TestAdapter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import data.SARuptureFromFile;
+import data.SARuptureFromRuptureVariationFile;
 import data.SARuptureVariation;
 
-public class ReadOneRuptureFile {
-	private static SARuptureFromFile saRupture;
+public class ReadOneRuptureVariationFile {
+	private static SARuptureFromRuptureVariationFile saRupture;
 	private static boolean showOutputForPeriodValues=false;
 
 	/**
@@ -22,7 +22,7 @@ public class ReadOneRuptureFile {
 	 */
 	@BeforeClass public static void runBeforeAllTests() {
 		//saRupture = new SARuptureFromFile(floats);
-		saRupture = new SARuptureFromFile(new File("safiles/norupvarids/PeakVals_allUSC_100_0.bsa"), "USC");
+		saRupture = new SARuptureFromRuptureVariationFile(new File("safiles/loadampstest/PeakVals_USC_104_12_16.bsa"), "USC");
 		//printEastandNorthComponents();
 		saRupture.computeAllGeomAvgComponents();
 		//printGeomAvgComponents();
@@ -30,13 +30,13 @@ public class ReadOneRuptureFile {
 	}
 
 	@Test public void testIDsFromFilename() {
-		assertEquals(100,saRupture.getSourceID());
-		assertEquals(0,saRupture.getRuptureID());
+		assertEquals(104,saRupture.getSourceID());
+		assertEquals(12,saRupture.getRuptureID());
 	}
 
 	@Test public void geomAvgComponents() {
 		//System.out.println("number of rupture variations: " + saRupture.rupVars.size());
-		/*assertEquals(8,saRupture.rupVars.size());*/
+		assertEquals(1,saRupture.rupVars.size());
 		for (int rupVarIter=0;rupVarIter<saRupture.rupVars.size();rupVarIter++) {
 			//System.out.println("rupVarIter: " + rupVarIter);
 			SARuptureVariation currRupVar = saRupture.rupVars.get(rupVarIter);
@@ -46,6 +46,7 @@ public class ReadOneRuptureFile {
 							+ ", Geometrically Averaged Component, Period " + (periodIter+1) + " : " 
 							+ currRupVar.geomAvgComp.periods[periodIter] );
 					assertTrue(currRupVar.geomAvgComp.periods[periodIter] > 0);
+					assertEquals(16, currRupVar.variationNumber);
 				}
 			}
 
@@ -54,7 +55,7 @@ public class ReadOneRuptureFile {
 
 	@Test public void eastAndNorthComponents() {
 		/*System.out.println("number of rupture variations: " + saRupture.rupVars.size());*/
-		assertEquals(8,saRupture.rupVars.size());
+		assertEquals(1,saRupture.rupVars.size());
 		for (int rupVarIter=0;rupVarIter<saRupture.rupVars.size();rupVarIter++) {
 			//System.out.println("rupVarIter: " + rupVarIter);
 			SARuptureVariation currRupVar = saRupture.rupVars.get(rupVarIter);
@@ -72,6 +73,7 @@ public class ReadOneRuptureFile {
 							+ ", North Component, Period " + (periodIter+1) + " : " 
 							+ currRupVar.northComp.periods[periodIter] );
 					assertTrue(currRupVar.northComp.periods[periodIter] > 0);
+					assertEquals(16, currRupVar.variationNumber);
 				}
 			}
 
@@ -79,6 +81,6 @@ public class ReadOneRuptureFile {
 	}
 
 	public static junit.framework.Test suite() {
-		return new JUnit4TestAdapter (ReadOneRuptureFile.class);
+		return new JUnit4TestAdapter (ReadOneRuptureVariationFile.class);
 	}
 }
