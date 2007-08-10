@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
 "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
-<!-- Generated Aug 9, 2007 12:13:49 AM by Hibernate Tools 3.2.0.b9 -->
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
 <hibernate-mapping>
     <class name="mapping.CyberShakeSites" table="CyberShake_Sites" catalog="CyberShake">
         <comment></comment>
@@ -29,6 +29,14 @@
                 <comment></comment>
             </column>
         </property>
+        <set name="cyberShakeSiteRuptureses" inverse="true">
+            <key>
+                <column name="CS_Site_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.CyberShakeSiteRuptures" />
+        </set>
         <set name="cyberShakeSiteRegionses" inverse="true">
             <key>
                 <column name="CS_Site_ID" not-null="true">
@@ -36,6 +44,14 @@
                 </column>
             </key>
             <one-to-many class="mapping.CyberShakeSiteRegions" />
+        </set>
+        <set name="peakAmplitudeses" inverse="true">
+            <key>
+                <column name="Site_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.PeakAmplitudes" />
         </set>
     </class>
 </hibernate-mapping>

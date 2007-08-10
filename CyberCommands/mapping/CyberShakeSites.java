@@ -1,6 +1,6 @@
 package mapping;
 
-// Generated Aug 9, 2007 12:13:49 AM by Hibernate Tools 3.2.0.b9
+// Generated Aug 9, 2007 9:53:47 PM by Hibernate Tools 3.2.0.b9
 
 import java.util.HashSet;
 import java.util.Set;
@@ -20,7 +20,13 @@ public class CyberShakeSites implements java.io.Serializable {
 
 	private double csSiteLon;
 
+	private Set<CyberShakeSiteRuptures> cyberShakeSiteRuptureses = new HashSet<CyberShakeSiteRuptures>(
+			0);
+
 	private Set<CyberShakeSiteRegions> cyberShakeSiteRegionses = new HashSet<CyberShakeSiteRegions>(
+			0);
+
+	private Set<PeakAmplitudes> peakAmplitudeses = new HashSet<PeakAmplitudes>(
 			0);
 
 	public CyberShakeSites() {
@@ -37,13 +43,17 @@ public class CyberShakeSites implements java.io.Serializable {
 
 	public CyberShakeSites(int csSiteId, String csSiteName, String csShortName,
 			double csSiteLat, double csSiteLon,
-			Set<CyberShakeSiteRegions> cyberShakeSiteRegionses) {
+			Set<CyberShakeSiteRuptures> cyberShakeSiteRuptureses,
+			Set<CyberShakeSiteRegions> cyberShakeSiteRegionses,
+			Set<PeakAmplitudes> peakAmplitudeses) {
 		this.csSiteId = csSiteId;
 		this.csSiteName = csSiteName;
 		this.csShortName = csShortName;
 		this.csSiteLat = csSiteLat;
 		this.csSiteLon = csSiteLon;
+		this.cyberShakeSiteRuptureses = cyberShakeSiteRuptureses;
 		this.cyberShakeSiteRegionses = cyberShakeSiteRegionses;
+		this.peakAmplitudeses = peakAmplitudeses;
 	}
 
 	public int getCsSiteId() {
@@ -86,6 +96,15 @@ public class CyberShakeSites implements java.io.Serializable {
 		this.csSiteLon = csSiteLon;
 	}
 
+	public Set<CyberShakeSiteRuptures> getCyberShakeSiteRuptureses() {
+		return this.cyberShakeSiteRuptureses;
+	}
+
+	public void setCyberShakeSiteRuptureses(
+			Set<CyberShakeSiteRuptures> cyberShakeSiteRuptureses) {
+		this.cyberShakeSiteRuptureses = cyberShakeSiteRuptureses;
+	}
+
 	public Set<CyberShakeSiteRegions> getCyberShakeSiteRegionses() {
 		return this.cyberShakeSiteRegionses;
 	}
@@ -93,6 +112,14 @@ public class CyberShakeSites implements java.io.Serializable {
 	public void setCyberShakeSiteRegionses(
 			Set<CyberShakeSiteRegions> cyberShakeSiteRegionses) {
 		this.cyberShakeSiteRegionses = cyberShakeSiteRegionses;
+	}
+
+	public Set<PeakAmplitudes> getPeakAmplitudeses() {
+		return this.peakAmplitudeses;
+	}
+
+	public void setPeakAmplitudeses(Set<PeakAmplitudes> peakAmplitudeses) {
+		this.peakAmplitudeses = peakAmplitudeses;
 	}
 
 }

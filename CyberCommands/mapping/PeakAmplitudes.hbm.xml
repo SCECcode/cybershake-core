@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
 "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
-<!-- Generated Aug 9, 2007 12:19:41 AM by Hibernate Tools 3.2.0.b9 -->
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
 <hibernate-mapping>
     <class name="mapping.PeakAmplitudes" table="PeakAmplitudes" catalog="CyberShake">
         <comment></comment>
@@ -31,6 +31,54 @@
                 <column name="IM_Type" length="50" />
             </key-property>
         </composite-id>
+        <many-to-one name="ruptureVariations" class="mapping.RuptureVariations" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Source_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Rupture_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Rup_Var_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Rup_Var_Scenario_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="ruptureVariationScenarioIds" class="mapping.RuptureVariationScenarioIds" update="false" insert="false" fetch="select">
+            <column name="Rup_Var_Scenario_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="erfIds" class="mapping.ErfIds" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="sgtVariationIds" class="mapping.SgtVariationIds" update="false" insert="false" fetch="select">
+            <column name="SGT_Variation_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="ruptures" class="mapping.Ruptures" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Source_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Rupture_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="cyberShakeSites" class="mapping.CyberShakeSites" update="false" insert="false" fetch="select">
+            <column name="Site_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
         <property name="imValue" type="double">
             <column name="IM_Value" precision="22" scale="0" not-null="true">
                 <comment></comment>
