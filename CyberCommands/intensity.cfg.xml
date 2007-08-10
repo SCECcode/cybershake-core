@@ -22,6 +22,9 @@
 	<!-- mapping files -->
     <mapping resource="mapping/PeakAmplitude.hbm.xml" />
     <mapping resource="mapping/RuptureVariation.hbm.xml" />
+    <mapping resource="mapping/CyberShakeSiteRegions.hbm.xml" />
+    <mapping resource="mapping/CyberShakeSites.hbm.xml" />
+    
 
 </session-factory>
 </hibernate-configuration>

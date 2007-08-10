@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 12:19:41 AM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.PeakAmplitudes" table="PeakAmplitudes" catalog="CyberShake">
+        <comment></comment>
+        <composite-id name="id" class="mapping.PeakAmplitudesId">
+            <key-property name="erfId" type="int">
+                <column name="ERF_ID" />
+            </key-property>
+            <key-property name="siteId" type="int">
+                <column name="Site_ID" />
+            </key-property>
+            <key-property name="sourceId" type="int">
+                <column name="Source_ID" />
+            </key-property>
+            <key-property name="ruptureId" type="int">
+                <column name="Rupture_ID" />
+            </key-property>
+            <key-property name="rupVarId" type="long">
+                <column name="Rup_Var_ID" />
+            </key-property>
+            <key-property name="rupVarScenarioId" type="int">
+                <column name="Rup_Var_Scenario_ID" />
+            </key-property>
+            <key-property name="sgtVariationId" type="int">
+                <column name="SGT_Variation_ID" />
+            </key-property>
+            <key-property name="imType" type="string">
+                <column name="IM_Type" length="50" />
+            </key-property>
+        </composite-id>
+        <property name="imValue" type="double">
+            <column name="IM_Value" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="units" type="string">
+            <column name="Units" length="50" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>

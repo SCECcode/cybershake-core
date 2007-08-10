@@ -6,6 +6,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
@@ -15,6 +16,11 @@ import org.apache.commons.cli.UnrecognizedOptionException;
 import processing.RuptureVariationFileInserter;
 
 public class CyberLoadamps {
+
+	private static final String NO_SGT_OPTION_MESSAGE = "Please use -sgt to specify an SGT Variation ID";
+	private static final String NO_SITE_OPTION_MESSAGE = "Please use -site to specify a site name";
+	private static final String NO_P_OPTION_MESSAGE = "Please use -p to set the path with the spectral acceleration files";
+	private static final String NO_SERVER_OPTION_MESSAGE = "Please use -server to specify a database server";
 
 	/**
 	 * @param args
@@ -45,21 +51,26 @@ public class CyberLoadamps {
 
 			if (cmd.hasOption("help")) {
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp( "CyberLoadamps", options );	
+				formatter.printHelp( "CyberLoadamps", options, true );	
 			}
 			else {
 				if (!cmd.hasOption("p")) {
-					System.out.println("Please use -p to set the path with the spectral acceleration files");
+					System.out.println(NO_P_OPTION_MESSAGE);
 					return;
 				}
 
 				if (!cmd.hasOption("site")) {
-					System.out.println("Please use -site to specify a site name");
+					System.out.println(NO_SITE_OPTION_MESSAGE);
 					return;
 				}
 				
 				if (!cmd.hasOption("sgt")) {
-					System.out.println("Please use -sgt to specify an SGT Variation ID");
+					System.out.println(NO_SGT_OPTION_MESSAGE);
+					return;
+				}
+				
+				if (!cmd.hasOption("server")) {
+					System.out.println(NO_SERVER_OPTION_MESSAGE);
 					return;
 				}
 
@@ -74,13 +85,29 @@ public class CyberLoadamps {
 			System.out.println(e.getMessage());
 			return;
 		} catch (ParseException e) {
-			e.printStackTrace();
+			if (e instanceof  MissingArgumentException) {
+				System.out.println(e.getMessage());
+			}
+			else {
+				e.printStackTrace();
+			}
 		}
-		
+	}
 
+	public static String getNO_P_OPTION_MESSAGE() {
+		return NO_P_OPTION_MESSAGE;
+	}
 
+	public static String getNO_SGT_OPTION_MESSAGE() {
+		return NO_SGT_OPTION_MESSAGE;
+	}
 
+	public static String getNO_SITE_OPTION_MESSAGE() {
+		return NO_SITE_OPTION_MESSAGE;
+	}
 
+	public static String getNO_SERVER_OPTION_MESSAGE() {
+		return NO_SERVER_OPTION_MESSAGE;
 	}
 
 }
