@@ -20,6 +20,8 @@ import org.hibernate.criterion.Restrictions;
 
 public class CyberRegion {
 
+	private static final String ALL_REGIONS_QUERY = "from CyberShakeSiteRegions";
+	private static final String REGION_USING_SITE_NAME_QUERY = "from CyberShakeSiteRegions as region where region.cyberShakeSites.csShortName = ?";
 	private static final String NO_SITES_SPECIFIED_MESSAGE = "Please use one of the -all, -site, or -id options to specifiy one site or all sites";
 	private static final String NO_SERVER_OPTION_MESSAGE = "Please use -server to specify a database server";
 
@@ -114,7 +116,7 @@ public class CyberRegion {
 	}
 
 	private static void getAllRegions(Session sess) {
-		List regions = sess.createQuery("from CyberShakeSiteRegions").list();
+		List regions = sess.createQuery(ALL_REGIONS_QUERY).list();
 		for (int i=0;i<regions.size();i++) {
 			CyberShakeSiteRegions region = (CyberShakeSiteRegions) regions.get(i);
 			System.out.println(region);
@@ -124,7 +126,7 @@ public class CyberRegion {
 
 	private static void getRegionUsingSiteName(CommandLine cmd, Session sess) {
 		List regions = sess.
-		createQuery("from CyberShakeSiteRegions as region where region.cyberShakeSites.csShortName = ?").
+		createQuery(REGION_USING_SITE_NAME_QUERY).
 		setString(0,cmd.getOptionValue("site")).
 		list();
 		
@@ -156,5 +158,13 @@ public class CyberRegion {
 
 	public static String getNO_SITES_SPECIFIED_MESSAGE() {
 		return NO_SITES_SPECIFIED_MESSAGE;
+	}
+
+	public static String getALL_REGIONS_QUERY() {
+		return ALL_REGIONS_QUERY;
+	}
+
+	public static String getREGION_USING_SITE_NAME_QUERY() {
+		return REGION_USING_SITE_NAME_QUERY;
 	}
 }
