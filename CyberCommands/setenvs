@@ -1,0 +1,6 @@
+#!/bin/bash
+
+export CYBERCOMMANDS_ROOT=${PWD}
+export PATH=${PATH}:${PWD}
+
+

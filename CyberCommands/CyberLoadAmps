@@ -7,4 +7,4 @@ done
 
 #echo 'echo '$arglist
 
-java -jar cybercommands.jar CyberLoadamps $arglist
+java -jar $CYBERCOMMANDS_ROOT/cybercommands.jar CyberLoadamps $arglist
