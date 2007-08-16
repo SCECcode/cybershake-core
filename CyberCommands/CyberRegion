@@ -1,0 +1,10 @@
+#!/bin/bash
+
+for args in $@
+do
+  arglist=$arglist' '$args
+done
+
+#echo 'echo '$arglist
+
+java -jar cybercommands.jar CyberRegion $arglist

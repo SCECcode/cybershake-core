@@ -12,7 +12,7 @@ public class CommandRouter {
 		}
 	}
 
-	private static String[] createCmdArgs(String[] args) {
+	public static String[] createCmdArgs(String[] args) {
 		String[] cmdArgs = new String[args.length-1];
 		int j=0;
 		for (int i=1;i<args.length;i++) {
