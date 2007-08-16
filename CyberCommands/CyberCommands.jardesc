@@ -4,7 +4,7 @@
 <options buildIfNeeded="true" compress="true" descriptionLocation="/CyberCommands/CyberCommands.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
 <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
 <selectedProjects/>
-<manifest generateManifest="false" manifestLocation="/CyberCommands/CyberCommands.mf" manifestVersion="1.0" reuseManifest="true" saveManifest="true" usesManifest="true">
+<manifest generateManifest="false" mainClassHandleIdentifier="=CyberCommands/&lt;commands{CommandRouter.java[CommandRouter" manifestLocation="/CyberCommands/CyberCommands.mf" manifestVersion="1.0" reuseManifest="true" saveManifest="true" usesManifest="true">
 <sealing sealJar="false">
 <packagesToSeal/>
 <packagesToUnSeal/>
@@ -16,6 +16,7 @@
 <javaElement handleIdentifier="=CyberCommands/&lt;test.commands"/>
 <file path="/CyberCommands/index.html"/>
 <javaElement handleIdentifier="=CyberCommands/&lt;test.junit.nodbconnection.data"/>
+<file path="/CyberCommands/CyberRegion.jardesc"/>
 <file path="/CyberCommands/CyberCommands.mf"/>
 <file path="/CyberCommands/CyberLoadAmps.jardesc"/>
 <file path="/CyberCommands/log4j.properties"/>
@@ -23,6 +24,7 @@
 <javaElement handleIdentifier="=CyberCommands/&lt;test.incompletetest"/>
 <file path="/CyberCommands/hibernate.reveng.foralltables.xml"/>
 <file path="/CyberCommands/intensity.cfg.old.xml"/>
+<file path="/CyberCommands/CyberRegion.mf"/>
 <javaElement handleIdentifier="=CyberCommands/&lt;safiles.traversetest.deeperpath"/>
 <javaElement handleIdentifier="=CyberCommands/&lt;test.fitnesse"/>
 <file path="/CyberCommands/hibernate.cfg.xml"/>
