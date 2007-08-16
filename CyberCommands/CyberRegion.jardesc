@@ -16,6 +16,7 @@
 <javaElement handleIdentifier="=CyberCommands/&lt;test.commands"/>
 <file path="/CyberCommands/index.html"/>
 <javaElement handleIdentifier="=CyberCommands/&lt;test.junit.nodbconnection.data"/>
+<file path="/CyberCommands/CyberRegion.jardesc"/>
 <file path="/CyberCommands/CyberCommands.mf"/>
 <file path="/CyberCommands/CyberLoadAmps.jardesc"/>
 <file path="/CyberCommands/log4j.properties"/>
