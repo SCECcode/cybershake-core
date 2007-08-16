@@ -3,28 +3,19 @@ package test.nonautomated;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.FilenameFilter;
 import java.io.IOException;
-import java.util.ArrayList;
 
 import mapping.PeakAmplitude;
 import mapping.PeakAmplitudePK;
-import mapping.RuptureVariation;
-import mapping.RuptureVariationPK;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
-import org.jboss.util.file.FilenameSuffixFilter;
 
 import util.BSAFilenameFilter;
-import util.BSAFileUtil;
-import util.SABinary2Float;
-import util.SwapBytes;
-import data.SARuptureVariation;
 import data.SAPeriods;
 import data.SARuptureFromFile;
+import data.SARuptureVariation;
 
 public class insertAllUSCFiles {
 
@@ -152,6 +143,7 @@ public class insertAllUSCFiles {
 
 	}
 
+	@SuppressWarnings("unused")
 	private static void printGeomAvgComponents(SARuptureFromFile saRupture) {
 		System.out.println("number of rupture variations: " + saRupture.rupVars.size());
 		for (int rupVarIter=0;rupVarIter<saRupture.rupVars.size();rupVarIter++) {
@@ -166,6 +158,7 @@ public class insertAllUSCFiles {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static void printEastandNorthComponents(SARuptureFromFile saRupture) {
 		System.out.println("number of rupture variations: " + saRupture.rupVars.size());
 		for (int rupVarIter=0;rupVarIter<saRupture.rupVars.size();rupVarIter++) {

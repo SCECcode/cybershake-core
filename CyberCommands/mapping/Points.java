@@ -7,6 +7,11 @@ package mapping;
  */
 public class Points implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -8560105081734393786L;
+
 	private long pointId;
 
 	private ErfIds erfIds;

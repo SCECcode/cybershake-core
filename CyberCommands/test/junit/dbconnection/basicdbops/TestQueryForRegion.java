@@ -1,16 +1,17 @@
 package test.junit.dbconnection.basicdbops;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Iterator;
 import java.util.List;
 
+import junit.framework.JUnit4TestAdapter;
 import mapping.CyberShakeSiteRegions;
 import mapping.CyberShakeSites;
 
-import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -18,8 +19,6 @@ import org.hibernate.criterion.Restrictions;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import junit.framework.JUnit4TestAdapter;
 
 public class TestQueryForRegion {
 	

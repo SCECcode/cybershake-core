@@ -7,6 +7,11 @@ package mapping;
  */
 public class ErfMetadataId implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -1717992858025693316L;
+
 	private int erfId;
 
 	private String erfAttrName;

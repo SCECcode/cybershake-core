@@ -7,14 +7,13 @@ import mapping.PeakAmplitudePK;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 
 import util.SABinary2Float;
 import util.SwapBytes;
-import data.SARuptureVariation;
 import data.SAPeriods;
 import data.SARuptureFromFile;
+import data.SARuptureVariation;
 
 public class insertOneFile {
 
@@ -104,6 +103,7 @@ public class insertOneFile {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static void printEastandNorthComponents(SARuptureFromFile saRupture) {
 		System.out.println("number of rupture variations: " + saRupture.rupVars.size());
 		for (int rupVarIter=0;rupVarIter<saRupture.rupVars.size();rupVarIter++) {

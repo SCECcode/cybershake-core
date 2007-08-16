@@ -7,6 +7,10 @@ package mapping;
  */
 public class OpenShaCyberShakeInterfaces implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 913897347171870797L;
 	private OpenShaCyberShakeInterfacesId id;
 
 	public OpenShaCyberShakeInterfaces() {

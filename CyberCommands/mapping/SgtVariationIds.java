@@ -10,6 +10,11 @@ import java.util.Set;
  */
 public class SgtVariationIds implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -450501441820678225L;
+
 	private int sgtVariationId;
 
 	private ErfIds erfIds;

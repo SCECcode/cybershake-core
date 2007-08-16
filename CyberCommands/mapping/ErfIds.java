@@ -10,6 +10,11 @@ import java.util.Set;
  */
 public class ErfIds implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4160463905166788058L;
+
 	private int erfId;
 
 	private String erfName;

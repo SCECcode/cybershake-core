@@ -7,6 +7,11 @@ package mapping;
  */
 public class PeakAmplitudesId implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 3227675451911077358L;
+
 	private int erfId;
 
 	private int siteId;

@@ -1,10 +1,8 @@
 package commands;
 
-import java.util.Iterator;
 import java.util.List;
 
 import mapping.CyberShakeSiteRegions;
-import mapping.CyberShakeSites;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;

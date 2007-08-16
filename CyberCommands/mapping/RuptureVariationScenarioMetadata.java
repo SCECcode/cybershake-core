@@ -7,6 +7,11 @@ package mapping;
  */
 public class RuptureVariationScenarioMetadata implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7162027495072042405L;
+
 	private RuptureVariationScenarioMetadataId id;
 
 	private RuptureVariationScenarioIds ruptureVariationScenarioIds;

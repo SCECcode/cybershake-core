@@ -7,6 +7,11 @@ package mapping;
  */
 public class RuptureVariationsId implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5564027714158735542L;
+
 	private int erfId;
 
 	private int sourceId;

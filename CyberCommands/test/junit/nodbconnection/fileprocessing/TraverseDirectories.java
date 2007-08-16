@@ -4,15 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.util.ArrayList;
+
 import junit.framework.JUnit4TestAdapter;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import util.BSAFileUtil;
-import util.BSAFilenameFilter;
-import util.NonCVSDirFileFilter;
 
 public class TraverseDirectories {
 	

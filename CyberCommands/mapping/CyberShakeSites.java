@@ -10,6 +10,11 @@ import java.util.Set;
  */
 public class CyberShakeSites implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -6805059051797651454L;
+
 	private int csSiteId;
 
 	private String csSiteName;

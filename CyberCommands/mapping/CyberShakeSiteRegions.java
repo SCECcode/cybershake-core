@@ -10,6 +10,11 @@ import java.util.Set;
  */
 public class CyberShakeSiteRegions implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5820460795145080547L;
+
 	private CyberShakeSiteRegionsId id;
 
 	private ErfIds erfIds;

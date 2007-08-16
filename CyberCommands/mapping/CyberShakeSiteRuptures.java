@@ -7,6 +7,11 @@ package mapping;
  */
 public class CyberShakeSiteRuptures implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 4677785421206339132L;
+
 	private CyberShakeSiteRupturesId id;
 
 	private CyberShakeSiteRegions cyberShakeSiteRegions;

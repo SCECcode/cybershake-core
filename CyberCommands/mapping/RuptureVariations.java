@@ -10,6 +10,11 @@ import java.util.Set;
  */
 public class RuptureVariations implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -7958570295601555096L;
+
 	private RuptureVariationsId id;
 
 	private RuptureVariationScenarioIds ruptureVariationScenarioIds;

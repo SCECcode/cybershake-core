@@ -7,6 +7,11 @@ package mapping;
  */
 public class SgtVariationMetadata implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1639938845227854923L;
+
 	private SgtVariationMetadataId id;
 
 	private SgtVariationIds sgtVariationIds;

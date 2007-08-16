@@ -1,13 +1,11 @@
 package test.junit.dbconnection.basicdbops;
 
 import junit.framework.JUnit4TestAdapter;
-import junit.framework.TestCase;
 import mapping.PeakAmplitude;
 import mapping.PeakAmplitudePK;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.junit.Test;
 

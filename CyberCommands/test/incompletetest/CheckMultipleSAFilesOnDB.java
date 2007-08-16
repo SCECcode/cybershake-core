@@ -1,14 +1,11 @@
 package test.incompletetest;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import junit.framework.JUnit4TestAdapter;
 import mapping.PeakAmplitude;
 import mapping.PeakAmplitudePK;
 
@@ -22,11 +19,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import util.BSAFileUtil;
-
 import data.SAPeriods;
 import data.SARuptureFromRuptureVariationFile;
-
-import junit.framework.JUnit4TestAdapter;
 
 public class CheckMultipleSAFilesOnDB {
 	

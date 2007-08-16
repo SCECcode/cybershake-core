@@ -100,6 +100,7 @@ public class SwapBytes {
 	}
 
 	private static void makeDoubles(ArrayList<byte[]> swappedByteArray, ArrayList<Float> floats) {
+		@SuppressWarnings("unused")
 		ByteArrayInputStream byteIn;
 		DataInputStream dataIn;
 		for (byte[] b: swappedByteArray) {

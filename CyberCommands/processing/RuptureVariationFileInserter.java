@@ -9,12 +9,10 @@ import java.util.List;
 import mapping.PeakAmplitude;
 import mapping.PeakAmplitudePK;
 
-import org.hibernate.Criteria;
 import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
-import org.hibernate.criterion.Example;
 
 import util.BSAFileUtil;
 import data.SAPeriods;

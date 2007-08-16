@@ -7,6 +7,11 @@ package mapping;
  */
 public class PeakAmplitudes implements java.io.Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6921120534098455695L;
+
 	private PeakAmplitudesId id;
 
 	private RuptureVariations ruptureVariations;
