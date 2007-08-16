@@ -9,3 +9,4 @@ Class-Path: ant-1.6.5.jar ant-antlr-1.6.5.jar ant-junit-1.6.5.jar ant-launcher-1
    log4j-1.2.11.jar mysql-connector-java-5.0.6-bin.jar oscache-2.1.jar proxool-0.8.3.jar swarmcache-1.0rc2.jar 
    ssyndiag2.jar versioncheck.jar xerces-2.6.2.jar xml-apis.jar
 
+
