@@ -222,5 +222,25 @@ public class CyberShakeSiteRegions implements java.io.Serializable {
 			Set<CyberShakeSiteRuptures> cyberShakeSiteRuptureses) {
 		this.cyberShakeSiteRuptureses = cyberShakeSiteRuptureses;
 	}
+	
+	public String toString() {
+		
+		return "CS_Site Name: " + this.getCyberShakeSites().getCsSiteName() + 
+		", CS_Site_ID: " + this.getId().getCsSiteId() + 
+		", ERF_ID: " + this.getId().getErfId() +
+		", Cutoff_Dist: " + this.getId().getCutoffDist() + 
+		", Max_Lat: " + this.getMaxLat() +
+		", Max_Lat_Source_ID: " + this.getMaxLatSourceId() +
+		", Max_Lat_Rupture_ID: " + this.getMaxLatRuptureId() +
+		", Max_Lon: " + this.getMaxLon() +
+		", Max_Lon_Source_ID: " + this.getMaxLonSourceId() +
+		", Max_Lon_Rupture_ID" + this.getMaxLonRuptureId() +
+		", Min_Lat" + this.getMinLat() +
+		", Min_Lat_Source_ID: " + this.getMinLatSourceId() + 
+		", Min_Lat_Rupture_ID: " + this.getMinLatRuptureId() + 
+		", Min_Lon: " + this.getMinLon() +
+		", Min_Lon_Source_ID: " + this.getMinLonSourceId() +
+		", Min_Lon_Rupture_ID: " + this.getMinLonRuptureId();
+	}
 
 }

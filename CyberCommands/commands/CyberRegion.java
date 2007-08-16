@@ -1,8 +1,10 @@
 package commands;
 
+import java.util.Iterator;
 import java.util.List;
 
 import mapping.CyberShakeSiteRegions;
+import mapping.CyberShakeSites;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -94,62 +96,15 @@ public class CyberRegion {
 		SessionFactory sessFactory = new Configuration().configure(configFilename).buildSessionFactory();
 		Session sess = sessFactory.openSession();
 
-		Integer siteID = new Integer(0);
-
 		if(sess.isOpen() && sess.isConnected()) {
 			if (cmd.hasOption("id")) {
-				siteID = Integer.parseInt(cmd.getOptionValue("id"));
-
-				List regions = sess.createCriteria(CyberShakeSiteRegions.class).
-				add(Restrictions.eq("id.csSiteId", siteID)).
-				list();
-
-				for (int i=0; i<regions.size(); i++) {
-					CyberShakeSiteRegions region = (CyberShakeSiteRegions)regions.get(i);
-					System.out.println("CS_Site Name: " + region.getCyberShakeSites().getCsSiteName() + 
-										", CS_Site_ID: " + region.getId().getCsSiteId() + 
-										", ERF_ID: " + region.getId().getErfId() +
-										", Cutoff_Dist: " + region.getId().getCutoffDist() + 
-										", Max_Lat: " + region.getMaxLat() +
-										", Max_Lat_Source_ID: " + region.getMaxLatSourceId() +
-										", Max_Lat_Rupture_ID: " + region.getMaxLatRuptureId() +
-										", Max_Lon: " + region.getMaxLon() +
-										", Max_Lon_Source_ID: " + region.getMaxLonSourceId() +
-										", Max_Lon_Rupture_ID" + region.getMaxLonRuptureId() +
-										", Min_Lat" + region.getMinLat() +
-										", Min_Lat_Source_ID: " + region.getMinLatSourceId() + 
-										", Min_Lat_Rupture_ID: " + region.getMinLatRuptureId() + 
-										", Min_Lon: " + region.getMinLon() +
-										", Min_Lon_Source_ID: " + region.getMinLonSourceId() +
-										", Min_Lon_Rupture_ID: " + region.getMinLonRuptureId() );
-										
-				}
+				getRegionUsingID(cmd, sess);
 			}
 			else if (cmd.hasOption("site")) {
-				List regions = sess.createCriteria(CyberShakeSiteRegions.class).
-								add(Restrictions.eq("cyberShakeSites.csShortName", "USC")).
-								list();
-				for (int i=0; i<regions.size(); i++) {
-					CyberShakeSiteRegions region = (CyberShakeSiteRegions)regions.get(i);
-					System.out.println("CS_Site Name: " + region.getCyberShakeSites().getCsSiteName() + 
-										", CS_Site_ID: " + region.getId().getCsSiteId() + 
-										", ERF_ID: " + region.getId().getErfId() +
-										", Cutoff_Dist: " + region.getId().getCutoffDist() + 
-										", Max_Lat: " + region.getMaxLat() +
-										", Max_Lat_Source_ID: " + region.getMaxLatSourceId() +
-										", Max_Lat_Rupture_ID: " + region.getMaxLatRuptureId() +
-										", Max_Lon: " + region.getMaxLon() +
-										", Max_Lon_Source_ID: " + region.getMaxLonSourceId() +
-										", Max_Lon_Rupture_ID" + region.getMaxLonRuptureId() +
-										", Min_Lat" + region.getMinLat() +
-										", Min_Lat_Source_ID: " + region.getMinLatSourceId() + 
-										", Min_Lat_Rupture_ID: " + region.getMinLatRuptureId() + 
-										", Min_Lon: " + region.getMinLon() +
-										", Min_Lon_Source_ID: " + region.getMinLonSourceId() +
-										", Min_Lon_Rupture_ID: " + region.getMinLonRuptureId() );
-										
-				}
-				
+				getRegionUsingSiteName(cmd, sess);
+			}
+			else if (cmd.hasOption("all")) {
+				getAllRegions(sess);
 			}
 		}
 
@@ -157,6 +112,43 @@ public class CyberRegion {
 
 		if(sess.isOpen() || sess.isConnected()) {
 			System.out.println("Error: Hibernate session failed to close");
+		}
+	}
+
+	private static void getAllRegions(Session sess) {
+		List regions = sess.createQuery("from CyberShakeSiteRegions").list();
+		for (int i=0;i<regions.size();i++) {
+			CyberShakeSiteRegions region = (CyberShakeSiteRegions) regions.get(i);
+			System.out.println(region);
+		}
+		
+	}
+
+	private static void getRegionUsingSiteName(CommandLine cmd, Session sess) {
+		List regions = sess.
+		createQuery("from CyberShakeSiteRegions as region where region.cyberShakeSites.csShortName = ?").
+		setString(0,cmd.getOptionValue("site")).
+		list();
+		
+		for (int i=0;i<regions.size();i++) {
+			CyberShakeSiteRegions region = (CyberShakeSiteRegions) regions.get(i);
+			System.out.println(region);
+		}
+	
+	}
+
+	private static void getRegionUsingID(CommandLine cmd, Session sess) {
+		Integer siteID;
+		siteID = Integer.parseInt(cmd.getOptionValue("id"));
+
+		List regions = sess.createCriteria(CyberShakeSiteRegions.class).
+		add(Restrictions.eq("id.csSiteId", siteID)).
+		list();
+
+		for (int i=0; i<regions.size(); i++) {
+			CyberShakeSiteRegions region = (CyberShakeSiteRegions)regions.get(i);
+			System.out.println(region);
+								
 		}
 	}
 
