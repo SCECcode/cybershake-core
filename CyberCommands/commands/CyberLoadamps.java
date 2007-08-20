@@ -51,7 +51,7 @@ public class CyberLoadamps {
 
 			if (cmd.hasOption("help")) {
 				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp( "CyberLoadamps", options, true );	
+				formatter.printHelp( "CyberLoadAmps", options, true );	
 			}
 			else {
 				if (!cmd.hasOption("p")) {
