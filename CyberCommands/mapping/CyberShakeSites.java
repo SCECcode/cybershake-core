@@ -126,5 +126,13 @@ public class CyberShakeSites implements java.io.Serializable {
 	public void setPeakAmplitudeses(Set<PeakAmplitudes> peakAmplitudeses) {
 		this.peakAmplitudeses = peakAmplitudeses;
 	}
+	
+	public String toString() {
+		return "CS_Site_Name: " + this.csSiteName + 
+					" , CS_Site_ID: " + this.csSiteId +
+					" , CS_Short_Name: " + this.csShortName +
+					" , CS_Site_Lat: " + this.csSiteLat +
+					" , CS_Site_Lon: " + this.csSiteLon;
+	}
 
 }

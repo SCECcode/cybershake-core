@@ -1,9 +1,13 @@
 package test.commands;
 
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+
+import junit.framework.JUnit4TestAdapter;
 
 import org.junit.After;
 import org.junit.Before;
@@ -11,14 +15,12 @@ import org.junit.Test;
 
 import commands.CyberRegion;
 
-import junit.framework.JUnit4TestAdapter;
-
-public class TestCyberRegion {
+public class TestCyberSites {
 	
-	private static final String[] HELP_OPTION = {"-help"}; 
+	private static final String[] HELP_OPTION = {"-help"};
 	private static final String[] NO_OPTIONS = {""};
 	private static final String[] SERVER_OPTION_ONLY = {"-server","intensity"};
-	
+
 	private ByteArrayOutputStream bytes;
 	private PrintStream console;
 	
@@ -46,8 +48,9 @@ public class TestCyberRegion {
 		CyberRegion.main(SERVER_OPTION_ONLY);
 		assertEquals(CyberRegion.getNO_SITES_SPECIFIED_MESSAGE(),bytes.toString().trim());
 	}
-	
+
 	public static junit.framework.Test suite() {
-		return new JUnit4TestAdapter (TestCyberRegion.class);
+		return new JUnit4TestAdapter (TestCyberSites.class);
 	}
+	
 }
