@@ -10,6 +10,11 @@ public class CommandRouter {
 			String[] cmdArgs = createCmdArgs(args);
 			CyberRegion.main(cmdArgs);
 		}
+		else if (args[0].equals("CyberSites")) {
+			String[] cmdArgs = createCmdArgs(args);
+			CyberSites.main(cmdArgs);
+		}
+
 	}
 
 	public static String[] createCmdArgs(String[] args) {
