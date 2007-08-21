@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export CYBERCOMMANDS_ROOT=${PWD}
+export CYBERCOMMANDS_JARS=${PWD}
 export PATH=${PATH}:${PWD}
 
 

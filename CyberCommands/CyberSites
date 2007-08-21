@@ -7,4 +7,4 @@ done
 
 #echo 'echo '$arglist
 
-java -jar $CYBERCOMMANDS_ROOT/cybercommands.jar CyberSites $arglist
+java -jar $CYBERCOMMANDS_JARS/cybercommands.jar CyberSites $arglist
