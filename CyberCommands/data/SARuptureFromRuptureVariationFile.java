@@ -19,6 +19,7 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 		}
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(byteArrayFromFile);
 		super.createRupVars(floats);
+		BSAFileUtil.setInDebugMode(true);
 		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationFile(bsaFile, siteName);
 		ruptureID = BSAFileUtil.getRuptureIDFromRuptureVariationFile(bsaFile, siteName);
 		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile, siteName);

@@ -6,12 +6,15 @@ import java.util.Arrays;
 
 public class BSAFileUtil {
 	
+	private static final int RUP_VAR_ID_POS = 2;
+	private static final int RUPTURE_ID_POS = 1;
+	private static final int SOURCE_ID_POS = 0;
 	public static String pathLog;
 	public static ArrayList<String> totalFilenameList;
-	//public static File[] totalFileArray;
 	public static ArrayList<File> totalFileList;
 	
 	public static boolean isInDebugMode = false;
+	private static boolean hasSGTVariationCharacter = false;
 	
 	public static ArrayList<File> createTotalFileList(File saFile) {
 		totalFilenameList = new ArrayList<String>();
@@ -77,12 +80,12 @@ public class BSAFileUtil {
 	}
 	
 	public static int getSourceIDFromFile(File file, String siteName) {
-		return getIDFromTokens(file, 0, siteName);
+		return getIDFromTokens(file, SOURCE_ID_POS, siteName);
 	
 	}
 	
 	public static int getRuptureIDFromFile(File file, String siteName) {
-		return getIDFromTokens(file, 1, siteName);
+		return getIDFromTokens(file, RUPTURE_ID_POS, siteName);
 	}
 	
 	private static int getIDFromTokens(File file, int indexToToken, String siteName) {
@@ -91,13 +94,63 @@ public class BSAFileUtil {
 		if (isInDebugMode) {
 			System.out.println("BSAFileUtil::getIDFromTokens: filename: " + filename);
 		}
-		int lastIndex = filename.lastIndexOf(siteName);
+		int startingIndexOfSiteName = filename.lastIndexOf(siteName);
+		int firstUnderscoreAfterLastIndex = filename.indexOf("_",startingIndexOfSiteName);
+		int secondUnderscoreAfterLastIndex = filename.indexOf("_", firstUnderscoreAfterLastIndex+1);
 		
 		if (isInDebugMode) {
-			System.out.println("BSAFileUtil::getIDFromTokens: lastIndex: " + lastIndex);
+			System.out.println("BSAFileUtil::getIDFromTokens: firstUnderscoreAfterLastIndex: " + firstUnderscoreAfterLastIndex);
+			System.out.println("BSAFileUtil::getIDFromTokens: secondUnderscoreAfterLastIndex: " + secondUnderscoreAfterLastIndex);
 		}
+		
+		int sgtVariationCharLength = 0;
+		
+		if (firstUnderscoreAfterLastIndex != -1) {
+			if (isInDebugMode) {
+				System.out.println("Checking for non-digit characters representing non-one SGT Variation");
+			}
+			
+			for (int i=firstUnderscoreAfterLastIndex+1; i<secondUnderscoreAfterLastIndex; i++) {
+				if (isInDebugMode) {
+					System.out.println(i + ": " + filename.charAt(i));
+				}
+				
+				sgtVariationCharLength++;
+				
+				if (isInDebugMode) {
+					System.out.println("Checking if " + filename.charAt(i) + " is a digit");
+				}
+				if (!Character.isDigit(filename.charAt(i))) {
+					hasSGTVariationCharacter  = true;
+					break;
+				}
+			}
+		}
+		
+		if (isInDebugMode) {
+			System.out.println("sgtVariationCharLength: " + sgtVariationCharLength);	
+		}
+		
+		int lastIndexOfSGTVariationChar = firstUnderscoreAfterLastIndex+sgtVariationCharLength;
+		
+		
+		if (isInDebugMode) {
+			System.out.println("BSAFileUtil::getIDFromTokens: startingIndexOfSiteName: " + startingIndexOfSiteName);
+			System.out.println("BSAFileUtil::getIDFromTokens: lastIndexOfSGTVariationChar: " + lastIndexOfSGTVariationChar);
+		}
+		
+		String endName = new String();
 
-		String endName = filename.substring(lastIndex+siteName.length()+1);
+		if (hasSGTVariationCharacter) {
+			if (isInDebugMode) {
+				System.out.println("BSAFileUtil::getIDFromTokens: " + filename + " has sgt variation characters");
+			}
+			endName = filename.substring(lastIndexOfSGTVariationChar+2);
+		}
+		else {
+			endName = filename.substring(startingIndexOfSiteName+siteName.length()+1);
+		}
+		
 		
 		if (isInDebugMode) {
 			System.out.println("endName: " + endName);
@@ -118,15 +171,15 @@ public class BSAFileUtil {
 	}
 
 	public static int getSourceIDFromRuptureVariationFile(File file, String siteName) {
-		return getIDFromTokens(file, 0, siteName);
+		return getIDFromTokens(file, SOURCE_ID_POS, siteName);
 	}
 	
 	public static int getRuptureIDFromRuptureVariationFile(File file, String siteName) {
-		return getIDFromTokens(file, 1, siteName);
+		return getIDFromTokens(file, RUPTURE_ID_POS, siteName);
 	}
 
 	public static int getRupVarIDFromRuptureVariationFile(File file, String siteName) {
-		return getIDFromTokens(file, 2, siteName);
+		return getIDFromTokens(file, RUP_VAR_ID_POS, siteName);
 	}
 
 	public static boolean isInDebugMode() {
