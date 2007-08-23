@@ -16,12 +16,18 @@ import junit.framework.JUnit4TestAdapter;
 
 
 public class TestSGTVariationBSAFilename {
-	private static SARuptureFromRuptureVariationFile saRupture;
-	private static File bsaFile;
+	private static final String WNGC_BSA_FILENAME = "safiles/extraletterformat/PeakVals_WNGC_B_464_10_1.bsa";
+	private static final String PAS_BSA_FILENAME = "safiles/extraletterformat/PeakVals_PAS_B_21_0_103.bsa";
+	private static SARuptureFromRuptureVariationFile saRupturePAS;
+	private static SARuptureFromRuptureVariationFile saRuptureWNGC;
+	private static File bsaFilePAS;
+	private static File bsaFileWNGC;
 	
 	@BeforeClass public static void setUp() {
-		bsaFile = new File("safiles/extraletterformat/PeakVals_PAS_B_21_0_103.bsa"); 
-		saRupture = new SARuptureFromRuptureVariationFile(new File("safiles/extraletterformat/PeakVals_PAS_B_21_0_103.bsa"), "PAS");		
+		bsaFilePAS = new File(PAS_BSA_FILENAME); 
+		bsaFileWNGC = new File(WNGC_BSA_FILENAME);
+		saRupturePAS = new SARuptureFromRuptureVariationFile(new File(PAS_BSA_FILENAME), "PAS");
+		saRuptureWNGC = new SARuptureFromRuptureVariationFile(new File(WNGC_BSA_FILENAME), "WNGC");
 	}
 	
 	@Test public void testCharacterIsDigit() {
@@ -30,15 +36,24 @@ public class TestSGTVariationBSAFilename {
 	
 	@Test public void testIDsFromFilenameUsingBSAUtil() {
 		BSAFileUtil.setInDebugMode(true);
-		assertEquals(21,BSAFileUtil.getSourceIDFromFile(bsaFile, "PAS"));
-		assertEquals(0,BSAFileUtil.getRuptureIDFromFile(bsaFile, "PAS"));
-		assertEquals(103,BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile, "PAS"));
+		assertEquals(21,BSAFileUtil.getSourceIDFromFile(bsaFilePAS, "PAS"));
+		assertEquals(0,BSAFileUtil.getRuptureIDFromFile(bsaFilePAS, "PAS"));
+		assertEquals(103,BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFilePAS, "PAS"));
+
+		assertEquals(464,BSAFileUtil.getSourceIDFromFile(bsaFileWNGC, "WNGC"));
+		assertEquals(10,BSAFileUtil.getRuptureIDFromFile(bsaFileWNGC, "WNGC"));
+		assertEquals(1,BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFileWNGC, "WNGC"));
+		
 	}
 	
 	@Test public void testIDsFromFilenameUsingSARupture() {
-		assertEquals(21,saRupture.getSourceID());
-		assertEquals(0,saRupture.getRuptureID());
-		assertEquals(103,saRupture.rupVar.variationNumber);
+		assertEquals(21,saRupturePAS.getSourceID());
+		assertEquals(0,saRupturePAS.getRuptureID());
+		assertEquals(103,saRupturePAS.rupVar.variationNumber);
+		
+		assertEquals(464,saRuptureWNGC.getSourceID());
+		assertEquals(10,saRuptureWNGC.getRuptureID());
+		assertEquals(1,saRuptureWNGC.rupVar.variationNumber);
 	}
 	
 	public static junit.framework.Test suite() {
