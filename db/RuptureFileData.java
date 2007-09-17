@@ -43,6 +43,7 @@ public class RuptureFileData {
 			ps.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 	}
 	

@@ -27,7 +27,7 @@ public class RetrieveRuptureFromDB {
 			}
 		} else if (args.length<3) {
 			dbc.closeConnection();
-			System.out.println("Usage: RetrieveRuptureFromDB <ERF_ID> <Source_ID> <Rupture_ID> [filename]");
+			System.out.println("Usage: RetrieveRuptureFromDB <all> | (<ERF_ID> <Source_ID> <Rupture_ID>) [filename])");
 			System.exit(0);
 		} else {
 			String erf = args[0];
