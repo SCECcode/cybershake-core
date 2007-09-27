@@ -31,9 +31,10 @@ public class RuptureVariationFileInserter {
 	private String pathName;
 	private String hibernate_cfg_filename = "intensity.cfg.xml";
 	private int currentSGT_Variation_ID;
+	//added by SC
+    private int currentRup_Var_Scenario_ID;
 	
-	
-	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName) throws IOException {
+	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID) throws IOException {
 		siteName = newSiteName;		
 		pathName = newPathName;
 		
@@ -44,8 +45,14 @@ public class RuptureVariationFileInserter {
 			hibernate_cfg_filename = "surface.cfg.xml";
 		}
 		
-		currentSGT_Variation_ID = Integer.parseInt(sgtVariationID);
-
+		try {
+		    currentSGT_Variation_ID = Integer.parseInt(sgtVariationID);
+		    //added by SC
+		    currentRup_Var_Scenario_ID = Integer.parseInt(rupVarID);
+        } catch (NumberFormatException nfe) {
+            System.out.println("SGT Variation ID and Rupture Variation ID must be positive integers.");
+            System.exit(1);
+        }
 	}
 
 	private void initFileList() {
@@ -138,7 +145,6 @@ public class RuptureVariationFileInserter {
 			int currentERF_ID = 29;
 			int currentSource_ID = saRuptureWithSingleRupVar.getSourceID();
 			int currentRupture_ID = saRuptureWithSingleRupVar.getRuptureID();
-			int currentRup_Var_Scenario_ID = 1;
 
 			SARuptureVariation currRupVar = saRuptureWithSingleRupVar.rupVar;
 
