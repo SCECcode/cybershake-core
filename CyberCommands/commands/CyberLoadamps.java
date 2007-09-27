@@ -79,7 +79,7 @@ public class CyberLoadamps {
 					return;
 				}
                 //added by SC
-                if (!cmd.hasOption("rupVarID")) {
+                if (!cmd.hasOption("rvid")) {
                     System.out.println(NO_RUP_VAR_ID_OPTION_MESSAGE);
                     return;
                 }
