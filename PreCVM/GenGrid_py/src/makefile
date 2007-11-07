@@ -2,13 +2,13 @@ TARGETS = gen_model_cords
 COBJS = geoproj_subs.o
 FOBJS = geo_utm.o
 
-GETPAR = ../Getpar/getpar/lib
+GETPAR = ../../../Getpar/getpar/lib
 
 LIBS = -lm $(GETPAR)/libget.a
 
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
-include Compilers.mk
+include ../../../Compilers.mk
 CC = $(MY_CC)
 FC = $(MY_FC)
 
