@@ -8,29 +8,32 @@ public class RetrieveRuptureFromDB {
 	private static DBConnect dbc;
 	private static final String DB_SERVER = "intensity.usc.edu";
 	private static final String DB = "CyberShake";
+	private static String ERF_ID;
 	
 	public static void main(String[] args) {
 		dbc = new DBConnect(DB_SERVER,DB);
-		if (args.length==1) {
-			if (args[0].equals("all")) {
+		if (args.length==2) {
+			if (args[1].equals("all")) {
+				ERF_ID = args[0];
 				getAllRuptures("");
 				dbc.closeConnection();
 				return;
 			}
-		} else if (args.length==2) {
-			if (args[0].equals("all")) {
-				getAllRuptures(args[1]);
+		} else if (args.length==3) {
+			if (args[1].equals("all")) {
+				ERF_ID = args[0];
+				getAllRuptures(args[2]);
 				dbc.closeConnection();
 				return;
 			} else {
 				//TODO:  read a file with erf, source, rupture, rupture file entries
 			}
-		} else if (args.length<3) {
+		} else if (args.length<4) {
 			dbc.closeConnection();
-			System.out.println("Usage: RetrieveRuptureFromDB <all> | (<ERF_ID> <Source_ID> <Rupture_ID>) [filename])");
+			System.out.println("Usage: RetrieveRuptureFromDB <ERF_ID> (<all> | (<Source_ID> <Rupture_ID>)) [filename])");
 			System.exit(0);
 		} else {
-			String erf = args[0];
+			ERF_ID = args[0];
 			String source = args[1];
 			String rupture = args[2];
 			String filename = null;
@@ -38,18 +41,18 @@ public class RetrieveRuptureFromDB {
 				filename = args[3];
 			}
 		
-			getOneRupture(erf, source, rupture, filename);
+			getOneRupture(source, rupture, filename);
 			dbc.closeConnection();
 
 		}
 	}
 	
-	private static void getOneRupture(String erf, String source, String rupture, String filename) {
-		RuptureFileData rfd = getRuptureFileData(erf, source, rupture);
+	private static void getOneRupture(String source, String rupture, String filename) {
+		RuptureFileData rfd = getRuptureFileData(source, rupture);
 		if (rfd==null) {
 			System.exit(0);
 		}
-		getPointsData(rfd, erf, source, rupture);
+		getPointsData(rfd, source, rupture);
 		if (filename!=null) {
 			rfd.printToFile(filename);
 		} else {
@@ -59,7 +62,7 @@ public class RetrieveRuptureFromDB {
 
 	private static void getAllRuptures(String path) {
 //		dbc = new DBConnect(DB_SERVER,DB);
-		String select = "select ERF_ID, Source_ID, Rupture_ID from Ruptures";
+		String select = "select Source_ID, Rupture_ID from Ruptures where ERF_ID=" + ERF_ID;
 		ResultSet rs = dbc.selectData(select);
 		int totalRows = 0;
 		
@@ -75,7 +78,6 @@ public class RetrieveRuptureFromDB {
 					if (rs.getRow()%1000==0) {
 						System.gc();
 					}
-					String erf_id = rs.getString("ERF_ID");
 					String source_id = rs.getString("Source_ID");
 					String rupture_id = rs.getString("Rupture_ID");
 					String filename;
@@ -85,7 +87,7 @@ public class RetrieveRuptureFromDB {
 						filename = path + File.separatorChar + source_id + "_" + rupture_id + ".txt";
 					}
 					System.out.println("Creating file " + filename + ", " + rs.getRow() + " of " + totalRows);
-					getOneRupture(erf_id, source_id, rupture_id, filename);
+					getOneRupture(source_id, rupture_id, filename);
 					rs.next();
 				}
 			}
@@ -94,10 +96,10 @@ public class RetrieveRuptureFromDB {
 		}
 	}
 
-	private static RuptureFileData getRuptureFileData(String erf, String source, String rupture) {
+	private static RuptureFileData getRuptureFileData(String source, String rupture) {
 		String select = "select Prob, Mag, Grid_Spacing, Num_Rows, Num_Columns " + 
 		"from Ruptures " +
-		"where ERF_ID = " + erf +
+		"where ERF_ID = " + ERF_ID +
 		" and Source_ID = " + source +
 		" and Rupture_ID = " + rupture;
 		ResultSet rs = dbc.selectData(select);
@@ -105,7 +107,7 @@ public class RetrieveRuptureFromDB {
 		try {
 			rs.first();
 			if (rs.getRow()==0) {
-				System.out.println("No hits in the db for ERF_ID " + erf + ", Source_ID " + source + ", Rupture_ID " + rupture + ", exiting.");
+				System.out.println("No hits in the db for ERF_ID " + ERF_ID + ", Source_ID " + source + ", Rupture_ID " + rupture + ", exiting.");
 				rs.close();
 			} else {
 //				rfd.setProbability(rs.getDouble("Prob"));
@@ -123,10 +125,10 @@ public class RetrieveRuptureFromDB {
 		return null;
 	}
 
-	private static void getPointsData(RuptureFileData rfd, String erf, String source, String rupture) {
+	private static void getPointsData(RuptureFileData rfd, String source, String rupture) {
 		ResultSet rs = dbc.selectData("select Lat, Lon, Depth, Rake, Dip, Strike " +
 				"from Points " +
-				"where ERF_ID = " + erf +
+				"where ERF_ID = " + ERF_ID +
 				" and Source_ID = " + source +
 				" and Rupture_ID = " + rupture);
 		RupturePointData rpd;
@@ -134,7 +136,7 @@ public class RetrieveRuptureFromDB {
 		try {
 			rs.first();
 			if (rs.getRow()==0) {
-				System.err.println("No points in the db for ERF_ID " + erf + ", Source_ID " + source + ", Rupture_ID " + rupture + ", exiting.");
+				System.err.println("No points in the db for ERF_ID " + ERF_ID + ", Source_ID " + source + ", Rupture_ID " + rupture + ", exiting.");
 				System.exit(1);
 			} else {
 				while (!rs.isAfterLast()) {
