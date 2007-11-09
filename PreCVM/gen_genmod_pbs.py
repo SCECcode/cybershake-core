@@ -30,11 +30,14 @@ zdepthFile = "../../data/ModelParams/" + site + "/zdepths.meter"
 gridout = '../../data/ModelParams/' + site + '/gridout_' + site
 numSteps = genDepFile(zdepthFile, gridout)
 
-output = open("../V4-WrapC/genmod." + site + ".pbs", "w")
+output = open("../V4-WrapC/PBS/genmod." + site + ".pbs", "w")
 output.write('#!/bin/csh\n')
-output.write('#*** The "#PBS" lines must come before any non-blank non-comment lines ***\n')
-output.write('#PBS -e genmod.' + site + '.e -o genmod.' + site + '.o\n')
+
+output.write('\n#*** The "#PBS" lines must come before any non-blank non-comment lines ***\n')
+
+output.write('\n#PBS -e genmod.' + site + '.e -o genmod.' + site + '.o\n')
 output.write('#PBS -l walltime=05:00:00,nodes=50:myri:ppn=2\n')
+output.write('#PBS -A lc_pjm\n')
 
 output.write('\nif ($?PBS_JOBID) then           # if this is a PBS job\n')
 output.write('  echo "Starting" $PBS_JOBID `date`\n')
@@ -61,20 +64,23 @@ output.write('set BPATH = `pwd`\n')
 output.write('set BPROG = bin/ver4C-mpi\n')
 output.write('set MODELDIR = ${BPATH}/DataFiles\n')
 
-output.write('\nset NX = %d\n' % numSteps[0])
+output.write('set SITE = %s\n' % site)
+output.write('set NX = %d\n' % numSteps[0])
 output.write('set NY = %d\n' % numSteps[1])
 output.write('set NZ = %d\n' % numSteps[2])
 
-output.write('\nset OUTDIR = ../../data/LayerBin\n')
+output.write('\nset OUTDIR = ../../data/LayerBin/${SITE}\n')
 output.write('set SCRATCH_OUTDIR = /scratch/pbsjob-${PBS_JOBID}/data/LayerBin\n')
 output.write('set MAIN_RUNDIR = ./\n')
+
+output.write('\nmkdir -p ${OUTDIR}\n')
 output.write('\mkdir -p ${SCRATCH_OUTDIR}\n')
 output.write('ls -lt $SCRATCH_OUTDIR\n')
 
 output.write('\nset FILEROOT = v4_sgt\n')
-output.write('set LOGDIR = ../../logs/GenLog\n')
+output.write('set LOGDIR = ../../logs/GenLog/${SITE}\n')
 
-output.write('\nset MODELCORDS = ../../data/ModelParams/' + site + '/model_coords_GC_' + site + '\n')
+output.write('\nset MODELCORDS = ../../data/ModelParams/${SITE}/model_coords_GC_${SITE}\n')
 output.write('set DEPFILE = ' + zdepthFile + '\n')
 output.write('mpiexec ${BPATH}/${BPROG} \ \n')
 output.write('         nx=$NX ny=$NY nz=$NZ \ \n')
