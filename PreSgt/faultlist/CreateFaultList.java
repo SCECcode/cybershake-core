@@ -19,6 +19,7 @@ public class CreateFaultList {
 			System.exit(1);
 		}
 		createList(args[0], Integer.parseInt(args[1]), args[2], args[3]);
+		System.exit(0);
 	}
 
 	private static void createList(String site, int erf_id, String pathToVars, String output) {
