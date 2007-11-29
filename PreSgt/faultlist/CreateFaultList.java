@@ -6,7 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
+import java.util.Calendar;
 
 
 public class CreateFaultList {
@@ -58,6 +58,5 @@ public class CreateFaultList {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
 	}
 }
