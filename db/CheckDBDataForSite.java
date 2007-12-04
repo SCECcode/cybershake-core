@@ -85,6 +85,8 @@ public class CheckDBDataForSite {
                 rupVarSet.close();
                 ampSet.close();
                 findDifferences(dbc, site, erf_id, rup_var_scen_id, sgt_variation_id, outputFile);
+            } else {
+            	System.out.println("All ruptures are registered.");
             }
             
         } catch (SQLException e) {
