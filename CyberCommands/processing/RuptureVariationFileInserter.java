@@ -33,8 +33,9 @@ public class RuptureVariationFileInserter {
 	private int currentSGT_Variation_ID;
 	//added by SC
     private int currentRup_Var_Scenario_ID;
-	
-	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID) throws IOException {
+    private int currentERF_ID;
+    
+	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID, String erfID) throws IOException {
 		siteName = newSiteName;		
 		pathName = newPathName;
 		
@@ -49,7 +50,8 @@ public class RuptureVariationFileInserter {
 		    currentSGT_Variation_ID = Integer.parseInt(sgtVariationID);
 		    //added by SC
 		    currentRup_Var_Scenario_ID = Integer.parseInt(rupVarID);
-        } catch (NumberFormatException nfe) {
+		    currentERF_ID = Integer.parseInt(erfID);
+		} catch (NumberFormatException nfe) {
             System.out.println("SGT Variation ID and Rupture Variation ID must be positive integers.");
             System.exit(1);
         }
@@ -142,7 +144,6 @@ public class RuptureVariationFileInserter {
 
 			// Do garbage collection
 			//if ((rupVarIter+1)%250==0) System.gc();
-			int currentERF_ID = 29;
 			int currentSource_ID = saRuptureWithSingleRupVar.getSourceID();
 			int currentRupture_ID = saRuptureWithSingleRupVar.getRuptureID();
 
