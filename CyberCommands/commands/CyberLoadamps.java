@@ -23,7 +23,7 @@ public class CyberLoadamps {
 	private static final String NO_SERVER_OPTION_MESSAGE = "Please use -server to specify a database server";
 	//added by SC
     private static final String NO_RUP_VAR_ID_OPTION_MESSAGE = "Please use -rvid to specify a rupture variation ID";
-    
+    private static final String NO_ERF_ID_OPTION_MESSAGE = "Please use -erfid to specify an ERF ID";
 	/**
 	 * @param args
 	 */
@@ -37,6 +37,7 @@ public class CyberLoadamps {
 		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (surface or intensity) - this options is required").create("server");
 		//added by SC
         Option ruptureVariationID = OptionBuilder.withArgName("ruptureVariationID").hasArg().withDescription("Rupture Variation ID - this option is required").create("rvid");
+        Option erfID = OptionBuilder.withArgName("erfID").hasArg().withDescription("ERF ID - this option is required").create("erfid");
         
 		Option help = new Option("help", "print this message");
 
@@ -48,7 +49,8 @@ public class CyberLoadamps {
 		options.addOption(server);
 		//added by SC
         options.addOption(ruptureVariationID);
-
+        options.addOption(erfID);
+        
 		CommandLineParser parser = new GnuParser();
 
 		try {
@@ -83,9 +85,13 @@ public class CyberLoadamps {
                     System.out.println(NO_RUP_VAR_ID_OPTION_MESSAGE);
                     return;
                 }
+                if (!cmd.hasOption("erfid")) {
+                	System.out.println(NO_ERF_ID_OPTION_MESSAGE);
+                	return;
+                }
 
 				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " as site: " + cmd.getOptionValue("site") + " and SGT Variation ID: " + cmd.getOptionValue("sgt"));
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"), cmd.getOptionValue("sgt"), cmd.getOptionValue("server"), cmd.getOptionValue("rvid"));
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"), cmd.getOptionValue("sgt"), cmd.getOptionValue("server"), cmd.getOptionValue("rvid"), cmd.getOptionValue("erfid"));
 				rvfi.performInsertions();
 			}
 
