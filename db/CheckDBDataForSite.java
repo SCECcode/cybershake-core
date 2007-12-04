@@ -31,8 +31,8 @@ public class CheckDBDataForSite {
         String site = args[0];
         String erf_id = args[1];
         String rup_var_scen_id = args[2];
-        String outputFile = args[3];
-        String sgt_variation_id = args[4];
+        String sgt_variation_id = args[3];
+        String outputFile = args[4];
         
         checkDBData(site, erf_id, rup_var_scen_id, sgt_variation_id, outputFile);
     }
