@@ -23,8 +23,8 @@ public class CheckDBDataForSite {
     private static final String DB = "CyberShake";
     
     public static void main(String[] args) {
-        if (args.length<4) {
-            System.out.println("Usage:  CheckDBDataForSite <site> <erf_id> <rup_var_scen_id> <outputFile>");
+        if (args.length<5) {
+            System.out.println("Usage:  CheckDBDataForSite <site> <erf_id> <rup_var_scen_id> <sgt_variation_id> <outputFile>");
             System.exit(1);
         }
         
@@ -32,11 +32,12 @@ public class CheckDBDataForSite {
         String erf_id = args[1];
         String rup_var_scen_id = args[2];
         String outputFile = args[3];
+        String sgt_variation_id = args[4];
         
-        checkDBData(site, erf_id, rup_var_scen_id, outputFile);
+        checkDBData(site, erf_id, rup_var_scen_id, sgt_variation_id, outputFile);
     }
 
-    private static void checkDBData(String site, String erf_id, String rup_var_scen_id, String outputFile) {
+    private static void checkDBData(String site, String erf_id, String rup_var_scen_id, String sgt_variation_id, String outputFile) {
         DBConnect dbc = new DBConnect(DB_SERVER, DB);
         
         String query = "select count(*) " +
@@ -66,7 +67,8 @@ public class CheckDBDataForSite {
             "where S.CS_Short_Name='" + site + "' " +
             "and S.CS_Site_ID=A.Site_ID " +
             "and A.ERF_ID=" + erf_id + " " +
-            "and A.Rup_Var_Scenario_ID=" + rup_var_scen_id;
+            "and A.Rup_Var_Scenario_ID=" + rup_var_scen_id + " " +
+            "and A.SGT_Variation_ID=" + sgt_variation_id;
 
             System.out.println(query);
             
@@ -82,7 +84,7 @@ public class CheckDBDataForSite {
                 System.out.println(rupVarSetNum + " variations for site " + site + " in RupVar table, but " + (ampSetNum/27) + " variations in PeakAmp table.");
                 rupVarSet.close();
                 ampSet.close();
-                findDifferences(dbc, site, erf_id, rup_var_scen_id, outputFile);
+                findDifferences(dbc, site, erf_id, rup_var_scen_id, sgt_variation_id, outputFile);
             }
             
         } catch (SQLException e) {
@@ -97,7 +99,7 @@ public class CheckDBDataForSite {
      * @param erf_id
      * @param rup_var_id
      */
-    private static void findDifferences(DBConnect dbc, String site, String erf_id, String rup_var_scen_id, String outputFile) {
+    private static void findDifferences(DBConnect dbc, String site, String erf_id, String rup_var_scen_id, String sgt_variation_id, String outputFile) {
         String query = "select V.Source_ID, V.Rupture_ID, V.Rup_Var_ID " +
         "from Rupture_Variations V, CyberShake_Site_Ruptures R, CyberShake_Sites S " +
         "where S.CS_Short_Name='" + site + "' " +
@@ -120,7 +122,8 @@ public class CheckDBDataForSite {
             "where S.CS_Short_Name='" + site + "' " +
             "and S.CS_Site_ID=A.Site_ID " +
             "and A.ERF_ID=" + erf_id + " " +
-            "and A.Rup_Var_Scenario_ID=" + rup_var_scen_id + " ";
+            "and A.Rup_Var_Scenario_ID=" + rup_var_scen_id + " " +
+            "and A.SGT_Variation_ID=" + sgt_variation_id;
 
             BufferedWriter bw = null;
             try {
