@@ -12,7 +12,7 @@ def genDepFile(zdepth, gridout):
     intNY = int((inputContents[1+intNX+2].split("="))[1])
     intNZ = int((inputContents[1+intNX+2+intNY+2].split("="))[1])
     for i in range(len(inputContents)-intNZ, len(inputContents)):
-        print float(inputContents[i].split()[1])
+        #print float(inputContents[i].split()[1])
         output.write("%14.2f\n" % (float(inputContents[i].split()[1])*KM2METER))
     output.flush()
     output.close()
