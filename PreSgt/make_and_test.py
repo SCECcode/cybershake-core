@@ -5,7 +5,8 @@ import subprocess
 import os
 
 os.chdir('src')
-exitcode = subprocess.call('make clean')
+subprocess.call(['make', 'clean'])
+exitcode = subprocess.call('make')
 if (exitcode <> 0):
 	print "Make failed.\n"
 	exit(1)
