@@ -3,10 +3,9 @@
 import os
 import sys
  
-def genGridfile(site, outputDirectory, xlen, ylen, zlen, spacing):
+def genGridfile(site, outputFile, xlen, ylen, zlen, spacing):
     '''Takes a site, path to output directory, and data to produce gridfile_<site> with the X, Y, and Z lengths and spacing'''
-    gridfileName = outputDirectory + "/gridfile_" + site
-    output = open(gridfileName, "w")
+    output = open(outputFile, "w")
     output.write("xlen=%.6f\n" % xlen)
     output.write("    0.0000   %.4f  %e\n" % (xlen, spacing))
     output.write("ylen=%.6f\n" % ylen)
@@ -15,7 +14,6 @@ def genGridfile(site, outputDirectory, xlen, ylen, zlen, spacing):
     output.write("    0.0000    %.4f  %e\n" % (zlen, spacing))
     output.flush()
     output.close()
-    return gridfileName
 
 
 def genBoundfile(gridout, coordfile, boundfile):
@@ -39,7 +37,7 @@ def genBoundfile(gridout, coordfile, boundfile):
     output.close()
 
 
-def genGrid(modelboxFile, outputDirectory):
+def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile):
     '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
     ZLEN = 40.0
     SPACING = .2
@@ -60,32 +58,32 @@ def genGrid(modelboxFile, outputDirectory):
     xlen = float(modelParamsData[7])
     ylen = float(modelParamsData[9])
 
-    gridfileName = genGridfile(site, outputDirectory, xlen, ylen, ZLEN, SPACING)
-    gridoutName = outputDirectory + "/gridout_" + site
-    coordfileName = outputDirectory + "/model_coords_GC_" + site
-    paramfileName = outputDirectory + "/model_params_GC_" + site
-    boundsfileName = outputDirectory + "/model_bounds_GC_" + site
+    genGridfile(site, gridfile, xlen, ylen, ZLEN, SPACING)
 
     executable = "bin/gen_model_cords"
-    parameters = "geoproj=1 gridfile=%s gridout=%s center_origin=1 do_coords=1 nzout=1 name=%s gzip=0 latfirst=0 modellon=%f modellat=%f modelrot=%f" % (gridfileName, gridoutName, coordfileName, model_lon, model_lat, model_rot)
-    pipe = "> " + paramfileName
+    parameters = "geoproj=1 gridfile=%s gridout=%s center_origin=1 do_coords=1 nzout=1 name=%s gzip=0 latfirst=0 modellon=%f modellat=%f modelrot=%f" % (gridfile, gridout, coordfile, model_lon, model_lat, model_rot)
+    pipe = "> " + paramfile
     command = executable + " " + parameters + " " + pipe
     print command
 
     os.system(command)
-    genBoundfile(gridoutName, coordfileName, boundsfileName)
+    genBoundfile(gridout, coordfile, boundsfile)
 
 
 
 def main():
-    if len(sys.argv) < 3:
-        print "Syntax: gen_grid.py <modelboxFile> <outputDirectory>"
-        print "Example: gen_grid.py USC.modelbox ModelParams/"
+    if len(sys.argv) < 7:
+        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile>"
+        print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC"
         sys.exit()
 	
     modelboxFile = sys.argv[1]
-    outputDirectory = sys.argv[2]
-    genGrid(modelboxFile, outputDirectory)
+    gridfile = sys.argv[2]
+    gridout = sys.argv[3]
+    coordfile = sys.argv[4]
+    paramfile = sys.argv[5]
+    boundsfile = sys.argv[6]
+    genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile)
 
 if __name__=="__main__":
     main()

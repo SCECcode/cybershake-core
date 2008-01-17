@@ -15,7 +15,7 @@ class Test_get_grid(unittest.TestCase):
         testFiles = ["gridout_PAS", "gridfile_PAS", "model_bounds_GC_PAS", "model_coords_GC_PAS", "model_params_GC_PAS"]
 		
 		
-        gen_grid.genGrid("reference/PAS/PAS.modelbox", ".")
+        gen_grid.genGrid("reference/PAS/PAS.modelbox", testFiles[1], testFiles[0], testFiles[3], testFiles[4], testFiles[2])
         for i in range(5):
             self.failIf(not compare.compare(referenceFiles[i], testFiles[i], 0.00011), "File " + testFiles[i] + " doesn't match " + referenceFiles[i] + ".")
         
@@ -29,7 +29,7 @@ class Test_get_grid(unittest.TestCase):
 
         testFiles = ["gridout_FFI", "gridfile_FFI", "model_bounds_GC_FFI", "model_coords_GC_FFI", "model_params_GC_FFI"]
         
-        gen_grid.genGrid("reference/FFI/FFI.modelbox", ".")
+        gen_grid.genGrid("reference/FFI/FFI.modelbox", testFiles[1], testFiles[0], testFiles[3], testFiles[4], testFiles[2])
         for i in range(5):
             self.failIf(not compare.compare(referenceFiles[i], testFiles[i], 0.00011), "File " + testFiles[i] + " doesn't match " + referenceFiles[i] + ".")
         
@@ -43,7 +43,7 @@ class Test_get_grid(unittest.TestCase):
 
         testFiles = ["gridout_CCP", "gridfile_CCP", "model_bounds_GC_CCP", "model_coords_GC_CCP", "model_params_GC_CCP"]
         
-        gen_grid.genGrid("reference/CCP/CCP.modelbox", ".")
+        gen_grid.genGrid("reference/CCP/CCP.modelbox", testFiles[1], testFiles[0], testFiles[3], testFiles[4], testFiles[2])
         for i in range(5):
             self.failIf(not compare.compare(referenceFiles[i], testFiles[i], 0.00011), "File " + testFiles[i] + " doesn't match " + referenceFiles[i] + ".")
         
@@ -57,7 +57,7 @@ class Test_get_grid(unittest.TestCase):
 
         testFiles = ["gridout_SMCA", "gridfile_SMCA", "model_bounds_GC_SMCA", "model_coords_GC_SMCA", "model_params_GC_SMCA"]
         
-        gen_grid.genGrid("reference/SMCA/SMCA.modelbox", ".")
+        gen_grid.genGrid("reference/SMCA/SMCA.modelbox", testFiles[1], testFiles[0], testFiles[3], testFiles[4], testFiles[2])
         for i in range(5):
             self.failIf(not compare.compare(referenceFiles[i], testFiles[i], 0.00011), "File " + testFiles[i] + " doesn't match " + referenceFiles[i] + ".")
         

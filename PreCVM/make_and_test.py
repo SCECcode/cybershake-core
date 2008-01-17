@@ -4,54 +4,46 @@ import os
 import sys
 
 
-def doGetpar():
+def makeGetpar():
 	os.chdir("../Getpar/getpar/src")
 	os.system("make clean")
 	exitcode = os.system("make")
 	if (exitcode <> 0):
 		print "Make getpar failed.\n"
-		exit(1)
+		sys.exit(1)
 	else:
 		print "Make getpar succeeded.\n"
 		os.chdir("../../../PreCVM")
 	
 
-def doModelbox():
+def makeModelbox():
 	os.chdir("Modelbox/src")
 	os.system("make clean")
 	exitcode = os.system("make")
 	if (exitcode <> 0):
 		print "Make modelbox failed.\n"
-		return
+		sys.exit(2)
 	else:
-		print "Make modelbox succeeded, testing.\n"
-	os.chdir("..")
-	exitcode = os.system("./test_get_modelbox.py")
-	if (exitcode <> 0):
-		print "Test modelbox failed.\n"
-		return
-	else:
-		print "Modelbox testing successful!\n"
+		print "Make modelbox succeeded.\n"
+	os.chdir("../..")
 
-def doGenGrid():
+def makeGenGrid():
 	os.chdir(sys.path[0]+"/GenGrid_py/src")
 	os.system("make clean")
 	exitcode = os.system("make")
 	if (exitcode <> 0):
 		print "Make gen_grid failed.\n"
-		return
+		sys.exit(3)
 	else:
 		print "Make gen_grid succeeded, testing.\n"
-	os.chdir("..")
-	exitcode = os.system("./test_gen_grid.py")
-	if (exitcode <> 0):
-		print "Test genGrid failed.\n"
-		return
-	else:
-		print "GenGrid testing successful!\n"
+	os.chdir("../..")
 
 
-doGetpar()
-doModelbox()
-doGenGrid()
+def runTest():
+	os.system("./test_pre_cvm.py");
 
+
+makeGetpar()
+makeModelbox()
+makeGenGrid()
+runTest()
