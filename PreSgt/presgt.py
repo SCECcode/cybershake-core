@@ -22,7 +22,7 @@ def getSiteCoords(site):
 	        print e
 	        sys.exit(-2)
 
-def genFdloc(site, mlon, mlat):
+def genFdloc(outputName, site, mlon, mlat, cordfileName):
     '''Duplicates gen_fdsrcloc.csh: generates an fdloc file, which contains the (X,Y) grid coordinates which are nearest to the site'''
     print "Generating %s.fdloc.\n" % site
     cordfile = open(cordfileName)
@@ -40,18 +40,17 @@ def genFdloc(site, mlon, mlat):
 	       	minLoc[0] = pieces[2]
 	       	minLoc[1] = pieces[3]
     cordfile.close()
-    fdlocFile = open('../../data/SgtInfo/FdLocs/%s.fdloc' % site, 'w')
+    fdlocFile = open(outputName, 'w')
     fdlocFile.write('%s %s\n' % (minLoc[0], minLoc[1]))
     fdlocFile.flush()
     fdlocFile.close()
     return [int(minLoc[0]), int(minLoc[1])]
 
 
-def genFaultList(site, erf_id):
+def genFaultList(outputName, site, erf_id):
     '''Copies the functionality of gen_faultlist.csh:  it serves as a wrapper to CreateFaultList.java, which queries the database to generate a list of ruptures which are applicable for the given site.'''
     print "Generating fault list for %s.\n" % site
-    output = '../../data/SgtInfo/FaultList/%s.faultlist' % site
-    command = 'java -classpath .:faultlist/mysql-connector-java-5.0.5-bin.jar faultlist/CreateFaultList %s %s %s %s' % (site, erf_id, PATH_TO_RUPTURE_VARIATIONS, output)
+    command = 'java -classpath .:faultlist/mysql-connector-java-5.0.5-bin.jar faultlist/CreateFaultList %s %s %s %s' % (site, erf_id, PATH_TO_RUPTURE_VARIATIONS, outputName)
     print command
     returnCode = subprocess.call(command, shell=True)
 
@@ -84,7 +83,7 @@ def genRadiusFile(radiusfile):
 	output.close()
 
 
-def genSgtGrid(site, ns, src, mlon, mlat, mrot):
+def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfile):
 	'''Copies the functionality of gen_sgtgrid.csh:  it generates a list of grid points that the SGTs should be saved for.  This includes an adaptive mesh as well as the locations of the ruptures.  Essentially this serves as a wrapper for gen_sgtgrid.c.'''
 	#magic constants
 	HH = 0.2
@@ -95,15 +94,12 @@ def genSgtGrid(site, ns, src, mlon, mlat, mrot):
 	IZ_START = 1
 	IZ_MAX = ns[2]-20
 
-	radiusfile = '../../data/SgtInfo/RadiusFile/%s.radiusfile' % site
-	genRadiusFile(radiusfile)
-
-	outfile = '../../data/SgtInfo/SgtCords/%s.cordfile' % site
-	faultlist = '../../data/SgtInfo/FaultList/%s.faultlist' % site
+	#outfile = '../../data/SgtInfo/SgtCords/%s.cordfile' % site
+	#faultlist = '../../data/SgtInfo/FaultList/%s.faultlist' % site
 
 	print "Generating %s.cordfile.\n" % site
 
-	command = 'bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outfile, mlon, mlat, mrot, faultlist)
+	command = 'bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outputFile, mlon, mlat, mrot, faultlist)
 	cmdFile = open("command.txt", "w")
 	cmdFile.write(command)
 	cmdFile.flush()
@@ -113,18 +109,23 @@ def genSgtGrid(site, ns, src, mlon, mlat, mrot):
 
 PATH_TO_RUPTURE_VARIATIONS = '/home/rcf-104/CyberShake2007/ruptures/RuptureVariations'
 
-if len(sys.argv) < 6:
+if len(sys.argv) < 10:
     print len(sys.argv)
     for arg in sys.argv:
 	print arg
-    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords>'
-    print 'Example: ./presgt.py USC 33 USC.modelbox gridout_USC model_coords_GC_USC'
+    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords>'
+    print 'Example: ./presgt.py USC 33 USC.modelbox gridout_USC model_coords_GC_USC USC.fdloc USC.faultlist USC.radiusfile USC.cordfile'
     sys.exit(1)
 
 site = sys.argv[1]
 modelbox = sys.argv[3]
 gridout = sys.argv[4]
 cordfileName = sys.argv[5]
+
+fdlocFileName = sys.argv[6]
+faultlistFileName = sys.argv[7]
+radiusFileName = sys.argv[8]
+sgtcordFileName = sys.argv[9]
 
 erf_id = sys.argv[2]
 input = open(modelbox)
@@ -142,8 +143,10 @@ mlon = (float)(modelTokens[1])
 mlat = (float)(modelTokens[3])
 mrot = (float)(modelTokens[5])
 
-src = genFdloc(site, siteLon, siteLat)
-genFaultList(site, erf_id)
+src = genFdloc(fdlocFileName, site, siteLon, siteLat, cordfileName)
+genFaultList(faultlistFileName, site, erf_id)
+
+genRadiusFile(radiusFileName)
 
 input = open(gridout)
 gridoutContents = input.readlines();
@@ -153,6 +156,6 @@ ns.append(int((gridoutContents[1].split("="))[1]))
 ns.append(int((gridoutContents[1+ns[0]+2].split("="))[1]))
 ns.append(int((gridoutContents[1+ns[0]+2+ns[1]+2].split("="))[1]))
 
-genSgtGrid(site, ns, src, mlon, mlat, mrot)
+genSgtGrid(sgtcordFileName, site, ns, src, mlon, mlat, mrot, faultlistFileName, radiusFileName)
 sys.exit(0)
 
