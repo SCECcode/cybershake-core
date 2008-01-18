@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/u/ac/scottcal/python-2.5.1/bin/python
 
 import MySQLdb
 import sys
@@ -107,12 +107,10 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 	subprocess.call(command, shell=True)
 
 
-PATH_TO_RUPTURE_VARIATIONS = '/home/rcf-104/CyberShake2007/ruptures/RuptureVariations'
+PATH_TO_RUPTURE_VARIATIONS = '/cfs/projects/scec/CyberShake2007/ruptures/RuptureVariations'
 
 if len(sys.argv) < 10:
     print len(sys.argv)
-    for arg in sys.argv:
-	print arg
     print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords>'
     print 'Example: ./presgt.py USC 33 USC.modelbox gridout_USC model_coords_GC_USC USC.fdloc USC.faultlist USC.radiusfile USC.cordfile'
     sys.exit(1)
