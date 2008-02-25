@@ -1,6 +1,8 @@
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Scanner;
 
 
 
@@ -25,28 +27,74 @@ public class RetrieveRuptureFromDB {
 				getAllRuptures(args[2]);
 				dbc.closeConnection();
 				return;
+			} else if (args[1].equals("-f")) {
+				ERF_ID = args[0];
+				getSomeRuptures(args[2]);
+				dbc.closeConnection();
+				return;
 			} else {
-				//TODO:  read a file with erf, source, rupture, rupture file entries
+				ERF_ID = args[0];
+				String source = args[1];
+				String rupture = args[2];
+				getOneRupture(source, rupture, null);
+				dbc.closeConnection();
+				return;
 			}
-		} else if (args.length<4) {
-			dbc.closeConnection();
-			System.out.println("Usage: RetrieveRuptureFromDB <ERF_ID> (<all> | (<Source_ID> <Rupture_ID>)) [filename])");
-			System.exit(0);
+		} else if (args.length==4) {
+			if (args[1].equals("-f")) {
+				ERF_ID = args[0];
+				String path = args[3];
+				getSomeRuptures(args[2], path);
+				dbc.closeConnection();
+				return;
+			} else {
+				ERF_ID = args[0];
+				String source = args[1];
+				String rupture = args[2];
+				String filename = args[3];
+				getOneRupture(source, rupture, filename);
+				dbc.closeConnection();
+				return;
+			}
 		} else {
-			ERF_ID = args[0];
-			String source = args[1];
-			String rupture = args[2];
-			String filename = null;
-			if (args.length==4) {
-				filename = args[3];
-			}
-		
-			getOneRupture(source, rupture, filename);
 			dbc.closeConnection();
-
+			System.out.println("Usage: RetrieveRuptureFromDB <ERF_ID> (<all> | (<Source_ID> <Rupture_ID>) | -f <filename>) [path])");
+			System.exit(0);
 		}
 	}
 	
+	private static void getSomeRuptures(String inputFile, String path) {
+		/* file format:
+		 * 
+		 * ERF_ID
+		 * source1 rupture1
+		 * source2 rupture2
+		 * ...
+		 */
+		try {
+			Scanner input = new Scanner(new File(inputFile));
+			ERF_ID = input.next();
+			String source, rupture, filename;
+			while (input.hasNext()) {
+				source = input.next();
+				rupture = input.next();
+				if (path=="") {
+					filename = source + "_" + rupture + ".txt";
+				} else {
+					filename = path + File.separatorChar + source + "_" + rupture + ".txt";
+				}
+				getOneRupture(source, rupture, filename);
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+	private static void getSomeRuptures(String inputFile) {
+		getSomeRuptures(inputFile, ".");
+	}
+
 	private static void getOneRupture(String source, String rupture, String filename) {
 		RuptureFileData rfd = getRuptureFileData(source, rupture);
 		if (rfd==null) {
