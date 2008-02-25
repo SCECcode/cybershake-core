@@ -59,7 +59,7 @@ public class RetrieveRuptureFromDB {
 		} else {
 			dbc.closeConnection();
 			System.out.println("Usage: RetrieveRuptureFromDB <ERF_ID> (<all> | (<Source_ID> <Rupture_ID>) | -f <filename>) [path])");
-			System.out.println("File format:\n\tERF_ID\nsource1 rupture1\nsource2 rupture2\n...");
+			System.out.println("File format:\n\tERF_ID\n\tsource1 rupture1\n\tsource2 rupture2\n\t...");
 			System.exit(0);
 		}
 	}
