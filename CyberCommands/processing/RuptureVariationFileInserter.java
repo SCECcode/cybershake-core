@@ -15,6 +15,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
 import util.BSAFileUtil;
+import data.DirectionalComponent;
 import data.SAPeriods;
 import data.SARuptureFromRuptureVariationFile;
 import data.SARuptureVariation;
@@ -34,6 +35,8 @@ public class RuptureVariationFileInserter {
 	//added by SC
     private int currentRup_Var_Scenario_ID;
     private int currentERF_ID;
+    private double[] desiredPeriods = {3.00003, 5.0, 10.0};
+    private ArrayList<Integer> desiredPeriodsIndices = null;
     
 	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID, String erfID) throws IOException {
 		siteName = newSiteName;		
@@ -135,6 +138,18 @@ public class RuptureVariationFileInserter {
 
 		SAPeriods saPeriods = new SAPeriods();
 
+		
+		//going to only insert 3.0s and 5.0s periods to save space
+		if (desiredPeriodsIndices==null) {
+			desiredPeriodsIndices = new ArrayList<Integer>();
+			for (int i=0; i<saPeriods.values.length; i++) {
+				for (int j=0; j<desiredPeriods.length; j++) {
+					if (Math.abs(saPeriods.values[i]-desiredPeriods[j])<0.0001) {
+						desiredPeriodsIndices.add(i);
+					}
+				}
+			}
+		}
 
 
 		int outerLoopMax = saRuptureWithSingleRupVar.rupVars.size();
@@ -169,8 +184,9 @@ public class RuptureVariationFileInserter {
 
 
 
-			int innerLoopMax = currRupVar.geomAvgComp.periods.length;
-			for (int periodIter=0;periodIter<innerLoopMax;periodIter++) {
+//			int innerLoopMax = currRupVar.geomAvgComp.periods.length;
+			for (int periodIter: desiredPeriodsIndices) {
+//			for (int periodIter=0;periodIter<innerLoopMax;periodIter++) {
 				/*System.out.println("SA for Rupture Variation " + currRupVar.variationNumber 
 						+ ", Geometrically Averaged Component, Period " + (periodIter+1) + " : " 
 						+ currRupVar.geomAvgComp.periods[periodIter] );*/
@@ -186,7 +202,7 @@ public class RuptureVariationFileInserter {
 				paPK.setRup_Var_ID(currRupVar.variationNumber);
 				paPK.setRup_Var_Scenario_ID(currentRup_Var_Scenario_ID);
 				paPK.setSGT_Variation_ID(currentSGT_Variation_ID);
-				paPK.setIM_Type(new String("SA_Period_" + saPeriods.getNextValue()));
+				paPK.setIM_Type(new String("SA_Period_" + saPeriods.values[periodIter]));
 				pa.setPaPK(paPK);
 				pa.setIM_Value(currRupVar.geomAvgComp.periods[periodIter]);
 				pa.setUnits("cm per second squared");

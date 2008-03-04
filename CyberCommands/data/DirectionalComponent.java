@@ -4,6 +4,7 @@ public class DirectionalComponent {
 	public static final int periodsLength = 27;
 	public Float[] periods = new Float[periodsLength];
 	
+	
 	public DirectionalComponent() {
 		for (int i=0;i<periods.length;i++) {
 			periods[i] = new Float(0);
