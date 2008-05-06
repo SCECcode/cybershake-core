@@ -146,7 +146,7 @@ public class RetrieveRuptureFromDB {
 	}
 
 	private static RuptureFileData getRuptureFileData(String source, String rupture) {
-		String select = "select Prob, Mag, Grid_Spacing, Num_Rows, Num_Columns " + 
+		String select = "select Prob, Mag, Grid_Spacing, Num_Rows, Num_Columns, Num_Points " + 
 		"from Ruptures " +
 		"where ERF_ID = " + ERF_ID +
 		" and Source_ID = " + source +

@@ -9,6 +9,7 @@ public class RuptureFileData {
 	private double gridSpacing;
 	private int numRows;
 	private int numCols;
+	private int numPoints;
 	private ArrayList<RupturePointData> points = new ArrayList<RupturePointData>();
 	
 	public RuptureFileData() {
@@ -21,6 +22,7 @@ public class RuptureFileData {
 		gridSpacing = gr;
 		numRows = nr;
 		numCols = nc;
+		numPoints = numRows * numCols;
 	}
 	
 	public RuptureFileData(double pr, double ma, double gr, int nr, int nc, ArrayList<RupturePointData> pts) {
@@ -48,6 +50,10 @@ public class RuptureFileData {
 	}
 	
 	private void print(PrintStream ps) {
+		if (points.size()!=numPoints) { //actual pts in the Points table doesn't match Num_Points in the Ruptures table
+			System.err.println("Expected " + numPoints + " from Ruptures table, but " + points.size() + " points in Points table.");
+			System.exit(1);
+		}
 		ps.println("Probability = " + probability);
 		ps.println("Magnitude = " + magnitude);
 		ps.println("GridSpacing = " + gridSpacing);
