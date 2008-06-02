@@ -35,7 +35,7 @@ public class RuptureVariationFileInserter {
 	//added by SC
     private int currentRup_Var_Scenario_ID;
     private int currentERF_ID;
-    private double[] desiredPeriods = {3.00003, 5.0, 10.0};
+    private double[] desiredPeriods = {2.0, 3.00003, 5.0, 10.0};
     private ArrayList<Integer> desiredPeriodsIndices = null;
     
 	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID, String erfID) throws IOException {
@@ -96,22 +96,28 @@ public class RuptureVariationFileInserter {
 	}
 
 	private void insertAllRuptureVariationFiles(Session sess) {
-		for (int i=0; i<totalFilesList.size(); i++) {
+			for (int i=0; i<totalFilesList.size(); i++) {
 
 			//writeFileListToFile(filelistwriter, safilesList, i);
 
 			//System.out.println("Filename: " + safilesList[i].getName());
-			prepAndExecuteSingleRuptureVariationFileInsertion(sess, totalFilesList.get(i));
-			if ((i+1)%250==0) System.gc();
-			if ((i+1)%50==0) {
-				// flush a batch of inserts and release memory
-				sess.flush();
-				sess.clear();
-			}
+				try {
+					prepAndExecuteSingleRuptureVariationFileInsertion(sess, totalFilesList.get(i));
+					if ((i+1)%250==0) System.gc();
+					if ((i+1)%50==0) {
+					// flush a batch of inserts and release memory
+						sess.flush();
+						sess.clear();
+					}
+				} catch (Exception e) {
+					System.out.println("Exception in file " + totalFilesList.get(i).getAbsolutePath());
+					e.printStackTrace();
+					System.exit(-1);
+				}
 			/*if ((i+1)%1000==0) {
 				sess.getTransaction().commit();
 			}*/
-		}
+			}
 	}
 
 	@SuppressWarnings("unused")
@@ -204,6 +210,9 @@ public class RuptureVariationFileInserter {
 				paPK.setSGT_Variation_ID(currentSGT_Variation_ID);
 				paPK.setIM_Type(new String("SA_Period_" + saPeriods.values[periodIter]));
 				pa.setPaPK(paPK);
+				if (currRupVar.geomAvgComp.periods[periodIter]>1000) {
+					throw new IllegalArgumentException();
+				}
 				pa.setIM_Value(currRupVar.geomAvgComp.periods[periodIter]);
 				pa.setUnits("cm per second squared");
 
