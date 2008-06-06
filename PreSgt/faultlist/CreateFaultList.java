@@ -55,8 +55,10 @@ public class CreateFaultList {
 			ruptures.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
+			System.exit(3);
 		} catch (IOException e) {
 			e.printStackTrace();
+			System.exit(4);
 		}
 	}
 }
