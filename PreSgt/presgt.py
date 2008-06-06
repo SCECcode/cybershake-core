@@ -50,9 +50,11 @@ def genFdloc(outputName, site, mlon, mlat, cordfileName):
 def genFaultList(outputName, site, erf_id):
     '''Copies the functionality of gen_faultlist.csh:  it serves as a wrapper to CreateFaultList.java, which queries the database to generate a list of ruptures which are applicable for the given site.'''
     print "Generating fault list for %s.\n" % site
-    command = 'java -classpath .:faultlist/mysql-connector-java-5.0.5-bin.jar faultlist/CreateFaultList %s %s %s %s' % (site, erf_id, PATH_TO_RUPTURE_VARIATIONS, outputName)
+    command = 'java -classpath .:%s:%s/faultlist/mysql-connector-java-5.0.5-bin.jar faultlist/CreateFaultList %s %s %s %s' % (sys.path[0], sys.path[0], site, erf_id, PATH_TO_RUPTURE_VARIATIONS, outputName)
     print command
     returnCode = subprocess.call(command, shell=True)
+    if returnCode!=0:
+	sys.exit(returnCode)
 
 def genRadiusFile(radiusfile):
 	'''Duplicates the functionality of part of gen_sgtgrid.csh:  it writes the adaptive mesh info to a radius file as part of generating the cordfile.'''
@@ -99,13 +101,14 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 
 	print "Generating %s.cordfile.\n" % site
 
-	command = 'bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outputFile, mlon, mlat, mrot, faultlist)
+	command = '%s/bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (sys.path[0], ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outputFile, mlon, mlat, mrot, faultlist)
 	cmdFile = open("command.txt", "w")
 	cmdFile.write(command)
 	cmdFile.flush()
 	cmdFile.close()
-	subprocess.call(command, shell=True)
-
+	returnCode = subprocess.call(command, shell=True)
+	if returnCode!=0:
+		sys.exit(returnCode)
 
 PATH_TO_RUPTURE_VARIATIONS = '/cfs/projects/scec/CyberShake2007/ruptures/RuptureVariations'
 
