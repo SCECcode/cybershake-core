@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/u/ac/scottcal/python-2.5.1/bin/python
 
 import os
 import sys
@@ -65,17 +65,17 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile):
     pipe = "> " + paramfile
     command = executable + " " + parameters + " " + pipe
     print command
-
-    os.system(command)
+    exitcode = os.system(command)
+    if exitcode!=0:
+	sys.exit((exitcode >> 8) & 0xFF)
     genBoundfile(gridout, coordfile, boundsfile)
-
 
 
 def main():
     if len(sys.argv) < 7:
         print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile>"
         print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC"
-        sys.exit()
+        sys.exit(0)
 	
     modelboxFile = sys.argv[1]
     gridfile = sys.argv[2]
