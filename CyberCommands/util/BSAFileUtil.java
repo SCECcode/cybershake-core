@@ -1,8 +1,12 @@
 package util;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 public class BSAFileUtil {
 	
@@ -23,7 +27,7 @@ public class BSAFileUtil {
 		return totalFileList;
 		
 	}
-	
+		
 	private static void createTotalFileListHelper(File saFile) {
 		File[] safilesList = saFile.listFiles(new BSAFilenameFilter());
 		File[] sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
@@ -80,17 +84,15 @@ public class BSAFileUtil {
 	}
 	
 	public static int getSourceIDFromFile(File file, String siteName) {
-		return getIDFromTokens(file, SOURCE_ID_POS, siteName);
+		return getIDFromTokens(file.getName(), SOURCE_ID_POS, siteName);
 	
 	}
 	
 	public static int getRuptureIDFromFile(File file, String siteName) {
-		return getIDFromTokens(file, RUPTURE_ID_POS, siteName);
+		return getIDFromTokens(file.getName(), RUPTURE_ID_POS, siteName);
 	}
 	
-	private static int getIDFromTokens(File file, int indexToToken, String siteName) {
-
-		String filename = file.getName();
+	private static int getIDFromTokens(String filename, int indexToToken, String siteName) {
 		if (isInDebugMode) {
 			System.out.println("BSAFileUtil::getIDFromTokens: filename: " + filename);
 		}
@@ -171,15 +173,27 @@ public class BSAFileUtil {
 	}
 
 	public static int getSourceIDFromRuptureVariationFile(File file, String siteName) {
-		return getIDFromTokens(file, SOURCE_ID_POS, siteName);
+		return getIDFromTokens(file.getName(), SOURCE_ID_POS, siteName);
 	}
 	
 	public static int getRuptureIDFromRuptureVariationFile(File file, String siteName) {
-		return getIDFromTokens(file, RUPTURE_ID_POS, siteName);
+		return getIDFromTokens(file.getName(), RUPTURE_ID_POS, siteName);
 	}
 
 	public static int getRupVarIDFromRuptureVariationFile(File file, String siteName) {
-		return getIDFromTokens(file, RUP_VAR_ID_POS, siteName);
+		return getIDFromTokens(file.getName(), RUP_VAR_ID_POS, siteName);
+	}
+
+	public static int getSourceIDFromRuptureVariationZipEntry(ZipEntry entry, String siteName) {
+		return getIDFromTokens(entry.getName(), SOURCE_ID_POS, siteName);
+	}
+	
+	public static int getRuptureIDFromRuptureVariationZipEntry(ZipEntry entry, String siteName) {
+		return getIDFromTokens(entry.getName(), RUPTURE_ID_POS, siteName);
+	}
+
+	public static int getRupVarIDFromRuptureVariationZipEntry(ZipEntry entry, String siteName) {
+		return getIDFromTokens(entry.getName(), RUP_VAR_ID_POS, siteName);
 	}
 
 	public static boolean isInDebugMode() {

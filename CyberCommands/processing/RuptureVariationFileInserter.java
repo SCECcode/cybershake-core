@@ -2,9 +2,15 @@ package processing;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 
 import mapping.PeakAmplitude;
 import mapping.PeakAmplitudePK;
@@ -87,14 +93,55 @@ public class RuptureVariationFileInserter {
 
 	public void performInsertions() {
 		retrieveSiteIDFromDB();
-		initFileList();
 		
-		Session sess = sessFactory.openSession();
-		insertAllRuptureVariationFiles(sess);
-		sess.getTransaction().commit();
-		sess.close();
+		if (pathName.indexOf(".zip")==pathName.length()-4) {
+			Session sess = sessFactory.openSession();
+			insertRuptureVariationFilesFromZip(sess);
+			
+		} else {
+			initFileList();
+		
+			Session sess = sessFactory.openSession();
+			insertAllRuptureVariationFiles(sess);
+			sess.getTransaction().commit();
+			sess.close();
+		}
 	}
 
+	private void insertRuptureVariationFilesFromZip(Session sess) {
+		try {
+			ZipFile saZipFile = new ZipFile(pathName);
+			Enumeration<? extends ZipEntry> e = saZipFile.entries();
+			long size;
+			byte[] data;
+			int counter = 0;
+			ZipEntry ze;
+			InputStream is;
+			while (e.hasMoreElements()) {
+				counter++;
+				ze = e.nextElement();
+				is = saZipFile.getInputStream(ze);
+				size = ze.getSize();
+				data = new byte[(int)size];
+				if (is.read(data, 0, (int)size)!=size) {
+					System.err.println("Error reading " + size + " bytes of zip entry " + ze.getName());
+					System.exit(3);
+				}
+				SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(data, siteName, ze);
+				saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
+				insertRupture(saRuptureWithSingleRupVar, sess);				
+				if (counter%250==0) System.gc();
+				if (counter%100==0) {
+					sess.flush();
+					sess.clear();
+				}
+				is.close();
+			}
+		} catch (IOException ex) {
+			System.err.println("Error reading from zip file " + pathName);
+		}
+	}
+	
 	private void insertAllRuptureVariationFiles(Session sess) {
 			for (int i=0; i<totalFilesList.size(); i++) {
 
