@@ -80,8 +80,8 @@ public class CheckDBDataForSite {
             }
             int ampSetNum = ampSet.getInt("count(*)");
             
-            if (rupVarSetNum!=ampSetNum/27) {
-                System.out.println(rupVarSetNum + " variations for site " + site + " in RupVar table, but " + (ampSetNum/27) + " variations in PeakAmp table.");
+            if (rupVarSetNum!=ampSetNum/4) {
+                System.out.println(rupVarSetNum + " variations for site " + site + " in RupVar table, but " + (ampSetNum/4) + " variations in PeakAmp table.");
                 rupVarSet.close();
                 ampSet.close();
                 findDifferences(dbc, site, erf_id, rup_var_scen_id, sgt_variation_id, outputFile);
@@ -91,6 +91,7 @@ public class CheckDBDataForSite {
             
         } catch (SQLException e) {
             e.printStackTrace();
+            System.exit(-3);
         }
         
         
@@ -125,7 +126,7 @@ public class CheckDBDataForSite {
             "and S.CS_Site_ID=A.Site_ID " +
             "and A.ERF_ID=" + erf_id + " " +
             "and A.Rup_Var_Scenario_ID=" + rup_var_scen_id + " " +
-            "and A.SGT_Variation_ID=" + sgt_variation_id;
+            "and A.SGT_Variation_ID=" + sgt_variation_id + " ";
 
             BufferedWriter bw = null;
             try {
@@ -147,8 +148,8 @@ public class CheckDBDataForSite {
                     query = prefix + "and A.Source_ID=" + source + " " +
                     "and A.Rupture_ID=" + rupture + " " +
                     "and A.Rup_Var_ID=" + rupVarSet.getInt("Rup_Var_ID");
+//                    System.out.println(query);
                     ResultSet psaSet = dbc.selectData(query);
-                    
                     psaSet.first();
                     if (psaSet.getRow()==0) { //no entries, missing
                         if (lastSource!=source || lastRupt!=rupture) {
@@ -183,10 +184,12 @@ public class CheckDBDataForSite {
                 rupVarSet.close();
             } catch (IOException e1) {
                 e1.printStackTrace();
+                System.exit(-1);
             }
 
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            System.exit(-2);
         }
         
     }
