@@ -1,4 +1,4 @@
-#!/u/ac/scottcal/python-2.5.1/bin/python
+#!/usr/bin/env python
 
 import os
 import sys
@@ -15,7 +15,6 @@ def genGridfile(site, outputFile, xlen, ylen, zlen, spacing):
     output.flush()
     output.close()
 
-
 def genBoundfile(gridout, coordfile, boundfile):
     '''Takes a path to a gridout_<site> and model_coords_GC_<site> to produce a model_bounds_GC_<site> file, containing a list of all the (x,y) border coordinates.'''
     input = open(gridout)
@@ -31,7 +30,7 @@ def genBoundfile(gridout, coordfile, boundfile):
         pieces = line.split()
         if int(pieces[2])==0 or int(pieces[2])==intNX-1 or int(pieces[3])==0 or int(pieces[3])==intNY-1:
             output.write(line)
-        
+    
     input.close()
     output.flush()
     output.close()
@@ -41,32 +40,33 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile):
     '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
     ZLEN = 40.0
     SPACING = .2
-
+    
     modelboxInput = open(modelboxFile)
     modelboxData = [line.strip() for line in modelboxInput.readlines()]
     modelboxInput.close()
-
+    
     site = modelboxData[0]
     # skipping centroid info and parameters header
     modelParamsLine = modelboxData[4]
     # this line is
-    #    mlon= <lon>  mlat= <lat>  mrot= <rot>  xlen = <xdist>  ylen= <ydistdfgCVS/CVS;
+    #    mlon= <lon>  mlat= <lat>  mrot= <rot>  xlen = <xdist>  ylen= <ydist>
     modelParamsData = modelParamsLine.split()
     model_lon = float(modelParamsData[1])
     model_lat = float(modelParamsData[3])
     model_rot = float(modelParamsData[5])
     xlen = float(modelParamsData[7])
     ylen = float(modelParamsData[9])
-
+    
     genGridfile(site, gridfile, xlen, ylen, ZLEN, SPACING)
-
+    
     executable = "bin/gen_model_cords"
     parameters = "geoproj=1 gridfile=%s gridout=%s center_origin=1 do_coords=1 nzout=1 name=%s gzip=0 latfirst=0 modellon=%f modellat=%f modelrot=%f" % (gridfile, gridout, coordfile, model_lon, model_lat, model_rot)
     pipe = "> " + paramfile
     command = executable + " " + parameters + " " + pipe
-    print command
     exitcode = os.system(command)
+    print command
     if exitcode!=0:
+    	print "Exit with code %d\n" % ((exitcode >> 8) & 0xFF)
 	sys.exit((exitcode >> 8) & 0xFF)
     genBoundfile(gridout, coordfile, boundsfile)
 
@@ -75,7 +75,7 @@ def main():
     if len(sys.argv) < 7:
         print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile>"
         print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC"
-        sys.exit(0)
+        sys.exit(1)
 	
     modelboxFile = sys.argv[1]
     gridfile = sys.argv[2]
