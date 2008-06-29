@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 
 import util.BSAFileUtil;
+import util.NumberHelper;
 import util.SABinary2Float;
 import util.SwapBytes;
 
@@ -33,11 +34,12 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 
 	public SARuptureFromRuptureVariationFile(byte[] data, String siteName, ZipEntry saZipEntry) {
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(data);
-		super.createRupVars(floats);
+		ArrayList<Float> swappedFloats = SwapBytes.swapArrayOfFloatsToArrayOfFloats(floats);
+		super.createRupVars(swappedFloats);
 		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationZipEntry(saZipEntry, siteName);
 		ruptureID = BSAFileUtil.getRuptureIDFromRuptureVariationZipEntry(saZipEntry, siteName);
 		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationZipEntry(saZipEntry, siteName);
-		createPeriods(floats);
+		createPeriods(swappedFloats);
 		try {
 			rupVar.computeGeomAvg();
 		} catch (Exception e) {

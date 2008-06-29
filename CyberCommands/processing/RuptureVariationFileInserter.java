@@ -43,10 +43,12 @@ public class RuptureVariationFileInserter {
     private int currentERF_ID;
     private double[] desiredPeriods = {2.0, 3.00003, 5.0, 10.0};
     private ArrayList<Integer> desiredPeriodsIndices = null;
+    private boolean zipOption;
     
-	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID, String erfID) throws IOException {
-		siteName = newSiteName;		
+	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID, String erfID, boolean zipOpt) throws IOException {
+		siteName = newSiteName;
 		pathName = newPathName;
+		zipOption = zipOpt;
 		
 		if (serverName.equals("intensity")) {
 			hibernate_cfg_filename = "intensity.cfg.xml";
@@ -66,11 +68,11 @@ public class RuptureVariationFileInserter {
         }
 	}
 
-	private void initFileList() {
+	private void initFileList(boolean zipOpt) {
 		BSAFileUtil.totalFilenameList = new ArrayList<String>();
 		BSAFileUtil.totalFileList = new ArrayList<File>();
 		File saFile = new File(pathName);
-		totalFilesList = BSAFileUtil.createTotalFileList(saFile);
+		totalFilesList = BSAFileUtil.createTotalFileList(saFile, zipOpt);
 	}
 
 	private void retrieveSiteIDFromDB() {
@@ -93,14 +95,14 @@ public class RuptureVariationFileInserter {
 
 	public void performInsertions() {
 		retrieveSiteIDFromDB();
+		initFileList(zipOption);
 		
-		if (pathName.indexOf(".zip")==pathName.length()-4) {
+		if (zipOption) {
 			Session sess = sessFactory.openSession();
 			insertRuptureVariationFilesFromZip(sess);
-			
+			sess.getTransaction().commit();
+			sess.close();
 		} else {
-			initFileList();
-		
 			Session sess = sessFactory.openSession();
 			insertAllRuptureVariationFiles(sess);
 			sess.getTransaction().commit();
@@ -109,8 +111,9 @@ public class RuptureVariationFileInserter {
 	}
 
 	private void insertRuptureVariationFilesFromZip(Session sess) {
+		for (File zf: totalFilesList) {
 		try {
-			ZipFile saZipFile = new ZipFile(pathName);
+			ZipFile saZipFile = new ZipFile(zf);
 			Enumeration<? extends ZipEntry> e = saZipFile.entries();
 			long size;
 			byte[] data;
@@ -135,10 +138,14 @@ public class RuptureVariationFileInserter {
 					sess.flush();
 					sess.clear();
 				}
+//				for (Float period : saRuptureWithSingleRupVar.rupVar.geomAvgComp.periods) {
+//					System.out.println(period);
+//				}
 				is.close();
 			}
 		} catch (IOException ex) {
 			System.err.println("Error reading from zip file " + pathName);
+		}
 		}
 	}
 	

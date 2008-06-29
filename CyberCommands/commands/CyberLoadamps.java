@@ -38,7 +38,8 @@ public class CyberLoadamps {
 		//added by SC
         Option ruptureVariationID = OptionBuilder.withArgName("ruptureVariationID").hasArg().withDescription("Rupture Variation ID - this option is required").create("rvid");
         Option erfID = OptionBuilder.withArgName("erfID").hasArg().withDescription("ERF ID - this option is required").create("erfid");
-		Option help = new Option("help", "print this message");
+        Option zip = new Option("z", "Read zip files instead of bsa.");
+        Option help = new Option("help", "print this message");
 
 		options.addOption(site);
 		options.addOption(sgt);
@@ -48,6 +49,7 @@ public class CyberLoadamps {
 		//added by SC
         options.addOption(ruptureVariationID);
         options.addOption(erfID);
+        options.addOption(zip);
         
 		CommandLineParser parser = new GnuParser();
 
@@ -89,7 +91,7 @@ public class CyberLoadamps {
                 }
 
 				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " as site: " + cmd.getOptionValue("site") + " and SGT Variation ID: " + cmd.getOptionValue("sgt"));
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"), cmd.getOptionValue("sgt"), cmd.getOptionValue("server"), cmd.getOptionValue("rvid"), cmd.getOptionValue("erfid"));
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"), cmd.getOptionValue("sgt"), cmd.getOptionValue("server"), cmd.getOptionValue("rvid"), cmd.getOptionValue("erfid"), cmd.hasOption("z"));
 				rvfi.performInsertions();
 			}
 

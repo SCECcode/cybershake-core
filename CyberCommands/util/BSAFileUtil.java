@@ -20,14 +20,74 @@ public class BSAFileUtil {
 	public static boolean isInDebugMode = false;
 	private static boolean hasSGTVariationCharacter = false;
 	
-	public static ArrayList<File> createTotalFileList(File saFile) {
+	public static ArrayList<File> createTotalFileList(File saFile, boolean zipOpt) {
 		totalFilenameList = new ArrayList<String>();
 		totalFileList = new ArrayList<File>();
-		createTotalFileListHelper(saFile);
+		if (zipOpt) {
+			createTotalFileListZipHelper(saFile);
+		} else {
+			createTotalFileListHelper(saFile);
+		}
 		return totalFileList;
 		
 	}
+	
+	private static void createTotalFileListZipHelper(File saFile) {
+		File[] zipfilesList = saFile.listFiles(new ZipFilenameFilter());
+		File[] sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
 		
+		if (isInDebugMode) {
+			System.out.println("Printing all files in " + saFile.getName());
+			File[] totalSAFilesList = saFile.listFiles();
+			for (int i=0; i<totalSAFilesList.length; i++) {
+				System.out.println("totalSAFilesList[" + i + "]: " + totalSAFilesList[i].getName()); 
+			}
+		}
+		
+		if (isInDebugMode) {
+			for (int i=0; i < zipfilesList.length; i++) {
+				System.out.println("safilesList[" + i + "]: " + zipfilesList[i].getName());
+			}			
+		}
+		
+		if (isInDebugMode) {
+			for (int i=0; i < sadirsList.length; i++) {
+				System.out.println("sadirsList[" + i + "]: " + sadirsList[i].getName());
+			}			
+		}
+
+		
+		if (!saFile.getName().equals("CVS") && isInDebugMode) {
+			System.out.println("Path: " + saFile.getPath());
+		}
+		
+		if (pathLog == null && !saFile.getName().equals("CVS")) {
+			pathLog = saFile.getPath() + " ";
+		}
+		else if (pathLog != null && !saFile.getName().equals("CVS")) {
+			pathLog += saFile.getPath() + " ";
+		}
+		
+		totalFileList.addAll(Arrays.asList(zipfilesList));
+		for (int filesIndex=0; filesIndex < zipfilesList.length; filesIndex++) {
+			if (isInDebugMode) {
+				System.out.println("\tFilename: " + zipfilesList[filesIndex].getName());
+			}
+			totalFilenameList.add(zipfilesList[filesIndex].getName());
+		}
+		
+		if (sadirsList != null) {
+			for (int dirsIndex=0; dirsIndex<sadirsList.length; dirsIndex++) {
+				createTotalFileListHelper(sadirsList[dirsIndex]);
+			}
+		}
+		else {
+			return;
+		}
+		
+	}
+	
+	
 	private static void createTotalFileListHelper(File saFile) {
 		File[] safilesList = saFile.listFiles(new BSAFilenameFilter());
 		File[] sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
