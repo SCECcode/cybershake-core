@@ -98,6 +98,9 @@ public class RuptureVariationFileInserter {
 		initFileList(zipOption);
 		
 		if (zipOption) {
+			for (File f: totalFilesList) {
+				System.out.println(f.getName());
+			}
 			Session sess = sessFactory.openSession();
 			insertRuptureVariationFilesFromZip(sess);
 			sess.getTransaction().commit();
@@ -264,9 +267,10 @@ public class RuptureVariationFileInserter {
 				paPK.setSGT_Variation_ID(currentSGT_Variation_ID);
 				paPK.setIM_Type(new String("SA_Period_" + saPeriods.values[periodIter]));
 				pa.setPaPK(paPK);
-				if (currRupVar.geomAvgComp.periods[periodIter]>1000) {
+				if (currRupVar.geomAvgComp.periods[periodIter]>1200) {
 					throw new IllegalArgumentException();
 				}
+//				System.out.println("Inserting value " + currRupVar.geomAvgComp.periods[periodIter] + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
 				pa.setIM_Value(currRupVar.geomAvgComp.periods[periodIter]);
 				pa.setUnits("cm per second squared");
 
