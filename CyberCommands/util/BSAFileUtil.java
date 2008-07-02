@@ -46,7 +46,7 @@ public class BSAFileUtil {
 		
 		if (isInDebugMode) {
 			for (int i=0; i < zipfilesList.length; i++) {
-				System.out.println("safilesList[" + i + "]: " + zipfilesList[i].getName());
+				System.out.println("zipfilesList[" + i + "]: " + zipfilesList[i].getName());
 			}			
 		}
 		
@@ -78,7 +78,7 @@ public class BSAFileUtil {
 		
 		if (sadirsList != null) {
 			for (int dirsIndex=0; dirsIndex<sadirsList.length; dirsIndex++) {
-				createTotalFileListHelper(sadirsList[dirsIndex]);
+				createTotalFileListZipHelper(sadirsList[dirsIndex]);
 			}
 		}
 		else {
