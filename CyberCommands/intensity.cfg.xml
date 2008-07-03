@@ -6,12 +6,12 @@
     <session-factory>
         <property name="hibernate.bytecode.use_reflection_optimizer">false</property>
         <property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property>
-        <property name="hibernate.connection.password"></property>
+        <property name="hibernate.connection.password">CyberShake2007</property>
         <property name="hibernate.connection.url">jdbc:mysql://intensity.usc.edu/CyberShake</property>
-        <property name="hibernate.connection.username">joshuaga</property>
+        <property name="hibernate.connection.username">scottcal</property>
         <property name="hibernate.current_session_context_class">thread</property>
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
-        <property name="hibernate.jdbc.batch_size">50</property>
+        <property name="hibernate.jdbc.batch_size">100</property>
         <property name="hibernate.show_sql">false</property>
         <property name="hibernate.transaction.factory_class">org.hibernate.transaction.JDBCTransactionFactory</property>
         
