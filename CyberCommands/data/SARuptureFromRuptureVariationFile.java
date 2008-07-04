@@ -33,13 +33,13 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 	}
 
 	public SARuptureFromRuptureVariationFile(byte[] data, String siteName, ZipEntry saZipEntry) {
-		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(data);
-		ArrayList<Float> swappedFloats = SwapBytes.swapArrayOfFloatsToArrayOfFloats(floats);
-		super.createRupVars(swappedFloats);
+		byte[] swappedBytes = SwapBytes.swapByteArrayToByteArrayForFloats(data);
+		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(swappedBytes);
+		super.createRupVars(floats);
 		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationZipEntry(saZipEntry, siteName);
 		ruptureID = BSAFileUtil.getRuptureIDFromRuptureVariationZipEntry(saZipEntry, siteName);
 		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationZipEntry(saZipEntry, siteName);
-		createPeriods(swappedFloats);
+		createPeriods(floats);
 		try {
 			rupVar.computeGeomAvg();
 		} catch (Exception e) {

@@ -21,6 +21,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 
 import util.BSAFileUtil;
+import util.NumberHelper;
 import data.DirectionalComponent;
 import data.SAPeriods;
 import data.SARuptureFromRuptureVariationFile;
@@ -116,6 +117,7 @@ public class RuptureVariationFileInserter {
 	private void insertRuptureVariationFilesFromZip(Session sess) {
 		for (File zf: totalFilesList) {
 		try {
+			System.out.println("Entering zip file " + zf.getName());
 			ZipFile saZipFile = new ZipFile(zf);
 			Enumeration<? extends ZipEntry> e = saZipFile.entries();
 			long size;
@@ -133,8 +135,9 @@ public class RuptureVariationFileInserter {
 					System.err.println("Error reading " + size + " bytes of zip entry " + ze.getName());
 					System.exit(3);
 				}
+				
 				SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(data, siteName, ze);
-				saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
+//				saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
 				insertRupture(saRuptureWithSingleRupVar, sess);				
 				if (counter%250==0) System.gc();
 				if (counter%100==0) {
@@ -268,11 +271,11 @@ public class RuptureVariationFileInserter {
 				paPK.setIM_Type(new String("SA_Period_" + saPeriods.values[periodIter]));
 				pa.setPaPK(paPK);
 				double psaValue = currRupVar.geomAvgComp.periods[periodIter];
-				if (psaValue>2500) {
+				if (psaValue>2500 || psaValue<0.01) {
 					System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
 					throw new IllegalArgumentException();
 				}
-//				System.out.println("Inserting value " + currRupVar.geomAvgComp.periods[periodIter] + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+//				System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
 				pa.setIM_Value(psaValue);
 				pa.setUnits("cm per second squared");
 

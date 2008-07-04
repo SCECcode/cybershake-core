@@ -56,6 +56,7 @@ public class SwapBytes {
 		return null;
 	}
 	
+	
 	private static void commonSwap(ArrayList<Float> floats) {
 		ArrayList<byte[]> byteArray = new ArrayList<byte[]>();
 		makeByteArray(floats, byteArray);
@@ -113,6 +114,28 @@ public class SwapBytes {
 		}
 	}
 
+	public static byte[] swapByteArrayToByteArrayForFloats(byte[] byteArray) {
+		int length = byteArray.length/NumberHelper.FLOAT_LENGTH;
+		byte[] outArray = new byte[byteArray.length];
+		byte[] temp = new byte[NumberHelper.FLOAT_LENGTH];
+		byte[] swap;
+		try {
+			for (int i=0; i<length; i++) {
+				for (int j=0; j<NumberHelper.FLOAT_LENGTH; j++) {
+					temp[j] = byteArray[NumberHelper.FLOAT_LENGTH*i + j];
+				}
+				swap = NumberHelper.swapBytes(temp, NumberHelper.FLOAT_LENGTH);
+				for (int j=0; j<NumberHelper.FLOAT_LENGTH; j++) {
+					outArray[NumberHelper.FLOAT_LENGTH*i + j] = swap[j];
+				}
+			}
+		} catch (IncorrectNumberOfBytesException ex) {
+			ex.printStackTrace();
+			System.exit(1);
+		}
+		return outArray;
+	}
+	
 	private static void swapBytes(ArrayList<byte[]> byteArray, ArrayList<byte[]> swappedByteArray) {
 		for (byte[] b: byteArray) {
 			try {
