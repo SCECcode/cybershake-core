@@ -73,13 +73,14 @@ filename = os.environ.get('PYTHONSTARTUP')
 if filename and os.path.isfile(filename):
   execfile(filename)
 
-if len(sys.argv) < 3:
-  print "Syntax: get_modelbox.py SITE_Name Outfile_name"
-  print "Example: get_modelbox.py USC ./usc_modelbox.txt"
+if len(sys.argv) < 4:
+  print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name"
+  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt"
   sys.exit()
 
 site = sys.argv[1]
-outfile = sys.argv[2]
+erf = sys.argv[2]
+outfile = sys.argv[3]
 f = open(outfile,"w")
 
 f.write("%s\n"%(site))
@@ -105,10 +106,10 @@ for stas in station_set:
     break
 
 if found !=1:
-   print "Unable to find station %s in DB. Exiting\n"
+   print "Unable to find station %s in DB. Exiting\n" % site
    sys.exit(-1)
  
-sql_string = "select distinct Ruptures.Source_ID,Ruptures.Rupture_ID,Source_Name,Mag,Prob,Start_Lat,Start_Lon,End_Lat,End_Lon from CyberShake_Sites,Ruptures,CyberShake_Site_Ruptures where Ruptures.ERF_ID=29 and Ruptures.ERF_ID=CyberShake_Site_Ruptures.ERF_ID and CyberShake_Site_Ruptures.CS_Site_ID=%s and CyberShake_Site_Ruptures.Source_ID=Ruptures.Source_ID and CyberShake_Site_Ruptures.Rupture_ID=Ruptures.Rupture_ID order by Mag desc"%(stas[0])
+sql_string = "select distinct Ruptures.Source_ID,Ruptures.Rupture_ID,Source_Name,Mag,Prob,Start_Lat,Start_Lon,End_Lat,End_Lon from CyberShake_Sites,Ruptures,CyberShake_Site_Ruptures where Ruptures.ERF_ID=%s and Ruptures.ERF_ID=CyberShake_Site_Ruptures.ERF_ID and CyberShake_Site_Ruptures.CS_Site_ID=%s and CyberShake_Site_Ruptures.Source_ID=Ruptures.Source_ID and CyberShake_Site_Ruptures.Rupture_ID=Ruptures.Rupture_ID order by Mag desc"%(erf,stas[0])
 try:
   cur.execute(sql_string)
 except MySQLdb.DatabaseError,e:
