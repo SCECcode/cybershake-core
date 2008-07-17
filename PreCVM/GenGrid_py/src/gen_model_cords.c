@@ -362,6 +362,7 @@ if(do_coords)
          }
       }
    }
+   exit(0);
 }
 
 FILE *fopfile(name,mode)
