@@ -80,7 +80,7 @@ public class RuptureVariationFileInserter {
 		initSessionFactory();
 		Session retrieveSiteIDSess = sessFactory.openSession();
 		
-		siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Site_Name = '" + siteName + "'";
+		siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Short_Name = '" + siteName + "'";
 		//System.out.println(query);
 		List siteIDList = retrieveSiteIDSess.createSQLQuery(siteIDQuery).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
 		Object siteIDObject = siteIDList.get(0); 
@@ -271,7 +271,7 @@ public class RuptureVariationFileInserter {
 				paPK.setIM_Type(new String("SA_Period_" + saPeriods.values[periodIter]));
 				pa.setPaPK(paPK);
 				double psaValue = currRupVar.geomAvgComp.periods[periodIter];
-				if (psaValue>2500 || psaValue<0.01) {
+				if (psaValue>8400 || psaValue<0.01) {
 					System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
 					throw new IllegalArgumentException();
 				}
