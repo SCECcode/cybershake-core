@@ -5,6 +5,18 @@
 #
 # Description of Changes:
 #
+# 1.5.2 - 23 June 2008
+#  Permit IM_Type_Value to be null in cases where IM_Type_Measure is sufficient.
+#  For example, SA has an IM_Type_Value (the period), but peak acceleration would not.
+#
+# 1.5.1 - 23 June 2008
+#  Renamed fields in IM_Types for more clarity.
+#
+# 1.5.0 - 22 June 2008
+#  Restructured to create new IM_Types table to track the IM Types used.
+#  Normalizes things and makes it easier for OpenSHA to figure out
+#  all the available IM types.
+#
 # 1.4.0 - 30 July 2007
 #   Add table to describe SGT variations, to support studies with
 #     same rupture variations, but different SGT's. This table is
@@ -348,6 +360,19 @@ primary key (SGT_Variation_ID, SGT_Variation_Attr_Name, SGT_Variation_Attr_Value
 foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID)
 ) ENGINE=InnoDB;
 
+#
+# Create a table for storing the different types of IMs 
+# stored in the PeakAmplitudes table.
+#
+
+CREATE TABLE IM_Types
+(
+IM_Type_ID int unsigned not null auto_increment,
+IM_Type_Measure varchar(50) not null,
+IM_Type_Value double,
+Units varchar(50) not null,
+primary key (IM_Type_ID)
+) ENGINE=InnoDB;
 
 #
 # Create an Intensity Measure (IM) table for storing the results of 
@@ -363,16 +388,16 @@ Rupture_ID int unsigned not null,
 Rup_Var_ID bigint unsigned not null,
 Rup_Var_Scenario_ID int unsigned not null,
 SGT_Variation_ID int unsigned not null,
-IM_Type varchar(50) not null,
+IM_Type_ID int unsigned not null,
 IM_Value double not null,
-Units varchar(50) not null,
 primary key (ERF_ID, Site_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID, SGT_Variation_ID, IM_Type),
 foreign key (ERF_ID) references ERF_IDs(ERF_ID),
 foreign key (ERF_ID, Source_ID, Rupture_ID) references Ruptures(ERF_ID, Source_ID, Rupture_ID),
 foreign key (Rup_Var_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID),
 foreign key (Site_ID) references CyberShake_Sites(CS_Site_ID),
 foreign key (ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID) references Rupture_Variations(ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID),
-foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID)
+foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID),
+foreign key (IM_Type_ID) references IM_Types(IM_Type_ID)
 ) ENGINE=InnoDB;
 
- 
+
