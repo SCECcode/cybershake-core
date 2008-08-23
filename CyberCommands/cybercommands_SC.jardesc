@@ -1,32 +1,31 @@
-<?xml version="1.0" encoding="WINDOWS-1252" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <jardesc>
-    <jar path="C:/workspace/scec/CyberShake2007/CyberCommands/cybercommands_SC.jar"/>
-    <options buildIfNeeded="true" compress="true" descriptionLocation="/CyberShake2007/CyberCommands/cybercommands_SC.jardesc" exportErrors="false" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
-    <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
-    <selectedProjects/>
-    <manifest generateManifest="false" mainClassHandleIdentifier="=CyberShake2007/CyberCommands&lt;commands{CyberLoadamps.java[CyberLoadamps" manifestLocation="/CyberShake2007/CyberCommands/CyberLoadAmps.mf" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
-        <sealing sealJar="false">
-            <packagesToSeal/>
-            <packagesToUnSeal/>
-        </sealing>
-    </manifest>
-    <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <file path="/CyberShake2007/CyberCommands/.classpath"/>
-        <file path="/CyberShake2007/CyberCommands/hibernate.reveng.foralltables.xml"/>
-        <file path="/CyberShake2007/CyberCommands/setenvs"/>
-        <javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;assets"/>
-        <file path="/CyberShake2007/CyberCommands/log4j.properties"/>
-        <javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;processing"/>
-        <javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;commands"/>
-        <javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;util"/>
-        <file path="/CyberShake2007/CyberCommands/hibernate.reveng.xml"/>
-        <javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;mapping"/>
-        <file path="/CyberShake2007/CyberCommands/surface.cfg.xml"/>
-        <file path="/CyberShake2007/CyberCommands/intensity.cfg.xml"/>
-        <file path="/CyberShake2007/CyberCommands/hibernate.cfg.xml"/>
-        <file path="/CyberShake2007/CyberCommands/build.xml"/>
-        <file path="/CyberShake2007/CyberCommands/.project"/>
-        <file path="/CyberShake2007/CyberCommands/hibernate.peakamplitudes.reveng.xml"/>
-        <javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;data"/>
-    </selectedElements>
+<jar path="CyberShake2007/CyberCommands/cybercommands_SC.jar"/>
+<options buildIfNeeded="true" compress="true" descriptionLocation="/CyberShake2007/CyberCommands/cybercommands_SC.jardesc" exportErrors="false" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+<storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+<selectedProjects/>
+<manifest generateManifest="false" mainClassHandleIdentifier="=CyberShake2007/CyberCommands&lt;commands{CyberLoadamps.java[CyberLoadamps" manifestLocation="/CyberShake2007/CyberCommands/CyberLoadAmps.mf" manifestVersion="1.0" reuseManifest="false" saveManifest="true" usesManifest="true">
+<sealing sealJar="false">
+<packagesToSeal/>
+<packagesToUnSeal/>
+</sealing>
+</manifest>
+<selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+<file path="/CyberShake2007/CyberCommands/surface.cfg.xml"/>
+<javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;mapping"/>
+<file path="/CyberShake2007/CyberCommands/intensity.cfg.xml"/>
+<javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;processing"/>
+<file path="/CyberShake2007/CyberCommands/hibernate.peakamplitudes.reveng.xml"/>
+<javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;util"/>
+<file path="/CyberShake2007/CyberCommands/setenvs"/>
+<file path="/CyberShake2007/CyberCommands/hibernate.reveng.xml"/>
+<javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;commands"/>
+<javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;assets"/>
+<file path="/CyberShake2007/CyberCommands/hibernate.reveng.foralltables.xml"/>
+<file path="/CyberShake2007/CyberCommands/hibernate.cfg.xml"/>
+<file path="/CyberShake2007/CyberCommands/log4j.properties"/>
+<file path="/CyberShake2007/CyberCommands/focal.cfg.xml"/>
+<javaElement handleIdentifier="=CyberShake2007/CyberCommands&lt;data"/>
+</selectedElements>
+<fatjar builder="org.eclipse.jdt.ui.plain_jar_builder" launchConfig=""/>
 </jardesc>
