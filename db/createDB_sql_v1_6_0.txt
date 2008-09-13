@@ -8,7 +8,7 @@
 #
 # 1.6.0 - 10 Sept 2008
 #  Added table to store hazard curves after generation.
-#  Good for storing curves and computing maps.
+#  Used for storing curves and computing maps.
 #
 # 1.5.2 - 23 June 2008
 #  Permit IM_Type_Value to be null in cases where IM_Type_Measure is sufficient.
@@ -416,9 +416,25 @@ Site_ID int unsigned not null,
 ERF_ID int unsigned not null,
 Rup_Var_Scenario_ID int unsigned not null,
 SGT_Variation_ID int unsigned not null,
+Curve_Date date,
 primary key (Hazard_Curve_ID),
 foreign key (ERF_ID) references ERF_IDs(ERF_ID),
 foreign key (Rup_Var_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID),
 foreign key (Site_ID) references CyberShake_Sites(CS_Site_ID),
-foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID),
+foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a hazard curve points table.
+# It contains (x,y) values for a certain hazard curve.
+#
+
+CREATE TABLE Hazard_Curve_Points
+(
+Hazard_Curve_Point_ID int unsigned not null auto_increment,
+Hazard_Curve_ID int unsigned not null,
+X_Value float not null,
+Y_Value float not null,
+primary key (Hazard_Curve_Point_ID),
+foreign key (Hazard_Curve_ID) references Hazard_Curves(Hazard_Curve_ID)
 ) ENGINE=InnoDB;
