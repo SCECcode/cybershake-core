@@ -10,7 +10,7 @@ import java.util.Calendar;
 
 
 public class CreateFaultList {
-	private static final String DB_SERVER = "intensity.usc.edu";
+	private static final String DB_SERVER = "focal.usc.edu";
 	private static final String DB = "CyberShake";
 
 	public static void main(String[] args) {
