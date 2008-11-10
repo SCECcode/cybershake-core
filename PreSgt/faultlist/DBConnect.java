@@ -186,7 +186,7 @@ public class DBConnect
     String drivers = "com.mysql.jdbc.Driver";
     //System.out.println("dbname is:"+dbName);
     String url = "jdbc:mysql://"+hostName+":"+port+"/"+dbName;
-    String username = "scottcal";
+    String username = "cybershk_ro";
     String password = "CyberShake2007";
 //    String password = "";
 
