@@ -1,13 +1,13 @@
-#!/u/ac/scottcal/python-2.5.1/bin/python
+#!/usr/bin/python
 
 import MySQLdb
 import sys
-import subprocess
+import os
 
 def getSiteCoords(site):
 	print "Retrieving coordinates from the database for %s.\n" % site
-	host = "intensity.usc.edu"
-	user = "scottcal"
+	host = "focal.usc.edu"
+	user = "cybershk_ro"
 	passwd = "CyberShake2007"
 	db = "CyberShake"
 	try:
@@ -52,9 +52,9 @@ def genFaultList(outputName, site, erf_id):
     print "Generating fault list for %s.\n" % site
     command = 'java -classpath .:%s:%s/faultlist/mysql-connector-java-5.0.5-bin.jar faultlist/CreateFaultList %s %s %s %s' % (sys.path[0], sys.path[0], site, erf_id, PATH_TO_RUPTURE_VARIATIONS, outputName)
     print command
-    returnCode = subprocess.call(command, shell=True)
+    returnCode = os.system(command)
     if returnCode!=0:
-	sys.exit(returnCode)
+	sys.exit((returnCode >> 8) & 0xFF)
 
 def genRadiusFile(radiusfile):
 	'''Duplicates the functionality of part of gen_sgtgrid.csh:  it writes the adaptive mesh info to a radius file as part of generating the cordfile.'''
@@ -106,11 +106,11 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 	cmdFile.write(command)
 	cmdFile.flush()
 	cmdFile.close()
-	returnCode = subprocess.call(command, shell=True)
+	returnCode = os.system(command)
 	if returnCode!=0:
-		sys.exit(returnCode)
+		sys.exit((returnCode >> 8) & 0xFF)
 
-PATH_TO_RUPTURE_VARIATIONS = '/cfs/projects/scec/CyberShake2007/ruptures/RuptureVariations'
+PATH_TO_RUPTURE_VARIATIONS = '/home/rcf-104/CyberShake2007/ruptures/RuptureVariations'
 
 if len(sys.argv) < 10:
     print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords>'
