@@ -31,9 +31,9 @@ class boundaryinfo:
     min = 0.0
     max = 0.0
 
-def opendb(host,user,pwd,db):
+def opendb(h,pt,us,pwd,d):
   try:
-    connection = MySQLdb.connect(host,user,pwd,db)
+    connection = MySQLdb.connect(host=h,port=pt,user=us,passwd=pwd,db=d)
     return connection
   except MySQLdb.OperationalError,message:
     errorMessage = "Error %d:\n%s" % (message [ 0],message[1])
@@ -61,9 +61,12 @@ xmin = 1.0e15
 xmax = -1.0e15
 ymin = 1.0e15
 ymax = -1.0e15
-host = "intensity.usc.edu"
-username = "scottcal"
+host = "focal.usc.edu"
+#username = "scottcal"
+#host = "hpc-scec.usc.edu"
+username = "cybershk_ro"
 pwd = "CyberShake2007"
+port = 3306
 db="CyberShake"
 #
 # read standard python startup files
@@ -86,7 +89,7 @@ f = open(outfile,"w")
 f.write("%s\n"%(site))
 
 # Open CyberShake DB
-conn = opendb(host,username,pwd,db)
+conn = opendb(host,port,username,pwd,db)
 cur = conn.cursor()
 
 sql_string = "select * from CyberShake_Sites"
