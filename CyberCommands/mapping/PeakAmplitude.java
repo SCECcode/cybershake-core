@@ -3,19 +3,12 @@ package mapping;
 public class PeakAmplitude {
 	private PeakAmplitudePK paPK;
 	private double IM_Value;
-	private String Units;
 	
 	public double getIM_Value() {
 		return IM_Value;
 	}
 	public void setIM_Value(double value) {
 		IM_Value = value;
-	}
-	public String getUnits() {
-		return Units;
-	}
-	public void setUnits(String units) {
-		Units = units;
 	}
 	public PeakAmplitudePK getPaPK() {
 		return paPK;
@@ -40,7 +33,7 @@ public class PeakAmplitude {
 	}
 	
 	public String toString() {
-		return paPK.toString() + ", IM_Value: " + IM_Value + ", Units: " + Units;
+		return paPK.toString() + ", IM_Value: " + IM_Value;
 	}
 	
 }
