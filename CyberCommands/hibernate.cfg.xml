@@ -5,7 +5,7 @@
 <hibernate-configuration>
 <session-factory>
 	<property name="connection.url">jdbc:mysql://localhost/CyberShake</property>
-	<property name="connection.username">joshuaga</property>
+	<property name="connection.username">scottcal</property>
 	<property name="connection.driver_class">com.mysql.jdbc.Driver</property>
 	<property name="dialect">org.hibernate.dialect.MySQLDialect</property>
 	<property name="connection.password"></property>
