@@ -7,7 +7,7 @@
         <property name="hibernate.bytecode.use_reflection_optimizer">false</property>
         <property name="hibernate.connection.driver_class">com.mysql.jdbc.Driver</property>
         <property name="hibernate.connection.password">***REMOVED***</property>
-        <property name="hibernate.connection.url">jdbc:mysql://localhost/CyberShake</property>
+        <property name="hibernate.connection.url">jdbc:mysql://focal.usc.edu/CyberShake</property>
         <property name="hibernate.connection.username">cybershk</property>
         <property name="hibernate.current_session_context_class">thread</property>
         <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
