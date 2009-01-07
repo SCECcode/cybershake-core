@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -34,7 +35,6 @@ public class RuptureVariationFileInserter {
 	private String siteIDQuery;
 	private SessionFactory sessFactory;
 	
-	
 	private String siteName;
 	private String pathName;
 	private String hibernate_cfg_filename = "intensity.cfg.xml";
@@ -44,6 +44,9 @@ public class RuptureVariationFileInserter {
     private int currentERF_ID;
     private double[] desiredPeriods = {2.0, 3.00003, 5.0, 10.0};
     private ArrayList<Integer> desiredPeriodsIndices = null;
+	//maps period indices to IM Type IDs
+	HashMap<Integer, Integer> periodIndexToIDMap = null;
+
     private boolean zipOption;
     
 	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID, String erfID, boolean zipOpt) throws IOException {
@@ -56,6 +59,8 @@ public class RuptureVariationFileInserter {
 		}
 		else if (serverName.equals("surface")) {
 			hibernate_cfg_filename = "surface.cfg.xml";
+		} else if (serverName.equals("focal")) {
+			hibernate_cfg_filename = "focal.cfg.xml";
 		}
 		
 		try {
@@ -204,19 +209,27 @@ public class RuptureVariationFileInserter {
 
 		SAPeriods saPeriods = new SAPeriods();
 
+		//open session
+		Session imTypeIDSess = sessFactory.openSession();
 		
-		//going to only insert 3.0s and 5.0s periods to save space
+		String imTypeIDqueryPrefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND "; 
+		
+		//going to only insert 2.0s, 3.0s, 5.0s, 10s periods to save space
 		if (desiredPeriodsIndices==null) {
 			desiredPeriodsIndices = new ArrayList<Integer>();
+			periodIndexToIDMap = new HashMap<Integer, Integer>();
 			for (int i=0; i<saPeriods.values.length; i++) {
 				for (int j=0; j<desiredPeriods.length; j++) {
 					if (Math.abs(saPeriods.values[i]-desiredPeriods[j])<0.0001) {
 						desiredPeriodsIndices.add(i);
+						int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + desiredPeriods[j]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+						periodIndexToIDMap.put(i, typeID);
 					}
 				}
 			}
 		}
 
+		imTypeIDSess.close();
 
 		int outerLoopMax = saRuptureWithSingleRupVar.rupVars.size();
 		/*System.out.println("number of rupture variations: " + saRupture.rupVars.size());*/
@@ -247,9 +260,7 @@ public class RuptureVariationFileInserter {
 			/*sess.save(rv);*/
 
 			//sess.getTransaction().commit();
-
-
-
+			
 //			int innerLoopMax = currRupVar.geomAvgComp.periods.length;
 			for (int periodIter: desiredPeriodsIndices) {
 //			for (int periodIter=0;periodIter<innerLoopMax;periodIter++) {
@@ -268,7 +279,7 @@ public class RuptureVariationFileInserter {
 				paPK.setRup_Var_ID(currRupVar.variationNumber);
 				paPK.setRup_Var_Scenario_ID(currentRup_Var_Scenario_ID);
 				paPK.setSGT_Variation_ID(currentSGT_Variation_ID);
-				paPK.setIM_Type(new String("SA_Period_" + saPeriods.values[periodIter]));
+				paPK.setIM_Type_ID(periodIndexToIDMap.get(periodIter));
 				pa.setPaPK(paPK);
 				double psaValue = currRupVar.geomAvgComp.periods[periodIter];
 				if (psaValue>8400 || psaValue<0.01) {
@@ -277,8 +288,6 @@ public class RuptureVariationFileInserter {
 				}
 //				System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
 				pa.setIM_Value(psaValue);
-				pa.setUnits("cm per second squared");
-
 
 				// 3. Save and Commit PeakAmplitude instance
 
