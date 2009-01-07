@@ -34,7 +34,7 @@ public class CyberLoadamps {
 		Option sgt = OptionBuilder.withArgName("ID").hasArg().withDescription("SGT Variation ID - this option is required").create("sgt");
 		Option path = OptionBuilder.withArgName("directory").hasArg().withDescription("file path with spectral acceleration files, either top-level directory or zip file - this option is required").create("p");
 		Option site = OptionBuilder.withArgName("name").hasArg().withDescription("site name for spectral acceleration files - this option is required").create("site");
-		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (surface or intensity) - this options is required").create("server");
+		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (focal, surface or intensity) - this options is required").create("server");
 		//added by SC
         Option ruptureVariationID = OptionBuilder.withArgName("ruptureVariationID").hasArg().withDescription("Rupture Variation ID - this option is required").create("rvid");
         Option erfID = OptionBuilder.withArgName("erfID").hasArg().withDescription("ERF ID - this option is required").create("erfid");
