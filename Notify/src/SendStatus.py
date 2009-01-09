@@ -19,16 +19,16 @@ def doSGT(args):
     stage = args[0]
     stages = ["preCVM", "vMeshGen", "vMeshMerge", "sgtGenXY", "sgtMergeXY"]
     subject = "Status - " + site + " " + workflow + " Workflow" 
-    msg = "Workflow is currently on this stage:\n\n"
+    msg = "Workflow is currently on this stage:\r\n\r\n"
 
     try:
         numstage = len(stages)
         istage = stages.index(stage)
         for i in range(0, numstage):
             if (i <= istage):
-                msg = msg + stages[i] + ": Complete\n"
+                msg = msg + stages[i] + ": Complete\r\n"
             else:
-                msg = msg + stages[i] + ": Scheduled\n"
+                msg = msg + stages[i] + ": Scheduled\r\n"
     except:
         print "Stage " + stage + " not found"
         return 1
@@ -40,22 +40,39 @@ def doSGT(args):
 
 
 def doPP(args):
-    # Extract current dax number, max number of daxes
-    daxnum = args[0]
-    maxdax = args[1]
-    
+    stage = args[0]
+    daxnum = int(args[1])
+    maxdax = int(args[2])
+    stages = ["CheckSgt", "DAX"]
     subject = "Status - " + site + " " + workflow + " Workflow"
-    msg = "DAX number " + str(daxnum) + " of approx " + str(maxdax) + " has completed successfully.\r\n"
-
+    msg = "Workflow is currently on this stage:\r\n\r\n"   
+    
+    try:
+        istage = stages.index(stage)
+    except:
+        print "Stage " + stage + " not found"
+        return 1
+    
+    if (daxnum > maxdax):
+        print "DAX number " + str(daxnum) + " is greater than max DAX " + str(maxdax)
+        return 1
+    
+    msg = msg + stages[0] + ": Complete\r\n"
+    if (istage > 0):
+        msg = msg + stages[1] + ": Number " + str(daxnum) + " of approx " + str(maxdax) + " completed successfully\r\n"
+    else:
+        msg = msg + stages[1] + ": Scheduled\r\n"
+                        
     # Send the email
     sendNotification(subject, msg, notify_to)
     
     return 0
 
+
 # Workflow definitions
 # Mapping of workflow name -> tuple (number of arguments, handler)
 WORKFLOWS = {"SGT":(1, doSGT), \
-             "PP":(2, doPP)}
+             "PP":(3, doPP)}
 
 
 # Send email msg using SMTP
@@ -99,7 +116,7 @@ def init():
     if (argc < 5):
         print "Usage: " + sys.argv[0] + " <site> <workflow> <notify_list file> <stage info>"
         print "Example: " + sys.argv[0] + " USC SGT notify.file PreCVM"
-        print "Example: " + sys.argv[0] + " USC PP notify.file 12 80"
+        print "Example: " + sys.argv[0] + " USC PP notify.file CheckSgt 12 80"
         return 1
             
     site = sys.argv[1]
@@ -164,6 +181,7 @@ def cleanup():
 if __name__ == '__main__':
     if (init() != 0):
         sys.exit(1)
-    main()
+    if (main() != 0):
+        sys.exit(1)
     cleanup()
     sys.exit(0)
