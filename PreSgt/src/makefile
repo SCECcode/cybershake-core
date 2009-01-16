@@ -10,7 +10,7 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 UFLAGS = -O3
 
 include ../../Compilers.mk
-CC = $(MY_CC)
+CC = $(MY_MPICC)
 FC = $(MY_FC)
 
 BIN_LIST = gen_sgtgrid
