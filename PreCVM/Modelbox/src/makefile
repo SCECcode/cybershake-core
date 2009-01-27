@@ -13,7 +13,11 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
 UFLAGS = -O3
 
-CC = gcc
+include ../../../Compilers.mk
+CC = $(MY_CC)
+FC = $(MY_FC)
+
+#CC = gcc
 
 BIN_LIST = gcproj
 #faultcords statgrid2latlon fd2close-dist latlon2distaz \
@@ -28,11 +32,17 @@ FFLAGS = ${UFLAGS} -ffixed-line-length-132
 
 ##### make options
 
-$(BIN_LIST) : $$@.o $$@.c ${COBJS} ${FOBJS}
-	${CC} -o $@ $@.o ${LDLIBS}
+all : $(BIN_LIST)
+
+gcproj : gcproj.o gcproj.c ${COBJS} ${FOBJS}
+	${CC} -o gcproj gcproj.o ${LDLIBS}
 	cp $(BIN_LIST) ../bin/
+
+#$(BIN_LIST) : $$@.o $$@.c ${COBJS} ${FOBJS}
+#	${CC} -o $@ $@.o ${LDLIBS}
+#	cp $(BIN_LIST) ../bin/
  
-${COBJS} ${FOBJS} :
+${COBJS} ${FOBJS} : 
 
 clean:
 	rm -rf *.o $(BIN_LIST)
