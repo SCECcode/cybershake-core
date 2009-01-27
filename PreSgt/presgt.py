@@ -5,6 +5,10 @@ import sys
 import os
 import time
 
+sys.path.append("..")
+
+import config
+
 def getSiteCoords(site):
 	print "Retrieving coordinates from the database for %s.\n" % site
 	host = "focal.usc.edu"
@@ -115,7 +119,8 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 	if returnCode!=0:
 		sys.exit((returnCode >> 8) & 0xFF)
 
-PATH_TO_RUPTURE_VARIATIONS = '/home/rcf-104/CyberShake2007/ruptures/RuptureVariations'
+cs_path = config.getProperty('CS_PATH')
+PATH_TO_RUPTURE_VARIATIONS = '%s/ruptures/RuptureVariations' % cs_path
 
 if len(sys.argv) < 10:
     print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords>'
