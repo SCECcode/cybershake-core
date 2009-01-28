@@ -6,9 +6,9 @@ import sys
 vars = {}
 
 def readCfg():
-	cfg = open('../cybershake.cfg')
+	cfg = open('cybershake.cfg')
         if cfg==None:
-                print "%s not found." % os.path.join(os.getcwd(), '../cybershake.cfg')
+                print "%s not found." % os.path.join(os.getcwd(), 'cybershake.cfg')
         cfgContents = cfg.readlines()
 	for line in cfgContents:
         	pieces = line.split('=')
