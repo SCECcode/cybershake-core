@@ -32,8 +32,8 @@ ifeq (bigben,$(findstring bigben, $(HOSTNAME)))
 #       supported by the site (infiniband, myrinet, etc.).
 else
         MY_CC = gcc
-#        MY_FC = g77
-        MY_FC = gfortran
+        MY_FC = g77
+#        MY_FC = gfortran
         MY_MPICC = mpicc
         MY_MPIFC = mpif77
 	MY_CFLAGS = 
