@@ -11,7 +11,7 @@ SVN_LOC = $(shell which $(SVN_BIN))
 ifeq (,$(findstring $(SVN_BIN), $(SVN_LOC)))
 	SVN_CMD = echo -n "UNKNOWN"
 else
-	SVN_CMD = $(SVN_BIN) -n .
+	SVN_CMD = echo -n $(strip $(shell $(SVN_BIN) -n .))
 endif
 
 BIN_LIST = SVNRevision.py
