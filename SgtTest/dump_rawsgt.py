@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
 import sys
+import os
 
-sys.path.append('..')
+full_path = os.path.abspath(sys.argv[0])
+path_add = os.path.dirname(os.path.dirname(full_path))
+
+sys.path.append(path_add)
 
 import config
 
@@ -15,7 +19,7 @@ nproc = sys.argv[2]
 cs_path = config.getProperty('CS_PATH')
 
 
-cmd = './dump_rawsgt.csh %s %s %s' % (pref, nproc, cs_path)
+cmd = '%s/dump_rawsgt.csh %s %s %s' % (sys.path[0], pref, nproc, cs_path)
 exitcode = os.system(cmd)
 sys.exit((exitcode >> 8) & 0xFF)
 
