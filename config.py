@@ -6,9 +6,12 @@ import sys
 vars = {}
 
 def readCfg():
-	cfg = open('cybershake.cfg')
-        if cfg==None:
-                print "%s not found." % os.path.join(os.getcwd(), 'cybershake.cfg')
+	try:
+		filename ='%s/cybershake.cfg' % os.path.dirname(__file__)
+		cfg = open(filename)
+        except IOError:
+                print "%s not found.\n" % filename
+		sys.exit(-2)
         cfgContents = cfg.readlines()
 	for line in cfgContents:
         	pieces = line.split('=')
@@ -24,3 +27,10 @@ def getProperty(property):
 		sys.exit(-1)
 	return propertyVal
 
+def getJobID():
+	jobid = os.getenv('PBS_JOBID')
+	if jobid==None:
+		jobid = os.getenv('JOB_ID')
+	return jobid
+
+	
