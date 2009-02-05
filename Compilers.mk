@@ -26,8 +26,8 @@ HOSTNAME = $(shell hostname -f)
 ifeq (bigben,$(findstring bigben, $(HOSTNAME)))
         MY_CC = cc
         MY_FC = ftn
+        MY_MPICC = mpicc
         MY_FC77 = ftn
-        MY_MPICC = cc
         MY_MPIFC = ftn 
         MY_CFLAGS = 
         MY_FFLAGS = -ffixed-line-length-132
@@ -76,5 +76,6 @@ else
         MY_MPIFC = mpif77
         MY_CFLAGS = 
         MY_FFLAGS = -ffixed-line-length-132
+	#MY_FFLAGS = -finit-local-zero -ffixed-line-length-132
 endif
 
