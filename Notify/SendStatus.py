@@ -89,10 +89,15 @@ def sendNotification(subject, msg, notify_user):
         "\r\n" + msg + \
         "\r\n---------------------------------------------------\r\nAutomated msg from Workflow Status\r\n"
     
-    server = smtplib.SMTP('localhost')
-    #server.set_debuglevel(1)
-    server.sendmail(notify_from, notify_user, msg)
-    server.quit()
+    try:
+        server = smtplib.SMTP('localhost')
+        #server.set_debuglevel(1)
+        server.sendmail(notify_from, notify_user, msg)
+        server.quit()
+    except:
+        print sys.exc_info()
+        print "Unable to send notification"
+        return 1
 
     return 0
 
