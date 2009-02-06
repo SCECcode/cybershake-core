@@ -1,4 +1,4 @@
-COBJS = sacio.o iofunc.o fft1d.o geoproj_subs.o
+COBJS = gen_sgtgrid.o sacio.o iofunc.o fft1d.o geoproj_subs.o
 FOBJS = fourg.o
 
 GETPAR = ../../Getpar/getpar/lib
@@ -27,7 +27,7 @@ all: $(BIN_LIST)
 		cp $$TARGET ../bin/ ; \
 	done
 
-gen_sgtgrid: gen_sgtgrid.o ${COBJS} ${FOBJS}
+gen_sgtgrid: ${COBJS} ${FOBJS}
 	${CC} -o $@ $^ ${LIBS}
 
 clean :
