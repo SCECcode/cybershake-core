@@ -49,8 +49,8 @@ endif
 #          module unload xt-mpt/3.0.0
 #          module load xt-mpt-gnu/2.0.62
 ifeq (kraken,$(findstring kraken, $(HOSTNAME)))
-        MY_CC = cc
-        MY_FC = ftn
+        MY_CC = gcc
+        MY_FC = g77
         MY_FC77 = g77
         MY_MPICC = cc
         MY_MPIFC = ftn
