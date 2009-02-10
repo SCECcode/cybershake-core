@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 
 """
 These are acceptance tests for the get_modelbox.py program.

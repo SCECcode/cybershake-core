@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#! /usr/bin/env python
 
 """
 This program inputs the ruptures that are relevant to a particular 
