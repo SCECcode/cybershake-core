@@ -13,8 +13,12 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
 UFLAGS = -O3
 
-CC = gcc
-FC = g77
+include ../../Compilers.mk
+CC = $(MY_CC)
+FC = $(MY_FC)
+
+#CC = gcc
+#FC = g77
 
 ##### compile options
 
