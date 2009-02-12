@@ -7,7 +7,7 @@ endif
 
 set FILE_PREFX = $1
 set NPROC = $2
-set CS_PATH = $4
+set CS_PATH = $3
 mkdir DumpLogs
 
 \rm nanfile
