@@ -5,7 +5,10 @@ import sys
 import os
 import time
 
-sys.path.append("..")
+full_path = os.path.abspath(sys.argv[0])
+path_add = os.path.dirname(os.path.dirname(full_path))
+
+sys.path.append(path_add)
 
 import config
 
