@@ -33,25 +33,17 @@ ifeq (bigben,$(findstring bigben, $(HOSTNAME)))
         MY_FFLAGS = -ffixed-line-length-132
 endif
 
-# NICS kraken  (Cray XT4)
+# NICS kraken  (Cray XT5)
 # Note: For this to work you need to have your environment set
 #       up with the gcc compilers, not the PG compilers. On
 #       Kraken you need to use these commands:
 #          module purge
-#          module load Base-opts/2.0.62
-#          module load globus
-#          module load python/2.5.2
-#          module load MySQL/4.0.27
-#          module load torque/2.3.0
-#          module load xt-binutils-quadcore/2.0.0
-#          module load moab/5.2.2
-#          module load PrgEnv-gnu/2.0.62
-#          module unload xt-mpt/3.0.0
-#          module load xt-mpt-gnu/2.0.62
+#	   module load Base-opts
+#	   module load PrgEnv-gnu
 ifeq (kraken,$(findstring kraken, $(HOSTNAME)))
-        MY_CC = gcc
-        MY_FC = g77
-        MY_FC77 = g77
+        MY_CC = cc
+        MY_FC = ftn
+        MY_FC77 = ftn
         MY_MPICC = cc
         MY_MPIFC = ftn
         MY_CFLAGS =
