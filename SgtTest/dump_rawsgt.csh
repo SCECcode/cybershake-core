@@ -8,23 +8,27 @@ endif
 set FILE_PREFX = $1
 set NPROC = $2
 set CS_PATH = $3
+
+# Each component gets its own nan file
+set NANFILE = nanfile_$FILE_PREFX
+
 mkdir DumpLogs
 
-\rm nanfile
-touch nanfile
+\rm $NANFILE
+touch $NANFILE
 set np = 0
 while ( $np < $NPROC )
 
 set infile = `echo $FILE_PREFX $np | gawk '{printf "%s%.4d.e3d\n",$1,$2;}'`
 set dumpfile = `echo $np | gawk '{printf "DumpLogs/dump.%.4d\n",$1;}'`
 
-${CS_PATH}/software/SgtTest/dump_rawsgt infile=$infile >& $dumpfile
-grep "nan" $dumpfile >> nanfile
+${CS_PATH}/software/SgtTest/bin/dump_rawsgt infile=$infile >& $dumpfile
+grep "nan" $dumpfile >> $NANFILE
 
 @ np ++
 end
 
-if (-z nanfile) then
+if (-z $NANFILE) then
 	echo "No nans detected, cleaning up."
 	rm -rf DumpLogs
 	exit(0)
