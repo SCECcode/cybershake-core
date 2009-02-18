@@ -5,6 +5,16 @@ This program inputs the ruptures that are relevant to a particular
 site and outputs a fault centroid and associated
 boundaries for the simulation box.
 """
+
+#
+# Read standard python startup files. Performed before local imports
+# because site startup file may drop imported modules from the env
+#
+import os
+filename = os.environ.get('PYTHONSTARTUP')
+if filename and os.path.isfile(filename):
+  execfile(filename)
+
 import os
 import sys
 import string
@@ -68,13 +78,6 @@ username = "cybershk_ro"
 pwd = "CyberShake2007"
 port = 3306
 db="CyberShake"
-#
-# read standard python startup files
-#
-
-filename = os.environ.get('PYTHONSTARTUP')
-if filename and os.path.isfile(filename):
-  execfile(filename)
 
 if len(sys.argv) < 4:
   print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name"
