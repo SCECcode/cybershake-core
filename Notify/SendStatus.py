@@ -13,6 +13,7 @@ notify_to = []
 site = ""
 workflow = ""
 stage_info = []
+smtphosts = []
 
 
 def doSGT(args):
@@ -89,17 +90,19 @@ def sendNotification(subject, msg, notify_user):
         "\r\n" + msg + \
         "\r\n---------------------------------------------------\r\nAutomated msg from Workflow Status\r\n"
     
-    try:
-        server = smtplib.SMTP('localhost')
-        #server.set_debuglevel(1)
-        server.sendmail(notify_from, notify_user, msg)
-        server.quit()
-    except:
-        print sys.exc_info()
-        print "Unable to send notification"
-        return 1
-
-    return 0
+    for h in smtphosts:
+        try:
+            print "Connecting to SMTP host " + h
+            server = smtplib.SMTP(h)
+            #server.set_debuglevel(1)
+            server.sendmail(notify_from, notify_user, msg)
+            server.quit()
+            return 0
+        except:
+            print sys.exc_info()
+            print "Unable to send notification via host " + h
+ 
+    return 1
 
 
 def init():
@@ -108,11 +111,21 @@ def init():
     global site
     global workflow
     global stage_info
-    
+    global smtphosts
+
     # Get the current user id
     userid = pwd.getpwuid(os.getuid())[0]
     domain = socket.getfqdn()
     notify_from = userid + "@" + domain
+
+    # Create list of possible SMTP servers
+    smtphosts.append('localhost')
+    comps = domain.split('.', 1)
+    if (len(comps) > 1):
+        althost = 'smtp.' + comps[1]
+        smtphosts.append(althost)
+    althost = 'smtp.' + domain
+    smtphosts.append(althost)
     
     # Get number of command-line arguments
     argc = len(sys.argv)
