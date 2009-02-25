@@ -31,7 +31,7 @@ all: $(TARGETS)
 	done
 
 gen_model_cords: gen_model_cords.o $(COBJS) $(FOBJS)
-	$(FC) -o $@ $^ $(LIBS)
+	$(CC) -o $@ $^ $(LIBS)
 
 clean:
 	rm -rf *.o $(TARGETS)
