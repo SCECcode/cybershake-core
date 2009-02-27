@@ -110,8 +110,8 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 	print "Generating %s.cordfile.\n" % site
 
 	#split into subfiles
-
-	command = 'mpiexec %s/bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (sys.path[0], ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outputFile, mlon, mlat, mrot, faultlist)
+	MPI_CMD = config.getProperty('MPI_CMD')
+	command = '%s %s/bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (MPI_CMD, sys.path[0], ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outputFile, mlon, mlat, mrot, faultlist)
 	#cmdFile = open("command.txt", "w")
 	#cmdFile.write(command)
 	#cmdFile.flush()
@@ -122,8 +122,7 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 	if returnCode!=0:
 		sys.exit((returnCode >> 8) & 0xFF)
 
-cs_path = config.getProperty('CS_PATH')
-PATH_TO_RUPTURE_VARIATIONS = '%s/ruptures/RuptureVariations' % cs_path
+PATH_TO_RUPTURE_VARIATIONS = config.getProperty('RUPTURE_PATH')
 
 if len(sys.argv) < 10:
     print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords>'
