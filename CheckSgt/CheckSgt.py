@@ -85,6 +85,7 @@ def cleanup():
 if __name__ == '__main__':
     if (init() != 0):
         sys.exit(1)
-    main()
+    if (main() != 0):
+        sys.exit(1)
     cleanup()
     sys.exit(0)
