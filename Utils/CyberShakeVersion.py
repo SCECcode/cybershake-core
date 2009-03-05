@@ -8,7 +8,7 @@ import os
 #       M is the month 1-12
 #       Rev is the mid-month revision beginning with 0 and
 #           and incremented by 1
-RELEASE_TAG = "9.1.0"
+RELEASE_TAG = "9.2.0"
 SVN_REV_MODULE = "SVNRevision"
 
 
