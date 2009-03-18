@@ -20,6 +20,7 @@ import org.hibernate.Hibernate;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.exception.ConstraintViolationException;
 
 import util.BSAFileUtil;
 import util.NumberHelper;
@@ -48,6 +49,10 @@ public class RuptureVariationFileInserter {
 	HashMap<Integer, Integer> periodIndexToIDMap = null;
 
     private boolean zipOption;
+    
+    public RuptureVariationFileInserter(String newPathName, String newSiteName, int sgtVariationID, String serverName, int rupVarID, int erfID, boolean zipOpt) throws IOException {
+    	this(newPathName, newSiteName, sgtVariationID+"", serverName, rupVarID+"", erfID+"", zipOpt);
+    }
     
 	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID, String erfID, boolean zipOpt) throws IOException {
 		siteName = newSiteName;
@@ -156,6 +161,10 @@ public class RuptureVariationFileInserter {
 			}
 		} catch (IOException ex) {
 			System.err.println("Error reading from zip file " + pathName);
+		} catch (ConstraintViolationException ex) {
+			ex.printStackTrace();
+			System.err.println("Offending SQL statement was: " + ex.getSQL());
+			System.exit(-2);
 		}
 		}
 	}

@@ -13,17 +13,16 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
 
+import data.RunID;
+
 import processing.RuptureVariationFileInserter;
 
 public class CyberLoadamps {
 
-	private static final String NO_SGT_OPTION_MESSAGE = "Please use -sgt to specify an SGT Variation ID";
-	private static final String NO_SITE_OPTION_MESSAGE = "Please use -site to specify a site name";
 	private static final String NO_P_OPTION_MESSAGE = "Please use -p to set the path with the spectral acceleration files";
 	private static final String NO_SERVER_OPTION_MESSAGE = "Please use -server to specify a database server";
-	//added by SC
-    private static final String NO_RUP_VAR_ID_OPTION_MESSAGE = "Please use -rvid to specify a rupture variation ID";
-    private static final String NO_ERF_ID_OPTION_MESSAGE = "Please use -erfid to specify an ERF ID";
+	private static final String NO_RUNID_OPTION_MESSAGE = "Please use -run to specify the RunID";
+
 	/**
 	 * @param args
 	 */
@@ -31,24 +30,16 @@ public class CyberLoadamps {
 	public static void main(String[] args) {
 		Options options = new Options();
 
-		Option sgt = OptionBuilder.withArgName("ID").hasArg().withDescription("SGT Variation ID - this option is required").create("sgt");
+		Option sgt = OptionBuilder.withArgName("RunID").hasArg().withDescription("Run ID - this option is required").create("run");
 		Option path = OptionBuilder.withArgName("directory").hasArg().withDescription("file path with spectral acceleration files, either top-level directory or zip file - this option is required").create("p");
-		Option site = OptionBuilder.withArgName("name").hasArg().withDescription("site name for spectral acceleration files - this option is required").create("site");
 		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (focal, surface or intensity) - this options is required").create("server");
-		//added by SC
-        Option ruptureVariationID = OptionBuilder.withArgName("ruptureVariationID").hasArg().withDescription("Rupture Variation ID - this option is required").create("rvid");
-        Option erfID = OptionBuilder.withArgName("erfID").hasArg().withDescription("ERF ID - this option is required").create("erfid");
         Option zip = new Option("z", "Read zip files instead of bsa.");
         Option help = new Option("help", "print this message");
 
-		options.addOption(site);
 		options.addOption(sgt);
 		options.addOption(path);
 		options.addOption(help);
 		options.addOption(server);
-		//added by SC
-        options.addOption(ruptureVariationID);
-        options.addOption(erfID);
         options.addOption(zip);
         
 		CommandLineParser parser = new GnuParser();
@@ -66,32 +57,19 @@ public class CyberLoadamps {
 					return;
 				}
 
-				if (!cmd.hasOption("site")) {
-					System.out.println(NO_SITE_OPTION_MESSAGE);
-					return;
-				}
-				
-				if (!cmd.hasOption("sgt")) {
-					System.out.println(NO_SGT_OPTION_MESSAGE);
-					return;
-				}
-				
 				if (!cmd.hasOption("server")) {
 					System.out.println(NO_SERVER_OPTION_MESSAGE);
 					return;
 				}
-                //added by SC
-                if (!cmd.hasOption("rvid")) {
-                    System.out.println(NO_RUP_VAR_ID_OPTION_MESSAGE);
+				
+                if (!cmd.hasOption("run")) {
+                    System.out.println(NO_RUNID_OPTION_MESSAGE);
                     return;
                 }
-                if (!cmd.hasOption("erfid")) {
-                	System.out.println(NO_ERF_ID_OPTION_MESSAGE);
-                	return;
-                }
 
-				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " as site: " + cmd.getOptionValue("site") + " and SGT Variation ID: " + cmd.getOptionValue("sgt"));
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), cmd.getOptionValue("site"), cmd.getOptionValue("sgt"), cmd.getOptionValue("server"), cmd.getOptionValue("rvid"), cmd.getOptionValue("erfid"), cmd.hasOption("z"));
+				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " with Run ID: " + cmd.getOptionValue("run"));
+				RunID rid = new RunID(Integer.parseInt(cmd.getOptionValue("run")));
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid.getSiteName(), rid.getSgtVarID(), cmd.getOptionValue("server"), rid.getRuptVarScenID(), rid.getErfID(), cmd.hasOption("z"));
 				rvfi.performInsertions();
 			}
 
@@ -114,12 +92,8 @@ public class CyberLoadamps {
 		return NO_P_OPTION_MESSAGE;
 	}
 
-	public static String getNO_SGT_OPTION_MESSAGE() {
-		return NO_SGT_OPTION_MESSAGE;
-	}
-
-	public static String getNO_SITE_OPTION_MESSAGE() {
-		return NO_SITE_OPTION_MESSAGE;
+	public static String getNO_RUNID_OPTION_MESSAGE() {
+		return NO_RUNID_OPTION_MESSAGE;
 	}
 
 	public static String getNO_SERVER_OPTION_MESSAGE() {
