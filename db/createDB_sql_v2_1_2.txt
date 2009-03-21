@@ -5,9 +5,10 @@
 #
 # Description of Changes:
 #
-# 2.1.1 - 04 March 2009
+# 2.1.2 - 20 March 2009
 #  Added fields to CyberShake_Runs: Status, Status_Time, Last_User,
-#  SGT_Time, PP_Time, Comment, Job_ID, Submit_Dir for better status tracking 
+#  SGT_Time, PP_Time, Comment, Job_ID, Submit_Dir, Notify_User for 
+#  better status tracking 
 #
 # 2.1.1 - 04 March 2009
 #  Removed non-null requirements on SGT_host, PP_host, Time in CyberShake_Runs
@@ -400,6 +401,7 @@ PP_Time datetime,
 Comment varchar(128),
 Job_ID varchar(64),
 Submit_Dir varchar(128),
+Notify_User varchar(128),
 primary key (Run_ID),
 foreign key (Site_ID) references CyberShake_Sites(CS_Site_ID),
 foreign key (ERF_ID) references ERF_IDs(ERF_ID),
