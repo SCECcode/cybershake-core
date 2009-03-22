@@ -23,32 +23,30 @@ public class CheckDBDataForSite {
     private static final String DB = "CyberShake";
     
     public static void main(String[] args) {
-        if (args.length<5) {
-            System.out.println("Usage:  CheckDBDataForSite <site> <erf_id> <rup_var_scen_id> <sgt_variation_id> <outputFile>");
+        if (args.length<2) {
+            System.out.println("Usage:  CheckDBDataForSite <runID> <outputFile>");
             System.exit(1);
         }
         
-        String site = args[0];
-        String erf_id = args[1];
-        String rup_var_scen_id = args[2];
-        String sgt_variation_id = args[3];
-        String outputFile = args[4];
+        String runID = args[0];
+        String outputFile = args[1];
         
-        checkDBData(site, erf_id, rup_var_scen_id, sgt_variation_id, outputFile);
+        checkDBData(runID, outputFile);
     }
 
-    private static void checkDBData(String site, String erf_id, String rup_var_scen_id, String sgt_variation_id, String outputFile) {
+    private static void checkDBData(String runID, String outputFile) {
         DBConnect dbc = new DBConnect(DB_SERVER, DB);
         
+        
         String query = "select count(*) " +
-        "from Rupture_Variations V, CyberShake_Site_Ruptures R, CyberShake_Sites S " +
-        "where S.CS_Short_Name='" + site + "' " +
-        "and S.CS_Site_ID=R.CS_Site_ID " +
-        "and R.ERF_ID=" + erf_id + " " +
-        "and V.ERF_ID=" + erf_id + " " +
+        "from Rupture_Variations V, CyberShake_Runs U, CyberShake_Site_Ruptures R " +
+        "where U.Run_ID=" + runID + " " + 
+        "and R.CS_Site_ID=U.Site_ID " +
+        "and R.ERF_ID=U.ERF_ID " +
+        "and V.ERF_ID=U.ERF_ID " +
         "and R.Source_ID=V.Source_ID " +
         "and R.Rupture_ID=V.Rupture_ID " +
-        "and V.Rup_Var_Scenario_ID=" + rup_var_scen_id + " ";
+        "and V.Rup_Var_Scenario_ID=U.Rup_Var_Scenario_ID";
         
         System.out.println(query);
         
@@ -63,12 +61,8 @@ public class CheckDBDataForSite {
             int rupVarSetNum = rupVarSet.getInt("count(*)");
             
             query = "select count(*) " +
-            "from PeakAmplitudes A, CyberShake_Sites S " +
-            "where S.CS_Short_Name='" + site + "' " +
-            "and S.CS_Site_ID=A.Site_ID " +
-            "and A.ERF_ID=" + erf_id + " " +
-            "and A.Rup_Var_Scenario_ID=" + rup_var_scen_id + " " +
-            "and A.SGT_Variation_ID=" + sgt_variation_id;
+            "from PeakAmplitudes A " +
+            "where A.Run_ID=" + runID + " ";
 
             System.out.println(query);
             
@@ -81,10 +75,10 @@ public class CheckDBDataForSite {
             int ampSetNum = ampSet.getInt("count(*)");
             
             if (rupVarSetNum!=ampSetNum/4) {
-                System.out.println(rupVarSetNum + " variations for site " + site + " in RupVar table, but " + (ampSetNum/4) + " variations in PeakAmp table.");
+                System.out.println(rupVarSetNum + " variations for run " + runID + " in RupVar table, but " + (ampSetNum/4) + " variations in PeakAmp table.");
                 rupVarSet.close();
                 ampSet.close();
-                findDifferences(dbc, site, erf_id, rup_var_scen_id, sgt_variation_id, outputFile);
+                findDifferences(dbc, runID, outputFile);
                 System.exit(3);
             } else {
             	System.out.println("All ruptures are registered.");
@@ -103,16 +97,15 @@ public class CheckDBDataForSite {
      * @param erf_id
      * @param rup_var_id
      */
-    private static void findDifferences(DBConnect dbc, String site, String erf_id, String rup_var_scen_id, String sgt_variation_id, String outputFile) {
+    private static void findDifferences(DBConnect dbc, String runID, String outputFile) {
         String query = "select V.Source_ID, V.Rupture_ID, V.Rup_Var_ID " +
-        "from Rupture_Variations V, CyberShake_Site_Ruptures R, CyberShake_Sites S " +
-        "where S.CS_Short_Name='" + site + "' " +
-        "and S.CS_Site_ID=R.CS_Site_ID " +
-        "and R.ERF_ID=" + erf_id + " " +
-        "and V.ERF_ID=" + erf_id + " " +
+        "from Rupture_Variations V, CyberShake_Site_Ruptures R, CyberShake_Runs U " +
+        "where U.Run_ID=" + runID + " " +
+        "and U.Site_ID=R.CS_Site_ID " +
+        "and U.ERF_ID=R.ERF_ID " +
+        "and U.Rup_Var_Scenario_ID=V.Rup_Var_Scenario_ID " +
         "and R.Source_ID=V.Source_ID " +
-        "and R.Rupture_ID=V.Rupture_ID " + 
-        "and V.Rup_Var_Scenario_ID=" + rup_var_scen_id;
+        "and R.Rupture_ID=V.Rupture_ID "; 
         
         ResultSet rupVarSet = dbc.selectData(query);
         try {
@@ -122,13 +115,9 @@ public class CheckDBDataForSite {
                 System.exit(3);
             }
             String prefix = "select * " +
-            "from PeakAmplitudes A, CyberShake_Sites S " +
-            "where S.CS_Short_Name='" + site + "' " +
-            "and S.CS_Site_ID=A.Site_ID " +
-            "and A.ERF_ID=" + erf_id + " " +
-            "and A.Rup_Var_Scenario_ID=" + rup_var_scen_id + " " +
-            "and A.SGT_Variation_ID=" + sgt_variation_id + " ";
-
+            "from PeakAmplitudes A " +
+            "where A.Run_ID=" + runID + " ";
+            
             BufferedWriter bw = null;
             try {
                 bw = new BufferedWriter(new FileWriter(outputFile));
