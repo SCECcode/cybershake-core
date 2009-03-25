@@ -103,6 +103,7 @@ public class CheckDBDataForSite {
         "where U.Run_ID=" + runID + " " +
         "and U.Site_ID=R.CS_Site_ID " +
         "and U.ERF_ID=R.ERF_ID " +
+        "and R.ERF_ID=V.ERF_ID " +
         "and U.Rup_Var_Scenario_ID=V.Rup_Var_Scenario_ID " +
         "and R.Source_ID=V.Source_ID " +
         "and R.Rupture_ID=V.Rupture_ID "; 
