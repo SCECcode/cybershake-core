@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.TreeSet;
 
 /*
  * Created on Jun 30, 2007
@@ -93,6 +97,63 @@ public class CheckDBDataForSite {
         
     }
 
+    private static class SourceRuptureVar implements Comparable {
+    	private int Source_ID;
+    	private int Rupture_ID;
+    	private int Rupture_Variation_ID;
+    	
+    	public SourceRuptureVar(int sid, int rid, int vid) {
+    		Source_ID = sid;
+    		Rupture_ID = rid;
+    		Rupture_Variation_ID = vid;
+    	}
+    	
+    	public boolean equals(Object o) {
+    		if (! (o instanceof SourceRuptureVar)) {
+    			return false;
+    		}
+    		SourceRuptureVar sr = (SourceRuptureVar)o;
+    		if (sr.Rupture_Variation_ID==Rupture_Variation_ID && sr.Rupture_ID==Rupture_ID && sr.Source_ID==Source_ID) {
+    			return true;
+    		}
+    		return false;
+    	}
+    	
+    	public int hashCode() {
+    		return (Source_ID*10000+Rupture_ID)%Rupture_Variation_ID;
+    	}
+
+		public int compareTo(Object o) {
+			if (! (o instanceof SourceRuptureVar)) {
+				throw new ClassCastException();
+			}
+			SourceRuptureVar srv = (SourceRuptureVar)o;
+//			System.out.println("Comparing " + srv.Source_ID + " " + srv.Rupture_ID + " " + srv.Rupture_Variation_ID +
+//					" to " + Source_ID + " " + Rupture_ID + " " + Rupture_Variation_ID);
+			if (Source_ID!=srv.Source_ID) {
+				return (Source_ID - srv.Source_ID);
+			} else {
+				if (Rupture_ID!=srv.Rupture_ID) {
+					return (Rupture_ID - srv.Rupture_ID);
+				} else {
+					return (Rupture_Variation_ID - srv.Rupture_Variation_ID);
+				}
+			}
+		}
+
+		public int getSource_ID() {
+			return Source_ID;
+		}
+
+		public int getRupture_ID() {
+			return Rupture_ID;
+		}
+
+		public int getRupture_Variation_ID() {
+			return Rupture_Variation_ID;
+		}
+    }
+    
     private static void findDifferences2(DBConnect dbc, String runID, String outputFile) {
     	System.out.println(System.currentTimeMillis());
     	
@@ -108,6 +169,7 @@ public class CheckDBDataForSite {
     	"order by V.Source_ID asc, V.Rupture_ID asc, V.Rup_Var_ID asc";
     
     	ResultSet rupVarSet = dbc.selectData(rupVarQuery);
+    	TreeSet<SourceRuptureVar> rupVarTreeSet = null;
     	
     	try {
     		rupVarSet.first();
@@ -115,19 +177,31 @@ public class CheckDBDataForSite {
     			System.err.println("No rup var entries in DB.");
     			System.exit(3);
     		}
+    	   	rupVarTreeSet = new TreeSet<SourceRuptureVar>();
+        	while (!rupVarSet.isAfterLast()) {
+        		SourceRuptureVar sr = new SourceRuptureVar(rupVarSet.getInt("V.Source_ID"), rupVarSet.getInt("V.Rupture_ID"), rupVarSet.getInt("V.Rup_Var_ID"));
+        		rupVarTreeSet.add(sr);
+        		rupVarSet.next();
+        	}
+        	rupVarSet.close();
     	} catch (SQLException ex) {
     		ex.printStackTrace();
     		System.exit(-3);
     	}
     	
+
+    	
     	System.out.println(System.currentTimeMillis());
     	
     	String peakAmpsQuery = "select distinct Source_ID, Rupture_ID, Rup_Var_ID " +
     	"from PeakAmplitudes " +
-    	"where Run_ID=" + runID + " " +
+    	"where Run_ID=" + runID + " " + 
     	"order by Source_ID asc, Rupture_ID asc, Rup_Var_ID asc";
     	
     	ResultSet peakAmpsSet = dbc.selectData(peakAmpsQuery);
+    	TreeSet<SourceRuptureVar> peakAmpsTreeSet = null;
+    	
+    	System.out.println(System.currentTimeMillis());
     	
     	try {
     		peakAmpsSet.first();
@@ -135,67 +209,66 @@ public class CheckDBDataForSite {
     			System.err.println("No peak amps entries in DB.");
     			System.exit(3);
     		}
+    		peakAmpsTreeSet = new TreeSet<SourceRuptureVar>();
+        	while (!peakAmpsSet.isAfterLast()) {
+        		SourceRuptureVar sr = new SourceRuptureVar(peakAmpsSet.getInt("Source_ID"), peakAmpsSet.getInt("Rupture_ID"), peakAmpsSet.getInt("Rup_Var_ID"));
+        		peakAmpsTreeSet.add(sr);
+        		peakAmpsSet.next();
+        	}
+        	peakAmpsSet.close();
     	} catch (SQLException ex) {
     		ex.printStackTrace();
     		System.exit(-3);
     	}
     	
-    	System.out.println(System.currentTimeMillis());
-    	
     	BufferedWriter bw;
-    	int rupValSource, rupValRupture, rupValRupVar;
-    	int peakAmpsSource, peakAmpsRupture, peakAmpsRupVar;
     	
 		int count = 0;
 		int missing = 0;
     	
     	try {
     		bw = new BufferedWriter(new FileWriter(outputFile));
+    		int lastSource = -1;
+    		int lastRupture = -1;
     		
-    		while (!rupVarSet.isAfterLast()) {
-        		if (count % 10000 == 0){
-        			System.out.println("Processed " + count + " rupture variations.");
-        		}
-        		
-    			rupValSource = rupVarSet.getInt("V.Source_ID");
-    			rupValRupture = rupVarSet.getInt("V.Rupture_ID");
-    			rupValRupVar = rupVarSet.getInt("V.Rup_Var_ID");
-    			
-    			peakAmpsSource = peakAmpsSet.getInt("Source_ID");
-    			peakAmpsRupture = peakAmpsSet.getInt("Rupture_ID");
-    			peakAmpsRupVar = peakAmpsSet.getInt("Rup_Var_ID");
-    			
-    			if (rupValSource != peakAmpsSource || rupValRupture != peakAmpsRupture || rupValRupVar != peakAmpsRupVar) {
-    				bw.write("Mismatch between " + rupValSource + ", " + rupValRupture + ", " + rupValRupVar +
-    						" and " + peakAmpsSource + ", " + peakAmpsRupture + ", " + peakAmpsRupVar + "\n");
-    				bw.flush();
-    				rupVarSet.next();
-    				missing++;
-//    				while (rupValSource != peakAmpsSource || rupValRupture != peakAmpsRupture || rupValRupVar != peakAmpsRupVar) {
-//    					rupVarSet.next();
-//    	    			rupValSource = rupVarSet.getInt("V.Source_ID");
-//    	    			rupValRupture = rupVarSet.getInt(RUPTURE_COL_ID);
-//    	    			rupValRupVar = rupVarSet.getInt(RUPT_VAR_COL_ID);
-//    				}
-    			} else {
-    				peakAmpsSet.next();
-    				rupVarSet.next();
-    			}
-    			
-//    			rupVarSet.next();
+    		Iterator<SourceRuptureVar> rupVarIterator = rupVarTreeSet.iterator();
+    		ArrayList<String> listForRupture = new ArrayList<String>();
+    		while (rupVarIterator.hasNext()) {
     			count++;
+    			if (count%10000==0) {
+    				System.out.println("Processed " + count + " ruptures.");
+    			}
+    			SourceRuptureVar srv = rupVarIterator.next();
+    			if (!peakAmpsTreeSet.contains(srv)) {
+    				missing++;
+    				if (srv.getRupture_ID()!=lastRupture || srv.getSource_ID()!=lastSource) {
+    					if (lastSource!=-1) {
+    						bw.write(listForRupture.get(0) + " " + (listForRupture.size()-1) + "\n");
+    						for (int i=1; i<listForRupture.size(); i++) {
+    							bw.write(listForRupture.get(i) + "\n");
+    						}
+    					}
+    					listForRupture = new ArrayList<String>();
+    					listForRupture.add(srv.getSource_ID() + " " + srv.getRupture_ID());
+    					lastSource = srv.getSource_ID();
+    					lastRupture = srv.getRupture_ID();
+    				}
+					listForRupture.add(srv.getRupture_Variation_ID() + "");
+    			}
     		}
-    		System.out.println(count);
+    		
+    		//write any stragglers
+    		bw.write(listForRupture.get(0) + " " + (listForRupture.size()-1) + "\n");
+			for (int i=1; i<listForRupture.size(); i++) {
+				bw.write(listForRupture.get(i) + "\n");
+			}
+    		
     		bw.flush();
     		bw.close();
     		
     	} catch (IOException ex) {
     		ex.printStackTrace();
     		System.exit(-4);
-    	} catch (SQLException ex) {
-    		System.out.println("line " + count);
-    		ex.printStackTrace();
-    		System.exit(-5);
     	}
     	System.out.println("Total missing: " + missing);
     }
