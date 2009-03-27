@@ -19,7 +19,7 @@ FILE *fopfile(), *fpw;
 float lat, lon, len, wid, strike, dip, kperd_e, kperd_n, latarg;
 float flat[4], flon[4];
 float cosA, sinA, cosD, sinD, l2, ws, dsn, dse, ddn, dde;
-char name[128], fname[512];
+char name[256], fname[512];
 
 float rperd = RPERD;
 float fc = FLAT_CONST;
