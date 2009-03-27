@@ -39,7 +39,7 @@ struct sc *sc;
 struct fc *fc;
 float xx, yy, zz, r, cdmin;
 int i, j, ns, nf;
-char outfile[128], statfile[128], faultfile[128], str[512];
+char outfile[256], statfile[256], faultfile[256], str[512];
 
 setpar(ac,av);
 mstpar("statfile","s",statfile);

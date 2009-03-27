@@ -32,7 +32,7 @@ float flon, flat, modellon, modellat, modelrot, x, y, z;
 float ar1, ar2, ar3, ar4, latavg;
 float cosR, sinR, kmlon, kmlat;
 int ip, np, n;
-char outfile[128], infile[128], str[512], name[64];
+char outfile[256], infile[256], str[512], name[256];
 
 float rperd = RPERD;
 float erad = ERAD;
