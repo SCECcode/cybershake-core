@@ -33,7 +33,7 @@ float h, ar1, ar2, ar3, ar4, latavg;
 float cosR, sinR, kmlon, kmlat;
 float dep, *cc1, *cc2, conv;
 int nx, ny, nzout, ix, iy, iz, ip;
-char modfile[128], name[128], str[128];
+char modfile[256], name[256], str[256];
 
 float rperd = RPERD;
 float erad = ERAD;
