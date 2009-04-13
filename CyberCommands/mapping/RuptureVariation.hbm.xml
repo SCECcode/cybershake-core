@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping
+    PUBLIC "-//Hibernate/Hibernate Mapping DTD//EN"
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+    
+<hibernate-mapping>
+    <class name="mapping.RuptureVariation" 
+           table="Rupture_Variations">
+           
+        <composite-id name="rupVarPK" class="mapping.RuptureVariationPK">   
+    	    <key-property name="ERF_ID" />
+    	    <key-property name="Source_ID" />
+    	    <key-property name="Rupture_ID" />
+    	    <key-property name="Rup_Var_ID" />
+    	    <key-property name="Rup_Var_Scenario_ID" />
+	    </composite-id>
+	    
+	    <property name="Rup_Var_LFN" />
+       
+    </class>
+</hibernate-mapping>
