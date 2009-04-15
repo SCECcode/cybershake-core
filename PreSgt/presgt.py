@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import MySQLdb
 import sys
@@ -111,6 +111,23 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 
 	#split into subfiles
 	MPI_CMD = config.getProperty('MPI_CMD')
+
+        if (MPI_CMD == "mpirun"):
+                try:
+                        node_file = os.environ["PBS_NODEFILE"]
+                        num_nodes = 0
+                        f = open(node_file)
+                        lines = f.readlines()
+                        num_nodes = len(lines)
+                        MPI_CMD = "%s -np %d -machinefile %s" % \
+			    (MPI_CMD, num_nodes, node_file)
+                except:
+                        print "Unable to read nodefile %s" % (node_file) 
+                        sys.exit(1)
+        elif (MPI_CMD == "aprun"):
+                num_nodes = int(os.environ["PBS_NNODES"])
+                MPI_CMD = "%s -n %d" % (MPI_CMD, num_nodes)
+
 	command = '%s %s/bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (MPI_CMD, sys.path[0], ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outputFile, mlon, mlat, mrot, faultlist)
 	#cmdFile = open("command.txt", "w")
 	#cmdFile.write(command)
