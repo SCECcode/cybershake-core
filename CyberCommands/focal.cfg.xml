@@ -18,6 +18,8 @@
       	<!-- mapping files manually created -->
    		<mapping resource="mapping/PeakAmplitude.hbm.xml" />
     	<mapping resource="mapping/RuptureVariation.hbm.xml" />
+     	<mapping resource="mapping/CyberShake_Runs.hbm.xml" /> 
+     	<mapping resource="mapping/IM_Types.hbm.xml" />
         
         <!-- mapping files auto generated -->
         <mapping resource="mapping/Points.hbm.xml" />
