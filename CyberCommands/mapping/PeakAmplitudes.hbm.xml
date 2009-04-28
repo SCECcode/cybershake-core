@@ -6,12 +6,6 @@
     <class name="mapping.PeakAmplitudes" table="PeakAmplitudes" catalog="CyberShake">
         <comment></comment>
         <composite-id name="id" class="mapping.PeakAmplitudesId">
-            <key-property name="erfId" type="int">
-                <column name="ERF_ID" />
-            </key-property>
-            <key-property name="siteId" type="int">
-                <column name="Site_ID" />
-            </key-property>
             <key-property name="sourceId" type="int">
                 <column name="Source_ID" />
             </key-property>
@@ -21,71 +15,15 @@
             <key-property name="rupVarId" type="long">
                 <column name="Rup_Var_ID" />
             </key-property>
-            <key-property name="rupVarScenarioId" type="int">
-                <column name="Rup_Var_Scenario_ID" />
-            </key-property>
-            <key-property name="sgtVariationId" type="int">
-                <column name="SGT_Variation_ID" />
+            <key-property name="runId" type="int">
+                <column name="Run_ID" />
             </key-property>
             <key-property name="imType" type="string">
                 <column name="IM_Type" length="50" />
             </key-property>
         </composite-id>
-        <many-to-one name="ruptureVariations" class="mapping.RuptureVariations" update="false" insert="false" fetch="select">
-            <column name="ERF_ID" not-null="true">
-                <comment></comment>
-            </column>
-            <column name="Source_ID" not-null="true">
-                <comment></comment>
-            </column>
-            <column name="Rupture_ID" not-null="true">
-                <comment></comment>
-            </column>
-            <column name="Rup_Var_ID" not-null="true">
-                <comment></comment>
-            </column>
-            <column name="Rup_Var_Scenario_ID" not-null="true">
-                <comment></comment>
-            </column>
-        </many-to-one>
-        <many-to-one name="ruptureVariationScenarioIds" class="mapping.RuptureVariationScenarioIds" update="false" insert="false" fetch="select">
-            <column name="Rup_Var_Scenario_ID" not-null="true">
-                <comment></comment>
-            </column>
-        </many-to-one>
-        <many-to-one name="erfIds" class="mapping.ErfIds" update="false" insert="false" fetch="select">
-            <column name="ERF_ID" not-null="true">
-                <comment></comment>
-            </column>
-        </many-to-one>
-        <many-to-one name="sgtVariationIds" class="mapping.SgtVariationIds" update="false" insert="false" fetch="select">
-            <column name="SGT_Variation_ID" not-null="true">
-                <comment></comment>
-            </column>
-        </many-to-one>
-        <many-to-one name="ruptures" class="mapping.Ruptures" update="false" insert="false" fetch="select">
-            <column name="ERF_ID" not-null="true">
-                <comment></comment>
-            </column>
-            <column name="Source_ID" not-null="true">
-                <comment></comment>
-            </column>
-            <column name="Rupture_ID" not-null="true">
-                <comment></comment>
-            </column>
-        </many-to-one>
-        <many-to-one name="cyberShakeSites" class="mapping.CyberShakeSites" update="false" insert="false" fetch="select">
-            <column name="Site_ID" not-null="true">
-                <comment></comment>
-            </column>
-        </many-to-one>
         <property name="imValue" type="double">
             <column name="IM_Value" precision="22" scale="0" not-null="true">
-                <comment></comment>
-            </column>
-        </property>
-        <property name="units" type="string">
-            <column name="Units" length="50" not-null="true">
                 <comment></comment>
             </column>
         </property>

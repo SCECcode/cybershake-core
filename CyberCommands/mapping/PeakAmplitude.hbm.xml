@@ -8,17 +8,14 @@
            table="PeakAmplitudes">
            
         <composite-id name="paPK" class="mapping.PeakAmplitudePK">   
-    	    <key-property name="ERF_ID" column="ERF_ID"/>
-    	    <key-property name="Site_ID" column="Site_ID"/>
     	    <key-property name="Source_ID" column="Source_ID"/>
     	    <key-property name="Rupture_ID" column="Rupture_ID"/>
-    	    <key-property name="Rup_Var_ID" column="Rup_Var_ID"></key-property>
-    	    <key-property name="Rup_Var_Scenario_ID" column="Rup_Var_Scenario_ID"/>
-    	    <key-property name="SGT_Variation_ID" column="SGT_Variation_ID"/>
+    	    <key-property name="Rup_Var_ID" column="Rup_Var_ID"/>
+    	    <key-property name="Run_ID" column="Run_ID"/>
     	    <key-property name="IM_Type_ID" column="IM_Type_ID"/>
 	    </composite-id>
 	    
-	    <property name="IM_Value"/>
+	    <property name="IM_Value" column="IM_Value"/>
        
     </class>
 </hibernate-mapping>
