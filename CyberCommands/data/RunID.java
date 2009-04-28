@@ -68,7 +68,7 @@ public class RunID {
 			if (siteID==-1) {
 				populateRunIDInfo();
 			}
-			query = "SELECT S.CS_Short_Name, R.Cutoff_Dist FROM CyberShake_Sites S, CyberShake_Site_Regions R WHERE R.CS_Site_ID=S.CS_Site_ID and S.CS_Site_ID=" + siteID;
+			query = "SELECT S.CS_Short_Name, R.Cutoff_Dist FROM CyberShake_Sites S, CyberShake_Site_Regions R WHERE R.ERF_ID=" + erfID + " and R.CS_Site_ID=S.CS_Site_ID and S.CS_Site_ID=" + siteID;
 			ResultSet res = stat.executeQuery(query);
 			res.first();
 			if (res.getRow()==0) {

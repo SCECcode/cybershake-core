@@ -25,24 +25,21 @@ import org.hibernate.exception.ConstraintViolationException;
 import util.BSAFileUtil;
 import util.NumberHelper;
 import data.DirectionalComponent;
+import data.RunID;
 import data.SAPeriods;
 import data.SARuptureFromRuptureVariationFile;
 import data.SARuptureVariation;
 
 public class RuptureVariationFileInserter {
 	
-	public static int siteID = 18;
 	private static ArrayList<File> totalFilesList;
-	private String siteIDQuery;
+
 	private SessionFactory sessFactory;
 	
-	private String siteName;
 	private String pathName;
 	private String hibernate_cfg_filename = "intensity.cfg.xml";
-	private int currentSGT_Variation_ID;
-	//added by SC
-    private int currentRup_Var_Scenario_ID;
-    private int currentERF_ID;
+	private RunID run_ID;
+
     private double[] desiredPeriods = {2.0, 3.00003, 5.0, 10.0};
     private ArrayList<Integer> desiredPeriodsIndices = null;
 	//maps period indices to IM Type IDs
@@ -50,33 +47,24 @@ public class RuptureVariationFileInserter {
 
     private boolean zipOption;
     
-    public RuptureVariationFileInserter(String newPathName, String newSiteName, int sgtVariationID, String serverName, int rupVarID, int erfID, boolean zipOpt) throws IOException {
-    	this(newPathName, newSiteName, sgtVariationID+"", serverName, rupVarID+"", erfID+"", zipOpt);
-    }
-    
-	public RuptureVariationFileInserter(String newPathName, String newSiteName, String sgtVariationID, String serverName, String rupVarID, String erfID, boolean zipOpt) throws IOException {
-		siteName = newSiteName;
+
+
+	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, boolean zipOpt) throws IOException {
 		pathName = newPathName;
 		zipOption = zipOpt;
+		run_ID = rid;
 		
 		if (serverName.equals("intensity")) {
 			hibernate_cfg_filename = "intensity.cfg.xml";
-		}
-		else if (serverName.equals("surface")) {
+		} else if (serverName.equals("surface")) {
 			hibernate_cfg_filename = "surface.cfg.xml";
 		} else if (serverName.equals("focal")) {
 			hibernate_cfg_filename = "focal.cfg.xml";
+		} else {
+			System.err.println("Server name was " + serverName + ", but it must be one of intensity, surface, or focal.  Exiting.");
+			System.exit(-2);
 		}
-		
-		try {
-		    currentSGT_Variation_ID = Integer.parseInt(sgtVariationID);
-		    //added by SC
-		    currentRup_Var_Scenario_ID = Integer.parseInt(rupVarID);
-		    currentERF_ID = Integer.parseInt(erfID);
-		} catch (NumberFormatException nfe) {
-            System.out.println("SGT Variation ID and Rupture Variation ID must be positive integers.");
-            System.exit(1);
-        }
+		initSessionFactory();
 	}
 
 	private void initFileList(boolean zipOpt) {
@@ -86,26 +74,26 @@ public class RuptureVariationFileInserter {
 		totalFilesList = BSAFileUtil.createTotalFileList(saFile, zipOpt);
 	}
 
-	private void retrieveSiteIDFromDB() {
-		initSessionFactory();
-		Session retrieveSiteIDSess = sessFactory.openSession();
-		
-		siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Short_Name = '" + siteName + "'";
-		//System.out.println(query);
-		List siteIDList = retrieveSiteIDSess.createSQLQuery(siteIDQuery).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
-		Object siteIDObject = siteIDList.get(0); 
-		siteID = (Integer)siteIDObject;
-		
-		//System.out.println("Site_ID for " + siteName + ": " + siteID);
-		retrieveSiteIDSess.close();
-	}
+//	private void retrieveSiteIDFromDB() {
+//		initSessionFactory();
+//		Session retrieveSiteIDSess = sessFactory.openSession();
+//		
+//		siteIDQuery = "SELECT CS_Site_ID FROM CyberShake_Sites WHERE CS_Short_Name = '" + siteName + "'";
+//		//System.out.println(query);
+//		List siteIDList = retrieveSiteIDSess.createSQLQuery(siteIDQuery).addScalar("CS_Site_ID", Hibernate.INTEGER).list();
+//		Object siteIDObject = siteIDList.get(0); 
+////		siteID = (Integer)siteIDObject;
+//		
+//		//System.out.println("Site_ID for " + siteName + ": " + siteID);
+//		retrieveSiteIDSess.close();
+//	}
 
 	private void initSessionFactory() {
 		sessFactory = new Configuration().configure(hibernate_cfg_filename).buildSessionFactory();
 	}
 
 	public void performInsertions() {
-		retrieveSiteIDFromDB();
+//		retrieveSiteIDFromDB();
 		initFileList(zipOption);
 		
 		if (zipOption) {
@@ -146,7 +134,7 @@ public class RuptureVariationFileInserter {
 					System.exit(3);
 				}
 				
-				SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(data, siteName, ze);
+				SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(data, run_ID.getSiteName(), ze);
 //				saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
 				insertRupture(saRuptureWithSingleRupVar, sess);				
 				if (counter%250==0) System.gc();
@@ -202,7 +190,7 @@ public class RuptureVariationFileInserter {
 	}
 
 	private void prepAndExecuteSingleRuptureVariationFileInsertion(Session sess, File bsaFile) {
-		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(bsaFile, siteName);
+		SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(bsaFile, run_ID.getSiteName());
 		
 		//printEastandNorthComponents(saRupture);
 		saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
@@ -281,13 +269,10 @@ public class RuptureVariationFileInserter {
 				PeakAmplitude pa = new PeakAmplitude();
 				PeakAmplitudePK paPK = new PeakAmplitudePK();
 				// Set values for the PeakAmplitudes Class
-				paPK.setERF_ID(currentERF_ID);
-				paPK.setSite_ID(siteID);				
+				paPK.setRun_ID(run_ID.getRunID());
 				paPK.setSource_ID(currentSource_ID);				
 				paPK.setRupture_ID(currentRupture_ID);
 				paPK.setRup_Var_ID(currRupVar.variationNumber);
-				paPK.setRup_Var_Scenario_ID(currentRup_Var_Scenario_ID);
-				paPK.setSGT_Variation_ID(currentSGT_Variation_ID);
 				paPK.setIM_Type_ID(periodIndexToIDMap.get(periodIter));
 				pa.setPaPK(paPK);
 				double psaValue = currRupVar.geomAvgComp.periods[periodIter];
@@ -321,22 +306,6 @@ public class RuptureVariationFileInserter {
 				}*/
 			}
 		}
-	}
-
-	public int getCurrentSGT_Variation_ID() {
-		return currentSGT_Variation_ID;
-	}
-
-	public void setCurrentSGT_Variation_ID(int currentSGT_Variation_ID) {
-		this.currentSGT_Variation_ID = currentSGT_Variation_ID;
-	}
-
-	public  String getSiteName() {
-		return siteName;
-	}
-
-	public void setSiteName(String siteName) {
-		this.siteName = siteName;
 	}
 
 	public String getPathName() {

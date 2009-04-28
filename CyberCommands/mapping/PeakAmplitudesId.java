@@ -12,52 +12,26 @@ public class PeakAmplitudesId implements java.io.Serializable {
 	 */
 	private static final long serialVersionUID = 3227675451911077358L;
 
-	private int erfId;
-
-	private int siteId;
-
 	private int sourceId;
 
 	private int ruptureId;
 
 	private long rupVarId;
 
-	private int rupVarScenarioId;
-
-	private int sgtVariationId;
+	private int runId;
 
 	private String imType;
 
 	public PeakAmplitudesId() {
 	}
 
-	public PeakAmplitudesId(int erfId, int siteId, int sourceId, int ruptureId,
-			long rupVarId, int rupVarScenarioId, int sgtVariationId,
-			String imType) {
-		this.erfId = erfId;
-		this.siteId = siteId;
+	public PeakAmplitudesId(int sourceId, int ruptureId,
+			long rupVarId, int runId, String imType) {
 		this.sourceId = sourceId;
 		this.ruptureId = ruptureId;
 		this.rupVarId = rupVarId;
-		this.rupVarScenarioId = rupVarScenarioId;
-		this.sgtVariationId = sgtVariationId;
+		this.runId = runId;
 		this.imType = imType;
-	}
-
-	public int getErfId() {
-		return this.erfId;
-	}
-
-	public void setErfId(int erfId) {
-		this.erfId = erfId;
-	}
-
-	public int getSiteId() {
-		return this.siteId;
-	}
-
-	public void setSiteId(int siteId) {
-		this.siteId = siteId;
 	}
 
 	public int getSourceId() {
@@ -84,20 +58,12 @@ public class PeakAmplitudesId implements java.io.Serializable {
 		this.rupVarId = rupVarId;
 	}
 
-	public int getRupVarScenarioId() {
-		return this.rupVarScenarioId;
+	public int getRunId() {
+		return this.runId;
 	}
 
-	public void setRupVarScenarioId(int rupVarScenarioId) {
-		this.rupVarScenarioId = rupVarScenarioId;
-	}
-
-	public int getSgtVariationId() {
-		return this.sgtVariationId;
-	}
-
-	public void setSgtVariationId(int sgtVariationId) {
-		this.sgtVariationId = sgtVariationId;
+	public void setRunId(int runId) {
+		this.runId = runId;
 	}
 
 	public String getImType() {
@@ -117,14 +83,10 @@ public class PeakAmplitudesId implements java.io.Serializable {
 			return false;
 		PeakAmplitudesId castOther = (PeakAmplitudesId) other;
 
-		return (this.getErfId() == castOther.getErfId())
-				&& (this.getSiteId() == castOther.getSiteId())
-				&& (this.getSourceId() == castOther.getSourceId())
+		return (this.getSourceId() == castOther.getSourceId())
 				&& (this.getRuptureId() == castOther.getRuptureId())
 				&& (this.getRupVarId() == castOther.getRupVarId())
-				&& (this.getRupVarScenarioId() == castOther
-						.getRupVarScenarioId())
-				&& (this.getSgtVariationId() == castOther.getSgtVariationId())
+				&& (this.getRunId() == castOther.getRunId())
 				&& ((this.getImType() == castOther.getImType()) || (this
 						.getImType() != null
 						&& castOther.getImType() != null && this.getImType()
@@ -134,13 +96,10 @@ public class PeakAmplitudesId implements java.io.Serializable {
 	public int hashCode() {
 		int result = 17;
 
-		result = 37 * result + this.getErfId();
-		result = 37 * result + this.getSiteId();
 		result = 37 * result + this.getSourceId();
 		result = 37 * result + this.getRuptureId();
 		result = 37 * result + (int) this.getRupVarId();
-		result = 37 * result + this.getRupVarScenarioId();
-		result = 37 * result + this.getSgtVariationId();
+		result = 37 * result + this.getRunId();
 		result = 37 * result
 				+ (getImType() == null ? 0 : this.getImType().hashCode());
 		return result;
