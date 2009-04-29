@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.Points" table="Points" catalog="CyberShake">
+        <comment></comment>
+        <id name="pointId" type="long">
+            <column name="Point_ID" />
+            <generator class="assigned" />
+        </id>
+        <many-to-one name="erfIds" class="mapping.ErfIds" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="ruptures" class="mapping.Ruptures" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Source_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Rupture_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <property name="lat" type="double">
+            <column name="Lat" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="lon" type="double">
+            <column name="Lon" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="depth" type="double">
+            <column name="Depth" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="rake" type="double">
+            <column name="Rake" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="dip" type="double">
+            <column name="Dip" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="strike" type="double">
+            <column name="Strike" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>
