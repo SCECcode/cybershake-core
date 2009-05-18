@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.SgtVariationMetadata" table="SGT_Variation_Metadata" catalog="CyberShake">
+        <comment></comment>
+        <composite-id name="id" class="mapping.SgtVariationMetadataId">
+            <key-property name="sgtVariationId" type="int">
+                <column name="SGT_Variation_ID" />
+            </key-property>
+            <key-property name="sgtVariationAttrName" type="string">
+                <column name="SGT_Variation_Attr_Name" length="50" />
+            </key-property>
+            <key-property name="sgtVariationAttrValue" type="string">
+                <column name="SGT_Variation_Attr_Value" length="50" />
+            </key-property>
+        </composite-id>
+        <many-to-one name="sgtVariationIds" class="mapping.SgtVariationIds" update="false" insert="false" fetch="select">
+            <column name="SGT_Variation_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <property name="sgtVariationAttrType" type="string">
+            <column name="SGT_Variation_Attr_Type" length="20" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="sgtVariationAttrUnits" type="string">
+            <column name="SGT_Variation_Attr_Units" length="20">
+                <comment></comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>

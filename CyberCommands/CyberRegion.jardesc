@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jardesc>
+<jar path="C:/Documents and Settings/Fusionex/workspace/CyberCommands/cybercommands.jar"/>
+<options buildIfNeeded="true" compress="true" descriptionLocation="/CyberCommands/CyberRegion.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+<storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+<selectedProjects/>
+<manifest generateManifest="false" mainClassHandleIdentifier="=CyberCommands/&lt;commands{CyberRegion.java[CyberRegion" manifestLocation="/CyberCommands/CyberRegion.mf" manifestVersion="1.0" reuseManifest="true" saveManifest="true" usesManifest="true">
+<sealing sealJar="false">
+<packagesToSeal/>
+<packagesToUnSeal/>
+</sealing>
+</manifest>
+<selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+<file path="/CyberCommands/hibernate.log"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;processing"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.commands"/>
+<file path="/CyberCommands/index.html"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.nodbconnection.data"/>
+<file path="/CyberCommands/CyberRegion.jardesc"/>
+<file path="/CyberCommands/CyberCommands.mf"/>
+<file path="/CyberCommands/CyberLoadAmps.jardesc"/>
+<file path="/CyberCommands/log4j.properties"/>
+<file path="/CyberCommands/surface.cfg.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.incompletetest"/>
+<file path="/CyberCommands/hibernate.reveng.foralltables.xml"/>
+<file path="/CyberCommands/intensity.cfg.old.xml"/>
+<file path="/CyberCommands/CyberRegion.mf"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;safiles.traversetest.deeperpath"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.fitnesse"/>
+<file path="/CyberCommands/hibernate.cfg.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;safiles.traversetest"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.nodbconnection.fileprocessing"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;safiles.loadampstest"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;safiles.norupvarids"/>
+<file path="/CyberCommands/CyberCommands.jardesc"/>
+<file path="/CyberCommands/hibernate.peakamplitudes.reveng.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.dbconnection.basicdbops"/>
+<file path="/CyberCommands/build.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;tables"/>
+<file path="/CyberCommands/.project"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.processing"/>
+<file path="/CyberCommands/CyberRegion"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;assets"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;commands"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.nonautomated"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.nodbconnection.fitnesse"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;util"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;entities"/>
+<file path="/CyberCommands/intensity.cfg.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;entities.mapping"/>
+<file path="/CyberCommands/hibernate.reveng.xml"/>
+<file path="/CyberCommands/.classpath"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;data"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;mapping"/>
+<file path="/CyberCommands/CyberLoadAmps"/>
+<file path="/CyberCommands/CyberLoadAmps.mf"/>
+</selectedElements>
+</jardesc>
