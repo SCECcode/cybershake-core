@@ -35,7 +35,7 @@ def init():
         print "SGT file " + sgtfile + " not found"
         return 1
     if (not os.path.isfile(md5file)):
-        print "MD5 file " + sgtfile + " not found"
+        print "MD5 file " + md5file + " not found"
         return 1  
     
     return 0
