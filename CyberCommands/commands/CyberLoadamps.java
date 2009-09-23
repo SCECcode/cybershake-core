@@ -32,8 +32,9 @@ public class CyberLoadamps {
 
 		Option sgt = OptionBuilder.withArgName("RunID").hasArg().withDescription("Run ID - this option is required").create("run");
 		Option path = OptionBuilder.withArgName("directory").hasArg().withDescription("file path with spectral acceleration files, either top-level directory or zip file - this option is required").create("p");
-		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (focal, surface or intensity) - this options is required").create("server");
+		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (focal, surface or intensity) - this option is required").create("server");
         Option zip = new Option("z", "Read zip files instead of bsa.");
+        Option valuesToInsert = OptionBuilder.withArgName("insertion_values").hasArg().withDescription("Which values to insert -\ngm:\tgeometric mean PSA data (default)\nxy:\tX and Y component PSA data\ngmxy:  Geometric mean and X and Y components").create("i");
         Option help = new Option("help", "print this message");
 
 		options.addOption(sgt);
@@ -41,10 +42,17 @@ public class CyberLoadamps {
 		options.addOption(help);
 		options.addOption(server);
         options.addOption(zip);
+        options.addOption(valuesToInsert);
         
 		CommandLineParser parser = new GnuParser();
 
 		try {
+			if (args.length==0) {
+				HelpFormatter formatter = new HelpFormatter();
+				formatter.printHelp( "CyberLoadAmps", options, true );
+				return;
+			}
+			
 			CommandLine cmd = parser.parse( options, args);
 
 			if (cmd.hasOption("help")) {
@@ -70,7 +78,15 @@ public class CyberLoadamps {
 				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " with Run ID: " + cmd.getOptionValue("run"));
 				RunID rid = new RunID(Integer.parseInt(cmd.getOptionValue("run")));
 //				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid.getSiteName(), rid.getSgtVarID(), cmd.getOptionValue("server"), rid.getRuptVarScenID(), rid.getErfID(), cmd.hasOption("z"));
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), cmd.hasOption("z"));
+				String insertValues;
+				if (!cmd.hasOption("i")) {
+					//Geometric mean is default
+					insertValues = "gm";
+				} else {
+					insertValues = cmd.getOptionValue("i");
+				}
+				
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), cmd.hasOption("z"), insertValues);
 				rvfi.performInsertions();
 			}
 
