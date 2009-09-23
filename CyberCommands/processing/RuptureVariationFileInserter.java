@@ -44,15 +44,32 @@ public class RuptureVariationFileInserter {
     private ArrayList<Integer> desiredPeriodsIndices = null;
 	//maps period indices to IM Type IDs
 	HashMap<Integer, Integer> periodIndexToIDMap = null;
+	
+    private ArrayList<Integer> desiredPeriodsIndicesX = null;
+	HashMap<Integer, Integer> periodIndexToIDMapX = null;
+    private ArrayList<Integer> desiredPeriodsIndicesY = null;
+	HashMap<Integer, Integer> periodIndexToIDMapY = null;
 
+	
     private boolean zipOption;
-    
+    private boolean insertGeoMean = false;
+    private boolean insertXY = false;
 
 
-	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, boolean zipOpt) throws IOException {
+	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, boolean zipOpt, String insertValues) throws IOException {
 		pathName = newPathName;
 		zipOption = zipOpt;
 		run_ID = rid;
+		if (insertValues.indexOf("gm")!=-1) {
+			insertGeoMean = true;
+		}
+		if (insertValues.indexOf("xy")!=-1) {
+			insertXY = true;
+		}
+		if (insertGeoMean || insertXY == false) { //neither option was picked.  Bad.
+			System.err.println("Insertion values was " + insertValues + ", but it must be one of gm, xy, or gmxy.");
+			System.exit(-1);
+		}
 		
 		if (serverName.equals("intensity")) {
 			hibernate_cfg_filename = "intensity.cfg.xml";
@@ -212,19 +229,53 @@ public class RuptureVariationFileInserter {
 		String imTypeIDqueryPrefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND "; 
 		
 		//going to only insert 2.0s, 3.0s, 5.0s, 10s periods to save space
-		if (desiredPeriodsIndices==null) {
-			desiredPeriodsIndices = new ArrayList<Integer>();
-			periodIndexToIDMap = new HashMap<Integer, Integer>();
-			for (int i=0; i<saPeriods.values.length; i++) {
-				for (int j=0; j<desiredPeriods.length; j++) {
-					if (Math.abs(saPeriods.values[i]-desiredPeriods[j])<0.0001) {
-						desiredPeriodsIndices.add(i);
-						int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + desiredPeriods[j]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
-						periodIndexToIDMap.put(i, typeID);
+		if (insertGeoMean) {
+			if (desiredPeriodsIndices==null) {
+				desiredPeriodsIndices = new ArrayList<Integer>();
+				periodIndexToIDMap = new HashMap<Integer, Integer>();
+				for (int i=0; i<saPeriods.values.length; i++) {
+					for (int j=0; j<desiredPeriods.length; j++) {
+						if (Math.abs(saPeriods.values[i]-desiredPeriods[j])<0.0001) {
+							desiredPeriodsIndices.add(i);
+							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + desiredPeriods[j]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							periodIndexToIDMap.put(i, typeID);
+						}
 					}
 				}
 			}
 		}
+		
+		if (insertXY) {
+			String imTypeIDqueryPrefixX = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration X component' AND ";
+			String imTypeIDqueryPrefixY = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration Y component' AND ";
+			
+			if (desiredPeriodsIndices==null) {
+				desiredPeriodsIndices = new ArrayList<Integer>();
+				periodIndexToIDMapX = new HashMap<Integer, Integer>();
+				periodIndexToIDMapY = new HashMap<Integer, Integer>();
+				for (int i=0; i<saPeriods.values.length; i++) {
+					for (int j=0; j<desiredPeriods.length; j++) {
+						if (Math.abs(saPeriods.values[i]-desiredPeriods[j])<0.0001) {
+							desiredPeriodsIndices.add(i);
+							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + desiredPeriods[j]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							periodIndexToIDMapX.put(i, typeID);
+							typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + desiredPeriods[j]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							periodIndexToIDMapY.put(i, typeID);
+						}
+					}
+				}
+			} else { //desiredPeriodIndices is already populated
+				periodIndexToIDMapX = new HashMap<Integer, Integer>();
+				periodIndexToIDMapY = new HashMap<Integer, Integer>();
+				for (int period: desiredPeriodsIndices) {
+					int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + saPeriods.values[period]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+					periodIndexToIDMapX.put(period, typeID);
+					typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + saPeriods.values[period]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+					periodIndexToIDMapY.put(period, typeID);
+				}
+			}
+		}
+
 
 		imTypeIDSess.close();
 
@@ -265,23 +316,24 @@ public class RuptureVariationFileInserter {
 						+ ", Geometrically Averaged Component, Period " + (periodIter+1) + " : " 
 						+ currRupVar.geomAvgComp.periods[periodIter] );*/
 
-				// Initialize PeakAmplitudes class
-				PeakAmplitude pa = new PeakAmplitude();
-				PeakAmplitudePK paPK = new PeakAmplitudePK();
-				// Set values for the PeakAmplitudes Class
-				paPK.setRun_ID(run_ID.getRunID());
-				paPK.setSource_ID(currentSource_ID);				
-				paPK.setRupture_ID(currentRupture_ID);
-				paPK.setRup_Var_ID(currRupVar.variationNumber);
-				paPK.setIM_Type_ID(periodIndexToIDMap.get(periodIter));
-				pa.setPaPK(paPK);
-				double psaValue = currRupVar.geomAvgComp.periods[periodIter];
-				if (psaValue>8400 || psaValue<0.01) {
-					System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
-					throw new IllegalArgumentException();
-				}
+				if (insertGeoMean) {
+					// Initialize PeakAmplitudes class
+					PeakAmplitude pa = new PeakAmplitude();
+					PeakAmplitudePK paPK = new PeakAmplitudePK();
+					// Set values for the PeakAmplitudes Class
+					paPK.setRun_ID(run_ID.getRunID());
+					paPK.setSource_ID(currentSource_ID);				
+					paPK.setRupture_ID(currentRupture_ID);
+					paPK.setRup_Var_ID(currRupVar.variationNumber);
+					paPK.setIM_Type_ID(periodIndexToIDMap.get(periodIter));
+					pa.setPaPK(paPK);
+					double psaValue = currRupVar.geomAvgComp.periods[periodIter];
+					if (psaValue>8400 || psaValue<0.01) {
+						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+						throw new IllegalArgumentException();
+					}
 //				System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
-				pa.setIM_Value(psaValue);
+					pa.setIM_Value(psaValue);
 
 				// 3. Save and Commit PeakAmplitude instance
 
@@ -297,7 +349,48 @@ public class RuptureVariationFileInserter {
 					sess.save(pa);
 				}*/
 				
-				sess.save(pa);
+					sess.save(pa);
+				}
+				
+				if (insertXY) {
+					//do X
+					PeakAmplitude pa = new PeakAmplitude();
+					PeakAmplitudePK paPK = new PeakAmplitudePK();
+					paPK.setRun_ID(run_ID.getRunID());
+					paPK.setSource_ID(currentSource_ID);				
+					paPK.setRupture_ID(currentRupture_ID);
+					paPK.setRup_Var_ID(currRupVar.variationNumber);
+					paPK.setIM_Type_ID(periodIndexToIDMapX.get(periodIter));
+					pa.setPaPK(paPK);
+					double psaValue = currRupVar.eastComp.periods[periodIter];
+					if (psaValue>8400 || psaValue<0.01) {
+						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+						throw new IllegalArgumentException();
+					}
+//					System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+					pa.setIM_Value(psaValue);
+					
+					sess.save(pa);
+					
+					//do Y
+					pa = new PeakAmplitude();
+					paPK = new PeakAmplitudePK();
+					paPK.setRun_ID(run_ID.getRunID());
+					paPK.setSource_ID(currentSource_ID);				
+					paPK.setRupture_ID(currentRupture_ID);
+					paPK.setRup_Var_ID(currRupVar.variationNumber);
+					paPK.setIM_Type_ID(periodIndexToIDMapY.get(periodIter));
+					pa.setPaPK(paPK);
+					psaValue = currRupVar.northComp.periods[periodIter];
+					if (psaValue>8400 || psaValue<0.01) {
+						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+						throw new IllegalArgumentException();
+					}
+//					System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+					pa.setIM_Value(psaValue);
+					
+					sess.save(pa);
+				}
 				
 				/*if ((rupVarIter+1)%50==0) {
 					// flush a batch of inserts and release memory
