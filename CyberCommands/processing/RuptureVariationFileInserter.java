@@ -66,7 +66,7 @@ public class RuptureVariationFileInserter {
 		if (insertValues.indexOf("xy")!=-1) {
 			insertXY = true;
 		}
-		if (insertGeoMean || insertXY == false) { //neither option was picked.  Bad.
+		if (insertGeoMean==false || insertXY == false) { //neither option was picked.  Bad.
 			System.err.println("Insertion values was " + insertValues + ", but it must be one of gm, xy, or gmxy.");
 			System.exit(-1);
 		}
