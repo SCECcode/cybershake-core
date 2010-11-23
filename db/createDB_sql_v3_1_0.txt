@@ -5,6 +5,16 @@
 #
 # Description of Changes:
 #
+# 3.1.0 - 3 Sept 2010
+#  Added a procedure to make sure that when a Hazard_Curve is linked
+#  to a Hazard_Dataset, they have the same ERF_ID, SGT_Variation_ID,
+#  Rup_Var_Scenario_ID, and Velocity_Model_ID.
+#
+#
+# 3.0.1 - 2 Sept 2010
+#  Changed table name from 'Velocity_Model_IDs' to
+#  'Velocity_Models'
+#
 # 3.0.0 - 1 Sept 2010
 #  Added new tables:
 #     ERF_Probability_Models to track the specific probability model
@@ -408,7 +418,7 @@ foreign key (Rup_Var_Scenario_ID) references
 # Model name is separate from model version.
 #
 
-CREATE TABLE Velocity_Model_IDs
+CREATE TABLE Velocity_Models
 (
 Velocity_Model_ID int unsigned not null auto_increment,
 Velocity_Model_Name varchar(50) not null,
@@ -478,7 +488,7 @@ foreign key (Site_ID) references CyberShake_Sites(CS_Site_ID),
 foreign key (ERF_ID) references ERF_IDs(ERF_ID),
 foreign key (SGT_Variations_ID) references SGT_Variation_IDs(SGT_Variation_ID),
 foreign key (Rup_Var_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID),
-foreign key (Velocity_Model_ID) references Velocity_Model_IDs(Velocity_Model_ID)
+foreign key (Velocity_Model_ID) references Velocity_Models(Velocity_Model_ID)
 ) ENGINE=InnoDB;
 
 #
@@ -534,7 +544,7 @@ primary key (Hazard_Dataset_ID),
 foreign key (ERF_ID) references ERF_IDs(ERF_ID),
 foreign key (Rup_Var_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID),
 foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID),
-foreign key (Velocity_Model_ID) references Velocity_Model_IDs(Velocity_Model_ID),
+foreign key (Velocity_Model_ID) references Velocity_Models(Velocity_Model_ID),
 foreign key (Prob_Model_ID) references ERF_Probability_Models(Prob_Model_ID),
 foreign key (Time_Span_ID) references Time_Spans(Time_Span_ID)
 ) ENGINE=InnoDB;
