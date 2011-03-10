@@ -26,6 +26,8 @@ public class CheckDBDataForSite {
     private static final String DB_SERVER = "focal.usc.edu";
     private static final String DB = "CyberShake";
     
+    private static final int NUM_PERIODS_INSERTED = 3;  //3, 5, and 10s
+    
     public static void main(String[] args) {
         if (args.length<2) {
             System.out.println("Usage:  CheckDBDataForSite <runID> <outputFile>");
@@ -79,8 +81,8 @@ public class CheckDBDataForSite {
             }
             int ampSetNum = ampSet.getInt("count(*)");
             
-            if (rupVarSetNum!=ampSetNum/4) {
-                System.out.println(rupVarSetNum + " variations for run " + runID + " in RupVar table, but " + (ampSetNum/4) + " variations in PeakAmp table.");
+            if (rupVarSetNum*NUM_PERIODS_INSERTED!=ampSetNum) {
+                System.out.println(rupVarSetNum + " variations for run " + runID + " in RupVar table, but " + (ampSetNum/NUM_PERIODS_INSERTED) + " variations in PeakAmp table.");
                 rupVarSet.close();
                 ampSet.close();
                 findDifferences2(dbc, runID, outputFile);
