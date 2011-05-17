@@ -40,7 +40,7 @@ public class RuptureVariationFileInserter {
 	private String hibernate_cfg_filename = "intensity.cfg.xml";
 	private RunID run_ID;
 
-    private double[] desiredPeriods = {2.0, 3.00003, 5.0, 10.0};
+    private double[] desiredPeriods = {3.00003, 5.0, 10.0};
     private ArrayList<Integer> desiredPeriodsIndices = null;
 	//maps period indices to IM Type IDs
 	HashMap<Integer, Integer> periodIndexToIDMap = null;
@@ -66,7 +66,7 @@ public class RuptureVariationFileInserter {
 		if (insertValues.indexOf("xy")!=-1) {
 			insertXY = true;
 		}
-		if (insertGeoMean==false || insertXY == false) { //neither option was picked.  Bad.
+		if (insertGeoMean==false && insertXY == false) { //neither option was picked.  Bad.
 			System.err.println("Insertion values was " + insertValues + ", but it must be one of gm, xy, or gmxy.");
 			System.exit(-1);
 		}
@@ -229,6 +229,7 @@ public class RuptureVariationFileInserter {
 		String imTypeIDqueryPrefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND "; 
 		
 		//going to only insert 2.0s, 3.0s, 5.0s, 10s periods to save space
+		//Going to skip 2.0s since we don't really trust it
 		if (insertGeoMean) {
 			if (desiredPeriodsIndices==null) {
 				desiredPeriodsIndices = new ArrayList<Integer>();
