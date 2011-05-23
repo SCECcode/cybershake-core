@@ -5,6 +5,10 @@
 #
 # Description of Changes:
 #
+# 3.2.2 - 10 March 2011
+#  Added Min_Lat, Min_Lon, Max_Lat, Max_Lon, Grid_Spacing fields
+#  to AR_Hazard_Curves to track the size and spacing of the region
+#
 # 3.2.1 - 4 March 2011
 #  Added Lat and Lon fields to AR_Hazard_Curves to geolocate curves,
 #  and IM_Type_ID to AR_Hazard_Curves
