@@ -22,6 +22,7 @@ public class CyberLoadamps {
 	private static final String NO_P_OPTION_MESSAGE = "Please use -p to set the path with the spectral acceleration files";
 	private static final String NO_SERVER_OPTION_MESSAGE = "Please use -server to specify a database server";
 	private static final String NO_RUNID_OPTION_MESSAGE = "Please use -run to specify the RunID";
+	private static final String NO_PERIODS_OPTION_MESSAGE = "Please use -periods to specify the periods to insert";
 
 	/**
 	 * @param args
@@ -35,6 +36,7 @@ public class CyberLoadamps {
 		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (focal, surface or intensity) - this option is required").create("server");
         Option zip = new Option("z", "Read zip files instead of bsa.");
         Option valuesToInsert = OptionBuilder.withArgName("insertion_values").hasArg().withDescription("Which values to insert -\ngm:\tgeometric mean PSA data (default)\nxy:\tX and Y component PSA data\ngmxy:  Geometric mean and X and Y components").create("i");
+        Option periods = OptionBuilder.withArgName("periods").hasArg().withDescription("Comma-delimited periods to insert").create("periods");
         Option help = new Option("help", "print this message");
 
 		options.addOption(sgt);
@@ -43,6 +45,7 @@ public class CyberLoadamps {
 		options.addOption(server);
         options.addOption(zip);
         options.addOption(valuesToInsert);
+        options.addOption(periods);
         
 		CommandLineParser parser = new GnuParser();
 
@@ -74,6 +77,11 @@ public class CyberLoadamps {
                     System.out.println(NO_RUNID_OPTION_MESSAGE);
                     return;
                 }
+                
+                if (!cmd.hasOption("periods")) {
+                	System.out.println(NO_PERIODS_OPTION_MESSAGE);
+                	return;
+                }
 
 				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " with Run ID: " + cmd.getOptionValue("run"));
 				RunID rid = new RunID(Integer.parseInt(cmd.getOptionValue("run")));
@@ -86,7 +94,7 @@ public class CyberLoadamps {
 					insertValues = cmd.getOptionValue("i");
 				}
 				
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), cmd.hasOption("z"), insertValues);
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), cmd.hasOption("z"), cmd.getOptionValue("periods"), insertValues);
 				rvfi.performInsertions();
 			}
 
