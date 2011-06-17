@@ -51,7 +51,7 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 	}
 
 	public void createPeriods(ArrayList<Float> floats) {
-		int maxPeriod = 27;
+		int maxPeriod = SAPeriods.num_periods;
 		int periodCount = 1;
 		String componentDirection = "East";
 		

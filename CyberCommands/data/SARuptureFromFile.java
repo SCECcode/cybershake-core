@@ -32,7 +32,7 @@ public class SARuptureFromFile {
 	}
 
 	protected void createRupVars(ArrayList<Float> floats) {
-		int maxPeriod = 27;
+		int maxPeriod = SAPeriods.num_periods;
 		int ruptureVarCount = 0;
 		int periodCount = 1;
 		SARuptureVariation rupVar = new SARuptureVariation();
@@ -77,7 +77,7 @@ public class SARuptureFromFile {
 	}
 
 	public void createSARuptureFromArray(ArrayList<Float> floats) {
-		int maxPeriod = 27;
+		int maxPeriod = SAPeriods.num_periods;
 		int ruptureVarCount = 1;
 		int periodCount = 1;
 		String componentDirection = "East";
