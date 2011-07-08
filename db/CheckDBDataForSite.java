@@ -26,7 +26,7 @@ public class CheckDBDataForSite {
     private static final String DB_SERVER = "focal.usc.edu";
     private static final String DB = "CyberShake";
     
-    private static final int NUM_PERIODS_INSERTED = 3;  //3, 5, and 10s
+//    private static final int NUM_PERIODS_INSERTED = 3;  //3, 5, and 10s
     
     public static void main(String[] args) {
         if (args.length<2) {
@@ -67,10 +67,13 @@ public class CheckDBDataForSite {
             
             int rupVarSetNum = rupVarSet.getInt("count(*)");
             
-            query = "select count(*) " +
-            "from PeakAmplitudes A " +
-            "where A.Run_ID=" + runID + " ";
-
+            //query determines how many RupVars we inserted data for
+            //Can't use the # of values because the number of periods inserted is variable
+            query = "select count(*) from" +
+            	"(select count(*) from PeakAmplitudes A " +
+            	"where A.Run_ID=802 group by Source_ID, Rupture_ID, Rup_Var_ID, Run_ID)" +
+            	"as temp;";
+            
             System.out.println(query);
             
             ResultSet ampSet = dbc.selectData(query);
@@ -81,8 +84,8 @@ public class CheckDBDataForSite {
             }
             int ampSetNum = ampSet.getInt("count(*)");
             
-            if (rupVarSetNum*NUM_PERIODS_INSERTED!=ampSetNum) {
-                System.out.println(rupVarSetNum + " variations for run " + runID + " in RupVar table, but " + (ampSetNum/NUM_PERIODS_INSERTED) + " variations in PeakAmp table.");
+            if (rupVarSetNum!=ampSetNum) {
+                System.out.println(rupVarSetNum + " variations for run " + runID + " in RupVar table, but " + (ampSetNum) + " variations in PeakAmp table.");
                 rupVarSet.close();
                 ampSet.close();
                 findDifferences2(dbc, runID, outputFile);
