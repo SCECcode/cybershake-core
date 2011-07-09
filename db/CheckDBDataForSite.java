@@ -71,7 +71,8 @@ public class CheckDBDataForSite {
             //Can't use the # of values because the number of periods inserted is variable
             query = "select count(*) from" +
             	"(select count(*) from PeakAmplitudes A " +
-            	"where A.Run_ID=802 group by Source_ID, Rupture_ID, Rup_Var_ID, Run_ID)" +
+            	"where A.Run_ID=" + runID +
+            	" group by Source_ID, Rupture_ID, Rup_Var_ID, Run_ID) " +
             	"as temp;";
             
             System.out.println(query);
