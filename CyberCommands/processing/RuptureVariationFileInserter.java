@@ -17,6 +17,7 @@ import mapping.PeakAmplitude;
 import mapping.PeakAmplitudePK;
 
 import org.hibernate.Hibernate;
+import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
@@ -40,7 +41,7 @@ public class RuptureVariationFileInserter {
 	private String hibernate_cfg_filename = "intensity.cfg.xml";
 	private RunID run_ID;
 
-    private double[] desiredPeriods = {3.00003, 5.0, 10.0};
+    private ArrayList<Double> desiredPeriods = new ArrayList<Double>();
     private ArrayList<Integer> desiredPeriodsIndices = null;
 	//maps period indices to IM Type IDs
 	HashMap<Integer, Integer> periodIndexToIDMap = null;
@@ -56,7 +57,7 @@ public class RuptureVariationFileInserter {
     private boolean insertXY = false;
 
 
-	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, boolean zipOpt, String insertValues) throws IOException {
+	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, boolean zipOpt, String periods, String insertValues) throws IOException {
 		pathName = newPathName;
 		zipOption = zipOpt;
 		run_ID = rid;
@@ -80,6 +81,10 @@ public class RuptureVariationFileInserter {
 		} else {
 			System.err.println("Server name was " + serverName + ", but it must be one of intensity, surface, or focal.  Exiting.");
 			System.exit(-2);
+		}
+		String[] pieces = periods.split(",");
+		for (String p: pieces) {
+			desiredPeriods.add(Double.parseDouble(p));
 		}
 		initSessionFactory();
 	}
@@ -235,10 +240,11 @@ public class RuptureVariationFileInserter {
 				desiredPeriodsIndices = new ArrayList<Integer>();
 				periodIndexToIDMap = new HashMap<Integer, Integer>();
 				for (int i=0; i<saPeriods.values.length; i++) {
-					for (int j=0; j<desiredPeriods.length; j++) {
-						if (Math.abs(saPeriods.values[i]-desiredPeriods[j])<0.0001) {
+					for (int j=0; j<desiredPeriods.size(); j++) {
+						if (Math.abs(saPeriods.values[i]-desiredPeriods.get(j))<0.0001) {
 							desiredPeriodsIndices.add(i);
-							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + desiredPeriods[j]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							SQLQuery query = imTypeIDSess.createSQLQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + saPeriods.values[i]).addScalar("IM_Type_ID", Hibernate.INTEGER);
+							int typeID = (Integer)query.list().get(0);
 							periodIndexToIDMap.put(i, typeID);
 						}
 					}
@@ -255,12 +261,12 @@ public class RuptureVariationFileInserter {
 				periodIndexToIDMapX = new HashMap<Integer, Integer>();
 				periodIndexToIDMapY = new HashMap<Integer, Integer>();
 				for (int i=0; i<saPeriods.values.length; i++) {
-					for (int j=0; j<desiredPeriods.length; j++) {
-						if (Math.abs(saPeriods.values[i]-desiredPeriods[j])<0.0001) {
+					for (int j=0; j<desiredPeriods.size(); j++) {
+						if (Math.abs(saPeriods.values[i]-desiredPeriods.get(j))<0.0001) {
 							desiredPeriodsIndices.add(i);
-							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + desiredPeriods[j]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + saPeriods.values[i]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
 							periodIndexToIDMapX.put(i, typeID);
-							typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + desiredPeriods[j]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + saPeriods.values[i]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
 							periodIndexToIDMapY.put(i, typeID);
 						}
 					}
