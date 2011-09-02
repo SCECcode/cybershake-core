@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-reverse-engineering PUBLIC "-//Hibernate/Hibernate Reverse Engineering DTD 3.0//EN" "http://hibernate.sourceforge.net/hibernate-reverse-engineering-3.0.dtd" >
+
+<hibernate-reverse-engineering>
+	<table-filter match-schema="CyberShake" match-name=".*"></table-filter>
+	<table-filter match-name="CyberShake_Site_Regions"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="CyberShake_Site_Ruptures"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="CyberShake_Sites"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="ERF_IDs" match-catalog="CyberShake"></table-filter>
+	<table-filter match-name="ERF_Metadata"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="OpenSHA_CyberShake_Interfaces"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="PeakAmplitudes"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="Points" match-catalog="CyberShake"></table-filter>
+	<table-filter match-name="Rupture_Variation_Scenario_IDs"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="Rupture_Variation_Scenario_Metadata"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="Rupture_Variations"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="Ruptures" match-catalog="CyberShake"></table-filter>
+	<table-filter match-name="SGT_Variation_IDs"
+		match-catalog="CyberShake">
+	</table-filter>
+	<table-filter match-name="SGT_Variation_Metadata"
+		match-catalog="CyberShake">
+	</table-filter>
+</hibernate-reverse-engineering>

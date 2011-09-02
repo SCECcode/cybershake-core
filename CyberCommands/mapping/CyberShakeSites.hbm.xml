@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.CyberShakeSites" table="CyberShake_Sites" catalog="CyberShake">
+        <comment></comment>
+        <id name="csSiteId" type="int">
+            <column name="CS_Site_ID" />
+            <generator class="assigned" />
+        </id>
+        <property name="csSiteName" type="string">
+            <column name="CS_Site_Name" length="50" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="csShortName" type="string">
+            <column name="CS_Short_Name" length="5" not-null="true" unique="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="csSiteLat" type="double">
+            <column name="CS_Site_Lat" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="csSiteLon" type="double">
+            <column name="CS_Site_Lon" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <set name="cyberShakeSiteRuptureses" inverse="true">
+            <key>
+                <column name="CS_Site_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.CyberShakeSiteRuptures" />
+        </set>
+        <set name="cyberShakeSiteRegionses" inverse="true">
+            <key>
+                <column name="CS_Site_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.CyberShakeSiteRegions" />
+        </set>
+        <set name="peakAmplitudeses" inverse="true">
+            <key>
+                <column name="Site_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.PeakAmplitudes" />
+        </set>
+    </class>
+</hibernate-mapping>
