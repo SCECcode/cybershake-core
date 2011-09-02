@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <class name="mapping.CyberShake_Runs" table="CyberShake_Runs" catalog="CyberShake">
+        <comment></comment>
+        <id name="Run_ID" type="int">
+            <column name="Run_ID" />
+            <generator class="assigned" />
+        </id>
+        <many-to-one name="cyberShakeSites" class="mapping.CyberShakeSites" update="false" insert="false" fetch="select">
+            <column name="CS_Site_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="erfIds" class="mapping.ErfIds" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="ruptureVariationScenarioIds" class="mapping.RuptureVariationScenarioIds" update="false" insert="false" fetch="select">
+            <column name="Rup_Var_Scenario_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="sgtVariationIds" class="mapping.SgtVariationIds" update="false" insert="false" fetch="select">
+            <column name="SGT_Variation_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <property name="SGT_Host" type="string">
+            <column name="SGT_Host" length="100">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="PP_Host" type="string">
+            <column name="PP_Host" length="100">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="SGT_Time" type="timestamp">
+            <column name="SGT_Time">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="PP_Time" type="timestamp">
+            <column name="PP_Time">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="Status" type="string">
+            <column name="Status" length="32">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="Status_Time" type="timestamp">
+            <column name="Status_Time">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="Last_User" type="string">
+            <column name="Last_User" length="32">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="Comment" type="string">
+            <column name="Comment" length="128">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="Job_ID" type="string">
+            <column name="Job_ID" length="64">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="Submit_Dir" type="string">
+            <column name="Submit_Dir" length="128">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="Notify_User" type="string">
+            <column name="Notify_User" length="128">
+                <comment></comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>

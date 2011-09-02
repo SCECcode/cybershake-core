@@ -1,0 +1,12 @@
+UCVM for CyberShake
+---------------------
+
+The SVN repository contains the CyberShake-specific query code and the UCVM
+install.  In addition, you'll need:
+
+CVM-H 11.2
+CVM-S4 
+
+You may also need proj4 if it's not already installed on the target system.
+
+You'll need to compile and install all 5 elements before using the code.
