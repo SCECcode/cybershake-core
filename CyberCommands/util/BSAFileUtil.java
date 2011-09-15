@@ -33,8 +33,17 @@ public class BSAFileUtil {
 	}
 	
 	private static void createTotalFileListZipHelper(File saFile) {
-		File[] zipfilesList = saFile.listFiles(new ZipFilenameFilter());
-		File[] sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
+		File[] zipfilesList;
+		File[] sadirsList;
+		if (saFile.isDirectory()) {
+			zipfilesList = saFile.listFiles(new ZipFilenameFilter());
+			sadirsList = saFile.listFiles(new NonCVSDirFileFilter());
+		} else {
+			//Just inserting 1 zip file
+			zipfilesList = new File[1];
+			zipfilesList[0] = saFile;
+			sadirsList = null;
+		}
 		
 		if (isInDebugMode) {
 			System.out.println("Printing all files in " + saFile.getName());
