@@ -145,14 +145,14 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 //run ucvm setup
  fprintf(stderr, "[%d] Setting up ucvm\n", myid);
  fflush(stderr);
- if (ucvm_init("/scratch/projects/tg/tera3d/CyberShake2007/software/UCVM/ucvm/conf/ranger/ucvm.conf") != UCVM_CODE_SUCCESS) {
+ if (ucvm_init("/home/rcf-104/CyberShake2007/software/UCVM/ucvm/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
    fprintf(stderr, "Failed to setup ucvm.\n");
    fflush(stderr);
    exit(-1);
  }
 
 // Query by depth
- if (ucvm_query_mode(UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+ if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
    fprintf(stderr, "Set query mode by depth failed.\n");
    fflush(stderr);
    exit(-2);
@@ -166,16 +166,24 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			if (ucvm_add_model(UCVM_MODEL_CVMH)!=UCVM_CODE_SUCCESS) {
 			   fprintf(stderr, "Error retrieving CVM-H.\n");
 			   fflush(stderr);
+			   exit(-1);
 			}
 		} else if (strcmp(tok, "cvms")==0) {
 			if (ucvm_add_model(UCVM_MODEL_CVMS)!=UCVM_CODE_SUCCESS) {
 			   fprintf(stderr, "Error retrieving CVM-S.\n");
 	                   fflush(stderr);
+			   exit(-2);
 	                }
+		} else if (strcmp(tok, "1d")==0) {
+			if (ucvm_add_model(UCVM_MODEL_1D) != UCVM_CODE_SUCCESS) {
+			   fprintf(stderr, "Error retrieving 1D model.\n");
+			   fflush(stderr);
+			   exit(-3);
+			}
 		} else {
 			fprintf(stderr, "Model %s didn't match any known models, aborting.\n", tok);
 			fflush(stderr);
-			exit(-3);
+			exit(-4);
 		}
 		tok = strtok(NULL, ",");
 	}
@@ -184,13 +192,21 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
              if (ucvm_add_model(UCVM_MODEL_CVMH)!=UCVM_CODE_SUCCESS) {
              	fprintf(stderr, "Error retrieving CVM-H.\n");
              	fflush(stderr);
+		exit(-1);
              }
         } else if (strcmp(models, "cvms")==0) {
    	     if (ucvm_add_model(UCVM_MODEL_CVMS)!=UCVM_CODE_SUCCESS) {
          	    fprintf(stderr, "Error retrieving CVM-S.\n");
                     fflush(stderr);
+		    exit(-2);
              }
-        } else {
+        } else if (strcmp(models, "1d")==0) {
+             if (ucvm_add_model(UCVM_MODEL_1D)!=UCVM_CODE_SUCCESS) {
+	             fprintf(stderr, "Error retrieving 1D model.\n");
+                     fflush(stderr);
+                     exit(-3);
+             }
+	} else {
  	       fprintf(stderr, "Model %s didn't match any known models, aborting.\n", models);
                fflush(stderr);
                exit(-3);
@@ -204,7 +220,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
  // output order: x,z,y
  int num_pts = nx;
  ucvm_point_t* pts = check_malloc(sizeof(ucvm_point_t)*num_pts);
- ucvm_prop_t* props = check_malloc(sizeof(ucvm_prop_t)*num_pts);
+ ucvm_data_t* props = check_malloc(sizeof(ucvm_data_t)*num_pts);
 
  for(j=0;j<local_ny;j++) {
 
@@ -230,28 +246,28 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
        /* perform sanity checks on the material properties */
      for (ix=0; ix<nx; ix++) { 
        k = ix + iz*nx;
-       if (isnan(props[ix].vp) || isnan(props[ix].vs) || isnan(props[ix].rho) ||
-	   isinf(props[ix].vp) || isinf(props[ix].vs) || isinf(props[ix].rho)) {
+       if (isnan(props[ix].cmb.vp) || isnan(props[ix].cmb.vs) || isnan(props[ix].cmb.rho) ||
+	   isinf(props[ix].cmb.vp) || isinf(props[ix].cmb.vs) || isinf(props[ix].cmb.rho)) {
 	 fprintf(stderr, "NaN/Inf detected at (%f, %f, %f)\n", 
 		 pts[ix].coord[0], pts[ix].coord[1], pts[ix].coord[2]);
 	 fflush(stderr);
 	 exit(-1);
        }
-       if ((props[ix].vp < 0.0) || (props[ix].vs < 0.0) || (props[ix].rho < 0.0)) {
+       if ((props[ix].cmb.vp < 0.0) || (props[ix].cmb.vs < 0.0) || (props[ix].cmb.rho < 0.0)) {
 	 fprintf(stderr, "Negative vals detected at (%f, %f, %f)\n", 
 		 pts[ix].coord[0], pts[ix].coord[1], pts[ix].coord[2]);
 	 fprintf(stderr, "vp=%f, vs=%f, rho=%lf\n", 
-		 props[ix].vp, props[ix].vs, props[ix].rho);
+		 props[ix].cmb.vp, props[ix].cmb.vs, props[ix].cmb.rho);
 	 fflush(stderr);
 	 exit(-1);
        }
 
-       if ((props[ix].vp / props[ix].vs) < MIN_V_RATIO) {
+       if ((props[ix].cmb.vp / props[ix].cmb.vs) < MIN_V_RATIO) {
 	 fprintf(stderr, 
 		 "Vp/Vs < %f at (%f  %f  %f) (vp=%f,vs=%f)\n", 
 		 MIN_V_RATIO,
 		 pts[ix].coord[0], pts[ix].coord[1], pts[ix].coord[2], 
-		 props[ix].vp, props[ix].vs);
+		 props[ix].cmb.vp, props[ix].cmb.vs);
 	 fflush(stderr);
 	 fprintf(ppr, 
 		 "%f  %f  %f\n", pts[ix].coord[0], pts[ix].coord[1], pts[ix].coord[2]);
@@ -259,9 +275,9 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	 //exit(-1);
        }
 
-       fbuf[k] = meter2km*props[ix].vp;
-       fbuf[k+nn] = meter2km*props[ix].vs;
-       fbuf[k+2*nn] = meter2km*props[ix].rho;
+       fbuf[k] = meter2km*props[ix].cmb.vp;
+       fbuf[k+nn] = meter2km*props[ix].cmb.vs;
+       fbuf[k+2*nn] = meter2km*props[ix].cmb.rho;
      }
    }
 
