@@ -1,0 +1,35 @@
+#!/bin/bash
+
+#PBS -q medium
+#PBS -l size=1200
+#PBS -l walltime=1:00:00
+#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test.out
+#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test.err
+#PBS -V
+#PBS -A TG-MCA03S012
+
+IOBUF_PARAMS='*:size=64M:count=4';export IOBUF_PARAMS;
+
+#STAGEDIR=/home/rcf-104/patrices/test/ruptures
+INDIR=/lustre/scratch/patricks/tmp/rupture_vars_2
+
+OUTDIR=/lustre/scratch/patricks/tmp/rupture_vars_2
+#OUTDIR= /home/rcf-104/patrices/test/rupture_vars
+
+LOGDIR=/lustre/scratch/patricks/tmp/rupture_logs_2
+#LOGDIR=/home/rcf-104/patrices/test/rupture_logs
+
+echo "Job start"
+date
+
+#mkdir ${INDIR}
+mkdir ${OUTDIR}
+mkdir ${LOGDIR}
+
+cd /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi
+
+aprun -n 1200 ./rupgen ${INDIR} ${OUTDIR} ${LOGDIR}
+
+echo "Jobs done"
+date
+exit 0
