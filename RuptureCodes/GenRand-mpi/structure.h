@@ -139,6 +139,7 @@ typedef struct rg_stats_t {
 typedef struct rg_rfile_t {
   char filename[MAX_FILENAME];
   int index;
+  float mag;
   int src;
   int rup;
   rg_stats_t stats;

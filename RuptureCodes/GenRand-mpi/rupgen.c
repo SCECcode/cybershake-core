@@ -19,18 +19,41 @@
 #define RUP_FILE_DELIM "_"
 
 
+/* Rupture magnitude comparator, descending order */
+int rupcomp(const void *p1, const void *p2)
+{
+  rg_rfile_t *r1;
+  rg_rfile_t *r2;
+
+  r1 = (rg_rfile_t *)p1;
+  r2 = (rg_rfile_t *)p2;
+
+  if (r1->mag < r2->mag) {
+    return(1);
+  } else if (r1-> mag == r2->mag) {
+    return(0);
+  } else {
+    return(-1);
+  }
+}
+
+
 /* Parse rupture file names */
-int parsename(const char *fname, int *src, int *rup)
+int parserup(const char *path, const char *fname, 
+	     int *src, int *rup, float *mag)
 {
   char tmpstr[MAX_FILENAME];
   char *tok;
+  FILE *fp;
 
+  *mag = -1.0;
   *src = -1;
   *rup = -1;
 
   memset(tmpstr, 0, MAX_FILENAME);
   strncpy(tmpstr, fname, strstr(fname, RUP_FILE_EXT) - fname);
 
+  /* Find source and rupture */
   tok = strtok(tmpstr, RUP_FILE_DELIM);
   if (tok != NULL) {
     *src = atoi(tok);
@@ -41,6 +64,27 @@ int parsename(const char *fname, int *src, int *rup)
       return(1);
     }
   } else {
+    return(1);
+  }
+
+  /* Find magnitude */
+  sprintf(tmpstr, "%s/%d/%d/%s", path, *src, *rup, fname);
+  fp = fopen(tmpstr, "r");
+  if (fp == NULL) {
+    return(1);
+  }
+  while (!feof(fp)) {
+    if (fgets(tmpstr, MAX_FILENAME, fp) != NULL) {
+      if (strstr(tmpstr, "Magnitude = ") != NULL) {
+	/* Parse magnitude */
+	sscanf(tmpstr, "%*s %*s %f", mag);
+	break;
+      }
+    }
+  }
+  fclose(fp);
+
+  if ((*mag < 0.0) || (*src < 0) || (*rup < 0)) {
     return(1);
   }
 
@@ -74,30 +118,6 @@ int getnumrups(const char *path, int *numrup)
 }
 
 
-/* Get number of rupture files */
-int getnumrups2(const char *path, int *numrup)
-{
-  DIR *dir;
-  struct dirent *ent;
-
-  *numrup = 0;
-  dir = opendir (path);
-  if (dir != NULL) {
-    while ((ent = readdir (dir)) != NULL) {
-      if (strstr(ent->d_name, RUP_FILE_EXT) != NULL) {
-	(*numrup)++;
-      }
-    }
-    closedir(dir);
-  } else {
-    /* could not open directory */
-    perror ("");
-    return(1);
-  }
-  return(0);
-}
-
-
 /* Get list of rupture files */
 int getrups(const char *path, rg_rfile_t *rups, int maxrup, int *numrup)
 {
@@ -118,59 +138,27 @@ int getrups(const char *path, rg_rfile_t *rups, int maxrup, int *numrup)
 	if (buf[strlen(buf) - 1] == '\n') {
 	  buf[strlen(buf) - 1] = '\0';
 	}
-	strcpy(rups[*numrup].filename, buf);
-	if (parsename(buf, &(rups[*numrup].src), 
-		      &(rups[*numrup].rup))!= 0) {
-	  fprintf(stderr, "Failed to parse rupture filename\n");
-	  return(1);
+	if (strlen(buf) > 0) {
+	  strcpy(rups[*numrup].filename, buf);
+	  if (parserup(path, rups[*numrup].filename, 
+			&(rups[*numrup].src), 
+			&(rups[*numrup].rup),
+			&(rups[*numrup].mag))!= 0) {
+	    fprintf(stderr, "Failed to parse rupture file\n");
+	    return(1);
+	  }
+	  rups[(*numrup)].index = *numrup;
+	  rups[(*numrup)].stats.numslip = 0;
+	  rups[(*numrup)].stats.numhypo = 0;
+	  (*numrup)++;
 	}
-	rups[(*numrup)].index = *numrup;
-	rups[(*numrup)].stats.numslip = 0;
-	rups[(*numrup)].stats.numhypo = 0;
-	(*numrup)++;
       }
     }
   }
   fclose(fp); 
 
-  return(0);
-}
-
-
-/* Get list of rupture files */
-int getrups2(const char *path, rg_rfile_t *rups, int maxrup, int *numrup)
-{
-  DIR *dir;
-  struct dirent *ent;
-  
-  *numrup = 0;
-
-  dir = opendir (path);
-  if (dir != NULL) {
-    /* print all the files and directories within directory */
-    while (((ent = readdir (dir)) != NULL) && (*numrup < maxrup)) {
-      if (strstr(ent->d_name, RUP_FILE_EXT) != NULL) {
-	strcpy(rups[*numrup].filename, ent->d_name);
-	if (parsename(ent->d_name, &(rups[*numrup].src), 
-		      &(rups[*numrup].rup))!= 0) {
-	  fprintf(stderr, "Failed to parse rupture filename\n");
-	  return(1);
-	}
-	rups[(*numrup)].stats.numslip = 0;
-	rups[(*numrup)].stats.numhypo = 0;
-	(*numrup)++;
-      }
-    }
-    if ((*numrup) == maxrup) {
-      fprintf(stderr, "Too many files in rupture directory\n");
-      return(1);
-    }
-    closedir(dir);
-  } else {
-    /* could not open directory */
-    perror ("");
-    return(1);
-  }
+  /* Sort ruptures by magnitude in descending order */
+  qsort(rups, *numrup, sizeof(rg_rfile_t), rupcomp);
 
   return(0);
 }
@@ -230,11 +218,6 @@ int main(int argc, char **argv)
   int currup = 0;
   int done = 0;
 
-  if (argc != 3) {
-    printf("usage: %s rupdir logdir", argv[0]);
-    return(0);
-  }
-
   /* Init MPI */
   mpi_init(&argc, &argv, &nproc, &myid, procname, &pnlen);
 
@@ -244,9 +227,16 @@ int main(int argc, char **argv)
       return(1);
   }
 
-  if (nproc < 2) {
+  if (myid == 0) {
+    if (argc != 3) {
+      printf("usage: %s rupdir logdir", argv[0]);
+      return(0);
+    }
+
+    if (nproc < 2) {
       fprintf(stderr, "[%d] nproc must be at least 2\n", myid);
       return(1);
+    }
   }
 
   strcpy(rupdir, argv[1]);
@@ -304,9 +294,28 @@ int main(int argc, char **argv)
       }
 
       /* Send next available rupture to worker */
-      MPI_Send(&(rups[currup++]), 1, MPI_RUP_T, status.MPI_SOURCE, 
+      if (strlen(rups[currup].filename) == 0) {
+	fprintf(stderr, "[%d] Detected bad rupture at index %d\n", 
+		myid, currup);
+	return(1);
+      }
+      MPI_Send(&(rups[currup]), 1, MPI_RUP_T, status.MPI_SOURCE, 
 	       0, MPI_COMM_WORLD);
+      if ((currup % 1000 == 0) && (currup > 0)) {
+	printf("[%d] Dispatched %d ruptures\n", myid, currup);
+      }
+      currup++;
     }
+
+    /* Determine number of workers still in progress */
+    int numworking = 0;
+    for (i = 0; i < numrup; i++) {
+      if (rups[i].stats.numslip == 0) {
+	numworking++;
+      }
+    }
+    printf("[%d] %d workers still working\n", myid, numworking);
+    fflush(stdout);
 
     /* Send stop message to all workers */
     printf("[%d] All ruptures dispatched, stopping workers\n", myid);
@@ -324,6 +333,11 @@ int main(int argc, char **argv)
       memset(&rup, 0, sizeof(rg_rfile_t));
       MPI_Send(&(rup), 1, MPI_RUP_T, status.MPI_SOURCE, 
 	       0, MPI_COMM_WORLD);
+      if (i % 100 == 0) {
+	printf("[%d] Stopped %d workers\n", myid, i);
+      } else if ((nproc - i) < 20) {
+	printf("[%d] Stopped %d workers\n", myid, i);
+      }
     }
   } else {
     while (!done) {
@@ -342,7 +356,7 @@ int main(int argc, char **argv)
 	sprintf(infile, "%s/%d/%d/%s", rupdir, rup.src,
 		rup.rup, rup.filename);
 
-	printf("[%d] Processing rupture %s\n", myid, infile);
+	//printf("[%d] Processing rupture %s\n", myid, infile);
 
 	/* Create log directory */
 	sprintf(logfile, "%s/%d", logdir, rup.src);
@@ -370,7 +384,7 @@ int main(int argc, char **argv)
     }
     printf("[%d] Ruptures: %d\n", myid, numrup);
     printf("[%d] Rupture Variations: %d\n", myid, numvar);
-
+    fflush(stdout);
     free(rups);
   }
 
