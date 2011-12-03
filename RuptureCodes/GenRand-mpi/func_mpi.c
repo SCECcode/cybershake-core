@@ -116,15 +116,16 @@ int mpi_file_write_at(MPI_File *fh, MPI_Offset offset,
 
 int mpi_register_rupinfo(MPI_Datatype *MPI_RUP_T, int *num_fields)
 {
-  // Register new mesh data type for c*MAX_FILENAME,i,i,i,i,i
-  *num_fields = 6;
-  MPI_Datatype dtype[6] = { MPI_CHAR, MPI_INT, MPI_INT, MPI_INT,
+  // Register new mesh data type for c*MAX_FILENAME,i,f,i,i,i,i
+  *num_fields = 7;
+  MPI_Datatype dtype[7] = { MPI_CHAR, MPI_INT, MPI_FLOAT, MPI_INT, MPI_INT,
                                 MPI_INT, MPI_INT };
-  int blocklen[6] = { MAX_FILENAME, 1, 1, 1, 1, 1 };
-  MPI_Aint disp[6] = { 0, MAX_FILENAME, MAX_FILENAME+sizeof(int), 
-		       MAX_FILENAME+(sizeof(int)*2), 
-		       MAX_FILENAME+(sizeof(int)*3),
-		       MAX_FILENAME+(sizeof(int)*4) };
+  int blocklen[7] = { MAX_FILENAME, 1, 1, 1, 1, 1, 1 };
+  MPI_Aint disp[7] = { 0, MAX_FILENAME, MAX_FILENAME+sizeof(int), 
+		       MAX_FILENAME+(sizeof(int))+(sizeof(float)), 
+		       MAX_FILENAME+(sizeof(int)*2)+(sizeof(float)), 
+		       MAX_FILENAME+(sizeof(int)*3)+(sizeof(float)), 
+		       MAX_FILENAME+(sizeof(int)*4)+(sizeof(float)) };
   if (MPI_Type_struct(*num_fields, blocklen, disp, dtype, MPI_RUP_T) != MPI_SUCCESS) {
 	return(1);
   }
