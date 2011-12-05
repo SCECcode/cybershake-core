@@ -471,3 +471,55 @@ int cp(const char *to, const char *from)
     errno = saved_errno; 
     return -1; 
 } 
+
+
+/* Check if file exists */
+int file_exists(const char *file)
+{
+  struct stat st;
+
+  if (stat(file, &st) == 0) {
+    return(1);
+  } else {
+    return(0);
+  }
+}
+
+#define MAX_FWRITE_BUF 10000000
+char fwrite_buf[MAX_FWRITE_BUF];
+int fwrite_len = 0;
+
+int fwrite_buffered(FILE *fd, char *pntr, int length)
+{
+  if (length > MAX_FWRITE_BUF) {
+    fprintf(stderr, "String exceeds max buffer size\n");
+    exit(-1);
+  }
+
+  if ((length + fwrite_len) > MAX_FWRITE_BUF) {
+    /* Flush buffer */
+    if (fwrite(fwrite_buf, sizeof(char), fwrite_len, fd) != fwrite_len) {
+      fprintf(stderr, "Buffered write failure\n");
+      exit(-1);
+    }
+    fwrite_len = 0;
+  }
+
+  memcpy(fwrite_buf + fwrite_len, pntr, length);
+  fwrite_len += length;
+  return(0);
+}
+
+int fwrite_flush(FILE *fd) 
+{
+  if (fwrite_len > 0) {
+    /* Flush buffer */
+    if (fwrite(fwrite_buf, sizeof(char), fwrite_len, fd) != fwrite_len) {
+      fprintf(stderr, "Buffered flush failure\n");
+    exit(-1);
+    }
+    fwrite_len = 0;
+  }
+
+  return(0);
+}

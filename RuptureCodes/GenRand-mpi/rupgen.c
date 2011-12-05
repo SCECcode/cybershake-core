@@ -124,6 +124,7 @@ int getrups(const char *path, rg_rfile_t *rups, int maxrup, int *numrup)
   FILE *fp;
   char buf[MAX_FILENAME];
   char index[MAX_FILENAME];
+  int i;
 
   *numrup = 0;
   sprintf(index, "%s/index.list", path);
@@ -134,24 +135,25 @@ int getrups(const char *path, rg_rfile_t *rups, int maxrup, int *numrup)
 
   while (!feof(fp)) {
     if (fgets(buf, MAX_FILENAME, fp) != NULL) {
-      if (strstr(buf, RUP_FILE_EXT) != NULL) {
-	if (buf[strlen(buf) - 1] == '\n') {
-	  buf[strlen(buf) - 1] = '\0';
+      if (sscanf(buf, "%d %d %f %s", &(rups[*numrup].src),
+		 &(rups[*numrup].rup),
+		 &(rups[*numrup].mag),
+		 rups[*numrup].filename) == 4) {
+	if (rups[*numrup].filename[strlen(rups[*numrup].filename) - 1] 
+	    == '\n') {
+	  rups[*numrup].filename[strlen(rups[*numrup].filename) - 1] = '\0';
 	}
-	if (strlen(buf) > 0) {
-	  strcpy(rups[*numrup].filename, buf);
-	  if (parserup(path, rups[*numrup].filename, 
-			&(rups[*numrup].src), 
-			&(rups[*numrup].rup),
-			&(rups[*numrup].mag))!= 0) {
-	    fprintf(stderr, "Failed to parse rupture file\n");
-	    return(1);
-	  }
-	  rups[(*numrup)].index = *numrup;
-	  rups[(*numrup)].stats.numslip = 0;
-	  rups[(*numrup)].stats.numhypo = 0;
-	  (*numrup)++;
+	if ((strlen(rups[*numrup].filename) == 0) || 
+	    (rups[*numrup].src < 0) || 
+	    (rups[*numrup].rup < 0) || 
+	    (rups[*numrup].mag <= 0.0)) {
+	  fprintf(stderr, "Invalid rupture file rec: %s\n", buf);
+	  return(1);
 	}
+	rups[(*numrup)].index = *numrup;
+	rups[(*numrup)].stats.numslip = 0;
+	rups[(*numrup)].stats.numhypo = 0;
+	(*numrup)++;
       }
     }
   }
@@ -160,6 +162,10 @@ int getrups(const char *path, rg_rfile_t *rups, int maxrup, int *numrup)
   /* Sort ruptures by magnitude in descending order */
   qsort(rups, *numrup, sizeof(rg_rfile_t), rupcomp);
 
+  /* Reassign indices after sort */
+  for (i = 0; i < *numrup; i++) {
+    rups[i].index = i;
+  }
   return(0);
 }
 
@@ -218,6 +224,8 @@ int main(int argc, char **argv)
   int currup = 0;
   int done = 0;
 
+  FILE *sfp = NULL;
+
   /* Init MPI */
   mpi_init(&argc, &argv, &nproc, &myid, procname, &pnlen);
 
@@ -262,7 +270,6 @@ int main(int argc, char **argv)
       printf("[%d] Retrieved %d rupture files\n", myid, numrup);
     }
 
-    /* Round num ruptures up to nearest multiple of nproc */
     rups = malloc(numrup * sizeof(rg_rfile_t));
     if (rups == NULL) {
       fprintf(stderr, "[%d] Failed to allocate rupture file buffer\n",
@@ -282,6 +289,7 @@ int main(int argc, char **argv)
   memset(&rup, 0, sizeof(rg_rfile_t));
   if (myid == 0) {
     /* Dispatch rupture files to worker pool */
+    currup = 0;
     while (currup < numrup) {
       //printf("[%d] currup=%d, numrup=%d\n", myid, currup, numrup);
       /* Blocking receive on worker pool */
@@ -290,18 +298,26 @@ int main(int argc, char **argv)
 
       /* Update rupture record if necessary */
       if (strlen(rup.filename) > 0) {
+	if ((rup.index < 0) || (rup.src < 0) || (rup.rup < 0) || 
+	    (rup.stats.numslip <= 0) || (rup.stats.numhypo <= 0)) {
+	  fprintf(stderr, "[%d] Worker %d returned bad data for rupture %d\n", 
+		  myid, status.MPI_SOURCE, rup.index);
+	  return(1);
+	}
 	memcpy(&(rups[rup.index]), &rup, sizeof(rg_rfile_t));
       }
 
       /* Send next available rupture to worker */
-      if (strlen(rups[currup].filename) == 0) {
+      if ((strlen(rups[currup].filename) == 0) || 
+	  (rups[currup].src < 0) || (rups[currup].rup < 0)) {
 	fprintf(stderr, "[%d] Detected bad rupture at index %d\n", 
 		myid, currup);
 	return(1);
       }
-      MPI_Send(&(rups[currup]), 1, MPI_RUP_T, status.MPI_SOURCE, 
+      memcpy(&rup, &(rups[currup]), sizeof(rg_rfile_t));
+      MPI_Send(&rup, 1, MPI_RUP_T, status.MPI_SOURCE, 
 	       0, MPI_COMM_WORLD);
-      if ((currup % 1000 == 0) && (currup > 0)) {
+      if ((currup % 100 == 0) && (currup > 0)) {
 	printf("[%d] Dispatched %d ruptures\n", myid, currup);
       }
       currup++;
@@ -326,6 +342,12 @@ int main(int argc, char **argv)
 
       /* Update rupture record if necessary */
       if (strlen(rup.filename) > 0) {
+	if ((rup.index < 0) || (rup.src < 0) || (rup.rup < 0) || 
+	    (rup.stats.numslip <= 0) || (rup.stats.numhypo <= 0)) {
+	  fprintf(stderr, "[%d] Worker %d returned bad data for rupture %d\n", 
+		  myid, status.MPI_SOURCE, rup.index);
+	  return(1);
+	}
 	memcpy(&(rups[rup.index]), &rup, sizeof(rg_rfile_t));
       }
 
@@ -333,9 +355,7 @@ int main(int argc, char **argv)
       memset(&rup, 0, sizeof(rg_rfile_t));
       MPI_Send(&(rup), 1, MPI_RUP_T, status.MPI_SOURCE, 
 	       0, MPI_COMM_WORLD);
-      if (i % 100 == 0) {
-	printf("[%d] Stopped %d workers\n", myid, i);
-      } else if ((nproc - i) < 20) {
+      if ((i % 100 == 0) || ((nproc - i) < 20))  {
 	printf("[%d] Stopped %d workers\n", myid, i);
       }
     }
@@ -353,10 +373,15 @@ int main(int argc, char **argv)
       if (strlen(rup.filename) == 0) {
 	done = 1;
       } else {
-	sprintf(infile, "%s/%d/%d/%s", rupdir, rup.src,
-		rup.rup, rup.filename);
+	sprintf(infile, "%s%s", rupdir, rup.filename);
+	if (!file_exists(infile)) {
+	  fprintf(stderr, "[%d] Rupture file %s not found\n",
+		  myid, infile);
+	  return(1);
+	}
 
-	//printf("[%d] Processing rupture %s\n", myid, infile);
+	//printf("[%d] Processing %s, index %d, source %d, rupture %d\n", 
+	//       myid, infile, rup.index, rup.src, rup.rup);
 
 	/* Create log directory */
 	sprintf(logfile, "%s/%d", logdir, rup.src);
@@ -365,11 +390,10 @@ int main(int argc, char **argv)
 		rup.src, rup.rup);
 
 	/* Generate the rupture variations */
-	sprintf(outfile, "%s/%d/%d/%s.variation", rupdir, 
-		rup.src, rup.rup, rup.filename);
+	sprintf(outfile, "%s%s.variation", rupdir, rup.filename);
 	//printf("[%d] Processing file %s\n", myid, infile);
 	if (run_genslip(infile, outfile, logfile, &(rup.stats)) != 0) {
-	  fprintf(stderr, "Failed to run rupture generator\n");
+	  fprintf(stderr, "[%d] Failed to run rupture generator\n", myid);
 	  return(1);
 	}
       }
@@ -378,10 +402,23 @@ int main(int argc, char **argv)
 
   /* Print summary statistics */
   if (myid == 0) {
+    sprintf(outfile, "%s/variations.list", rupdir);
+    sfp = fopen(outfile, "w");
+    if (sfp == NULL) {
+      fprintf(stderr, "[%d] Failed to open statistics file %s\n", 
+	      myid, outfile);
+      return(1);
+    }
+
     numvar = 0;
     for (i = 0; i < numrup; i++) {
-      numvar += rups[i].stats.numslip * rups[i].stats.numhypo;
+      numvar += (rups[i].stats.numslip * rups[i].stats.numhypo);
+      fprintf(sfp, "%d %d %d %d\n", rups[i].src, rups[i].rup,
+	      rups[i].stats.numslip, rups[i].stats.numhypo);
     }
+
+    fclose(sfp);
+
     printf("[%d] Ruptures: %d\n", myid, numrup);
     printf("[%d] Rupture Variations: %d\n", myid, numvar);
     fflush(stdout);

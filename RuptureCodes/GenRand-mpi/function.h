@@ -54,6 +54,10 @@ void write2gsf(struct generic_slip *,struct pointsource *,char *,char *);
 void free_srf_stf(struct standrupformat *);
 
 int cp(const char *to, const char *from);
+int file_exists(const char *file);
+
+int fwrite_buffered(FILE *fd, char *pntr, int length);
+int fwrite_flush(FILE *fd);
 
 #endif
 
