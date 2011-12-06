@@ -1,6 +1,8 @@
 #ifndef RUPGEN_FUNC_H
 #define RUPGEN_FUNC_H
 
+#include "structure.h"
+
 void *check_malloc(size_t);
 void *check_realloc(void *,size_t);
 FILE *fopfile(char*, char*);
@@ -53,11 +55,17 @@ void write2gsf(struct generic_slip *,struct pointsource *,char *,char *);
 
 void free_srf_stf(struct standrupformat *);
 
+/* Copy file from source to dest */
 int cp(const char *to, const char *from);
+/* Check if file exists */
 int file_exists(const char *file);
+/* Check that file exists and is a file */
+int rg_is_file(const char *path);
+/* Safe string copy */
+int rg_strcpy(char *str1, const char *str2, int str1len);
 
-int fwrite_buffered(FILE *fd, char *pntr, int length);
-int fwrite_flush(FILE *fd);
+//int fwrite_buffered(FILE *fd, char *pntr, int length);
+//int fwrite_flush(FILE *fd);
 
 #endif
 

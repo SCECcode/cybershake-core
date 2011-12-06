@@ -128,6 +128,17 @@ struct generic_slip
    };
 
 
+/* Rupture generator config */
+typedef struct rg_conf_t {
+  char rupdir[MAX_FILENAME];
+  char logdir[MAX_FILENAME];
+  char erfid[MAX_ID_LEN];
+  char rvid[MAX_ID_LEN];
+  char gridftp[MAX_FILENAME];
+  char pool[MAX_FILENAME];
+} rg_conf_t;
+
+
 /* Rupture generation statistics */
 typedef struct rg_stats_t {
   int numslip;
@@ -143,6 +154,7 @@ typedef struct rg_rfile_t {
   int src;
   int rup;
   rg_stats_t stats;
+  int request;
 } rg_rfile_t;
 
 #endif

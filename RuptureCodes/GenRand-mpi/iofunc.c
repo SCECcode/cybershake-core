@@ -396,80 +396,41 @@ return(psrc);
 int cp(const char *to, const char *from) 
 { 
     FILE *fp_from, *fp_to;
-    //int fd_to, fd_from; 
     char buf[32768]; 
     ssize_t nread; 
-    int saved_errno; 
  
     fp_from = fopen(from, "r");
     if (fp_from == NULL) {
-      return(-1);
+      return(1);
     }
 
-    //fd_from = open(from, O_RDONLY); 
-    //if (fd_from < 0) 
-    //    return -1; 
- 
     fp_to = fopen(to, "w");
     if (fp_to == NULL) {
-      goto out_error;
+      fclose(fp_from);
+      return(1);
     }
 
-    //fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666); 
-    //if (fd_to < 0) 
-    //    goto out_error; 
-
-    //while (nread = read(fd_from, buf, sizeof buf), nread > 0) 
-    while (nread = fread(buf, 1, sizeof(buf), fp_from), nread > 0)  
-    { 
-        char *out_ptr = buf; 
-        ssize_t nwritten; 
+    while (nread = fread(buf, 1, sizeof(buf), fp_from), 
+	   nread > 0)  { 
+      char *out_ptr = buf; 
+      ssize_t nwritten; 
  
-        do { 
-	    //nwritten = write(fd_to, out_ptr, nread); 
-            nwritten = fwrite(out_ptr, 1, nread, fp_to); 
- 
-            if (nwritten > 0) 
-            { 
-                nread -= nwritten; 
-                out_ptr += nwritten; 
-            } 
-            else if (errno != EINTR) 
-            { 
-                goto out_error; 
-            } 
-        } while (nread > 0); 
-    } 
- 
-    if (nread == 0) 
-    { 
-      //if (close(fd_to) < 0) 
-        if (fclose(fp_to) != 0) 
-        {
-	  fp_to = NULL;
-	  //fd_to = -1; 
-            goto out_error; 
-        } 
-        //close(fd_from); 
-        fclose(fp_from); 
- 
-        /* Success! */ 
-        return 0; 
-    } 
- 
-  out_error: 
-    saved_errno = errno; 
- 
-    //close(fd_from); 
+      do { 
+	nwritten = fwrite(out_ptr, 1, nread, fp_to); 	
+	if (nwritten == nread) { 
+	  nread -= nwritten; 
+	  out_ptr += nwritten; 
+	} else {
+	  fclose(fp_from);
+	  fclose(fp_to);
+	  return(1);
+	} 
+      } while (nread > 0); 
+    }
+    
     fclose(fp_from);
-    //if (fd_to >= 0)  
-    if (fp_to != NULL) {
-      // close(fd_to); 
-        fclose(fp_to); 
-    }
-
-    errno = saved_errno; 
-    return -1; 
+    fclose(fp_to);
+    return(0);
 } 
 
 
@@ -485,41 +446,79 @@ int file_exists(const char *file)
   }
 }
 
-#define MAX_FWRITE_BUF 10000000
-char fwrite_buf[MAX_FWRITE_BUF];
-int fwrite_len = 0;
 
-int fwrite_buffered(FILE *fd, char *pntr, int length)
+/* Returns true if path is a file */
+int rg_is_file(const char *path)
 {
-  if (length > MAX_FWRITE_BUF) {
-    fprintf(stderr, "String exceeds max buffer size\n");
-    exit(-1);
-  }
+  struct stat st;
 
-  if ((length + fwrite_len) > MAX_FWRITE_BUF) {
-    /* Flush buffer */
-    if (fwrite(fwrite_buf, sizeof(char), fwrite_len, fd) != fwrite_len) {
-      fprintf(stderr, "Buffered write failure\n");
-      exit(-1);
+  if (stat(path, &st) == 0) {
+    if ((S_ISREG(st.st_mode)) && (!S_ISDIR(st.st_mode))) {
+      return(1);
+    } else {
+      return(0);
     }
-    fwrite_len = 0;
-  }
-
-  memcpy(fwrite_buf + fwrite_len, pntr, length);
-  fwrite_len += length;
-  return(0);
-}
-
-int fwrite_flush(FILE *fd) 
-{
-  if (fwrite_len > 0) {
-    /* Flush buffer */
-    if (fwrite(fwrite_buf, sizeof(char), fwrite_len, fd) != fwrite_len) {
-      fprintf(stderr, "Buffered flush failure\n");
-    exit(-1);
-    }
-    fwrite_len = 0;
   }
 
   return(0);
 }
+
+
+/* Safe string copy */
+int rg_strcpy(char *str1, const char *str2, int str1len)
+{
+  if (str1 == NULL) {
+    return(1);
+  }
+
+  if (str2 == NULL) {
+    strcpy(str1, "");
+    return(1);
+  }
+
+  if (snprintf(str1, str1len, "%s", str2) > str1len) {
+    fprintf(stderr, "Warning (ucvm_strcpy): String %s truncated to %s\n",
+	    str2, str1);
+  }
+  return(0);
+}
+
+
+//#define MAX_FWRITE_BUF 10000000
+//char fwrite_buf[MAX_FWRITE_BUF];
+//int fwrite_len = 0;
+
+//int fwrite_buffered(FILE *fd, char *pntr, int length)
+//{
+//  if (length > MAX_FWRITE_BUF) {
+//    fprintf(stderr, "String exceeds max buffer size\n");
+//    exit(-1);
+//  }
+
+//  if ((length + fwrite_len) > MAX_FWRITE_BUF) {
+//    /* Flush buffer */
+//    if (fwrite(fwrite_buf, sizeof(char), fwrite_len, fd) != fwrite_len) {
+//      fprintf(stderr, "Buffered write failure\n");
+//      exit(-1);
+//    }
+//    fwrite_len = 0;
+//  }
+//
+//  memcpy(fwrite_buf + fwrite_len, pntr, length);
+//  fwrite_len += length;
+//  return(0);
+//}
+
+//int fwrite_flush(FILE *fd) 
+//{
+//  if (fwrite_len > 0) {
+//    /* Flush buffer */
+//    if (fwrite(fwrite_buf, sizeof(char), fwrite_len, fd) != fwrite_len) {
+//      fprintf(stderr, "Buffered flush failure\n");
+//    exit(-1);
+//    }
+//    fwrite_len = 0;
+//  }
+//
+//  return(0);
+//}

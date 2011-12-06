@@ -21,7 +21,7 @@ all: $(TARGET)
 ############################################
 
 rupgen: rupgen.o genslip.o func_mpi.o iofunc.o misc.o \
-	ruptime.o slip.o srf_subs.o fourg.o
+	ruptime.o slip.o srf_subs.o fourg.o rg_config.o
 	$(CC) -o $@ $^ $(LIBS)
 
 

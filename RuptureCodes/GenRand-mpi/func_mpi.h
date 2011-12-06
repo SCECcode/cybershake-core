@@ -18,5 +18,6 @@ int mpi_file_write_at(MPI_File *fh, MPI_Offset offset,
 		      int num_fields, MPI_Datatype *dt);
 
 int mpi_register_rupinfo(MPI_Datatype *MPI_RUP_T, int *num_fields);
+int mpi_register_conf(MPI_Datatype *MPI_CONF_T, int *num_fields);
 
 #endif
