@@ -198,6 +198,9 @@ struct pointsource *psrc;
 struct stfpar stfparams;
 
 int outbin = 0;
+int writeout = 1;
+int doslip = -1;
+int dohypo = -1;
 
 slipfile[0] = '\0';
 specfile[0] = '\0';
@@ -233,6 +236,9 @@ getpar("infile","s",infile);
 getpar("outfile","s",outfile);
 getpar("logfile","s",logfile);
 getpar("outbin","d",&outbin);
+getpar("writeout","d",&writeout);
+getpar("doslip","d",&doslip);
+getpar("dohypo","d",&dohypo);
 
 getpar("velfile","s",velfile);
 
@@ -863,15 +869,20 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
       else
          sprintf(str,"%s-s%.4d-h%.4d",outfile,js,ih);
 
-      if(write_srf)
+      if (((doslip < 0) || (doslip == js)) &&
+	  ((dohypo < 0) || (dohypo == ih))) {
+
+      if((write_srf) && (writeout))
          write2srf(&srf,str,outbin);
+
+      }
 
       if(strcmp(outfile,"stdout") == 0)
          sprintf(str,"stdout");
       else
          sprintf(str,"%s-s%.4d-h%.4d.gsf",outfile,js,ih);
 
-      if(gslip.np > 0 && write_gsf)
+      if(gslip.np > 0 && write_gsf && writeout)
          write2gsf(&gslip,psrc,infile,str);
       }
 

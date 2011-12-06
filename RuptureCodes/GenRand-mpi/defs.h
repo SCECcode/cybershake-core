@@ -1,8 +1,16 @@
 #ifndef RUPGEN_DEFS_H
 #define RUPGEN_DEFS_H
 
+/* Work stages */
+typedef enum { RUPGEN_STAGE_CALC=0,
+	       RUPGEN_STAGE_WRITE,
+	       RUPGEN_STAGE_END } rg_stage_t;
+
 /* Max filename */
 #define MAX_FILENAME 128
+
+/* Max id string length */
+#define MAX_ID_LEN 128
 
 
 #define DEFAULT_DHYPO_FRAC       0.75  /* hypo at 0.75 down-dip width */
