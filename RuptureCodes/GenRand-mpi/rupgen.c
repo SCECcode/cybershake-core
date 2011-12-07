@@ -17,7 +17,6 @@
 
 /* Constants */
 #define MAX_STR_ARGV 512
-#define RUP_FILE_EXT ".txt"
 #define NUM_GENSLIP_ARGS 7
 #define GENSLIP_WILDCARD -1
 #define GENSLIP_NOWRITE 0
@@ -43,7 +42,7 @@ int rupcomp(const void *p1, const void *p2)
   /* Reverse sort by slip number */
   if (r1->stats.numslip < r2->stats.numslip) {
     return(1);
-  } else if (r1-> mag == r2->mag) {
+  } else if (r1->stats.numslip == r2->stats.numslip) {
     return(0);
   } else {
     return(-1);
@@ -57,6 +56,7 @@ int getnumrups(const char *path, int *numrup)
   FILE *fp;
   char buf[MAX_FILENAME];
   char index[MAX_FILENAME];
+  rg_rfile_t tmprup;
 
   *numrup = 0;
   sprintf(index, "%s/index.list", path);
@@ -67,7 +67,9 @@ int getnumrups(const char *path, int *numrup)
 
   while (!feof(fp)) {
     if (fgets(buf, MAX_FILENAME, fp) != NULL) {
-      if (strstr(buf, RUP_FILE_EXT) != NULL) {
+      if (sscanf(buf, "%d %d %f %s", &(tmprup.src),
+		 &(tmprup.rup), &(tmprup.mag),
+		 tmprup.filename) == 4) {
 	(*numrup)++;
       }
     }
@@ -195,7 +197,7 @@ int server(int myid, int nproc, rg_rfile_t *rups, int numrup, int s)
     MPI_Send(&rup, 1, MPI_RUP_T, status.MPI_SOURCE, 
 	     0, MPI_COMM_WORLD);
     
-    if ((currup % 100 == 0) && (currup > 0)) {
+    if ((currup % 1000 == 0) && (currup > 0)) {
       if (s == RUPGEN_STAGE_CALC) {
 	printf("[%d] Dispatched %d rupture(s)\n", myid, currup);
       } else {
@@ -475,6 +477,10 @@ int main(int argc, char **argv)
     /* Get rupture files */
     if (getrups(conf.rupdir, rups, numrup, &n) != 0) {
       fprintf(stderr, "[%d] Failed to find rupture files\n", myid);
+      return(1);
+    }
+    if (numrup != n) {
+      fprintf(stderr, "[%d] Unexpected number of ruptures found\n", myid);
       return(1);
     }
 
