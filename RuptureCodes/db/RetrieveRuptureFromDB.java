@@ -3,6 +3,7 @@ import java.io.FileNotFoundException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
+import java.io.PrintStream;
 
 
 
@@ -36,7 +37,7 @@ public class RetrieveRuptureFromDB {
 				ERF_ID = args[0];
 				String source = args[1];
 				String rupture = args[2];
-				getOneRupture(source, rupture, null);
+				getOneRupture(source, rupture, null, null, null);
 				dbc.closeConnection();
 				return;
 			}
@@ -52,7 +53,7 @@ public class RetrieveRuptureFromDB {
 				String source = args[1];
 				String rupture = args[2];
 				String filename = args[3];
-				getOneRupture(source, rupture, filename);
+				getOneRupture(source, rupture, filename, null, null);
 				dbc.closeConnection();
 				return;
 			}
@@ -84,7 +85,7 @@ public class RetrieveRuptureFromDB {
 				} else {
 					filename = path + File.separatorChar + source + "_" + rupture + ".txt";
 				}
-				getOneRupture(source, rupture, filename);
+				getOneRupture(source, rupture, filename, null, null);
 			}
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -96,7 +97,8 @@ public class RetrieveRuptureFromDB {
 		getSomeRuptures(inputFile, ".");
 	}
 
-	private static void getOneRupture(String source, String rupture, String filename) {
+	private static void getOneRupture(String source, String rupture, String filename, PrintStream index, 
+					  String indexentry) {
 		RuptureFileData rfd = getRuptureFileData(source, rupture);
 		if (rfd==null) {
 			System.exit(0);
@@ -104,6 +106,9 @@ public class RetrieveRuptureFromDB {
 		getPointsData(rfd, source, rupture);
 		if (filename!=null) {
 			rfd.printToFile(filename);
+			if ((index != null) && (indexentry != null)) {
+			    index.println(source + " " + rupture + " " + rfd.getMagnitude() + " " + indexentry);
+			}
 		} else {
 			rfd.print();
 		}
@@ -123,6 +128,9 @@ public class RetrieveRuptureFromDB {
 				System.err.println("No ruptures in table.");
 				System.exit(0);
 			} else {
+			        // Create index file
+			        try {
+			        PrintStream index = new PrintStream(new File(path + File.separatorChar + "index.list"));
 				while (!rs.isAfterLast()) {
 					if (rs.getRow()%1000==0) {
 						System.gc();
@@ -130,15 +138,31 @@ public class RetrieveRuptureFromDB {
 					String source_id = rs.getString("Source_ID");
 					String rupture_id = rs.getString("Rupture_ID");
 					String filename;
+					String indexentry = null;
 					if (path=="") {
 						filename = source_id + "_" + rupture_id + ".txt";
 					} else {
-						filename = path + File.separatorChar + source_id + "_" + rupture_id + ".txt";
+						File file = new File(path + File.separatorChar + source_id + 
+								     File.separatorChar + rupture_id);
+						file.mkdirs();
+						indexentry = File.separatorChar + source_id + File.separatorChar + rupture_id + 
+						    File.separatorChar + source_id + "_" + rupture_id + ".txt";
+						filename = path + indexentry;
 					}
 					System.out.println("Creating file " + filename + ", " + rs.getRow() + " of " + totalRows);
-					getOneRupture(source_id, rupture_id, filename);
+					if (path=="") {
+					    getOneRupture(source_id, rupture_id, filename, null, null);
+					} else {
+					    getOneRupture(source_id, rupture_id, filename, index, indexentry);
+					}
 					rs.next();
 				}
+				index.close();
+		                } catch (FileNotFoundException e) {
+				        e.printStackTrace();
+					System.out.println(e.getMessage());
+		                }
+
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

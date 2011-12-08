@@ -71,6 +71,9 @@ public class RuptureFileData {
 	public void setMagnitude(double magnitude) {
 		this.magnitude = magnitude;
 	}
+	public double getMagnitude() {
+		return(this.magnitude);
+	}
 	public void setNumCols(int numCols) {
 		this.numCols = numCols;
 	}
