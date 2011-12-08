@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#PBS -q small
+#PBS -l size=12
+#PBS -l walltime=2:00:00
+#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/utils/copy_ruptures.out
+#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/utils/copy_ruptures.err
+#PBS -V
+#PBS -A TG-MCA03S012
+
+echo "Job start"
+date
+
+cd /lustre/scratch/${USER}/cybershake/RuptureCodes/utils
+
+mkdir /lustre/scratch/patricks/tmp/rupture_vars_3
+aprun -n 1 -d 12 -cc none -a xt /lustre/scratch/proj/sw/pythoncnl/bin/python ./copy_ruptures.py /lustre/scratch/patricks/tmp/rupture_vars_2 /lustre/scratch/patricks/tmp/rupture_vars_3
+
+
+echo "Jobs done"
+date
+exit 0
