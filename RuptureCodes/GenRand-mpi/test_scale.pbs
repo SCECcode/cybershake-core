@@ -1,10 +1,10 @@
 #!/bin/bash
 
-#PBS -q small
-#PBS -l size=300
-#PBS -l walltime=0:30:00
-#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test_scale.out
-#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test_scale.err
+#PBS -q medium
+#PBS -l size=1200
+#PBS -l walltime=2:00:00
+#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test_1200.out
+#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test_1200.err
 #PBS -V
 #PBS -A TG-MCA03S012
 
@@ -13,11 +13,8 @@ IOBUF_PARAMS='*:size=64M:count=4';export IOBUF_PARAMS;
 echo "Job start"
 date
 
-mkdir ${RUPDIR}
-mkdir ${LOGDIR}
-
 cd /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi
-aprun -n 300 ./rupgen rupgen.conf
+aprun -n 1200 ./rupgen rupgen.conf
 
 echo "Jobs done"
 date

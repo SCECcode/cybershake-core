@@ -864,26 +864,26 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 
       load_rupt_srf(&srf,psrc,&shypo,&dhypo);
 
-      if(strcmp(outfile,"stdout") == 0)
-         sprintf(str,"stdout");
-      else
-         sprintf(str,"%s-s%.4d-h%.4d",outfile,js,ih);
-
       if (((doslip < 0) || (doslip == js)) &&
-	  ((dohypo < 0) || (dohypo == ih))) {
+      	  ((dohypo < 0) || (dohypo == ih))) {
 
-      if((write_srf) && (writeout))
-         write2srf(&srf,str,outbin);
+	if(strcmp(outfile,"stdout") == 0)
+	  sprintf(str,"stdout");
+	else
+	  sprintf(str,"%s-s%.4d-h%.4d",outfile,js,ih);
+	
+	if((write_srf) && (writeout))
+	  write2srf(&srf,str,outbin);
+
+	if(strcmp(outfile,"stdout") == 0)
+	  sprintf(str,"stdout");
+	else
+	  sprintf(str,"%s-s%.4d-h%.4d.gsf",outfile,js,ih);
+
+	if(gslip.np > 0 && write_gsf && writeout)
+	  write2gsf(&gslip,psrc,infile,str);
 
       }
-
-      if(strcmp(outfile,"stdout") == 0)
-         sprintf(str,"stdout");
-      else
-         sprintf(str,"%s-s%.4d-h%.4d.gsf",outfile,js,ih);
-
-      if(gslip.np > 0 && write_gsf && writeout)
-         write2gsf(&gslip,psrc,infile,str);
       }
 
    free_srf_stf(&srf);
