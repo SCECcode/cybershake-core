@@ -1,0 +1,15 @@
+#!/bin/csh
+
+#PBS -q small
+#PBS -l size=12
+#PBS -l walltime=2:00:00
+#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/db/get_erf35.out
+#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/db/get_erf35.err
+#PBS -V
+#PBS -A TG-MCA03S012
+
+module add java
+
+cd /lustre/scratch/${USER}/cybershake/RuptureCodes/db
+
+java -classpath mysql-connector-java-5.0.5-bin.jar:. RetrieveRuptureFromDB 35 all /lustre/scratch/patricks/tmp/rupture_vars_1 > runlog_erf35.txt
