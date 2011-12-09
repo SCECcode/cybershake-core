@@ -38,6 +38,8 @@ public class PutRuptureVariationsInDB {
             String filename = file.getName();
             String[] pieces = filename.split("\\.");
             if (pieces.length==3 && !pieces[2].equals("output")) { //it's a variation;  checking that it's not the .output summary file
+		// Prefix filename with erfid and rvid
+		filename = "e" + erf_id + "_rv" + rup_var_scenario_id + "_" + filename;
                 insertFile(filename, id);
                 return true;
             }
@@ -53,7 +55,7 @@ public class PutRuptureVariationsInDB {
         String insertString = "insert into Rupture_Variations (Rup_Var_ID, Rup_Var_Scenario_ID, ERF_ID, Source_ID, Rupture_ID, Rup_Var_LFN) " +
             " values (" + rup_var_id + ", " + rup_var_scenario_id + ", " + erf_id + ", " + source_id + ", " + rupture_id + ", \"" + filename + "\")";
         
-//        System.out.println(insertString);
+        //System.out.println(insertString);
         if (!dbc.insertData(insertString)) {
             System.err.println("Error inserting rup_var_scenario_id " + rup_var_scenario_id + ", erf_id " + erf_id + ", source_id " + source_id + ", rupture_id " + rupture_id + ", filename " + filename);
         }
