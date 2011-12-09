@@ -21,6 +21,9 @@
 #define GENSLIP_WILDCARD -1
 #define GENSLIP_NOWRITE 0
 #define GENSLIP_WRITE 1
+#define RUPTURE_FILE "ruptures.list"
+#define VAR_FILE "variations.list"
+#define RLS_FILE "rls.list"
 
 
 /* MPI Rupture info vars */
@@ -59,7 +62,7 @@ int getnumrups(const char *path, int *numrup)
   rg_rfile_t tmprup;
 
   *numrup = 0;
-  sprintf(index, "%s/index.list", path);
+  sprintf(index, "%s/%s", path, RUPTURE_FILE);
   fp = fopen(index, "r");
   if (fp == NULL) {
     return(1);
@@ -89,7 +92,7 @@ int getrups(const char *path, rg_rfile_t *rups, int maxrup,
   int i;
 
   *numrup = 0;
-  sprintf(index, "%s/index.list", path);
+  sprintf(index, "%s/%s", path, RUPTURE_FILE);
   fp = fopen(index, "r");
   if (fp == NULL) {
     return(1);
@@ -490,7 +493,7 @@ int main(int argc, char **argv)
     }
 
     /* Print statistics */
-    sprintf(outfile, "%s/variations.list", conf.rupdir);
+    sprintf(outfile, "%s/%s", conf.rupdir, VAR_FILE);
     sfp = fopen(outfile, "w");
     if (sfp == NULL) {
       fprintf(stderr, "[%d] Failed to open statistics file %s\n", 
@@ -513,7 +516,7 @@ int main(int argc, char **argv)
     fflush(stdout);
   
     /* Save RLS logical finame mappings */
-    sprintf(outfile, "%s/rls.list", conf.rupdir);
+    sprintf(outfile, "%s/%s", conf.rupdir, RLS_FILE);
     printf("[%d] Saving RLS filename mappings to %s\n", myid, outfile);
     sfp = fopen(outfile, "w");
     if (sfp == NULL) {
