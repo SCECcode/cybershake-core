@@ -12,7 +12,8 @@ public class RetrieveRuptureFromDB {
 	private static final String DB_SERVER = "focal.usc.edu";
 	private static final String DB = "CyberShake";
 	private static String ERF_ID;
-	
+        private static final String RuptureFile = "ruptures.list";
+
 	public static void main(String[] args) {
 		dbc = new DBConnect(DB_SERVER,DB);
 		if (args.length==2) {
@@ -130,7 +131,7 @@ public class RetrieveRuptureFromDB {
 			} else {
 			        // Create index file
 			        try {
-			        PrintStream index = new PrintStream(new File(path + File.separatorChar + "index.list"));
+			        PrintStream index = new PrintStream(new File(path + File.separatorChar + RuptureFile));
 				while (!rs.isAfterLast()) {
 					if (rs.getRow()%1000==0) {
 						System.gc();
