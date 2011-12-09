@@ -30,26 +30,11 @@ FFLAGS = ${UFLAGS} -extend-source -nofor-main -zero
 
 ##### make options
 
-all: srf2stoch hfsim merge hf_synth
+all: hf_synth
 
 hf_synth : hf_synth.o ${HF_SYNTH_OBJS}
 	${FC} ${FFLAGS} -o hf_synth hf_synth.o ${HF_SYNTH_OBJS} ${LDLIBS}
 
-merge : merge.c ${MERGE_OBJS}
-	${CC} ${CFLAGS} -o merge merge.c ${MERGE_OBJS} ${LDLIBS}
-#	cp merge ../bin/
-
-hfsim : hfsim.o ${HFSIM_OBJS}
-	${FC} ${FFLAGS} -o hfsim hfsim.o ${HFSIM_OBJS} ${LDLIBS}
-#	cp hfsim ../bin/
-
-srf2stoch : srf2stoch.c ${SRF2STOCH_OBJS}
-	${CC} ${CFLAGS} -o srf2stoch srf2stoch.c ${SRF2STOCH_OBJS} ${LDLIBS}
-#	cp srf2stoch ../bin/
-
-hb_high_v3.1.1 : hb_high_v3.1.1.f
-	${FC} ${FFLAGS} -o hb_high_v3.1.1 hb_high_v3.1.1.f
-#	cp hb_high_v3.1.1 ../bin/
 
 clean :
 	rm -f ${OBJS} ${GENRAND_OBJS} ${BAILEY_OBJS} ${GEOPROJ_OBJS} *.o
