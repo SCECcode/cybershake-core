@@ -6,7 +6,7 @@ import glob
 import shutil
 
 
-ip = open("%s/%s" % (sys.argv[1], "index.list"), "r")
+ip = open("%s/%s" % (sys.argv[1], "ruptures.list"), "r")
 ruptures = ip.readlines()
 ip.close()
 for r in ruptures:
@@ -22,5 +22,5 @@ for r in ruptures:
     shutil.copy2(infile, outfile)
 
 
-shutil.copy2("%s/%s" % (sys.argv[1], "index.list"), \
-             "%s/%s" % (sys.argv[2], "index.list"))
+shutil.copy2("%s/%s" % (sys.argv[1], "ruptures.list"), \
+             "%s/%s" % (sys.argv[2], "ruptures.list"))
