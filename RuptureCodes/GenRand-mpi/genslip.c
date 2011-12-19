@@ -688,6 +688,14 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
    kfilt(crake,nx,ny_in,&dkx_rk,&dky_rk,&xl,&yl,&seed,kmodel);
    fft2d(crake,nx,ny_in,1,&dkx_rk,&dky_rk);
 
+   /* Stop processing here and skip to next slip if this slip
+      is not wanted. The check is here to preserve the random number
+      generator calls so that selective slip generation produces
+      identical SRF files as the wildcard generation mode. */
+   if ((doslip >= 0) && (doslip != js)) {
+     continue;
+   }
+
    for(j=0;j<ny_in*nx;j++)
       sort_rake[j] = crake[j].re;
 
@@ -762,6 +770,12 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 
    for(ih=0;ih<nh;ih++)    /* loop over hypocenter realizations */
       {
+
+      if (((doslip >= 0) && (doslip != js)) || 
+	  ((dohypo >= 0) && (dohypo != ih))) {
+	continue;
+      }
+
       if(calc_shypo == 1)
          shypo = sh0 + ih*shypo_step - 0.5*flen;
 
@@ -864,8 +878,8 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 
       load_rupt_srf(&srf,psrc,&shypo,&dhypo);
 
-      if (((doslip < 0) || (doslip == js)) &&
-      	  ((dohypo < 0) || (dohypo == ih))) {
+      //if (((doslip < 0) || (doslip == js)) &&
+      //	  ((dohypo < 0) || (dohypo == ih))) {
 
 	if(strcmp(outfile,"stdout") == 0)
 	  sprintf(str,"stdout");
@@ -883,7 +897,7 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 	if(gslip.np > 0 && write_gsf && writeout)
 	  write2gsf(&gslip,psrc,infile,str);
 
-      }
+	//}
       }
 
    free_srf_stf(&srf);

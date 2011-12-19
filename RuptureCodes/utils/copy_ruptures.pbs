@@ -2,7 +2,7 @@
 
 #PBS -q small
 #PBS -l size=12
-#PBS -l walltime=2:00:00
+#PBS -l walltime=6:00:00
 #PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/utils/copy_ruptures.out
 #PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/utils/copy_ruptures.err
 #PBS -V
