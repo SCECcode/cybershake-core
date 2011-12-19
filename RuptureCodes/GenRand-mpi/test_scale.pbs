@@ -2,9 +2,9 @@
 
 #PBS -q medium
 #PBS -l size=1200
-#PBS -l walltime=2:00:00
-#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test_1200.out
-#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test_1200.err
+#PBS -l walltime=16:00:00
+#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test_scale.out
+#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test_scale.err
 #PBS -V
 #PBS -A TG-MCA03S012
 

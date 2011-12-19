@@ -28,6 +28,10 @@ rupgen-serial: rupgen-serial.o genslip.o iofunc.o misc.o \
 	ruptime.o slip.o srf_subs.o fourg.o
 	$(CC) -o $@ $^ $(LIBS)
 
+rupgen-test: rupgen-test.o genslip-test.o iofunc.o misc.o \
+	ruptime.o slip.o srf_subs.o fourg.o
+	$(CC) -o $@ $^ $(LIBS)
+
 
 ############################################
 # Special build targets
