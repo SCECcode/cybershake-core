@@ -1,0 +1,52 @@
+#!/bin/csh
+
+#*** The "#PBS" lines must come before any non-blank non-comment lines ***
+
+#PBS -e dump.e -o dump.o
+#PBS -l walltime=0:30:00,nodes=1:myri:ppn=1
+
+if ($?PBS_JOBID) then           # if this is a PBS job
+  echo "Starting" $PBS_JOBID `date`
+  echo "Initiated on `hostname`"
+  echo ""
+  cd "$PBS_O_WORKDIR"           # connect to working directory of qsub
+else
+  echo "This script must be run as a PBS job"
+  exit 1
+endif
+
+if ($?PBS_NODEFILE) then
+  #count the number of processors assigned by PBS
+  set NP = `wc -l < $PBS_NODEFILE `
+  echo "Running on $NP processors: "`cat $PBS_NODEFILE`
+else
+  echo "This job did not have the number of nodes specified with"
+  echo "the node= resource"
+  exit 1
+endif
+
+#The following should contain your program and any arguments
+
+set FILE_PREFX = /home/rcf-104/CyberShake2007/execdir/cybershk/pegasus/CyberShake_SGT_PERR/20080822T102515-0800/PERR-fx_sgt-
+#set FILE_PREFX = /home/rcf-104/CyberShake2007/data/OutBin/DLA/DLA_E-fx_sgt-
+#set FILE_PREFX = /home/rcf-104/CyberShake2007/data/OutBin/PAS_E_GCC/PAS_E-fy_sgt-
+#set FILE_PREFX = /home/rcf-104/CyberShake2007/data/OutBin/PAS_E_PGI/PAS_E-fy_sgt-
+#set FILE_PREFX = /home/rcf-104/CyberShake2007/data/OutBin/PAS_E_PGI/PAS_E-fx_sgt-
+set NPROC = 400
+mkdir DumpLogs_PERR
+
+\rm nanfile
+touch nanfile
+set np = 0
+while ( $np < $NPROC )
+
+set infile = `echo $FILE_PREFX $np | gawk '{printf "%s%.4d.e3d\n",$1,$2;}'`
+set dumpfile = `echo $np | gawk '{printf "DumpLogs/dump.%.4d\n",$1;}'`
+echo $infile
+/home/rcf-02/rgraves/Mpi/RecpGF/dump_rawsgt infile=$infile >& $dumpfile
+grep "nan" $dumpfile >> nanfile
+
+@ np ++
+end
+
+exit
