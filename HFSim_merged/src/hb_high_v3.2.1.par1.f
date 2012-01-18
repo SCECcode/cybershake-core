@@ -690,7 +690,7 @@ c hardwire for SH since only geometric term is considered
       if(irtyp.eq.0) irtyp = 1
 
       call gf_amp_tt(j0,zet(i,j),dst(i,j),sgc,irtyp,mode,p0,stime,rpath,qbar)
-      write(*,*) "stime=", stime, tw_eps, twin(i,j)
+c      write(*,*) "stime=", stime, tw_eps, twin(i,j)
       sub_tstart = stime - tw_eps*twin(i,j)
 
       if(irtype(ir).eq.0) then
@@ -780,7 +780,7 @@ c      print *,'   rdna-090= ',rdna(30),' th= ',th/pu,' ir= ',ir
 c      print *,'   rdna-000= ',rdna(30),' th= ',th/pu,' ir= ',ir
 
        call RADV_lin(STRA,DIPA,RAKA,pa,th,DFR,NFOLD,flol,RNA,RNB,nr,rdna) 
-       write(*,*) "comp3"
+c       write(*,*) "comp3"
        call highcor_f(nfold,mfold,np2,cs(1,3),stdd(1,3),rdna)
 CFFF end
 
@@ -797,10 +797,10 @@ CFFF the following 9 lines are new (moved from before)
           endif
        endif
 
-       write(*,*) ratim, dt, sub_tstart
+c       write(*,*) ratim, dt, sub_tstart
 c	Try rounding sub_tstart to 4 decimal places
 c       sub_tstart = int(1000.0*sub_tstart+0.5)/1000.0
-       write(*,*) ratim, dt, sub_tstart
+c       write(*,*) ratim, dt, sub_tstart
        kst=int(ratim/dt) + int(sub_tstart/dt)
 CFFF end
 
@@ -810,7 +810,7 @@ c            dris=(float(k)-1.0+si)*rise/dt
             dris=si*rise/dt
 
             k2=nint(dris)
-	    write(*,*) "k2: ", k2, "kst: ", kst
+c	    write(*,*) "k2: ", k2, "kst: ", kst
             if(nsum.eq.1) k2=0
 
 CFFF the following 10 lines are modified
@@ -827,10 +827,6 @@ C  remove scaling by 'ratio', now done in stoc_f() using bigC
        DO 1733 li=k2,kend
 c            write(*,*) li, iv, i, j, li-k2
 c            write(*,*) DS(1,li), sddp(iv,i,j), stdd(li-k2,1)
-            if (li.eq.398) then
-		write(*,*) li-k2
-                write(*,*) "398: ", DS(3,li), sddp(iv,i,j), stdd(li-k2,3)
-            endif
             DS(1,li) =DS(1,li)+sddp(iv,i,j)*stdd(li-k2,1)
             DS(2,li) =DS(2,li)+sddp(iv,i,j)*stdd(li-k2,2)
             DS(3,li) =DS(3,li)+sddp(iv,i,j)*stdd(li-k2,3)
@@ -871,8 +867,8 @@ cNNNN end of ray loop
 	    i3 = i
         endif
       enddo
-      write(*,*) "amx3_i = ", i3, amx3_t
-      WRITE(6,*) 'ACC.MAX=',amx1,amx2,amx3
+c      write(*,*) "amx3_i = ", i3, amx3_t
+c      WRITE(6,*) 'ACC.MAX=',amx1,amx2,amx3
       print*,'Closest Distance ', d10,'  fc ',fce
 
 	c(1) = delay
@@ -1694,9 +1690,6 @@ c150   continue
       fac = 1.0/(rp*prtitn*float(np2))
       do 160 i=1,np2
 c      write(*,*) real(cw1(i))
-      if (i.eq.23) then
-	write(*,*) fac, real(cw1(i))
-      endif
       stdd(i)=fac*real(cw1(i))
 160   continue
 
@@ -1707,7 +1700,7 @@ c      write(*,*) real(cw1(i))
          stdd(np2-n0+i)=stdd(np2-n0+i)*arg
 852   continue
 
-      write(*,*) "final stdd(23): ", stdd(23)
+c      write(*,*) "final stdd(23): ", stdd(23)
 
       return
       end
