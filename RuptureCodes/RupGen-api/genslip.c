@@ -442,9 +442,25 @@ if (state==GET_STATS) {
    return 0;
 }
 
-if (dohypo==-1 && doslip==-1) { 
-	//A slip/hypo combo wasn't requested, so we stop here after calculating numslips and numhypos
-	return 0;
+if (dohypo>=nh) {
+	fprintf(lfile,"Error:  You requested hypocenter ID %d but from infile %s genslip calculates %d hypocenters.\n", dohypo, infile, nh);
+	fflush(lfile);
+	fclose(lfile);
+	exit(1);
+}
+
+if (dohypo>=ns) {
+        fprintf(lfile,"Error:  You requested slip ID %d but from infile %s genslip calculates %d slips.\n", doslip, infile, ns);
+	fflush(lfile);
+	fclose(lfile);
+        exit(2);
+}
+
+if (ns<-1 || nh<-1) {
+	fprintf(lfile, "Error: hypocenter and slip ID need to be >= -1.");
+	fflush(lfile);
+	fclose(lfile);
+	exit(3);
 }
 
 fprintf(lfile,"mag= %.2f median mag= %.2f nslip= %d nhypo= %d\n",mag,mag_med,ns,nh);
