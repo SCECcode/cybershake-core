@@ -389,11 +389,11 @@ gslip.np = -1;
 gslip.spar = (struct slippars *)NULL;
 
 if(read_erf == 1)
-   psrc = read_ruppars(infile,psrc,&mag,&nx,&ny_in,&dx,&dy,&dtop,&avgstk,&avgdip,&elon,&elat);
+   psrc = _read_ruppars(infile,psrc,&mag,&nx,&ny_in,&dx,&dy,&dtop,&avgstk,&avgdip,&elon,&elat);
 else if(read_gsf == 1)
-   psrc = read_gsfpars(infile,psrc,&gslip,&dx,&dy,&dtop,&avgdip);
+   psrc = _read_gsfpars(infile,psrc,&gslip,&dx,&dy,&dtop,&avgdip);
 else
-   psrc = set_ruppars(psrc,&mag,&nx,&ny_in,&dx,&dy,&dtop,&avgstk,&avgdip,&rake,&elon,&elat);
+   psrc = _set_ruppars(psrc,&mag,&nx,&ny_in,&dx,&dy,&dtop,&avgstk,&avgdip,&rake,&elon,&elat);
 
 flen = nx*dx;
 fwid = ny_in*dy;
@@ -466,7 +466,7 @@ if (ns<-1 || nh<-1) {
 fprintf(lfile,"mag= %.2f median mag= %.2f nslip= %d nhypo= %d\n",mag,mag_med,ns,nh);
 fprintf(lfile,"nx= %d ny= %d dx= %10.4f dy= %10.4f\n",nx,ny_in,dx,dy);
 
-init_plane_srf(srf,&gslip,&elon,&elat,nx,ny_in,&flen,&fwid,&dx,&dy,&avgstk,&avgdip,&dtop,&shypo,&dhypo);
+_init_plane_srf(srf,&gslip,&elon,&elat,nx,ny_in,&flen,&fwid,&dx,&dy,&avgstk,&avgdip,&dtop,&shypo,&dhypo);
 
 if(velfile[0] != '\0')
    read_velmodel(velfile,&vmod);
@@ -661,9 +661,9 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 	    {
 	    neg_sum = neg_sum - cslip[ip].re;
             cslip[ip].re = 0.0;
-	    /*
+	    
 	    fprintf(lfile,"slip= %13.5e\n",cslip[ip].re);
-	    */
+	    
 	    }
 	 }
       }
@@ -781,16 +781,16 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
    if(slipfile[0] != '\0')
       {
       sprintf(str,"%s-s%.4d",slipfile,js);
-      write_field(str,psrc,"slip",nx,ny_in,&dx,&dy);
+      _write_field(str,psrc,"slip",nx,ny_in,&dx,&dy);
       }
 
    if(specfile[0] != '\0')
       {
       sprintf(str,"%s-s%.4d",specfile,js);
-      write_spec(str,aspec,cslip,nx,ny,&dx,&dy,&dkx,&dky,&xl,&yl,kmodel);
+      _write_spec(str,aspec,cslip,nx,ny,&dx,&dy,&dkx,&dky,&xl,&yl,kmodel);
       }
 
-   load_slip_srf(srf,&stfparams,psrc);
+   _load_slip_srf(srf,&stfparams,psrc);
 
    for(ih=0;ih<nh;ih++)    /* loop over hypocenter realizations */
       {
@@ -897,10 +897,10 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
       if(ruptfile[0] != '\0')
          {
          sprintf(str,"%s-s%.4d-h%.4d",ruptfile,js,ih);
-         write_field(str,psrc,"rupt",nx,ny_in,&dx,&dy);
+         _write_field(str,psrc,"rupt",nx,ny_in,&dx,&dy);
          }
 
-      load_rupt_srf(srf,psrc,&shypo,&dhypo);
+      _load_rupt_srf(srf,psrc,&shypo,&dhypo);
 
       //if (((doslip < 0) || (doslip == js)) &&
       //	  ((dohypo < 0) || (dohypo == ih))) {
@@ -919,7 +919,7 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 	  sprintf(str,"%s-s%.4d-h%.4d.gsf",outfile,js,ih);
 
 	if(gslip.np > 0 && write_gsf && writeout)
-	  write2gsf(&gslip,psrc,infile,str);
+	  _write2gsf(&gslip,psrc,infile,str);
 
 	//}
       }
@@ -929,7 +929,7 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 if(specfile[0] != '\0')
    {
    sprintf(str,"%s-s_avg",specfile);
-   write_avgspec(str,aspec,ns,nx,ny,&dkx,&dky);
+   _write_avgspec(str,aspec,ns,nx,ny,&dkx,&dky);
    }
 
  if (lfile != stderr) {
