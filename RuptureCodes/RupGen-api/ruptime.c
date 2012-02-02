@@ -63,11 +63,11 @@ for(i=0;i<vm->nlay;i++)
 
 void read_velmodel(char *vfile,struct velmodel *vm)
 {
-FILE *fpr, *fopfile();
+FILE *fpr;
 int i;
 char str[512];
 
-fpr = fopfile(vfile,"r");
+fpr = _fopfile(vfile,"r");
 
 fgets(str,512,fpr);
 sscanf(str,"%d",&vm->nlay);

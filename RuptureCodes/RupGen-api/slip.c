@@ -22,7 +22,7 @@ if(file[0] == '\0')
    }
 else
    {
-   fpr = fopfile(file,"r");
+   fpr = _fopfile(file,"r");
 
    fgets(str,1024,fpr);
    sscanf(str,"%f",&slip);
