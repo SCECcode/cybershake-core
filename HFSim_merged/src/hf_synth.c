@@ -85,8 +85,8 @@ int main(int argc, char** argv) {
         sfile.ti = check_malloc(NP*NQ*LV*sizeof(float));
 
 	srf2stoch(infile, dx, dy, inbin, avgstk, &sfile);
-	sprintf(slipfile, "%s.slip", infile);
-	write_slipfile(sfile, slipfile);
+	//sprintf(slipfile, "%s.slip", infile);
+	//write_slipfile(sfile, slipfile);
 	//Need to int the contents of sfile.sp
 	//Round the others to 2 digits
 	int i;
