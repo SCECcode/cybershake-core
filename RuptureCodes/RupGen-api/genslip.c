@@ -5,6 +5,7 @@
 #include "genslip.h"
 #include "getpar.h"
 #include "ruptime.h"
+#include "misc.h"
 
 /*
 ************************************************************************************
@@ -585,9 +586,13 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 
    init_slip_IO(cslip,nx,ny,&dx,&dy,flip_at_surface,init_slip_file);
 
+
    fft2d(cslip,nx,ny,-1,&dx,&dy);
-   if(kmodel < 100)
+
+   if(kmodel < 100) {
       kfilt(cslip,nx,ny,&dkx,&dky,&xl,&yl,&seed,kmodel);
+   }
+
    fft2d(cslip,nx,ny,1,&dkx,&dky);
 
    taper_slip_all(cslip,nx,ny_in,&side_taper,&bot_taper,&top_taper);
@@ -861,23 +866,24 @@ for(js=0;js<ns;js++)    /* loop over slip realizations */
 
 	    sval = 0.0;
             if(tsfac_rand > 0.0)
-               sval = gaus_rand(&tsfac_rand,&fzero,&seed);
+               sval = _gaus_rand(&tsfac_rand,&fzero,&seed);
 
 	    sval = 0.0;
-            if(psrc[ip].slip > 0.25*savg*savg/smax)
+            if(psrc[ip].slip > 0.25*savg*savg/smax) {
                psrc[ip].rupt = rt + sf*tsfac*(1.0 + sval)*log(psrc[ip].slip/savg);
-            else
+             } else {
                psrc[ip].rupt = rt - sf*tsfac;
+	     }
 
 	    if(sd_rand > 0.0)
 	       {
-               psrc[ip].stk = psrc[ip].stk + sd_rand*gaus_rand(&fone,&fzero,&seed);
-               psrc[ip].dip = psrc[ip].dip + sd_rand*gaus_rand(&fone,&fzero,&seed);
+               psrc[ip].stk = psrc[ip].stk + sd_rand*_gaus_rand(&fone,&fzero,&seed);
+               psrc[ip].dip = psrc[ip].dip + sd_rand*_gaus_rand(&fone,&fzero,&seed);
 	       }
 
 /*
 	    sigma = 0.15;
-            sval = psrc[ip].slip*(1.0 + gaus_rand(&sigma,&fzero,&seed));
+            sval = psrc[ip].slip*(1.0 + _gaus_rand(&sigma,&fzero,&seed));
 
             if(sval > 0.25*savg*savg/smax)
                psrc[ip].rupt = rt + sf*tsfac*log(sval/savg);

@@ -3,6 +3,7 @@
 #include "function.h"
 #include "defs.h"
 #include "fourg.h"
+#include "misc.h"
 
 void init_slip_IO(struct complex *sc,int nx,int ny,float *dx,float *dy,int flip,char *file)
 {
@@ -390,7 +391,7 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       if(kflag == SOMERVILLE_FLAG)      /* somerville scaling */
          fac = amp0/sqrt(1.0 + amp*amp);
 
-      phs = pi*sfrand(seed);
+      phs = pi*_sfrand(seed);
 
       fac1 = sqrt(s0[ip].re*s0[ip].re + s0[ip].im*s0[ip].im);
 
@@ -561,7 +562,7 @@ normf = (*d1)*(*d2);
 space = (float *) check_malloc (2*(n1+n2)*sizeof(float));
 
 for(j=0;j<n2;j++)
-  fourg_(&((xc+j*n1)->re),&n1,&isgn,space);
+  fourg__(&((xc+j*n1)->re),&n1,&isgn,space);
 
 xtc = (struct complex *) check_malloc (n2*sizeof(struct complex));
 
@@ -575,7 +576,7 @@ for(i=0;i<n1;i++)
       xtc[j].im = xc[ip].im;
       }
 
-   fourg_(&(xtc->re),&n2,&isgn,space);
+   fourg__(&(xtc->re),&n2,&isgn,space);
 
    for(j=0;j<n2;j++)
       {
