@@ -7,8 +7,7 @@ typedef struct rg_stats_t {
   int numhypo;
 } rg_stats_t;
 
-int rupgen_init(char* rup_dir);
-int rupgen_get_num_rv(int source, int rupture, rg_stats_t *stats);
-int rupgen_genslip(int source, int rupture, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf);
+int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats);
+int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf);
 
 #endif

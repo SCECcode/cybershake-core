@@ -1,4 +1,4 @@
-      subroutine fourg (data,n,isign,work)
+      subroutine fourg_ (data,n,isign,work)
 c     cooley-tukey fast fourier transform in usasi basic fortran.
 c     one-dimensional transform of complex data, arbitrary number of
 c     points.  n points can be transformed in time proportional to

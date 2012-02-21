@@ -3,23 +3,7 @@
 #include "defs.h"
 #include "function.h"
 
-char rupture_dir[MAX_STR_ARGV] = {0};
-
-int rupgen_init(char* rup_dir) {
-	strcpy(rupture_dir, rup_dir);
-	return 0;
-}
-
-int rupgen_get_num_rv(int source, int rupture, rg_stats_t *stats) {
-	char infile[1024];
-	char logfile[1024];
-	if (strlen(rupture_dir)==0 ) {
-		fprintf(stderr, "Rupture directory was not initalized with rupgen_init()\n");
-		exit(1);
-	}
-
-	sprintf(infile, "%s/%d/%d/%d_%d.txt", rupture_dir, source, rupture, source, rupture);
-
+int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats) {
 	int writeout = 0;
 
 	int j, rgargc;
@@ -32,7 +16,7 @@ int rupgen_get_num_rv(int source, int rupture, rg_stats_t *stats) {
 		rgargv[j] = malloc(MAX_STR_ARGV);
 	}
 	sprintf(rgargv[0], "%s", "rupgen");
-	sprintf(rgargv[1], "infile=%s", infile);
+	sprintf(rgargv[1], "infile=%s", rup_geom_file);
 	sprintf(rgargv[2], "writeout=%d", writeout);
 
 	/* Run rupture generator */
@@ -49,20 +33,10 @@ int rupgen_get_num_rv(int source, int rupture, rg_stats_t *stats) {
 
 }
 
-int rupgen_genslip(int source, int rupture, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf) {
-        char infile[1024];
-        char logfile[1024];
-
-        if (strlen(rupture_dir)==0 ) {
-                fprintf(stderr, "Rupture directory was not initalized with rupgen_init()\n");
-                exit(1);
-        }
-
-        sprintf(infile, "%s/%d/%d/%d_%d.txt", rupture_dir, source, rupture, source, rupture);
-
+int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf) {
         int writeout = 0;
 
-        int j, rgargc;
+        int i, j, rgargc;
         char **rgargv = NULL;
 
         /* Create pseudo-program args */
@@ -72,13 +46,33 @@ int rupgen_genslip(int source, int rupture, int slip, int hypo, rg_stats_t *stat
                 rgargv[j] = malloc(MAX_STR_ARGV);
         }
         sprintf(rgargv[0], "%s", "rupgen");
-        sprintf(rgargv[1], "infile=%s", infile);
+        sprintf(rgargv[1], "infile=%s", rup_geom_file);
         sprintf(rgargv[2], "writeout=%d", writeout);
 	sprintf(rgargv[3], "doslip=%d", slip);
 	sprintf(rgargv[4], "dohypo=%d", hypo);
 
         /* Run rupture generator */
         genslip(rgargc, rgargv, stats, srf, RUN_GENSLIP);
+
+	//Round strike, dip, rake to integers
+        //Round flen, fwid, dtop, shyp, dhyp, slip1, slip2, slip3 to 2 places
+	for (i=0; i<srf->srf_prect.nseg; i++) {
+		srf->srf_prect.prectseg[i].stk = floor(srf->srf_prect.prectseg[i].stk+0.5);
+                srf->srf_prect.prectseg[i].dip = floor(srf->srf_prect.prectseg[i].dip+0.5);
+		srf->srf_prect.prectseg[i].flen = floor(srf->srf_prect.prectseg[i].flen*100+0.5)/100.0;
+		srf->srf_prect.prectseg[i].fwid = floor(srf->srf_prect.prectseg[i].fwid*100+0.5)/100.0;
+		srf->srf_prect.prectseg[i].dtop = floor(srf->srf_prect.prectseg[i].dtop*100+0.5)/100.0;
+		srf->srf_prect.prectseg[i].shyp = floor(srf->srf_prect.prectseg[i].shyp*100+0.5)/100.0;
+                srf->srf_prect.prectseg[i].dhyp = floor(srf->srf_prect.prectseg[i].dhyp*100+0.5)/100.0;
+	}
+	for (i=0; i<srf->srf_apnts.np; i++) {
+		srf->srf_apnts.apntvals[i].stk = floor(srf->srf_apnts.apntvals[i].stk+0.5);
+                srf->srf_apnts.apntvals[i].dip = floor(srf->srf_apnts.apntvals[i].dip+0.5);
+                srf->srf_apnts.apntvals[i].rake = floor(srf->srf_apnts.apntvals[i].rake+0.5);
+		srf->srf_apnts.apntvals[i].slip1 = floor(srf->srf_apnts.apntvals[i].slip1*100+0.5)/100.0;
+		srf->srf_apnts.apntvals[i].slip2 = floor(srf->srf_apnts.apntvals[i].slip2*100+0.5)/100.0;
+		srf->srf_apnts.apntvals[i].slip3 = floor(srf->srf_apnts.apntvals[i].slip3*100+0.5)/100.0;
+	}
 
         /* Free pseudo-program args */
         for (j = 0; j < NUM_GENSLIP_ARGS; j++) {

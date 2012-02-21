@@ -31,10 +31,6 @@ void read_velmodel(char *,struct velmodel *);
 void conv2vrup(struct velmodel *,struct velmodel *,float *,float *,float *,float *,float *);
 void conv2vrup_dd(struct velmodel *,struct velmodel *,float *,float *,float *,float *,float *,float *,float *);
 
-double frand(void);
-double sfrand(long *);
-double gaus_rand(float *,float *,long *);
-
 int _gen_brune_stf(float *,float *,float *,int,float *);
 int _gen_ucsb_stf(float *,float *,float *,int,float *);
 int _gen_tri_stf(float *,float *,float *,int,float *);
@@ -49,8 +45,8 @@ struct pointsource *_set_ruppars(struct pointsource *,float *,int *,int *,float 
 
 void _init_plane_srf(struct standrupformat *,struct generic_slip *,float *,float *,int,int,float *,float *,float *,float *,float *,float *,float *,float *,float *);
 void _load_slip_srf(struct standrupformat *,struct stfpar *,struct pointsource *);
-void load_rupt_srf(struct standrupformat *,struct pointsource *,float *,float *);
-void _write_srf(struct standrupformat *,char *,int);
+void _load_rupt_srf(struct standrupformat *,struct pointsource *,float *,float *);
+void write_srf(struct standrupformat *,char *,int);
 void _write2gsf(struct generic_slip *,struct pointsource *,char *,char *);
 
 void free_srf_stf(struct standrupformat *);
