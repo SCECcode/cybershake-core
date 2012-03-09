@@ -24,13 +24,13 @@ int i;
 
 vm->nlay = 17;
 
-vm->vp = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->vs = (double *)check_malloc(vm->nlay*sizeof(double));
-vm->den = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->th = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->dep = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->mu = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->invb2 = (double *)check_malloc(vm->nlay*sizeof(double));
+vm->vp = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->vs = (double *)_check_malloc(vm->nlay*sizeof(double));
+vm->den = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->th = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->dep = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->mu = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->invb2 = (double *)_check_malloc(vm->nlay*sizeof(double));
 
 vm->th[ 0] = 0.002; vm->vp[ 0] = 1.70; vm->vs[ 0] = 0.35; vm->den[ 0] = 2.0;
 vm->th[ 1] = 0.004; vm->vp[ 1] = 1.80; vm->vs[ 1] = 0.55; vm->den[ 1] = 2.1;
@@ -72,13 +72,13 @@ fpr = _fopfile(vfile,"r");
 fgets(str,512,fpr);
 sscanf(str,"%d",&vm->nlay);
 
-vm->vp = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->vs = (double *)check_malloc(vm->nlay*sizeof(double));
-vm->den = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->th = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->dep = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->mu = (float *)check_malloc(vm->nlay*sizeof(float));
-vm->invb2 = (double *)check_malloc(vm->nlay*sizeof(double));
+vm->vp = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->vs = (double *)_check_malloc(vm->nlay*sizeof(double));
+vm->den = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->th = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->dep = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->mu = (float *)_check_malloc(vm->nlay*sizeof(float));
+vm->invb2 = (double *)_check_malloc(vm->nlay*sizeof(double));
 
 for(i=0;i<vm->nlay;i++)
    {
@@ -110,9 +110,9 @@ float dmax = 6.0;
 float rvfac;
 
 rvm->nlay = vm->nlay;
-rvm->vs = (double *)check_malloc(rvm->nlay*sizeof(double));
-rvm->th = (float *)check_malloc(rvm->nlay*sizeof(float));
-rvm->invb2 = (double *)check_malloc(rvm->nlay*sizeof(double));
+rvm->vs = (double *)_check_malloc(rvm->nlay*sizeof(double));
+rvm->th = (float *)_check_malloc(rvm->nlay*sizeof(float));
+rvm->invb2 = (double *)_check_malloc(rvm->nlay*sizeof(double));
 
 i = 0;
 dep = vm->th[0];
@@ -169,9 +169,9 @@ float rperd = 0.017453293;
 float rvfac;
 
 rvm->nlay = vm->nlay;
-rvm->vs = (double *)check_malloc(rvm->nlay*sizeof(double));
-rvm->th = (float *)check_malloc(rvm->nlay*sizeof(float));
-rvm->invb2 = (double *)check_malloc(rvm->nlay*sizeof(double));
+rvm->vs = (double *)_check_malloc(rvm->nlay*sizeof(double));
+rvm->th = (float *)_check_malloc(rvm->nlay*sizeof(float));
+rvm->invb2 = (double *)_check_malloc(rvm->nlay*sizeof(double));
 
 i = 0;
 dep = vm->th[0];

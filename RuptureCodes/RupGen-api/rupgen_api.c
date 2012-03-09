@@ -3,11 +3,27 @@
 #include "defs.h"
 #include "function.h"
 
+#ifdef _USE_MEMCACHED
+char mc_server[128] = {'\0'};
+
+int set_memcached_server(char* memcached_server) {
+	strcpy(mc_server, memcached_server);
+	return 0;
+}
+#endif
+
 int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats) {
 	int writeout = 0;
 
 	int j, rgargc;
 	char **rgargv = NULL;
+
+#ifdef _USE_MEMCACHED
+	if (strcmp(mc_server, "")==0) {
+		fprintf(stderr, "Error:  need to set memcached server with set_memcached_server()\n");
+		exit(1);
+	}
+#endif
 
 	/* Create pseudo-program args */
 	rgargc = NUM_GENSLIP_ARGS;
@@ -21,7 +37,11 @@ int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats) {
 
 	/* Run rupture generator */
 	struct standrupformat srf;
+#ifdef _USE_MEMCACHED
+	mc_genslip(rgargc, rgargv, stats, &srf, GET_STATS, mc_server);
+#else
 	genslip(rgargc, rgargv, stats, &srf, GET_STATS);
+#endif
   
 	/* Free pseudo-program args */
 	for (j = 0; j < NUM_GENSLIP_ARGS; j++) {
@@ -39,6 +59,13 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
         int i, j, rgargc;
         char **rgargv = NULL;
 
+#ifdef _USE_MEMCACHED
+        if (strcmp(mc_server, "")==0) {
+                fprintf(stderr, "Error:  need to set memcached server with set_memcached_server()\n");
+                exit(1);
+        }
+#endif
+
         /* Create pseudo-program args */
         rgargc = NUM_GENSLIP_ARGS;
         rgargv = malloc(rgargc * sizeof(char*));
@@ -52,7 +79,11 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
 	sprintf(rgargv[4], "dohypo=%d", hypo);
 
         /* Run rupture generator */
-        genslip(rgargc, rgargv, stats, srf, RUN_GENSLIP);
+#ifdef _USE_MEMCACHED
+        mc_genslip(rgargc, rgargv, stats, srf, RUN_GENSLIP, mc_server);
+#else
+	genslip(rgargc, rgargv, stats, srf, RUN_GENSLIP);
+#endif
 
 	//Round strike, dip, rake to integers
         //Round flen, fwid, dtop, shyp, dhyp, slip1, slip2, slip3 to 2 places

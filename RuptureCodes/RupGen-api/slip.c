@@ -559,12 +559,12 @@ float normf;
 
 normf = (*d1)*(*d2);
 
-space = (float *) check_malloc (2*(n1+n2)*sizeof(float));
+space = (float *) _check_malloc (2*(n1+n2)*sizeof(float));
 
 for(j=0;j<n2;j++)
   fourg__(&((xc+j*n1)->re),&n1,&isgn,space);
 
-xtc = (struct complex *) check_malloc (n2*sizeof(struct complex));
+xtc = (struct complex *) _check_malloc (n2*sizeof(struct complex));
 
 for(i=0;i<n1;i++)
    {

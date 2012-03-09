@@ -19,7 +19,7 @@ sprintf(srf[0].type,"PLANE");
 if(gslip->np > 0)
    {
    spar = gslip->spar;
-   spar2 = (struct slippars *)check_malloc(gslip->np*sizeof(struct slippars));
+   spar2 = (struct slippars *)_check_malloc(gslip->np*sizeof(struct slippars));
 
    nseg = 0;
    for(i=0;i<gslip->np;i++)
@@ -30,7 +30,7 @@ if(gslip->np > 0)
    nseg++;
 
    srf[0].srf_prect.nseg = nseg;
-   srf[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+   srf[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
 
    prseg_ptr = srf[0].srf_prect.prectseg;
 
@@ -139,7 +139,7 @@ if(gslip->np > 0)
       se = -prseg_ptr[i].dwid*sin(rperd*prseg_ptr[i].dip)*cos(rperd*prseg_ptr[i].stk);
       sn = prseg_ptr[i].dwid*sin(rperd*prseg_ptr[i].dip)*sin(rperd*prseg_ptr[i].stk);
 
-      set_ll(&avglon,&avglat,&prseg_ptr[i].elon,&prseg_ptr[i].elat,&sn,&se);
+      _set_ll(&avglon,&avglat,&prseg_ptr[i].elon,&prseg_ptr[i].elat,&sn,&se);
 
       prseg_ptr[i].shyp = -999.9;
       prseg_ptr[i].dhyp = -999.9;
@@ -152,7 +152,7 @@ if(gslip->np > 0)
 else
    {
    srf[0].srf_prect.nseg = 1;
-   srf[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+   srf[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
    prseg_ptr = srf[0].srf_prect.prectseg;
 
    prseg_ptr[0].elon = *elon;
@@ -174,12 +174,12 @@ srf[0].srf_apnts.np = 0;
 for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
    srf[0].srf_apnts.np = srf[0].srf_apnts.np + (prseg_ptr[ig].nstk)*(prseg_ptr[ig].ndip);
 
-srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 }
 
 void write_srf(struct standrupformat *srf,char *file,int bflag)
 {
-FILE *fpw, *fopfile();
+FILE *fpw;
 struct srf_planerectangle *prect_ptr;
 struct srf_prectsegments *prseg_ptr;
 struct srf_allpoints *apnts_ptr;
@@ -245,7 +245,7 @@ else
    if(strcmp(file,"stdout") == 0)
       fpw = stdout;
    else
-      fpw = fopfile(file,"w");
+      fpw = _fopfile(file,"w");
 
    fprintf(fpw,"%s\n",srf->version);
 
@@ -393,7 +393,7 @@ for(iseg=0;iseg<nseg;iseg++)
          ip = noff + i + j*prseg_ptr[iseg].nstk;
          ip0 = i + ioff + j*ntot;
 
-         apval_ptr[ip].stf1 = (float *)check_malloc(spar->nt*sizeof(float));
+         apval_ptr[ip].stf1 = (float *)_check_malloc(spar->nt*sizeof(float));
          stf = apval_ptr[ip].stf1;
 
          apval_ptr[ip].dt = spar->dt;
@@ -444,7 +444,7 @@ for(iseg=0;iseg<nseg;iseg++)
             apval_ptr[ip].nt1 = 0;
 
          if(apval_ptr[ip].nt1)
-            apval_ptr[ip].stf1 = (float *)check_realloc(apval_ptr[ip].stf1,(apval_ptr[ip].nt1)*sizeof(float));
+            apval_ptr[ip].stf1 = (float *)_check_realloc(apval_ptr[ip].stf1,(apval_ptr[ip].nt1)*sizeof(float));
          else
             {
             free(apval_ptr[ip].stf1);
