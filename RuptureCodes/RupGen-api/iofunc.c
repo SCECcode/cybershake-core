@@ -177,14 +177,69 @@ if ((temp = write(fd, pntr, length)) < length)
 return(temp);
 }
 
-struct pointsource *_read_ruppars(char *file,struct pointsource *psrc,float *mag,int *nx,int *ny,float *dx,float *dy,float *dtop,float *stk,float *dip,float *elon,float *elat)
+#ifdef _USE_MEMCACHED
+void _mc_add_file(char* filename, char** file_buffer, memcached_st* mst) {
+	memcached_return ret;
+	uint32_t flags = 0;
+
+	FILE* fpr = _fopfile(filename, "rb");
+        //Get file size so we know how big to make the file buffer
+        fseek(fpr, 0, SEEK_END);
+        long file_length = ftell(fpr);
+	fseek(fpr, 0, SEEK_SET);
+        *file_buffer = _check_malloc(sizeof(char) * (file_length+1));
+	memset(*file_buffer, '\0', file_length+1);
+        int part_id = 0;
+	long read = fread(*file_buffer, 1, file_length, fpr);
+	if (read!=file_length) {
+		fprintf(stderr, "READ ERROR - %ld attempted %ld read.\n", file_length, read);
+		exit(1);
+	}
+        char* file_key = _check_malloc(sizeof(char) * (strlen(filename) + 4));
+	char buffer[1024*1024];
+	int ONE_MB = 1024*1024;
+	int i=0;
+	while (i*ONE_MB < file_length) {
+		int to_copy = ONE_MB;
+		if (file_length - i*ONE_MB < ONE_MB) {
+			to_copy = file_length - i*ONE_MB;
+		}
+                sprintf(file_key, "%s.%d", filename, i);
+		memcpy(buffer, (*file_buffer)+i*ONE_MB, to_copy);
+
+                ret = memcached_set(mst, file_key, strlen(file_key), buffer, strlen(buffer), 0, flags);
+                if (ret!=MEMCACHED_SUCCESS) {
+                	printf("Caching of %s failed, aborting.\n", file_key);
+                        printf("%s\n", memcached_strerror(mst, ret));
+                        exit(1);
+                }
+                i++;
+                memset(buffer, '\0', ONE_MB);
+	}
+        //Commit number of parts
+        int num_parts = i;
+	char* parts_key = _check_malloc(sizeof(char) * (strlen(filename) + 1));
+	strcpy(parts_key, filename);
+        ret = memcached_set(mst, parts_key, strlen(parts_key), (char*)(&num_parts), sizeof(int), 0, flags);
+        if (ret!=MEMCACHED_SUCCESS) {
+                printf("Caching of %s failed, aborting.\n", parts_key);
+                printf("%s\n", memcached_strerror(mst, ret));
+                exit(1);
+        }
+        free(file_key);
+	free(parts_key);
+	fclose(fpr);
+}
+
+
+struct pointsource* _mc_read_ruppars(char *file,struct pointsource *psrc,float *mag,int *nx,int *ny,float *dx,float *dy,float *dtop,float *stk,float *dip,float *elon,float *elat, char* mc_server)
 {
-FILE *fpr;
 float area;
 int i, nn;
 char str[1024];
 
 double rperd = 0.017453293;
+int ONE_MB = 1024*1024;
 
 *dtop = 1.0e+15;
 *stk = 0.0;
@@ -192,359 +247,503 @@ double rperd = 0.017453293;
 *elon = 0.0;
 *elat = 0.0;
 
-if(strcmp(file,"stdin") == 0)
-   fpr = stdin;
-else
-   fpr = _fopfile(file,"r");
+char* buffer;
+char* file_data;
+int* num_parts;
 
-fgets(str,1024,fpr);   /* Probability = <float> */
+	memcached_return ret;
+	memcached_st* mst;
 
-fgets(str,1024,fpr);   /* Magnitude = <float> */
-sscanf(str,"%*s %*s %f",mag);
+	mst = memcached_create(NULL);
+	memcached_server_st *server = memcached_server_list_append(NULL, mc_server, 11211, &ret);
 
-fgets(str,1024,fpr);   /* GridSpacing = <float> */
-sscanf(str,"%*s %*s %f",dx);
+	ret = memcached_server_push(mst, server);
+	memcached_server_free(server);
 
-if(*dx == (float)(0.0))
-   {
-   fprintf(stderr,"***** input error\n");
-   fprintf(stderr,"      GridSpacing = 0.0, exiting...\n");
-   exit(-1);
-   }
+	uint32_t flags = 0;
 
-*dy = *dx;
-
-fgets(str,1024,fpr);   /* NumRows = <int> */
-sscanf(str,"%*s %*s %d",ny);
-
-fgets(str,1024,fpr);   /* NumCols = <int> */
-sscanf(str,"%*s %*s %d",nx);
-
-fgets(str,1024,fpr);   /* header comment */
-
-psrc = (struct pointsource *)check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
-
-area = (*dx)*(*dy)*1.0e+10;  /* km -> cm */
-
-for(i=0;i<(*nx)*(*ny);i++)
-   {
-   fgets(str,1024,fpr);   /* Lat , Lon , Depth , Rake , Dip , Strike */
-   sscanf(str,"%f %f %f %f %f %f",&psrc[i].lat,
-                                  &psrc[i].lon,
-                                  &psrc[i].dep,
-                                  &psrc[i].rak,
-                                  &psrc[i].dip,
-                                  &psrc[i].stk);
-
-   psrc[i].area = area;
-
-   if(psrc[i].dep < *dtop)
-      *dtop = psrc[i].dep;
-
-   *stk = *stk + psrc[i].stk;
-   *dip = *dip + psrc[i].dip;
-   }
-fclose(fpr);
-
-*stk = *stk/((*nx)*(*ny));
-*dip = *dip/((*nx)*(*ny));
-
-nn = 0;
-for(i=0;i<(*nx)*(*ny);i++)
-   {
-   if(psrc[i].dep < (*dtop + 0.01))
-      {
-      *elon = *elon + psrc[i].lon;
-      *elat = *elat + psrc[i].lat;
-      nn++;
-      }
-   }
-
-/* adjust for half subfault width */
-*dtop = (*dtop) - 0.5*(*dx)*sin((*dip)*rperd);
-
-if(nn == 0)
-   nn++;
-
-*elon = *elon/nn;
-*elat = *elat/nn;
-
-return(psrc);
-}
-
-struct pointsource *_set_ruppars(struct pointsource *psrc,float *mag,int *nx,int *ny,float *dx,float *dy,float *dtop,float *stk,float *dip,float *rak,float *elon,float *elat)
-{
-float area;
-float cosA, sinA, cosD, sinD, fwid, flen;
-float xx, yy, zz, dd, sn, se;
-int i, j, ip;
-
-double rperd = 0.017453293;
-
-psrc = (struct pointsource *)check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
-
-area = (*dx)*(*dy)*1.0e+10;  /* km -> cm */
-flen = (*nx)*(*dx);
-fwid = (*ny)*(*dy);
-
-cosA = cos((*stk)*rperd);
-sinA = sin((*stk)*rperd);
-cosD = cos((*dip)*rperd);
-sinD = sin((*dip)*rperd);
-for(j=0;j<(*ny);j++)
-   {
-   dd = (j + 0.5)*(*dy);
-   yy = dd*cosD;
-   zz = (*dtop) + dd*sinD;
-
-   for(i=0;i<(*nx);i++)
-      {
-      ip = i + j*(*nx);
-      xx = (i+0.5)*(*dx) - 0.5*flen;
-
-      se = xx*sinA + yy*cosA;
-      sn = xx*cosA - yy*sinA;
-      set_ll(elon,elat,&psrc[ip].lon,&psrc[ip].lat,&sn,&se);
-
-      psrc[ip].dep = zz;
-      psrc[ip].stk = (*stk);
-      psrc[ip].dip = (*dip);
-      psrc[ip].rak = (*rak);
-      psrc[ip].area = area;
-      }
-   }
-
-return(psrc);
-}
-
-struct pointsource *_read_gsfpars(char *file,struct pointsource *psrc,struct generic_slip *gslip,float *dx,float *dy,float *dtop,float *dip)
-{
-FILE *fpr;
-int i, nn;
-char str[1024];
-struct slippars *spar;
-
-double rperd = 0.017453293;
-
-*dtop = 1.0e+15;
-*dx = 0.0;
-*dy = 0.0;
-*dip = 0.0;
-
-if(strcmp(file,"stdin") == 0)
-   fpr = stdin;
-else
-   fpr = _fopfile(file,"r");
-
-fgets(str,1024,fpr);
-while(strncmp(str,"#",1) == 0)
-   fgets(str,1024,fpr);
-
-sscanf(str,"%d",&gslip->np);
-
-psrc = (struct pointsource *)check_realloc(psrc,gslip->np*sizeof(struct pointsource));
-gslip->spar = (struct slippars *)check_realloc(gslip->spar,gslip->np*sizeof(struct slippars));
-spar = gslip->spar;
-
-i = 0;
-while(fgets(str,1024,fpr) != NULL)
-   {
-   sscanf(str,"%f %f %f %f %f %f %f %f %f %f %d",&spar[i].lon,
-                                     &spar[i].lat,
-                                     &spar[i].dep,
-                                     &spar[i].ds,
-                                     &spar[i].dw,
-                                     &spar[i].stk,
-                                     &spar[i].dip,
-                                     &spar[i].rake,
-                                     &spar[i].slip,
-                                     &spar[i].tinit,
-                                     &spar[i].segno);
-
-   psrc[i].lon = spar[i].lon;
-   psrc[i].lat = spar[i].lat;
-   psrc[i].dep = spar[i].dep;
-   psrc[i].stk = spar[i].stk;
-   psrc[i].dip = spar[i].dip;
-   psrc[i].rak = spar[i].rake;
-   psrc[i].area = spar[i].ds*spar[i].dw*1.0e+10;
-
-   if(psrc[i].dep < *dtop)
-      *dtop = psrc[i].dep;
-
-   *dip = *dip + psrc[i].dip;
-   *dx = *dx + spar[i].ds;
-   *dy = *dy + spar[i].dw;
-
-   i++;
-   }
-fclose(fpr);
-
-*dip = *dip/(gslip->np);
-*dx = *dx/(gslip->np);
-*dy = *dy/(gslip->np);
-
-/* adjust for half subfault width */
-*dtop = (*dtop) - 0.5*(*dy)*sin((*dip)*rperd);
-if(*dtop < 0.0)
-   *dtop = 0.0;
-
-return(psrc);
-}
-
-
-int _cp(const char *to, const char *from) 
-{ 
-    FILE *fp_from, *fp_to;
-    char buf[32768]; 
-    ssize_t nread; 
- 
-    fp_from = fopen(from, "r");
-    if (fp_from == NULL) {
-      return(1);
-    }
-
-    fp_to = fopen(to, "w");
-    if (fp_to == NULL) {
-      fclose(fp_from);
-      return(1);
-    }
-
-    while (nread = fread(buf, 1, sizeof(buf), fp_from), 
-	   nread > 0)  { 
-      char *out_ptr = buf; 
-      ssize_t nwritten; 
- 
-      do { 
-	nwritten = fwrite(out_ptr, 1, nread, fp_to); 	
-	if (nwritten == nread) { 
-	  nread -= nwritten; 
-	  out_ptr += nwritten; 
+	//See if file parts is in cache
+	//key is filename + "_" + part
+	char* parts_key = _check_malloc(sizeof(char) * (strlen(file) + 1));
+	strcpy(parts_key, file);
+	
+	size_t incoming_size;
+	num_parts = (int*) memcached_get(mst, parts_key, strlen(parts_key), &incoming_size, &flags, &ret);
+	if (num_parts==NULL) {
+                printf("Key %s hasn't been cached, adding.\n", parts_key);
+		_mc_add_file(file, &file_data, mst);
 	} else {
-	  fclose(fp_from);
-	  fclose(fp_to);
-	  return(1);
+		printf("Found key %s, num parts is %d.\n", parts_key, *num_parts);
+		printf("Looking for parts.\n");
+		//See if all the parts are actually around
+		file_data = _check_malloc(sizeof(char) * (ONE_MB * *num_parts + 1));
+		memset(file_data, '\0', ONE_MB* *num_parts + 1);
+		char* file_key = _check_malloc(sizeof(char) * (strlen(file) + 4));
+		size_t incoming;
+		for (i=0; i<*num_parts; i++) {
+			sprintf(file_key, "%s.%d", file, i);
+			buffer = (char*) memcached_get(mst, file_key, strlen(file_key), &incoming, &flags, &ret);
+			if (buffer==NULL) {
+				printf("Piece %s was missing, adding file %s.\n", file_key, file);
+				//This piece is missing
+				//Easiest to add the whole file
+				free(file_data);
+				_mc_add_file(file, &file_data, mst);
+				break;
+			} else {
+				memcpy(file_data+i*ONE_MB, buffer, incoming);
+			}
+		}
+		free(file_key);
+	}
+
+	free(parts_key);
+
+	char* tok;
+	tok = strtok(file_data, "\n"); /* Probability = <float> */
+
+	tok = strtok(NULL, "\n"); /* Magnitude = <float> */
+	sscanf(tok,"%*s %*s %f",mag);
+
+	tok = strtok(NULL, "\n");   /* GridSpacing = <float> */
+	sscanf(tok,"%*s %*s %f",dx);
+
+	if(*dx == (float)(0.0))
+	   {
+	   fprintf(stderr,"***** input error\n");
+	   fprintf(stderr,"      GridSpacing = 0.0, exiting...\n");
+	   exit(-1);
+	   }
+
+	*dy = *dx;
+
+	tok = strtok(NULL, "\n");   /* NumRows = <int> */
+	sscanf(tok,"%*s %*s %d",ny);
+
+        tok = strtok(NULL, "\n");   /* NumCols = <int> */
+	sscanf(tok,"%*s %*s %d",nx);
+
+        tok = strtok(NULL, "\n");/* header comment */
+	psrc = (struct pointsource *)_check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
+
+	area = (*dx)*(*dy)*1.0e+10;  /* km -> cm */
+
+	for(i=0;i<(*nx)*(*ny);i++)
+	   {
+           tok = strtok(NULL, "\n");   /* Lat , Lon , Depth , Rake , Dip , Strike */
+	   sscanf(tok,"%f %f %f %f %f %f",&psrc[i].lat,
+					  &psrc[i].lon,
+					  &psrc[i].dep,
+					  &psrc[i].rak,
+					  &psrc[i].dip,
+					  &psrc[i].stk);
+
+	   psrc[i].area = area;
+
+	   if(psrc[i].dep < *dtop)
+	      *dtop = psrc[i].dep;
+
+	   *stk = *stk + psrc[i].stk;
+	   *dip = *dip + psrc[i].dip;
+	   }
+	*stk = *stk/((*nx)*(*ny));
+	*dip = *dip/((*nx)*(*ny));
+
+	nn = 0;
+	for(i=0;i<(*nx)*(*ny);i++)
+	   {
+	   if(psrc[i].dep < (*dtop + 0.01))
+	      {
+	      *elon = *elon + psrc[i].lon;
+	      *elat = *elat + psrc[i].lat;
+	      nn++;
+	      }
+	   }
+
+	/* adjust for half subfault width */
+	*dtop = (*dtop) - 0.5*(*dx)*sin((*dip)*rperd);
+
+	if(nn == 0)
+	   nn++;
+
+	*elon = *elon/nn;
+	*elat = *elat/nn;
+
+	free(file_data);
+
+	return(psrc);
+	}
+#endif
+
+
+	struct pointsource *_read_ruppars(char *file,struct pointsource *psrc,float *mag,int *nx,int *ny,float *dx,float *dy,float *dtop,float *stk,float *dip,float *elon,float *elat)
+	{
+	FILE *fpr;
+	float area;
+	int i, nn;
+	char str[1024];
+
+	double rperd = 0.017453293;
+
+	*dtop = 1.0e+15;
+	*stk = 0.0;
+	*dip = 0.0;
+	*elon = 0.0;
+	*elat = 0.0;
+
+	if(strcmp(file,"stdin") == 0)
+	   fpr = stdin;
+	else
+	   fpr = _fopfile(file,"r");
+
+	fgets(str,1024,fpr);   /* Probability = <float> */
+
+	fgets(str,1024,fpr);   /* Magnitude = <float> */
+	sscanf(str,"%*s %*s %f",mag);
+
+	fgets(str,1024,fpr);   /* GridSpacing = <float> */
+	sscanf(str,"%*s %*s %f",dx);
+
+	if(*dx == (float)(0.0))
+	   {
+	   fprintf(stderr,"***** input error\n");
+	   fprintf(stderr,"      GridSpacing = 0.0, exiting...\n");
+	   exit(-1);
+	   }
+
+	*dy = *dx;
+
+	fgets(str,1024,fpr);   /* NumRows = <int> */
+	sscanf(str,"%*s %*s %d",ny);
+
+	fgets(str,1024,fpr);   /* NumCols = <int> */
+	sscanf(str,"%*s %*s %d",nx);
+
+	fgets(str,1024,fpr);   /* header comment */
+
+	psrc = (struct pointsource *)_check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
+
+	area = (*dx)*(*dy)*1.0e+10;  /* km -> cm */
+
+	for(i=0;i<(*nx)*(*ny);i++)
+	   {
+	   fgets(str,1024,fpr);   /* Lat , Lon , Depth , Rake , Dip , Strike */
+	   sscanf(str,"%f %f %f %f %f %f",&psrc[i].lat,
+					  &psrc[i].lon,
+					  &psrc[i].dep,
+					  &psrc[i].rak,
+					  &psrc[i].dip,
+					  &psrc[i].stk);
+
+	   psrc[i].area = area;
+
+	   if(psrc[i].dep < *dtop)
+	      *dtop = psrc[i].dep;
+
+	   *stk = *stk + psrc[i].stk;
+	   *dip = *dip + psrc[i].dip;
+	   }
+	fclose(fpr);
+
+	*stk = *stk/((*nx)*(*ny));
+	*dip = *dip/((*nx)*(*ny));
+
+	nn = 0;
+	for(i=0;i<(*nx)*(*ny);i++)
+	   {
+	   if(psrc[i].dep < (*dtop + 0.01))
+	      {
+	      *elon = *elon + psrc[i].lon;
+	      *elat = *elat + psrc[i].lat;
+	      nn++;
+	      }
+	   }
+
+	/* adjust for half subfault width */
+	*dtop = (*dtop) - 0.5*(*dx)*sin((*dip)*rperd);
+
+	if(nn == 0)
+	   nn++;
+
+	*elon = *elon/nn;
+	*elat = *elat/nn;
+
+	return(psrc);
+	}
+
+	struct pointsource *_set_ruppars(struct pointsource *psrc,float *mag,int *nx,int *ny,float *dx,float *dy,float *dtop,float *stk,float *dip,float *rak,float *elon,float *elat)
+	{
+	float area;
+	float cosA, sinA, cosD, sinD, fwid, flen;
+	float xx, yy, zz, dd, sn, se;
+	int i, j, ip;
+
+	double rperd = 0.017453293;
+
+	psrc = (struct pointsource *)_check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
+
+	area = (*dx)*(*dy)*1.0e+10;  /* km -> cm */
+	flen = (*nx)*(*dx);
+	fwid = (*ny)*(*dy);
+
+	cosA = cos((*stk)*rperd);
+	sinA = sin((*stk)*rperd);
+	cosD = cos((*dip)*rperd);
+	sinD = sin((*dip)*rperd);
+	for(j=0;j<(*ny);j++)
+	   {
+	   dd = (j + 0.5)*(*dy);
+	   yy = dd*cosD;
+	   zz = (*dtop) + dd*sinD;
+
+	   for(i=0;i<(*nx);i++)
+	      {
+	      ip = i + j*(*nx);
+	      xx = (i+0.5)*(*dx) - 0.5*flen;
+
+	      se = xx*sinA + yy*cosA;
+	      sn = xx*cosA - yy*sinA;
+	      _set_ll(elon,elat,&psrc[ip].lon,&psrc[ip].lat,&sn,&se);
+
+	      psrc[ip].dep = zz;
+	      psrc[ip].stk = (*stk);
+	      psrc[ip].dip = (*dip);
+	      psrc[ip].rak = (*rak);
+	      psrc[ip].area = area;
+	      }
+	   }
+
+	return(psrc);
+	}
+
+	struct pointsource *_read_gsfpars(char *file,struct pointsource *psrc,struct generic_slip *gslip,float *dx,float *dy,float *dtop,float *dip)
+	{
+	FILE *fpr;
+	int i, nn;
+	char str[1024];
+	struct slippars *spar;
+
+	double rperd = 0.017453293;
+
+	*dtop = 1.0e+15;
+	*dx = 0.0;
+	*dy = 0.0;
+	*dip = 0.0;
+
+	if(strcmp(file,"stdin") == 0)
+	   fpr = stdin;
+	else
+	   fpr = _fopfile(file,"r");
+
+	fgets(str,1024,fpr);
+	while(strncmp(str,"#",1) == 0)
+	   fgets(str,1024,fpr);
+
+	sscanf(str,"%d",&gslip->np);
+
+	psrc = (struct pointsource *)_check_realloc(psrc,gslip->np*sizeof(struct pointsource));
+	gslip->spar = (struct slippars *)_check_realloc(gslip->spar,gslip->np*sizeof(struct slippars));
+	spar = gslip->spar;
+
+	i = 0;
+	while(fgets(str,1024,fpr) != NULL)
+	   {
+	   sscanf(str,"%f %f %f %f %f %f %f %f %f %f %d",&spar[i].lon,
+					     &spar[i].lat,
+					     &spar[i].dep,
+					     &spar[i].ds,
+					     &spar[i].dw,
+					     &spar[i].stk,
+					     &spar[i].dip,
+					     &spar[i].rake,
+					     &spar[i].slip,
+					     &spar[i].tinit,
+					     &spar[i].segno);
+
+	   psrc[i].lon = spar[i].lon;
+	   psrc[i].lat = spar[i].lat;
+	   psrc[i].dep = spar[i].dep;
+	   psrc[i].stk = spar[i].stk;
+	   psrc[i].dip = spar[i].dip;
+	   psrc[i].rak = spar[i].rake;
+	   psrc[i].area = spar[i].ds*spar[i].dw*1.0e+10;
+
+	   if(psrc[i].dep < *dtop)
+	      *dtop = psrc[i].dep;
+
+	   *dip = *dip + psrc[i].dip;
+	   *dx = *dx + spar[i].ds;
+	   *dy = *dy + spar[i].dw;
+
+	   i++;
+	   }
+	fclose(fpr);
+
+	*dip = *dip/(gslip->np);
+	*dx = *dx/(gslip->np);
+	*dy = *dy/(gslip->np);
+
+	/* adjust for half subfault width */
+	*dtop = (*dtop) - 0.5*(*dy)*sin((*dip)*rperd);
+	if(*dtop < 0.0)
+	   *dtop = 0.0;
+
+	return(psrc);
+	}
+
+
+	int _cp(const char *to, const char *from) 
+	{ 
+	    FILE *fp_from, *fp_to;
+	    char buf[32768]; 
+	    ssize_t nread; 
+	 
+	    fp_from = fopen(from, "r");
+	    if (fp_from == NULL) {
+	      return(1);
+	    }
+
+	    fp_to = fopen(to, "w");
+	    if (fp_to == NULL) {
+	      fclose(fp_from);
+	      return(1);
+	    }
+
+	    while (nread = fread(buf, 1, sizeof(buf), fp_from), 
+		   nread > 0)  { 
+	      char *out_ptr = buf; 
+	      ssize_t nwritten; 
+	 
+	      do { 
+		nwritten = fwrite(out_ptr, 1, nread, fp_to); 	
+		if (nwritten == nread) { 
+		  nread -= nwritten; 
+		  out_ptr += nwritten; 
+		} else {
+		  fclose(fp_from);
+		  fclose(fp_to);
+		  return(1);
+		} 
+	      } while (nread > 0); 
+	    }
+	    
+	    fclose(fp_from);
+	    fclose(fp_to);
+	    return(0);
 	} 
-      } while (nread > 0); 
-    }
-    
-    fclose(fp_from);
-    fclose(fp_to);
-    return(0);
-} 
 
 
-/* Check if file exists */
-int _file_exists(const char *file)
-{
-  struct stat st;
+	/* Check if file exists */
+	int _file_exists(const char *file)
+	{
+	  struct stat st;
 
-  if (stat(file, &st) == 0) {
-    return(1);
-  } else {
-    return(0);
-  }
-}
-
-
-/* Returns true if path is a file */
-int _rg_is_file(const char *path)
-{
-  struct stat st;
-
-  if (stat(path, &st) == 0) {
-    if ((S_ISREG(st.st_mode)) && (!S_ISDIR(st.st_mode))) {
-      return(1);
-    } else {
-      return(0);
-    }
-  }
-
-  return(0);
-}
+	  if (stat(file, &st) == 0) {
+	    return(1);
+	  } else {
+	    return(0);
+	  }
+	}
 
 
-/* Safe string copy */
-int _rg_strcpy(char *str1, const char *str2, int str1len)
-{
-  if (str1 == NULL) {
-    return(1);
-  }
+	/* Returns true if path is a file */
+	int _rg_is_file(const char *path)
+	{
+	  struct stat st;
 
-  if (str2 == NULL) {
-    strcpy(str1, "");
-    return(1);
-  }
+	  if (stat(path, &st) == 0) {
+	    if ((S_ISREG(st.st_mode)) && (!S_ISDIR(st.st_mode))) {
+	      return(1);
+	    } else {
+	      return(0);
+	    }
+	  }
 
-  if (snprintf(str1, str1len, "%s", str2) > str1len) {
-    fprintf(stderr, "Warning (ucvm_strcpy): String %s truncated to %s\n",
-	    str2, str1);
-  }
-  return(0);
-}
-
-void _write2gsf(struct generic_slip *gslip,struct pointsource *ps,char *ifile,char *ofile)
-{
-FILE *fpr, *fpw;
-int ip;
-char str[1024];
-
-if(strcmp(ofile,"stdout") == 0)
-   fpw = stdout;
-else
-   fpw = _fopfile(ofile,"w");
-
-fpr = _fopfile(ifile,"r");
-fgets(str,1024,fpr);
-while(strncmp(str,"#",1) == 0)
-   {
-   fprintf(fpw,"%s",str);
-   fgets(str,1024,fpr);
-   } 
-fclose(fpr);
-   
-fprintf(fpw,"%d\n",gslip->np);
-      
-for(ip=0;ip<gslip->np;ip++)
-   {
-   fprintf(fpw,"%11.5f %11.5f %8.4f %8.4f %8.4f %6.1f %6.1f %6.1f %8.2f %8.3f %3d\n",
-                                                               gslip->spar[ip].lon,
-                                                               gslip->spar[ip].lat,
-                                                               gslip->spar[ip].dep,
-                                                               gslip->spar[ip].ds,
-                                                               gslip->spar[ip].dw,
-                                                               gslip->spar[ip].stk,
-                                                               gslip->spar[ip].dip,
-                                                               ps[ip].rak,
-                                                               ps[ip].slip,
-                                                               ps[ip].rupt,
-                                                               gslip->spar[ip].segno);
-   }
-fclose(fpw);
-}
+	  return(0);
+	}
 
 
-//#define MAX_FWRITE_BUF 10000000
-//char fwrite_buf[MAX_FWRITE_BUF];
-//int fwrite_len = 0;
+	/* Safe string copy */
+	int _rg_strcpy(char *str1, const char *str2, int str1len)
+	{
+	  if (str1 == NULL) {
+	    return(1);
+	  }
 
-//int fwrite_buffered(FILE *fd, char *pntr, int length)
-//{
-//  if (length > MAX_FWRITE_BUF) {
-//    fprintf(stderr, "String exceeds max buffer size\n");
-//    exit(-1);
-//  }
+	  if (str2 == NULL) {
+	    strcpy(str1, "");
+	    return(1);
+	  }
 
-//  if ((length + fwrite_len) > MAX_FWRITE_BUF) {
-//    /* Flush buffer */
-//    if (fwrite(fwrite_buf, sizeof(char), fwrite_len, fd) != fwrite_len) {
-//      fprintf(stderr, "Buffered write failure\n");
-//      exit(-1);
-//    }
-//    fwrite_len = 0;
-//  }
-//
-//  memcpy(fwrite_buf + fwrite_len, pntr, length);
+	  if (snprintf(str1, str1len, "%s", str2) > str1len) {
+	    fprintf(stderr, "Warning (ucvm_strcpy): String %s truncated to %s\n",
+		    str2, str1);
+	  }
+	  return(0);
+	}
+
+	void _write2gsf(struct generic_slip *gslip,struct pointsource *ps,char *ifile,char *ofile)
+	{
+	FILE *fpr, *fpw;
+	int ip;
+	char str[1024];
+
+	if(strcmp(ofile,"stdout") == 0)
+	   fpw = stdout;
+	else
+	   fpw = _fopfile(ofile,"w");
+
+	fpr = _fopfile(ifile,"r");
+	fgets(str,1024,fpr);
+	while(strncmp(str,"#",1) == 0)
+	   {
+	   fprintf(fpw,"%s",str);
+	   fgets(str,1024,fpr);
+	   } 
+	fclose(fpr);
+	   
+	fprintf(fpw,"%d\n",gslip->np);
+	      
+	for(ip=0;ip<gslip->np;ip++)
+	   {
+	   fprintf(fpw,"%11.5f %11.5f %8.4f %8.4f %8.4f %6.1f %6.1f %6.1f %8.2f %8.3f %3d\n",
+								       gslip->spar[ip].lon,
+								       gslip->spar[ip].lat,
+								       gslip->spar[ip].dep,
+								       gslip->spar[ip].ds,
+								       gslip->spar[ip].dw,
+								       gslip->spar[ip].stk,
+								       gslip->spar[ip].dip,
+								       ps[ip].rak,
+								       ps[ip].slip,
+								       ps[ip].rupt,
+								       gslip->spar[ip].segno);
+	   }
+	fclose(fpw);
+	}
+
+
+	//#define MAX_FWRITE_BUF 10000000
+	//char fwrite_buf[MAX_FWRITE_BUF];
+	//int fwrite_len = 0;
+
+	//int fwrite_buffered(FILE *fd, char *pntr, int length)
+	//{
+	//  if (length > MAX_FWRITE_BUF) {
+	//    fprintf(stderr, "String exceeds max buffer size\n");
+	//    exit(-1);
+	//  }
+
+	//  if ((length + fwrite_len) > MAX_FWRITE_BUF) {
+	//    /* Flush buffer */
+	//    if (fwrite(fwrite_buf, sizeof(char), fwrite_len, fd) != fwrite_len) {
+	//      fprintf(stderr, "Buffered write failure\n");
+	//      exit(-1);
+	//    }
+	//    fwrite_len = 0;
+	//  }
+	//
+	//  memcpy(fwrite_buf + fwrite_len, pntr, length);
 //  fwrite_len += length;
 //  return(0);
 //}

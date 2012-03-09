@@ -3,8 +3,8 @@
 
 #include "structure.h"
 
-void *check_malloc(size_t);
-void *check_realloc(void *,size_t);
+void *_check_malloc(size_t);
+void *_check_realloc(void *,size_t);
 FILE *_fopfile(char*, char*);
 int _opfile_ro(char *);
 int _opfile(char *);
@@ -36,7 +36,7 @@ int _gen_ucsb_stf(float *,float *,float *,int,float *);
 int _gen_tri_stf(float *,float *,float *,int,float *);
 int _gen_2tri_stf(float *,float *,float *,int,float *,float *);
 
-void set_ll(float *,float *,float *,float *,float *,float *);
+void _set_ll(float *,float *,float *,float *,float *,float *);
 void swap_in_place(int,char *);
 
 struct pointsource *_read_ruppars(char *,struct pointsource *,float *,int *,int *,float *,float *,float *,float *,float *,float *,float *);
@@ -63,7 +63,12 @@ int _rg_strcpy(char *str1, const char *str2, int str1len);
 //int fwrite_buffered(FILE *fd, char *pntr, int length);
 //int fwrite_flush(FILE *fd);
 
+#ifdef _USE_MEMCACHED
+int mc_genslip(int ac,char **av, rg_stats_t *stats, struct standrupformat* srf, int state, char* mc_server);
+struct pointsource* _mc_read_ruppars(char *file,struct pointsource *psrc,float *mag,int *nx,int *ny,float *dx,float *dy,float *dtop,float *stk,float *dip,float *elon,float *elat, char* mc_server);
+#else
 int genslip(int ac,char **av, rg_stats_t *stats, struct standrupformat* srf, int state);
+#endif
 
 #endif
 

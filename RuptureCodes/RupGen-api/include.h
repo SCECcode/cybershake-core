@@ -18,5 +18,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#ifdef _USE_MEMCACHED
+#include <libmemcached/memcached.h>
+#endif
+
 #endif
 

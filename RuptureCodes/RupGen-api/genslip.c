@@ -75,7 +75,11 @@
 ************************************************************************************
 */
 
+#ifdef _USE_MEMCACHED
+int mc_genslip(int ac,char **av, rg_stats_t *stats, struct standrupformat* srf, int state, char* memcached_server)
+#else
 int genslip(int ac,char **av, rg_stats_t *stats, struct standrupformat* srf, int state)
+#endif
 {
 FILE *fpr, *fpw;
 struct complex *cslip, *crake;
@@ -364,9 +368,9 @@ if(seg_delay == 1)
    {
    mstpar("nseg_bounds","d",&nseg_bounds);
 
-   xseg = (float *)check_malloc(nseg_bounds*sizeof(float));
-   rvfac_seg = (float *)check_malloc(nseg_bounds*sizeof(float));
-   gwid = (float *)check_malloc(nseg_bounds*sizeof(float));
+   xseg = (float *)_check_malloc(nseg_bounds*sizeof(float));
+   rvfac_seg = (float *)_check_malloc(nseg_bounds*sizeof(float));
+   gwid = (float *)_check_malloc(nseg_bounds*sizeof(float));
 
    for(ig=0;ig<nseg_bounds;ig++)
       {
@@ -390,7 +394,11 @@ gslip.np = -1;
 gslip.spar = (struct slippars *)NULL;
 
 if(read_erf == 1)
+#ifdef _USE_MEMCACHED
+   psrc = _mc_read_ruppars(infile,psrc,&mag,&nx,&ny_in,&dx,&dy,&dtop,&avgstk,&avgdip,&elon,&elat,memcached_server);
+#else
    psrc = _read_ruppars(infile,psrc,&mag,&nx,&ny_in,&dx,&dy,&dtop,&avgstk,&avgdip,&elon,&elat);
+#endif
 else if(read_gsf == 1)
    psrc = _read_gsfpars(infile,psrc,&gslip,&dx,&dy,&dtop,&avgdip);
 else
@@ -551,20 +559,20 @@ dky = 1.0/(ny*dy);
 if(stfparams.trise < 0.0)
    stfparams.trise = 1.6e-09*exp(log(mom)/3.0);
 
-cslip = (struct complex *) check_malloc (nx*ny*sizeof(struct complex));
+cslip = (struct complex *) _check_malloc (nx*ny*sizeof(struct complex));
 
 dkx_rk = 1.0/(nx*dx);
 dky_rk = 1.0/(ny_in*dy);
-crake = (struct complex *) check_malloc (nx*ny_in*sizeof(struct complex));
-sort_rake = (float *) check_malloc (nx*ny_in*sizeof(float));
-psrc_rake = (float *) check_malloc (nx*ny_in*sizeof(float));
+crake = (struct complex *) _check_malloc (nx*ny_in*sizeof(struct complex));
+sort_rake = (float *) _check_malloc (nx*ny_in*sizeof(float));
+psrc_rake = (float *) _check_malloc (nx*ny_in*sizeof(float));
 
 for(j=0;j<ny_in*nx;j++)
    psrc_rake[j] = psrc[j].rak;
 
 if(specfile[0] != '\0')
    {
-   aspec = (float *) check_malloc (nx*ny*sizeof(float));
+   aspec = (float *) _check_malloc (nx*ny*sizeof(float));
    for(j=0;j<nx*ny;j++)
       aspec[j] = 0.0;
    }
