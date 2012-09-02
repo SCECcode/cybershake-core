@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 
 	bytes_read = fread(sgt_data, sizeof(float), 6*timesteps, fp_in);
 	while (bytes_read==6*timesteps) {
-		if (z_comp) {
+		if (z_comp==1) {
 			//double everything and negate for flipped source
 			for (i=0; i<timesteps*6; i++) {
 				sgt_data[i] = -2.0*sgt_data[i];
