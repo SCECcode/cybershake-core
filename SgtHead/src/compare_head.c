@@ -64,7 +64,7 @@ void compare_sgtindex(int sgt_in, int head_in, int num_pts) {
 	}
 }
 
-void compare_sgtheader(int sgt_in, int head_in, int num_pts, int nt) {
+void compare_sgtheader(int sgt_in, int head_in, int num_pts, int nt, int stand_alone) {
 	struct sgtheader head1, head2;
 	int i;
 	for (i=0; i<num_pts; i++) {
@@ -177,13 +177,19 @@ void compare_sgtheader(int sgt_in, int head_in, int num_pts, int nt) {
                         printf("Difference in zmom: %f vs %f\n", head1.zmom, head2.zmom);
                 }
 		//skip ahead record bytes in SGT file
-		lseek(sgt_in, sizeof(float)*6*nt, SEEK_CUR);
+		if (stand_alone==1) {
+			lseek(sgt_in, sizeof(float)*6*nt, SEEK_CUR);
+		}
+		if (stand_alone==0) {
+                        lseek(sgt_in, sizeof(float)*6*nt, SEEK_CUR);
+			lseek(head_in, sizeof(float)*6*nt, SEEK_CUR);
+		}
 	}
 }
 
 int main(int argc, char** argv) {
 	if (argc<4) {
-		printf("Usage: %s <SGT file> <header file> <nt_saved>\n", argv[0]);
+		printf("Usage: %s <SGT file> <header file> <nt_saved> <mode>\n", argv[0]);
 		exit(1);
 	}
 	
@@ -191,9 +197,15 @@ int main(int argc, char** argv) {
 	sgt_in = opfile_ro(argv[1]);
 	head_in = opfile_ro(argv[2]);
 	nt = atoi(argv[3]);
+	int stand_alone=1;
+
+	if (argc==5) {
+		stand_alone=atoi(argv[4]);
+	}
+	printf("Stand alone: %d\n", stand_alone);
 
 	int num_pts = compare_sgtmaster(sgt_in, head_in);
 	compare_sgtindex(sgt_in, head_in, num_pts);
-	compare_sgtheader(sgt_in, head_in, num_pts, nt);
+	compare_sgtheader(sgt_in, head_in, num_pts, nt, stand_alone);
 	return 0;
 }
