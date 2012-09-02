@@ -7,11 +7,11 @@
 *
 */
 
-void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, float spacing, int nt, float dt, int sgt_tinc, char* component, float moment, float flo, char* awp_media_file, char* outfile);
+void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, float spacing, int nt, float dt, int sgt_tinc, char* component, float moment, float flo, char* awp_media_file, char* outfile, int mu_corr_flag);
 
 int main(int argc, char** argv) {
 	if (argc<14) {
-		printf("Usage: %s <modelbox_file> <coordfile> <fdloc_file> <gridout_file> <spacing> <nt> <dt> <time decimation> <component> <moment> <max_freq> <awp_media_file> <outfile>\n", argv[0]);
+		printf("Usage: %s <modelbox_file> <coordfile> <fdloc_file> <gridout_file> <spacing> <nt> <dt> <time decimation> <component> <moment> <max_freq> <awp_media_file> <outfile> [-c]\n", argv[0]);
 		exit(1);
 	}
 	char* modelbox = argv[1];
@@ -27,7 +27,14 @@ int main(int argc, char** argv) {
 	float flo = atof(argv[11]);
 	char* awp_media_file = argv[12];
 	char* outfile = argv[13];
-	write_header(modelbox, coordfile, fdloc, gridout, spacing, nt, dt, sgt_tinc, component, moment, flo, awp_media_file, outfile);
+	int mu_corr_flag = 0;
+	if (argc==15) {
+		if (strcmp(argv[14], "-c")==0) {
+			printf("Using unrelaxed/corrected mu.\n");
+			mu_corr_flag = 1;
+		}
+	}
+	write_header(modelbox, coordfile, fdloc, gridout, spacing, nt, dt, sgt_tinc, component, moment, flo, awp_media_file, outfile, mu_corr_flag);
 }
 
 /* Header copies format of headers in RWG SGTs
@@ -38,7 +45,7 @@ int main(int argc, char** argv) {
 * Good potential for optimizing by normalizing header information.
 */
 
-void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, float spacing, int nt, float dt, int sgt_tinc, char* component, float moment, float flo, char* awp_media_file, char* outfile) {
+void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, float spacing, int nt, float dt, int sgt_tinc, char* component, float moment, float flo, char* awp_media_file, char* outfile, int mu_corr_flag) {
 	FILE* modelbox_fp, *coordfile_fp, *fdloc_fp, *gridout_fp;
 	int fd_out, media_fp;
 	struct sgtmaster sgtmast;
@@ -59,6 +66,11 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 	int velocity_index;
 	float convert_factor = 1.0e+10;
 	float scale_factor = 0.001; //to compensate for m/s in AWP velocity file
+
+	//Set magic values for 0.5 Hz
+	float fh = 25.0;
+	float fp = 0.5;
+	float qs = 25.0;
 
 	//set defaults
 	rpars.geoproj = 1;
@@ -263,7 +275,12 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 				printf("Vp=%f, Vs=%f, rho=%f\n", vel_data[vp_index]*scale_factor, vel_data[vs_index]*scale_factor, vel_data[rho_index]*scale_factor);
 			}*/
 
-	                mu = vel_data[vs_index]*scale_factor*vel_data[vs_index]*scale_factor*vel_data[rho_index]*scale_factor;
+			if (mu_corr_flag==1) {
+				float vs_corr = vel_data[vs_index]*scale_factor*(1+(log(fh/fp)/(qs*3.14159)));
+				mu = vel_data[rho_index]*scale_factor*vs_corr*vs_corr;
+			} else {
+		                mu = vel_data[vs_index]*scale_factor*vel_data[vs_index]*scale_factor*vel_data[rho_index]*scale_factor;
+			}
 			lam = vel_data[vp_index]*scale_factor*vel_data[vp_index]*scale_factor*vel_data[rho_index]*scale_factor - 2*mu;
 
 	                shp->mu = convert_factor*mu;
