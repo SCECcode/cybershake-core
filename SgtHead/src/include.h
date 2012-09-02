@@ -25,7 +25,6 @@
 
 #include "defs.h"
 #include "defs_infc.h"
-#include "defs_mpi.h"
 
 #include "structure.h"
 #include "function.h"
