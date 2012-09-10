@@ -1,4 +1,4 @@
-TARGETS = write_head compare_head strip_head reformat_awp 
+TARGETS = write_head compare_head strip_head reformat_awp strip_head_unrelaxed_mu reformat_velocity
 HEADS = defs.h include.h structure.h function.h
 #OBJS =  absorb.o diff.o fft1d.o  interface.o iofunc.o \
         memory_slices.o  misc.o tstep.o \
@@ -8,6 +8,7 @@ WRITE_OBJS = head_subs.o write_head.o
 CMP_OBJS = head_subs.o compare_head.o
 REF_OBJS = reformat_awp.o
 STR_OBJS = strip_head.o
+VEL_OBJS = reformat_velocity.o
 
 GETPAR_HOME = ../../Getpar/getpar
 LDLIBS =     ${GETPAR_HOME}/lib/libget.a -lm
@@ -39,7 +40,7 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 ##### C options
 
 # optimized
-CFLAGS = -g -Wall ${LF_FLAGS}
+CFLAGS = -O3 -Wall ${LF_FLAGS}
 FFLAGS = -Wall ${UFLAGS}
 
 ##### make options
@@ -58,6 +59,9 @@ compare_head : ${CMP_OBJS}
 
 reformat_awp : ${REF_OBJS}
 	${CC} ${CLFAGS} -o reformat_awp ${REF_OBJS}
+
+reformat_velocity : ${VEL_OBJS}
+	${CC} ${CFLAGS} -o reformat_velocity ${VEL_OBJS}
 
 clean :
 	-rm -f ${OBJS} ${WRITE_OBJS} ${CMP_OBJS} ${REF_OBJS} ${TARGETS}
