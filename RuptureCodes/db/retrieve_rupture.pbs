@@ -1,0 +1,9 @@
+#!/bin/csh
+
+#PBS -l walltime=01:00:00,nodes=1:ppn=1
+#PBS -V
+#PBS -e retrieve.e -o retrieve.o
+
+cd /home/rcf-104/CyberShake2007/ruptures/ruptureCodes
+java -classpath mysql-connector-java-5.0.5-bin.jar:. RetrieveRuptureFromDB 34 all Ruptures_erf34 > output.txt
+

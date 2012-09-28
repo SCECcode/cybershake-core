@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jardesc>
+<jar path="C:/Documents and Settings/Fusionex/workspace/CyberCommands/cybercommands.jar"/>
+<options buildIfNeeded="true" compress="true" descriptionLocation="/CyberCommands/CyberLoadAmps.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+<storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+<selectedProjects/>
+<manifest generateManifest="false" manifestLocation="/CyberCommands/CyberLoadAmps.mf" manifestVersion="1.0" reuseManifest="true" saveManifest="true" usesManifest="true">
+<sealing sealJar="false">
+<packagesToSeal/>
+<packagesToUnSeal/>
+</sealing>
+</manifest>
+<selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+<file path="/CyberCommands/hibernate.log"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;processing"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.nodbconnection.data"/>
+<file path="/CyberCommands/CyberLoadAmps.jardesc"/>
+<file path="/CyberCommands/surface.cfg.xml"/>
+<file path="/CyberCommands/log4j.properties"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.incompletetest"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;safiles.traversetest.deeperpath"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.fitnesse"/>
+<file path="/CyberCommands/hibernate.cfg.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;safiles.traversetest"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.nodbconnection.fileprocessing"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;safiles.loadampstest"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;safiles.norupvarids"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.dbconnection.basicdbops"/>
+<file path="/CyberCommands/build.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.processing"/>
+<file path="/CyberCommands/.project"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;commands"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.nonautomated"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;test.junit.nodbconnection.fitnesse"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;util"/>
+<file path="/CyberCommands/intensity.cfg.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;mapping"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;data"/>
+<file path="/CyberCommands/.classpath"/>
+<file path="/CyberCommands/CyberLoadAmps"/>
+<file path="/CyberCommands/CyberLoadAmps.mf"/>
+</selectedElements>
+</jardesc>

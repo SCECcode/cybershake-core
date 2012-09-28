@@ -1,0 +1,18 @@
+# Registering Ruptures and Rupture Variation Files into the RLS
+
+cd /home/rcf-104/CyberShake/cvs/CyberShake/RLSFileGen
+
+# Run the RLSFileGen_UsingFind.pl perl script to generate a comma separated list of files, their gridftp
+# address and their pool attribute.  You need to pass in the path to the rupture variations, the 
+# beginning of the gridftp server url, and the pool attribute.  This step will take about 15 minutes 
+# for 35,000 ruptures and their variations.
+
+./RLSFileGen_UsingFind.pl /home/rcf-104/CyberShake/RuptureVariations gsiftp://almaak.usc.edu hpc
+
+# Once that finishes use the "bulk-create-in-rls.pl" or "bulk-add-in-rls.pl" scripts to add all of your
+# Rupture Variation files into the RLS.  Use create if these files have not been added before at 
+# a different site.  If you are not registering to wave you will need to edit this script for your
+# RLS server.
+
+./bulk-create-in-rls.pl sdsc-0_20_106.rls
+

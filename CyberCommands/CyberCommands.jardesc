@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jardesc>
+<jar path="C:/Documents and Settings/Fusionex/workspace/CyberCommands/cybercommands.jar"/>
+<options buildIfNeeded="true" compress="true" descriptionLocation="/CyberCommands/CyberCommands.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+<storedRefactorings deprecationInfo="true" structuralOnly="false"/>
+<selectedProjects/>
+<manifest generateManifest="false" manifestLocation="/CyberCommands/CyberCommands.mf" manifestVersion="1.0" reuseManifest="true" saveManifest="true" usesManifest="true">
+<sealing sealJar="false">
+<packagesToSeal/>
+<packagesToUnSeal/>
+</sealing>
+</manifest>
+<selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
+<javaElement handleIdentifier="=CyberCommands/&lt;processing"/>
+<file path="/CyberCommands/index.html"/>
+<file path="/CyberCommands/CyberRegion.jardesc"/>
+<file path="/CyberCommands/CyberLoadAmps.jardesc"/>
+<file path="/CyberCommands/CyberCommands.mf"/>
+<file path="/CyberCommands/log4j.properties"/>
+<file path="/CyberCommands/surface.cfg.xml"/>
+<file path="/CyberCommands/intensity.cfg.old.xml"/>
+<file path="/CyberCommands/hibernate.reveng.foralltables.xml"/>
+<file path="/CyberCommands/CyberRegion.mf"/>
+<file path="/CyberCommands/hibernate.cfg.xml"/>
+<file path="/CyberCommands/CyberCommands.jardesc"/>
+<file path="/CyberCommands/hibernate.peakamplitudes.reveng.xml"/>
+<file path="/CyberCommands/build.xml"/>
+<file path="/CyberCommands/.project"/>
+<file path="/CyberCommands/CyberRegion"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;commands"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;util"/>
+<file path="/CyberCommands/intensity.cfg.xml"/>
+<file path="/CyberCommands/hibernate.reveng.xml"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;mapping"/>
+<javaElement handleIdentifier="=CyberCommands/&lt;data"/>
+<file path="/CyberCommands/.classpath"/>
+<file path="/CyberCommands/CyberLoadAmps"/>
+<file path="/CyberCommands/CyberLoadAmps.mf"/>
+</selectedElements>
+</jardesc>
