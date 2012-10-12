@@ -12,7 +12,8 @@ package util;
  */
 public class NumberHelper {
 
-	public static final int FLOAT_LENGTH = 4; 
+	public static final int FLOAT_LENGTH = 4;
+	public static final int INT_LENGTH = 4;
 	public static final int DOUBLE_LENGTH = 8;
 	
 	// bytes[0] is the least significant bytes
@@ -30,6 +31,7 @@ public class NumberHelper {
 		return Float.intBitsToFloat(i);
       }
 
+	
 	// bytes[0] is the least significant bytes
 	public static double littleEndianByteToDouble(byte [] bytes) throws IncorrectNumberOfBytesException  {
 		checkSufficientBytes(bytes, DOUBLE_LENGTH); 

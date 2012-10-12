@@ -1,6 +1,9 @@
 package processing;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,8 +26,11 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.exception.ConstraintViolationException;
 
+import commands.CyberLoadamps.Mode;
+
 import util.BSAFileUtil;
 import util.NumberHelper;
+import data.BSAHeader;
 import data.DirectionalComponent;
 import data.RunID;
 import data.SAPeriods;
@@ -51,15 +57,14 @@ public class RuptureVariationFileInserter {
     private ArrayList<Integer> desiredPeriodsIndicesY = null;
 	HashMap<Integer, Integer> periodIndexToIDMapY = null;
 
-	
-    private boolean zipOption;
+	private Mode fileMode;
     private boolean insertGeoMean = false;
     private boolean insertXY = false;
 
 
-	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, boolean zipOpt, String periods, String insertValues) throws IOException {
+	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, Mode m, String periods, String insertValues) throws IOException {
 		pathName = newPathName;
-		zipOption = zipOpt;
+		fileMode = m;
 		run_ID = rid;
 		if (insertValues.indexOf("gm")!=-1) {
 			insertGeoMean = true;
@@ -89,11 +94,11 @@ public class RuptureVariationFileInserter {
 		initSessionFactory();
 	}
 
-	private void initFileList(boolean zipOpt) {
+	private void initFileList(Mode m) {
 		BSAFileUtil.totalFilenameList = new ArrayList<String>();
 		BSAFileUtil.totalFileList = new ArrayList<File>();
 		File saFile = new File(pathName);
-		totalFilesList = BSAFileUtil.createTotalFileList(saFile, zipOpt);
+		totalFilesList = BSAFileUtil.createTotalFileList(saFile, m);
 	}
 
 //	private void retrieveSiteIDFromDB() {
@@ -116,24 +121,81 @@ public class RuptureVariationFileInserter {
 
 	public void performInsertions() {
 //		retrieveSiteIDFromDB();
-		initFileList(zipOption);
+		initFileList(fileMode);
+		Session sess = sessFactory.openSession();
 		
-		if (zipOption) {
+		if (fileMode==Mode.ZIP) {
 			for (File f: totalFilesList) {
 				System.out.println(f.getName());
 			}
-			Session sess = sessFactory.openSession();
 			insertRuptureVariationFilesFromZip(sess);
-			sess.getTransaction().commit();
-			sess.close();
+		} else if (fileMode==Mode.HEAD) {
+			insertRuptureVariationFilesWithHeader(sess);
 		} else {
-			Session sess = sessFactory.openSession();
 			insertAllRuptureVariationFiles(sess);
-			sess.getTransaction().commit();
-			sess.close();
+
 		}
+		sess.getTransaction().commit();
+		sess.close();
 	}
 
+	private void insertRuptureVariationFilesWithHeader(Session sess) {
+		int counter = 0;
+		for (File f: totalFilesList) {
+			try {
+				/*Each file consists of
+				 * <PSA header for RV1>
+				 * <RV1, comp 1>
+				 * ...
+				 * <RV1, comp n>
+				 * <PSA header, RV2>
+				 * <RV2, comp 1>
+				 * ...
+				 */
+				//Can't use DataInputStream because we have to byte-swap
+				FileInputStream stream = new FileInputStream(f);
+				BSAHeader head = new BSAHeader();
+				
+				try {
+					while (true) { //Will exit when EOF is thrown
+						//Read the header
+						head.parse(stream);
+						//Check the site name
+						if (!head.siteString.equals(run_ID.getSiteName())) {
+							System.err.println("Header in " + f.getName() + " lists site name as " + head.siteString + ", but the site for run ID " + run_ID.getRunID() + " is " + run_ID.getSiteName());
+							System.exit(-6);
+						}
+						
+						//Get the data
+						byte[] data = new byte[SAPeriods.num_periods * head.num_comps];
+						stream.read(data);
+						SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(data, run_ID.getSiteName(), head);
+						insertRupture(saRuptureWithSingleRupVar, sess);
+					}
+				} catch (EOFException e) {
+					//just means we reached the end of the file
+				}
+				
+				stream.close();
+				
+				//Do this more often because there are multiple inserts per file
+				if ((counter+1)%25==0) System.gc();
+				if ((counter+1)%5==0) {
+				// flush a batch of inserts and release memory
+					sess.flush();
+					sess.clear();
+				}
+				counter++;
+			} catch (IOException ex) {
+				System.err.println("Error reading from file " + pathName);
+			} catch (ConstraintViolationException ex) {
+				ex.printStackTrace();
+				System.err.println("Offending SQL statement was: " + ex.getSQL());
+				System.exit(-2);
+			}
+		}
+	}
+	
 	private void insertRuptureVariationFilesFromZip(Session sess) {
 		for (File zf: totalFilesList) {
 		try {
