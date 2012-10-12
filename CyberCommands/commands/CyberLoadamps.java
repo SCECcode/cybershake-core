@@ -9,6 +9,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.MissingArgumentException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.UnrecognizedOptionException;
@@ -24,6 +25,7 @@ public class CyberLoadamps {
 	private static final String NO_RUNID_OPTION_MESSAGE = "Please use -run to specify the RunID";
 	private static final String NO_PERIODS_OPTION_MESSAGE = "Please use -periods to specify the periods to insert";
 
+	public enum Mode {BSA, ZIP, HEAD};
 	/**
 	 * @param args
 	 */
@@ -35,17 +37,22 @@ public class CyberLoadamps {
 		Option path = OptionBuilder.withArgName("directory").hasArg().withDescription("file path with spectral acceleration files, either top-level directory or zip file - this option is required").create("p");
 		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (focal, surface or intensity) - this option is required").create("server");
         Option zip = new Option("z", "Read zip files instead of bsa.");
+        Option header = new Option("d", "Assume one BSA file per rupture, with embedded header information.");
         Option valuesToInsert = OptionBuilder.withArgName("insertion_values").hasArg().withDescription("Which values to insert -\ngm:\tgeometric mean PSA data (default)\nxy:\tX and Y component PSA data\ngmxy:  Geometric mean and X and Y components").create("i");
         Option periods = OptionBuilder.withArgName("periods").hasArg().withDescription("Comma-delimited periods to insert").create("periods");
         Option help = new Option("help", "print this message");
 
+        OptionGroup fileGroup = new OptionGroup();
+        fileGroup.addOption(zip);
+        fileGroup.addOption(header); 
+        
 		options.addOption(sgt);
 		options.addOption(path);
 		options.addOption(help);
 		options.addOption(server);
-        options.addOption(zip);
         options.addOption(valuesToInsert);
         options.addOption(periods);
+        options.addOptionGroup(fileGroup);
         
 		CommandLineParser parser = new GnuParser();
 
@@ -93,8 +100,16 @@ public class CyberLoadamps {
 				} else {
 					insertValues = cmd.getOptionValue("i");
 				}
+					
+				Mode m = Mode.BSA;
 				
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), cmd.hasOption("z"), cmd.getOptionValue("periods"), insertValues);
+				if (cmd.hasOption("z")) {
+					m = Mode.ZIP;
+				} else if (cmd.hasOption("d")) {
+					m = Mode.HEAD;
+				}
+				
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), m, cmd.getOptionValue("periods"), insertValues);
 				rvfi.performInsertions();
 			}
 

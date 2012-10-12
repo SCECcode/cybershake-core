@@ -69,6 +69,22 @@ public class SABinary2Float {
 		return floats;
 	}
 	
+	public static ArrayList<Integer> convertByteArrayToArrayOfInts(byte[] byteArray) {
+		ArrayList<Integer> ints = new ArrayList<Integer>();
+		try {
+			DataInputStream dr = new DataInputStream(new ByteArrayInputStream(byteArray));
+			int val;
+			while(dr.available()>=4){
+				val=dr.readInt();
+				ints.add(val);
+			}
+			dr.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return ints;
+	}
+	
 	public static String getOutputFileName(String infile){
 		String outname = new String();
 		String text = null;

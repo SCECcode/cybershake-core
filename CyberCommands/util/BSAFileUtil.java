@@ -8,6 +8,8 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import commands.CyberLoadamps.Mode;
+
 public class BSAFileUtil {
 	
 	private static final int RUP_VAR_ID_POS = 2;
@@ -20,12 +22,13 @@ public class BSAFileUtil {
 	public static boolean isInDebugMode = false;
 	private static boolean hasSGTVariationCharacter = false;
 	
-	public static ArrayList<File> createTotalFileList(File saFile, boolean zipOpt) {
+	public static ArrayList<File> createTotalFileList(File saFile, Mode fileMode) {
 		totalFilenameList = new ArrayList<String>();
 		totalFileList = new ArrayList<File>();
-		if (zipOpt) {
+		if (fileMode==Mode.ZIP) {
 			createTotalFileListZipHelper(saFile);
 		} else {
+			//BSA or HEAD mode
 			createTotalFileListHelper(saFile);
 		}
 		return totalFileList;
