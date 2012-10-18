@@ -1,7 +1,7 @@
 package data;
 
 public class DirectionalComponent {
-	public static final int periodsLength = SAPeriods.num_periods;
+	public static int periodsLength = SAPeriods.num_periods;
 	public Float[] periods = new Float[periodsLength];
 	
 	

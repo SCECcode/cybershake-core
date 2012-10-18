@@ -141,6 +141,8 @@ public class RuptureVariationFileInserter {
 
 	private void insertRuptureVariationFilesWithHeader(Session sess) {
 		int counter = 0;
+		//Set this now.  Do it.
+		DirectionalComponent.periodsLength = SAPeriods.num_head_periods;
 		for (File f: totalFilesList) {
 			try {
 				/*Each file consists of
@@ -153,13 +155,16 @@ public class RuptureVariationFileInserter {
 				 * ...
 				 */
 				//Can't use DataInputStream because we have to byte-swap
+				System.out.println("Processing file " + f.getName());
 				FileInputStream stream = new FileInputStream(f);
 				BSAHeader head = new BSAHeader();
 				
 				try {
-					while (true) { //Will exit when EOF is thrown
+					while (true) { //Will exit when we reach the end of the file
 						//Read the header
-						head.parse(stream);
+						int ret = head.parse(stream);
+						if (ret==-1) break;
+//						head.print();
 						//Check the site name
 						if (!head.siteString.equals(run_ID.getSiteName())) {
 							System.err.println("Header in " + f.getName() + " lists site name as " + head.siteString + ", but the site for run ID " + run_ID.getRunID() + " is " + run_ID.getSiteName());
@@ -167,13 +172,19 @@ public class RuptureVariationFileInserter {
 						}
 						
 						//Get the data
-						byte[] data = new byte[SAPeriods.num_periods * head.num_comps];
-						stream.read(data);
+						//*4 since they're floats
+						byte[] data = new byte[SAPeriods.num_head_periods * head.num_comps * 4];
+						ret = stream.read(data);
+						if (ret==-1) { //we didn't read anything and this is a weird place to have stopped
+							System.err.println("Found header but not data for " + f.getName() + " at offset " + stream.getChannel().position());
+							System.exit(-2);
+						}
 						SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(data, run_ID.getSiteName(), head);
-						insertRupture(saRuptureWithSingleRupVar, sess);
+						insertRupture(saRuptureWithSingleRupVar, sess, true);
 					}
-				} catch (EOFException e) {
+				} catch (IOException e) {
 					//just means we reached the end of the file
+					e.printStackTrace();
 				}
 				
 				stream.close();
@@ -220,7 +231,7 @@ public class RuptureVariationFileInserter {
 				
 				SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(data, run_ID.getSiteName(), ze);
 //				saRuptureWithSingleRupVar.computeAllGeomAvgComponents();
-				insertRupture(saRuptureWithSingleRupVar, sess);				
+				insertRupture(saRuptureWithSingleRupVar, sess, false);				
 				if (counter%250==0) System.gc();
 				if (counter%100==0) {
 					sess.flush();
@@ -283,15 +294,17 @@ public class RuptureVariationFileInserter {
 				", Rupture_ID: " + saRuptureWithSingleRupVar.getRuptureID() + 
 				", Rup_Var_ID: " + saRuptureWithSingleRupVar.rupVar.variationNumber);*/
 
-		insertRupture(saRuptureWithSingleRupVar, sess);
+		insertRupture(saRuptureWithSingleRupVar, sess, false);
 	}
 
-	private void insertRupture(SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar, Session sess) {
-
-		SAPeriods saPeriods = new SAPeriods();
-
+	private void insertRupture(SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar, Session sess, boolean headers) {
 		//open session
 		Session imTypeIDSess = sessFactory.openSession();
+		
+		double[] ourPeriods = SAPeriods.values;
+		if (headers) {
+			ourPeriods = SAPeriods.head_values;
+		}
 		
 		String imTypeIDqueryPrefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND "; 
 		
@@ -301,11 +314,11 @@ public class RuptureVariationFileInserter {
 			if (desiredPeriodsIndices==null) {
 				desiredPeriodsIndices = new ArrayList<Integer>();
 				periodIndexToIDMap = new HashMap<Integer, Integer>();
-				for (int i=0; i<saPeriods.values.length; i++) {
+				for (int i=0; i<ourPeriods.length; i++) {
 					for (int j=0; j<desiredPeriods.size(); j++) {
-						if (Math.abs(saPeriods.values[i]-desiredPeriods.get(j))<0.0001) {
+						if (Math.abs(ourPeriods[i]-desiredPeriods.get(j))<0.0001) {
 							desiredPeriodsIndices.add(i);
-							SQLQuery query = imTypeIDSess.createSQLQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + saPeriods.values[i]).addScalar("IM_Type_ID", Hibernate.INTEGER);
+							SQLQuery query = imTypeIDSess.createSQLQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", Hibernate.INTEGER);
 							int typeID = (Integer)query.list().get(0);
 							periodIndexToIDMap.put(i, typeID);
 						}
@@ -322,13 +335,13 @@ public class RuptureVariationFileInserter {
 				desiredPeriodsIndices = new ArrayList<Integer>();
 				periodIndexToIDMapX = new HashMap<Integer, Integer>();
 				periodIndexToIDMapY = new HashMap<Integer, Integer>();
-				for (int i=0; i<saPeriods.values.length; i++) {
+				for (int i=0; i<ourPeriods.length; i++) {
 					for (int j=0; j<desiredPeriods.size(); j++) {
-						if (Math.abs(saPeriods.values[i]-desiredPeriods.get(j))<0.0001) {
+						if (Math.abs(ourPeriods[i]-desiredPeriods.get(j))<0.0001) {
 							desiredPeriodsIndices.add(i);
-							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + saPeriods.values[i]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
 							periodIndexToIDMapX.put(i, typeID);
-							typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + saPeriods.values[i]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
 							periodIndexToIDMapY.put(i, typeID);
 						}
 					}
@@ -337,9 +350,9 @@ public class RuptureVariationFileInserter {
 				periodIndexToIDMapX = new HashMap<Integer, Integer>();
 				periodIndexToIDMapY = new HashMap<Integer, Integer>();
 				for (int period: desiredPeriodsIndices) {
-					int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + saPeriods.values[period]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+					int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + ourPeriods[period]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
 					periodIndexToIDMapX.put(period, typeID);
-					typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + saPeriods.values[period]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+					typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + ourPeriods[period]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
 					periodIndexToIDMapY.put(period, typeID);
 				}
 			}
@@ -398,7 +411,7 @@ public class RuptureVariationFileInserter {
 					pa.setPaPK(paPK);
 					double psaValue = currRupVar.geomAvgComp.periods[periodIter];
 					if (psaValue>8400 || psaValue<0.01) {
-						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
 						throw new IllegalArgumentException();
 					}
 //				System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
@@ -433,7 +446,7 @@ public class RuptureVariationFileInserter {
 					pa.setPaPK(paPK);
 					double psaValue = currRupVar.eastComp.periods[periodIter];
 					if (psaValue>8400 || psaValue<0.01) {
-						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
 						throw new IllegalArgumentException();
 					}
 //					System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
@@ -452,7 +465,7 @@ public class RuptureVariationFileInserter {
 					pa.setPaPK(paPK);
 					psaValue = currRupVar.northComp.periods[periodIter];
 					if (psaValue>8400 || psaValue<0.01) {
-						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
+						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
 						throw new IllegalArgumentException();
 					}
 //					System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);

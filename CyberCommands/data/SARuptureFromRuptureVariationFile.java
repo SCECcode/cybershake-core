@@ -20,11 +20,11 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 			throw new NullPointerException("byteArrayFromFile is null; bsaFile.getPath(): " + bsaFile.getPath());
 		}
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(byteArrayFromFile);
-		super.createRupVars(floats);
+		super.createRupVars(floats, false);
 		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationFile(bsaFile, siteName);
 		ruptureID = BSAFileUtil.getRuptureIDFromRuptureVariationFile(bsaFile, siteName);
 		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationFile(bsaFile, siteName);
-		createPeriods(floats);
+		createPeriods(floats, false);
 		try {
 			rupVar.computeGeomAvg();
 		} catch (Exception e) {
@@ -35,11 +35,11 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 	public SARuptureFromRuptureVariationFile(byte[] data, String siteName, ZipEntry saZipEntry) {
 		byte[] swappedBytes = SwapBytes.swapByteArrayToByteArrayForFloats(data);
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(swappedBytes);
-		super.createRupVars(floats);
+		super.createRupVars(floats, false);
 		sourceID = BSAFileUtil.getSourceIDFromRuptureVariationZipEntry(saZipEntry, siteName);
 		ruptureID = BSAFileUtil.getRuptureIDFromRuptureVariationZipEntry(saZipEntry, siteName);
 		rupVar.variationNumber = BSAFileUtil.getRupVarIDFromRuptureVariationZipEntry(saZipEntry, siteName);
-		createPeriods(floats);
+		createPeriods(floats, false);
 		try {
 			rupVar.computeGeomAvg();
 		} catch (Exception e) {
@@ -50,11 +50,11 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 	public SARuptureFromRuptureVariationFile(byte[] data, String siteName, BSAHeader head) {
 		byte[] swappedBytes = SwapBytes.swapByteArrayToByteArrayForFloats(data);
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(swappedBytes);
-		super.createRupVars(floats);
+		super.createRupVars(floats, true);
 		sourceID = head.source_id;
 		ruptureID = head.rupture_id;
 		rupVar.variationNumber = head.rup_var_id;
-		createPeriods(floats);
+		createPeriods(floats, true);
 		try {
 			rupVar.computeGeomAvg();
 		} catch (Exception e) {
@@ -65,8 +65,11 @@ public class SARuptureFromRuptureVariationFile extends SARuptureFromFile {
 	public SARuptureFromRuptureVariationFile() {
 	}
 
-	public void createPeriods(ArrayList<Float> floats) {
+	public void createPeriods(ArrayList<Float> floats, boolean headers) {
 		int maxPeriod = SAPeriods.num_periods;
+		if (headers) {
+			maxPeriod = SAPeriods.num_head_periods;
+		}
 		int periodCount = 1;
 		String componentDirection = "East";
 		
