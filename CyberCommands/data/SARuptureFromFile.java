@@ -20,19 +20,22 @@ public class SARuptureFromFile {
 	}
 	
 	public SARuptureFromFile(ArrayList<Float> floats) {
-		createRupVars(floats);
+		createRupVars(floats, false);
 	}
 
 	public SARuptureFromFile(File bsaFile, String siteName) {
 		byte[] byteArrayFromFile = SwapBytes.swapBinaryFileToArrayForFloats(bsaFile.getPath());
 		ArrayList<Float> floats = SABinary2Float.convertByteArrayToArrayOfFloats(byteArrayFromFile);
-		createRupVars(floats);
+		createRupVars(floats, false);
 		sourceID = BSAFileUtil.getSourceIDFromFile(bsaFile, siteName);
 		ruptureID = BSAFileUtil.getRuptureIDFromFile(bsaFile, siteName);
 	}
 
-	protected void createRupVars(ArrayList<Float> floats) {
+	protected void createRupVars(ArrayList<Float> floats, boolean header) {
 		int maxPeriod = SAPeriods.num_periods;
+		if (header) {
+			maxPeriod = SAPeriods.num_head_periods;
+		}
 		int ruptureVarCount = 0;
 		int periodCount = 1;
 		SARuptureVariation rupVar = new SARuptureVariation();

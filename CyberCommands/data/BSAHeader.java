@@ -2,6 +2,7 @@ package data;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.IOException;
 
@@ -35,14 +36,18 @@ public class BSAHeader {
 	
 	public BSAHeader() {}
 	
-	public void parse(FileInputStream stream) throws IOException {
+	public int parse(FileInputStream stream) throws IOException {
 		num_comps = 0;
 		x_comp = false;
-		y_comp = false;
+		y_comp = false;	
 		z_comp = false;
-		int i;
+		int i, ret;
 		byte[] byteArray = new byte[version.length];
-		stream.read(byteArray);	
+		ret = stream.read(byteArray);
+		if (ret==-1) { //EOF 
+			return -1;
+		}
+			
 		StringBuffer sb = new StringBuffer();
 		//This will stop short if we find a null terminator
 		for (i=0; i<version.length; i++) {
@@ -56,6 +61,7 @@ public class BSAHeader {
 		versionString = sb.toString();
 		if (!versionString.equals("12.10")) {
 			System.err.println("Version of this header is " + versionString + ", don't know how to parse it.");
+			System.err.println("Stream location: " + stream.getChannel().position());
 			System.exit(-5);
 		}
 		
@@ -72,18 +78,13 @@ public class BSAHeader {
 		}
 		siteString = sb.toString();
 		
-		stream.skip((long)padding.length);
+		stream.skip((long)(padding.length));
 		//read the remaining bytes into an array, swap them, then read them out with a stream
 		byteArray = new byte[32];
 		stream.read(byteArray);
-		try {
-			NumberHelper.swapBytes(byteArray, NumberHelper.INT_LENGTH);
-		} catch (IncorrectNumberOfBytesException ex) {
-				ex.printStackTrace();
-				System.exit(1);
-		}
+		byte[] outByteArray = SwapBytes.swapByteArrayToByteArrayForFloats(byteArray);
 		
-		DataInputStream dr = new DataInputStream(new ByteArrayInputStream(byteArray));
+		DataInputStream dr = new DataInputStream(new ByteArrayInputStream(outByteArray));
 		source_id = dr.readInt();
 		rupture_id = dr.readInt();
 		rup_var_id = dr.readInt();
@@ -107,5 +108,20 @@ public class BSAHeader {
 		}
 		
 		dr.close();
+		
+		return 0;
+	}
+	
+	public void print() {
+		System.out.println("version: " + versionString);
+		System.out.println("site: " + siteString);
+		System.out.println("source_id: " + source_id);
+		System.out.println("rupture_id: " + rupture_id);
+		System.out.println("rup_var_id: " + rup_var_id);
+		System.out.println("dt: " + dt);
+		System.out.println("nt: " + nt);
+		System.out.println("num_comps: " + num_comps);
+		System.out.println("det_max_freq: " + det_max_freq);
+		System.out.println("stoch_max_freq: " + stoch_max_freq);
 	}
 }
