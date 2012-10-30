@@ -20,6 +20,7 @@ import mapping.PeakAmplitude;
 import mapping.PeakAmplitudePK;
 
 import org.hibernate.Hibernate;
+import org.hibernate.NonUniqueObjectException;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -431,7 +432,12 @@ public class RuptureVariationFileInserter {
 					sess.save(pa);
 				}*/
 				
-					sess.save(pa);
+					try {
+						sess.save(pa);
+					} catch (NonUniqueObjectException nuoe) {
+						//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
+						System.err.println("ERROR:  found duplicate entry for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
+					}
 				}
 				
 				if (insertXY) {
