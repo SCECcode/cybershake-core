@@ -209,9 +209,8 @@ void _mc_add_file(char* filename, char** file_buffer, memcached_st* mst) {
 
                 ret = memcached_set(mst, file_key, strlen(file_key), buffer, strlen(buffer), 0, flags);
                 if (ret!=MEMCACHED_SUCCESS) {
-                	printf("Caching of %s failed, aborting.\n", file_key);
+                	printf("Caching of %s failed.\n", file_key);
                         printf("%s\n", memcached_strerror(mst, ret));
-                        exit(1);
                 }
                 i++;
                 memset(buffer, '\0', ONE_MB);
@@ -222,9 +221,8 @@ void _mc_add_file(char* filename, char** file_buffer, memcached_st* mst) {
 	strcpy(parts_key, filename);
         ret = memcached_set(mst, parts_key, strlen(parts_key), (char*)(&num_parts), sizeof(int), 0, flags);
         if (ret!=MEMCACHED_SUCCESS) {
-                printf("Caching of %s failed, aborting.\n", parts_key);
+                printf("Caching of %s failed.\n", parts_key);
                 printf("%s\n", memcached_strerror(mst, ret));
-                exit(1);
         }
         free(file_key);
 	free(parts_key);
@@ -250,6 +248,8 @@ int ONE_MB = 1024*1024;
 char* buffer;
 char* file_data;
 int* num_parts;
+
+	printf("Using %s as memcached server.\n", mc_server);
 
 	memcached_return ret;
 	memcached_st* mst;
