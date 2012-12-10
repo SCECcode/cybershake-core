@@ -177,7 +177,7 @@ for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
 srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 }
 
-void write_srf(struct standrupformat *srf,char *file,int bflag)
+void _write_srf(struct standrupformat *srf,char *file,int bflag)
 {
 FILE *fpw;
 struct srf_planerectangle *prect_ptr;
