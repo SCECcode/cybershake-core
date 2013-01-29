@@ -1,0 +1,205 @@
+        2 igreen        = SGT Parameters
+    200.0 TMAX          = propagation time
+
+    200.0 DH            = spatial step for x, y, z (meters)
+    0.005 DT            = time step (seconds)
+
+        0 NPC           = PML or Cerjan ABC (1=PML, 0=Cerjan)
+
+       20 ND	        = ABC thickness (grid-points) PML <= 20, Cerjan >= 20
+     0.92 ARBC          = coefficient for PML (3-4), or Cerjan (0.90-0.96)
+      0.1 PHT           =
+
+        1 NSRC          = number of source nodes on fault
+    40000 NST           = number of time steps in rupture functions
+
+      800 NX            = x model dimension in nodes
+      600 NY            = y model dimension in nodes
+      400 NZ            = z model dimension in nodes
+
+        8 NPX           = number of procs in the x direction
+       10 NPY           = number of procs in the Y direction
+        8 NPZ           = number of procs in the Z direction
+
+        0 IFAULT        =  mode selection and fault or initial stress setting
+        0 CHECKPOINT    =  checkpoint at step
+        1 ISFCVLM       =  output options, surface and volume output
+        0 IMD5          =  MD5 output option
+        1 IVELOCITY     =  output accumulation option
+        1 MEDIARESTART  =  initial media restart option
+        3 NVAR          =  number of variables in a grid point
+        1 IOST          =  max amount of reader (RANKSIZE/IOST)
+        1 PARTDEG       =  further XY plane partitioning when mediarestart=2
+        1 IO_OPT        =  output data on/off option
+        1 PERF_MEAS     =  performance timing measurement on/off
+        0 IDYNA         =  mode selection of dynamic rupture model
+        1 SOCALQ        =  Southern California Vp-Vs Q relationship enabling flag
+
+        1 NVE           = visco or elastic scheme (1=visco, 0=elastic)
+
+    0.677 MU_S          = static friction coefficient (real, scalar)
+    0.525 MU_D          = dynamic friction coefficient (real, scalar)
+
+     0.01 FL	      	= Q bandwidth low frequency
+     25.0 FH     		= Q bandwidth high frequency
+      0.5 FP	    	= Q bandwidth central frequency
+
+    20000 READ_STEP
+    2000 WRITE_STEP
+    2000 WRITE_STEP2
+
+       10 NBGX          = first x node to contain receivers
+      400 NEDX          = last x node to contain receivers
+       10 NSKPX         = skip of nodes containing x receivers
+       10 NBGY          = first y node to contain receivers
+      300 NEDY          = last y node to contain receivers
+       10 NSKPY         = skip of nodes containing y receivers
+       10 NBGZ          = first z node to contain receivers
+      200 NEDZ          = last z node to contain receivers
+       10 NSKPZ         = skip of nodes containing z receivers
+
+   100000 NTISKP        = time skip of seismograms (every nth step)
+       10 NTISKP_SGT    = time skip of SGTs (every nth step)
+
+       10 NBGX2         = first x node to contain receivers
+      400 NEDX2         = last x node to contain receivers
+       10 NSKPX2        = skip of nodes containing x receivers
+       10 NBGY2         = first y node to contain receivers
+      300 NEDY2         = last y node to contain receivers
+       10 NSKPY2        = skip of nodes containing y receivers
+        1 NBGZ2         = first z node to contain receivers
+      200 NEDZ2         = last z node to contain receivers
+       10 NSKPZ2        = skip of nodes containing z receivers
+
+       10 NTISKP2       = time skip of seismograms (every nth step)
+
+'output_ckp/CHKP96PV' CHKP   = input and derived parameters for QC
+'output_ckp/CHKJ96PV' CHKJ   = single location output for QC
+
+'input/fy_src_100m'    INSRC  = mt based fault file (wav) or initial stress (dyn)
+'/lustre/scratch/scottcal/AWP_ODC/test_3D_100m/awp.100m.media' INVEL  = velocity structure file
+
+'/lustre/scratch/scottcal/AWP_ODC/test_3D_100m/awp.100m.cordfile' INSGT = sgt station lists
+
+'output_sfc/XX96PS' SXRGO    = x regular-grid volume/time output 
+'output_sfc/YY96PS' SYRGO    = y regular-grid volume/time output
+'output_sfc/ZZ96PS' SZRGO    = z regular-grid volume/time output
+
+'output_vlm/XY96PV' SXRGO2   = x regular-grid volume/time output
+'output_vlm/YZ96PV' SYRGO2   = y regular-grid volume/time output
+'output_vlm/XZ96PV' SZRGO2   = z regular-grid volume/time output
+
+'output_sfc/awp-strain' SGTGRO  = sgt output
+
+'output_dyn/SGSN' SGSN       =  file to host 19 more variables for SGSN mode
+
+NOTES for parameter settings:
+0) The order of the above input parameters should not be changed.
+
+1) The number of procs should evenly divide into its respective model
+   dimension (e.g., NX/NPX = INTEGER).
+
+2) Expected proc configurations are stacked boxes (e.g., 2X2X2),
+   vertical columns (e.g., 4X2X1) or x-normal planes (e.g., 8X1X1).
+   The code can be run with only one proc, but would not be as
+   efficient as a non-MPI code.
+
+3) The resulting proc size in each direction should be greater then
+   the PML thickness (e.g., NX/NPX > ND).  This rule does not apply
+   when the Cerjan mode is used.
+
+4) The PML width should not exceed 20.
+
+5) The number of procs requested (outside this program) should be the
+   product of the number of procs in each direction (NPX*NPY*NPZ),
+   (e.g., 3X3X3 procs does not match 14X2 procs in the batch script).
+
+6) Sources, receivers and the velocity model are all referenced from
+   the free surface (z=1) and the south-west corner (y=1, x=1).
+
+7) File names and paths are currently limited to 99 characters without
+   modification (change in pmcl3d.f) and recompilation.
+
+8) Waveforms can be altered when using the visco option by changing the
+   tau distribution in relax.f (recompilation necessary).
+
+9) The Cerjan ABC option is available for highly heterogenous models
+   that cause instability in the PML ABCs.  Typically boundary widths
+   are 20 - 50.
+
+10) The ouput is setup for two sets of files; the intention for one 
+    being surface recorded seismograms and the other volumes.  Both
+    must be regularly spaced, but the specific usage is left up to the
+    user.   
+
+11) MU_S and MU_D are only used for dynamic rupture mode
+
+12) output directories are fixed and required
+
+13) Typically, NTISKP2 is used for surface velocity, NTISKP for sliprate 
+
+NOTE for mode settings:
+1) mode selection + faultfile/initial stress read
+   0 wave propagation mode, use original fault file, works for small-scale *
+   1 wave propagation mode, read original fault file and write subgrid-fault
+     ! this is used for the case of large scale  !
+   2 wave propagation mode, read subgrid-fault fault file
+     ! before use 2, need to run 1 first to generate subdomain fault file !
+     ! option 1 only separate fault, then exit                            !
+   3 dynamic rupture mode, write slip+sliprate+rupture
+   4 dynamic rupture mode, write slip+sliprate+rupture + surface velocity
+
+2) checkpoint at every x time step
+   0 no checkpoints *
+   x every x timestep
+
+3) output options, surface and volume output
+   0 only one output at NTISSP time step
+      wave propagation mode: only surface outputs
+      dynamic mode: only spli/sliprate outputs
+   1 only for wave propagation mode
+      output at each NTISKP time step - surface
+      output at each NTISKP2 time step - volume
+     !for dynamic mode, only 0 accepted!
+
+4) MD5 output options
+   0 without md5 output *
+   1 with md5 output
+
+5) velocity output accumulation
+   0 output accumulated and write once at the end of execution
+     ! only one file per component for NTISKP/NTISKP2 !
+     ! NTISKP/NTISKP2 time steps are skipped          !
+   1 output not accumulated
+     ! output at each NTISKP/NTISKP2 timesteps        !
+
+6) initial media restart options
+   0 homogeneous
+   1 read in media file (serial) for small scale
+   2 read in media file (mpiio) for large scale but npx*npy*npz>=nz
+   3 read in sub-grid media file and pre-process data
+   4 read in post-processed sub-grid media file
+
+7) I/O on/off option
+   0 not output any data
+   1 output surface/volume or slip/sliprate data *
+
+8) Fast initialization (Velocity mesh model)
+   0 with regular initialization *
+   1 fast initialization (homogeneous)
+
+9) Performance measurement on/off option
+   0 not output timing measurments
+   1 output timing measurements *
+     ! including initialization/computing/I/O/total time !
+
+10) IDYNA: mode selection of dynamic rupture model
+   0 Stress glut (SG) method (previous version, only for pure strike slip)
+   1 Staggered Grid Split Node (SGSN)(new version) (general slip)
+
+11) SOCALQ: Southern California Vp-Vs Q relationship enabling flag
+   0: Southern California Vp-Vs Q relationship disabled *
+   1: Southern California Vp-Vs Q relationship enabled
+
+* default case
+
