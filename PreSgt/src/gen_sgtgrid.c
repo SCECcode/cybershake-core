@@ -131,6 +131,7 @@ iyv = (int *) check_malloc (bcnt*BLOCK_SIZE*sizeof(int));
 izv = (int *) check_malloc (bcnt*BLOCK_SIZE*sizeof(int));
 
 //Only rank 0 does adaptive mesh so we don't get duplicates
+np = 0;
 if(my_id==0) {
    //gettimeofday(&tv, NULL);
 
@@ -181,7 +182,6 @@ if(radiusfile[0] != '\0')
          }
       }
 
-   np = 0;
    for(iy=iymin;iy<iymax;iy++)
       {
       y2 = (ysrc-iy);
@@ -231,7 +231,12 @@ int i0;
 //Create fault files for each process
 if (my_id==0) {
 	//gettimeofday(&tv, NULL);
-	char faultlist_data[10000][200];
+	//char faultlist_data[10000][200];
+	//Try dynamically allocating to help in debugging
+	char** faultlist_data = check_malloc(sizeof(char*) * 10000);
+	for (i0=0; i0<10000; i0++) {
+		faultlist_data[i0] = check_malloc(sizeof(char) * 200);
+	}
 	fp = fopfile(faultlist,"r");
 	int counter = 0;
 	char line[200];
@@ -273,13 +278,19 @@ if (my_id==0) {
                 local_faultlist_data[i0] = check_malloc(sizeof(char)*200);
         }
 	for (i=0; i<lines_per_proc[0]; i++) {
-		strncpy(local_faultlist_data[i], faultlist_data[i], 200);
+//		strncpy(local_faultlist_data[i], faultlist_data[i], 200);
+		strncpy(local_faultlist_data[i], faultlist_data[i*num_procs], 200);
 	}
 	free(lines_per_proc);
 	for (i=0; i<num_procs; i++) {
 		free(data_to_send[i]);
 	}
 	free(data_to_send);
+	for (i=0; i<10000; i++) {
+		free(faultlist_data[i]);
+	}
+	free(faultlist_data);
+
 	//gettimeofday(&new_tv, NULL);
 	//printf("%f sec for individual fault file creation.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
 } else {
@@ -307,17 +318,23 @@ if (my_id==0) {
 //for(i0=0; i0<num_my_lines; i0++) {
 //	printf("Process %d, line %i: %s\n", my_id, i0, local_faultlist_data[i0]);
 //}
+//printf("id %d, np %d\n", my_id, np);
+//fflush(stdout);
+
 
 //change to use buffer
 
 //gettimeofday(&tv, NULL);
 if(faultlist[0] != '\0')
    {
+   char outname[25];
+   sprintf(outname, "core_%d.out", my_id);
+   FILE* fp_out = fopen(outname, "w");
+ 
     for (i0=0; i0<num_my_lines; i0++) {
 	strcpy(str, local_faultlist_data[i0]);
       get_filepar(str,infile,&nhead,&latfirst);
 
-      fprintf(stderr,"%s nheader=%d latfirst=%d\n",infile,nhead,latfirst);
       fpr = fopfile(infile,"r");
 
       i = 0;
@@ -341,6 +358,7 @@ if(faultlist[0] != '\0')
          iyp = (int)((double)(yy)*invh + 0.5);
          izp = (int)((double)(fdep)*invh + 1.5);
 
+
 	 if(ixp >= BNDPAD && ixp < nx-BNDPAD && iyp >= BNDPAD && iyp < ny-BNDPAD && izp >= 1 && izp < nz-BNDPAD)
 	    {
 	    ifound = 0;
@@ -356,6 +374,9 @@ if(faultlist[0] != '\0')
 	    if(ifound == 0)
 	       {
 	       np++;
+
+		fprintf(fp_out, "Didn't find (%d, %d, %d) from file %s.\n", ixp, iyp, izp, infile);
+		fflush(fp_out);
 
                if(np > bcnt*BLOCK_SIZE)
                   {
@@ -375,8 +396,20 @@ if(faultlist[0] != '\0')
 
       fclose(fpr);
       }
-
+	fflush(fp_out);
+	fclose(fp_out);
    }
+
+/*
+char outname[25];
+sprintf(outname, "core_%d.out", my_id);
+FILE* fp_out = fopen(outname, "w");
+for (i0=0; i<np; i++) {
+	fprintf(fp_out, "%d %d %d\n", ixv[i], iyv[i], izv[i]);
+}
+fflush(fp_out);
+fclose(fp_out);
+*/
 
 for(i0=0; i0<num_my_lines; i0++) {
         free(local_faultlist_data[i0]);
@@ -384,7 +417,7 @@ for(i0=0; i0<num_my_lines; i0++) {
 free(local_faultlist_data);
 
 
-fprintf(stderr,"np= %d\n",np);
+fprintf(stderr,"id=%d, np= %d\n",my_id, np);
 
 //gettimeofday(&new_tv, NULL);
 //printf("proc %d took %f sec for reading in files.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
