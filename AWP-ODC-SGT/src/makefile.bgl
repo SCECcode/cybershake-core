@@ -1,0 +1,69 @@
+OFLAGS = mpxlf90 -O4  -qmaxmem=-1 -qarch=440 -qtune=440 -c -qfixed=132 -o
+PFLAGS = mpxlf90 -O4  -qmaxmem=-1 -qarch=440 -qtune=440 -qfixed=132 -o
+
+LIB  = 
+#LIB =  -L/home/yfcui/local/lib -lmpich.rts
+
+BIN = ../bin
+
+OBJECTS = memory.o bound.o relax.o swap.o io.o source.o \
+          custompi.o station.o structure.o operator.o \
+          viscoop.o pml.o cerjan.o pmcl3d.o md5.o
+
+pmcl3d: $(OBJECTS)
+	$(PFLAGS) pmcl3d    $(OBJECTS)  $(LIB) 
+
+md5.o: md5.c
+	mpcc -qarch=440 -qtune=440 -c -o $@ md5.c
+
+pmcl3d.o: pmcl3d.f
+	$(OFLAGS) pmcl3d.o	pmcl3d.f
+
+memory.o: memory.f
+	$(OFLAGS) memory.o	memory.f
+
+relax.o: relax.f
+	$(OFLAGS) relax.o 	relax.f
+
+bound.o: bound.f
+	$(OFLAGS) bound.o 	bound.f
+
+swap.o: swap.f
+	$(OFLAGS) swap.o        swap.f
+
+io.o: io.f
+	$(OFLAGS) io.o		io.f
+
+structure.o: structure.f
+	$(OFLAGS) structure.o	structure.f
+
+operator.o: operator.f
+	$(OFLAGS) operator.o    operator.f
+
+viscoop.o: viscoop.f
+	$(OFLAGS) viscoop.o 	viscoop.f
+
+pml.o: pml.f
+	$(OFLAGS) pml.o         pml.f
+
+cerjan.o: cerjan.f
+	$(OFLAGS) cerjan.o	cerjan.f
+
+source.o: source.f
+	$(OFLAGS) source.o      source.f
+
+station.o: station.f
+	$(OFLAGS) station.o     station.f
+
+custompi.o: custompi.f	
+	$(OFLAGS) custompi.o	custompi.f
+
+
+
+clean:
+	rm pmcl3d $(BIN)/pmcl3d *.o parstat*
+
+cleanmore:
+	rm fort.* core.* CHK* SS* V* SRCT*
+
+
