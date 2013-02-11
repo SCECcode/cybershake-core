@@ -710,6 +710,11 @@ else
    fn1 = 0.0;
    }
 
+/*
+   RWG 2012-09-04
+   
+   OLD way using loop can create optimization errors 
+
 for(i=0;i<=ni->procId_x;i++)
    {
    fn2 = fn1 + fslice;
@@ -719,6 +724,19 @@ for(i=0;i<=ni->procId_x;i++)
 
    fn1 = fn2 - 3.0;
    }
+*/
+
+/*
+   RWG 2012-09-04
+   
+   NEW way compute n1 and n2 directly
+*/
+
+fn1 = ni->procId_x*(fslice-3.0);
+fn2 = fn1 + fslice;
+ni->nx1 = (int)(fn1 + 0.5);
+ni->nx2 = (int)(fn2 + 0.5);
+/* END NEW way */
 
 ni->ixminus = ni->nx1 + 2;
 if(ni->minusId_x < 0)
@@ -748,6 +766,11 @@ else
    fn1 = 0.0;
    }
 
+/*
+   RWG 2012-09-04
+   
+   OLD way using loop can create optimization errors 
+
 for(i=0;i<=ni->procId_y;i++)
    {
    fn2 = fn1 + fslice;
@@ -757,6 +780,19 @@ for(i=0;i<=ni->procId_y;i++)
 
    fn1 = fn2 - 3.0;
    }
+*/
+
+/*
+   RWG 2012-09-04
+   
+   NEW way compute n1 and n2 directly
+*/
+
+fn1 = ni->procId_y*(fslice-3.0);
+fn2 = fn1 + fslice;
+ni->ny1 = (int)(fn1 + 0.5);
+ni->ny2 = (int)(fn2 + 0.5);
+/* END NEW way */
 
 ni->iyminus = ni->ny1 + 2;
 if(ni->minusId_y < 0)
@@ -786,6 +822,11 @@ else
    fn1 = 0.0;
    }
 
+/*
+   RWG 2012-09-04
+   
+   OLD way using loop can create optimization errors 
+
 for(i=0;i<=ni->procId_z;i++)
    {
    fn2 = fn1 + fslice;
@@ -795,6 +836,19 @@ for(i=0;i<=ni->procId_z;i++)
 
    fn1 = fn2 - 3.0;
    }
+*/
+
+/*
+   RWG 2012-09-04
+   
+   NEW way compute n1 and n2 directly
+*/
+
+fn1 = ni->procId_z*(fslice-3.0);
+fn2 = fn1 + fslice;
+ni->nz1 = (int)(fn1 + 0.5);
+ni->nz2 = (int)(fn2 + 0.5);
+/* END NEW way */
 
 ni->izminus = ni->nz1 + 2;
 if(ni->minusId_z < 0)
