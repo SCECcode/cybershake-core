@@ -194,7 +194,7 @@ cxy = pv + 12*nx*nz;
 cxz = pv + 13*nx*nz;
 cyz = pv + 14*nx*nz;
 
-for(i=0;i<nx*nz;i++)
+/*for(i=0;i<nx*nz;i++)
    {
    vx[0] = vx[0] + rf[0];
    vy[0] = vy[0] + rf[0];
@@ -215,7 +215,26 @@ for(i=0;i<nx*nz;i++)
    vx++; vy++; vz++; rf++;
    txx++; tyy++; tzz++; txy++; txz++; tyz++;
    cxx++; cyy++; czz++; cxy++; cxz++; cyz++;
-   }
+   }*/
+
+for(i=0; i<nx*nz; i++) {
+   vx[i] = vx[i] + rf[i];
+   vy[i] = vy[i] + rf[i];
+   vz[i] = vz[i] + rf[i];
+   txx[i] = txx[i] + rf[i];
+   tyy[i] = tyy[i] + rf[i];
+   tzz[i] = tzz[i] + rf[i];
+   txy[i] = txy[i] + rf[i];
+   txz[i] = txz[i] + rf[i];
+   tyz[i] = tyz[i] + rf[i];
+   cxx[i] = cxx[i] + rf[i];
+   cyy[i] = cyy[i] + rf[i];
+   czz[i] = czz[i] + rf[i];
+   cxy[i] = cxy[i] + rf[i];
+   cxz[i] = cxz[i] + rf[i];
+   cyz[i] = cyz[i] + rf[i];
+}
+
 }
 
 void *check_realloc(void *ptr,size_t len)

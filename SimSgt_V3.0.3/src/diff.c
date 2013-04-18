@@ -112,11 +112,17 @@ int n;
 float con1;
 
 con1 = *c1;
-while(n--)
+/*while(n--)
    {
    a[0] = a[0] + x[0]*con1*(b[0]-c[0]);
    a++; b++; c++; x++;
    }
+*/
+int i;
+for (i=0; i<n; i++) {
+	a[i] = a[i] + x[i]*con1*(b[i]-c[i]);
+}
+
 }
 
 ord4(n,a,x,b,c,d,e,c1,c2) /* a = a + x*(c1*(b-c) + c2*(d-e)) */
@@ -127,12 +133,19 @@ float con1, con2;
  
 con1 = *c1;       
 con2 = *c2;
-while(n--)
+/*while(n--)
    {
    a[0] = a[0] + x[0]*(con1*(b[0]-c[0]) + con2*(d[0]-e[0]));
    a++; b++; c++; d++; e++; x++;
    }
+*/
+int i;
+for (i=0; i<n; i++) {
+	a[i] = a[i] + x[i]*(con1*(b[i]-c[i]) + con2*(d[i]-e[i]));
 }
+
+}
+
 
 diffx(n,a1,a2,a3,x1,x2,b,c,d,e,fdc,ord,iflag)
 struct fdcoefs *fdc;
@@ -269,21 +282,29 @@ float tmp, con1, con2;
  
 con1 = *d1;
 con2 = *d2;
-while(n--)
+/*while(n--)
    {
-/* put effective media parameter into tmp (thus into ks as well) */
+// put effective media parameter into tmp (thus into ks as well) 
    tmp = x[0]*(con1*(b[0]-c[0]) + con2*(d[0]-e[0]));
 
-   /* OLD WAY
-   a[0] = a[0] + x[0]*tmp;
-   */
+   // OLD WAY
+   //a[0] = a[0] + x[0]*tmp;
+   
    a[0] = a[0] + tmp;
    cp[0] = cp[0] + ks[0]*tmp;
 
    a++; cp++;
    b++; c++; d++; e++;
    x++; ks++;
-   }
+   }*/
+
+int i;
+for (i=0; i<n; i++) {
+   tmp = x[i]*(con1*(b[i]-c[i]) + con2*(d[i]-e[i]));
+   a[i] = a[i] + tmp;
+   cp[i] = cp[i] + ks[i]*tmp;
+}
+
 }
 
 diffx_mv(n,a1,a2,a3,c1,c2,c3,x1,x2,kp,ks,b,c,d,e,fdc,ord,iflag)
@@ -366,7 +387,7 @@ int i;
 float con1, tmp;
 float two = 2.0;
 
-while(n--)
+/*while(n--)
    {
    tmp = (*d1)*(b[0]-c[0]) + (*d2)*(d[0]-e[0]);
    con1 = x2[0]*tmp;
@@ -375,12 +396,12 @@ while(n--)
    a2[0] = a2[0] + con1;
    a3[0] = a3[0] + con1;
 
-   /* OLD WAY
-   con1 = (kp[0] - two*ks[0])*tmp;
-   */
+   // OLD WAY
+   //con1 = (kp[0] - two*ks[0])*tmp;
+   //
 
-/* need to apply mu to ks coefficient, calculate from (lam+2mu)-lam,
-factor of 2 carries through formula */
+// need to apply mu to ks coefficient, calculate from (lam+2mu)-lam,
+//factor of 2 carries through formula 
    con1 = (kp[0] - (x1[0]-x2[0])*ks[0])*tmp;
 
    c1[0] = c1[0] + kp[0]*tmp;
@@ -392,7 +413,23 @@ factor of 2 carries through formula */
    b++; c++; d++; e++;
    x1++; x2++;
    kp++; ks++;
-   }
+   }*/
+
+for (i=0; i<n; i++) {
+   tmp = (*d1)*(b[i]-c[i]) + (*d2)*(d[i]-e[i]);
+   con1 = x2[i]*tmp;
+
+   a1[i] = a1[i] + x1[i]*tmp;
+   a2[i] = a2[i] + con1;
+   a3[i] = a3[i] + con1;
+
+   con1 = (kp[i] - (x1[i]-x2[i])*ks[i])*tmp;
+
+   c1[i] = c1[i] + kp[i]*tmp;
+   c2[i] = c2[i] + con1;
+   c3[i] = c3[i] + con1;
+}
+
 }
 
 set_vminvmax_reedmod(mds,medf,fdc,nx,ny,nz,vsmin)
@@ -562,13 +599,20 @@ mv_mult1(t,c,a,n)
 register float *t, *c, *a;
 int n;
 {
-while(n--)
+/*while(n--)
    {
    t[0] = t[0] - c[0];
    c[0] = c[0]*a[0];
 
    t++; c++; a++;
    }
+*/
+int i;
+for (i=0; i<n; i++) {
+   t[i] = t[i] - c[i];
+   c[i] = c[i]*a[i];
+}
+
 }
 
 mv_mult1x(t,c,n)
@@ -597,11 +641,16 @@ mv_mult2(t,c,n)
 register float *t, *c;
 int n;
 {
-while(n--)
+/*while(n--)
    {
    t[0] = t[0] - c[0];
    t++; c++;
    }
+*/
+int i;
+for (i=0; i<n; i++) {
+	t[i] = t[i] - c[i];
+}
 }
 
 qmult_null(qf,v0,n)
