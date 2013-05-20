@@ -359,7 +359,6 @@ public class RuptureVariationFileInserter {
 			}
 		}
 
-
 		imTypeIDSess.close();
 
 		int outerLoopMax = saRuptureWithSingleRupVar.rupVars.size();
@@ -399,6 +398,9 @@ public class RuptureVariationFileInserter {
 						+ ", Geometrically Averaged Component, Period " + (periodIter+1) + " : " 
 						+ currRupVar.geomAvgComp.periods[periodIter] );*/
 
+				//for error checking
+				float mag = -1.0f;
+				float rupture_dist = -1.0f;
 				if (insertGeoMean) {
 					// Initialize PeakAmplitudes class
 					PeakAmplitude pa = new PeakAmplitude();
@@ -412,8 +414,30 @@ public class RuptureVariationFileInserter {
 					pa.setPaPK(paPK);
 					double psaValue = currRupVar.geomAvgComp.periods[periodIter];
 					if (psaValue>8400 || psaValue<0.01) {
-						System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
-						throw new IllegalArgumentException();
+						//Tiny PSA values are ok if the event is small and far away
+						if (mag==-1.0) {
+							//Then we need to do the query for this rupture
+							Session checkMagSession = sessFactory.openSession();
+							String query = "select R.Mag, SR.Site_Rupture_Dist from Ruptures R, CyberShake_Site_Ruptures SR " +
+							"where SR.CS_Site_ID=" + run_ID.getSiteID() + " and SR.ERF_ID=" + run_ID.getErfID() +
+							" and SR.Source_ID=" + currentSource_ID + " and SR.Rupture_ID=" + currentRupture_ID +
+							" and R.ERF_ID=SR.ERF_ID and R.Source_ID=SR.Source_ID and R.Rupture_ID=SR.Rupture_ID";
+							SQLQuery sq = checkMagSession.createSQLQuery(query);
+							sq.addScalar("R.Mag", Hibernate.FLOAT);
+							sq.addScalar("SR.Site_Rupture_Dist", Hibernate.FLOAT);
+							List<Object[]> results = sq.list();
+							mag = (Float)(results.get(0)[0]);
+							rupture_dist = (Float)(results.get(0)[1]);
+							checkMagSession.close();
+						}
+						if (mag>6.8 || rupture_dist<300.0 || psaValue<0.003) {
+							System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
+							System.err.println("Mag=" + mag + " rupture_dist=" + rupture_dist);
+							throw new IllegalArgumentException();
+						} else {
+							System.out.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
+							System.out.println("Since mag=" + mag + " and source rupture dist=" + rupture_dist + ", permitting insertion.");
+						}
 					}
 //				System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);
 					pa.setIM_Value(psaValue);
