@@ -63,6 +63,8 @@ def build_IN3D(site, gridout, awp_comp):
 	npx = nx/50
 	npy = ny/50
 	
+	#Look for highest core count less than CORE_COUNT while 2*NX/NPX > NY/NPY, and NX/NPX < 2*NY/NPY
+
 	#check and see if we are under the threshold
 	if npx*npy>nxny_cores:
 		#how far over?
@@ -78,19 +80,48 @@ def build_IN3D(site, gridout, awp_comp):
 		print "Chose %d for npx" % npx
 		#Adjust npy
 		npy = nxny_cores/npx
-		adjust = 1
+		#This is the largest it can be without exceeding CORE_COUNT; search down
 		while not (ny % npy == 0) and npy>0 and npy<ny:
-			npy += adjust
-			adjust = int(math.copysign(abs(adjust)+1, -1*adjust))
+			npy -= 1
 		if npy<=0 or npy>=ny:
 			print "Error:  npy is %d, aborting." % npy
 		if npx>10*npy or npy>10*npx:
 			print "Error in determining load-balanced npx and npy.  Trying to fit %d cores with grid dimensions (%d, %d, %d), but the best we could do was np = (%d, %d, %d).  Aborting.  Perhaps try a different core limit?" % (CORE_COUNT, nx, ny, nz, npx, npy, npz)
 			sys.exit(2)
-		print "Chose %d for npy" % npy
 	
-	param["NPX"] = npx
-	param["NPY"] = npy
+	#Now, see if we can improve
+        npx_best = npx
+        npy_best = npy
+	cores_used = npx_best*npy_best
+	print npx, npy
+	sys.stdout.flush()
+	while (2*nx/npx > ny/npy) and (nx/npx < 2*ny/npy) and npx<nx and npy<ny and npx>0 and npy>0:
+		#continue from where we left off
+		npx += adjust
+		adjust = int(math.copysign(abs(adjust)+1, -1*adjust))
+		while not (nx % npx == 0) and npx<nx and npx>0 and npx<nx:
+			print "npx: %d\n" % npx
+			sys.stdout.flush()
+                        npx += adjust
+			adjust = int(math.copysign(abs(adjust)+1, -1*adjust))
+		npy = nxny_cores/npx
+		while not (ny % npy == 0) and npy>0 and npx<ny:
+			#Search down
+			print "npy: %d\n" % npy
+			sys.stdout.flush()
+			npy -= 1
+		#if the values are too extreme, stop looking
+		if not ((2*nx/npx > ny/npy) and (nx/npx < 2*ny/npy)):
+			break
+		if npx*npy > cores_used:
+			npx_best = npx
+			npy_best = npy
+			cores_used = npx*npy
+
+	print "Chose %d for npy" % npy_best
+	
+	param["NPX"] = npx_best
+	param["NPY"] = npy_best
 	param["NPZ"] = npz
 	
 	#doesn't really matter, but set N<BG|ED><comp> values
@@ -163,7 +194,6 @@ def build_IN3D(site, gridout, awp_comp):
 	fp_out.write("%9s NEDZ\n" % (param["NEDZ"]))
 	fp_out.write("%9s NSKPZ\n\n" % (param["NSKPZ"]))
 	fp_out.write("%9s NTISKP\n" % (param["NTISKP"]))
-	fp_out.write("%9s NTISKP_SGT\n\n" % (param["NTISKP_SGT"]))
 	fp_out.write("%9s NBGX2\n" % (param["NBGX2"]))
 	fp_out.write("%9s NEDX2\n" % (param["NEDX2"]))
 	fp_out.write("%9s NSKPX2\n" % (param["NSKPX2"]))
@@ -174,6 +204,7 @@ def build_IN3D(site, gridout, awp_comp):
 	fp_out.write("%9s NEDZ2\n" % (param["NEDZ2"]))
 	fp_out.write("%9s NSKPZ2\n\n" % (param["NSKPZ2"]))
 	fp_out.write("%9s NTISKP2\n\n" % (param["NTISKP2"]))
+        fp_out.write("%9s NTISKP_SGT\n\n" % (param["NTISKP_SGT"]))
 	fp_out.write("'comp_%s/%s' CHKP\n" % (awp_comp, param["CHKP"]))
 	fp_out.write("'comp_%s/%s' CHKJ\n\n" % (awp_comp, param["CHKJ"]))
 	fp_out.write("'%s' INSRC\n" % (param["INSRC"]))
