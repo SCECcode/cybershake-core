@@ -64,7 +64,6 @@ params = dict()
 for line in data:
 	try:
 		[value, key] = line.split()
-		print key
 		params[key] = value
 	except ValueError:
 		continue
@@ -72,10 +71,10 @@ for line in data:
 total_ts = int(float(params["TMAX"])/float(params["DT"])+0.5)
 decimation = int(params["NTISKP_SGT"])
 
-#rc = reformat(awp_sgt_filename, total_ts/decimation, awp_reformat_sgt_filename, comp)
-#if not rc==0:
-#	print "Error in reformatting."
-#	sys.exit((rc >> 8) & 0xFF)
+rc = reformat(awp_sgt_filename, total_ts/decimation, awp_reformat_sgt_filename, comp)
+if not rc==0:
+	print "Error in reformatting."
+	sys.exit((rc >> 8) & 0xFF)
 	
 rwg_comp = "z"
 if comp=="x":
@@ -85,9 +84,12 @@ elif comp=="y":
 
 header_name = "%s_f%s_%s.sgthead" % (site, rwg_comp, run_id)
 
-rc = write_head(modelbox, cordfile, fdloc, gridout, SPACING, total_ts, float(params["DT"]), decimation, comp, MOMENT, MAX_FREQ, media, header_name)
+rc = write_head(modelbox, cordfile, fdloc, gridout, SPACING, total_ts, float(params["DT"]), decimation, rwg_comp, MOMENT, MAX_FREQ, media, header_name)
 if not rc==0:
         print "Error in header creation."
         sys.exit((rc >> 8) & 0xFF)
+
+#Run md5sum
+os.system("md5sum %s > %s.md5" % (awp_reformat_sgt_filename, awp_reformat_sgt_filename))
 
 sys.exit(0)
