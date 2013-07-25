@@ -5,12 +5,6 @@ import os
 import config
 
 def build_media(site, gridout, rwg_vel_prefix, media_out):
-	mpi_cmd = config.getProperty("MPI_CMD")
-
-	num_nodes = int(os.getenv("PBS_NUM_NODES"))
-	num_ppn = int(os.getenv("PBS_NUM_PPN"))
-	np = num_nodes*num_ppn
-	
 	cs_path = config.getProperty("CS_PATH")
 	
 	#determine NX, NY, NZ
@@ -21,8 +15,7 @@ def build_media(site, gridout, rwg_vel_prefix, media_out):
 	ny = int((data[1+nx+2].split("="))[1])
 	nz = int((data[1+nx+2+ny+2].split("="))[1])
 	
-	cmd = "%s -n %d %s/UCVM/bin/reformat_velocity_mpi %d %d %d %s %s" % (mpi_cmd, np, cs_path, nx, ny, nz, rwg_vel_prefix, media_out)
-	
+	cmd = "%s/SgtHead/bin/reformat_velocity %d %d %d %s %s" % (cs_path, nx, ny, nz, rwg_vel_prefix, media_out)
 	print cmd
 	exitcode = os.system(cmd)
 	return ((exitcode >> 8) & 0xFF)
