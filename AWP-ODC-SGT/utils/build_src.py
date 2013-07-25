@@ -25,8 +25,8 @@ def build_src(site, fdloc, awp_comp):
 	fp_in.close()
 	
 	fp_out = open("comp_%s/input/%s_f%s_src" % (awp_comp, site, awp_comp), "w")
-	#swap X and Y
-	fp_out.write("%s %s 1\n" % (src_y, src_x))
+	#swap X and Y, add 1 to each since AWP uses 1-indexing
+	fp_out.write("%d %d 1\n" % (int(src_y)+1, int(src_x)+1))
 	for line in src_data:
 		fp_out.write(line)
 	fp_out.flush()
