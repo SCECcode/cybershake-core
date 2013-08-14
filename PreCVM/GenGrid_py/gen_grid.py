@@ -36,10 +36,11 @@ def genBoundfile(gridout, coordfile, boundfile):
     output.close()
 
 
-def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile):
+def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency):
     '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
     ZLEN = 40.0
-    SPACING = .2
+    #in km
+    SPACING = 0.1/frequency
     
     modelboxInput = open(modelboxFile)
     modelboxData = [line.strip() for line in modelboxInput.readlines()]
@@ -72,9 +73,9 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile):
 
 
 def main():
-    if len(sys.argv) < 7:
-        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile>"
-        print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC"
+    if len(sys.argv) < 8:
+        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency>"
+        print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC 0.5"
         sys.exit(1)
 	
     modelboxFile = sys.argv[1]
@@ -83,7 +84,8 @@ def main():
     coordfile = sys.argv[4]
     paramfile = sys.argv[5]
     boundsfile = sys.argv[6]
-    genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile)
+    frequency = sys.argv[7]
+    genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency)
 
 if __name__=="__main__":
     main()
