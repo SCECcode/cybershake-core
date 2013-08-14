@@ -4,7 +4,7 @@ import sys;
 import os;
 
 if len(sys.argv) < 9:
-    print "Usage: pre_cvm.py <site> <erf_id> <modelboxFile> <gridfile> <gridout> <coordfile> <paramsfile> <boundsfile>"
+    print "Usage: pre_cvm.py <site> <erf_id> <modelboxFile> <gridfile> <gridout> <coordfile> <paramsfile> <boundsfile> [frequency]"
     print "Example: pre_cvm.py USC 34 USC.modelbox gridfile_USC gridout_USC model_coords_GC_USC model_params_GC_USC model_bounds_GC_USC"
     sys.exit(-1)
 
@@ -16,6 +16,9 @@ gridout = os.path.abspath(sys.argv[5])
 coordsfile = os.path.abspath(sys.argv[6])
 paramsfile = os.path.abspath(sys.argv[7])
 boundsfile = os.path.abspath(sys.argv[8])
+frequency = 0.5
+if len(sys.argv)==10:
+	frequency = float(sys.argv[9])
 
 os.chdir(os.path.join(sys.path[0], "Modelbox"))
 exitcode = os.system("./get_modelbox.py %s %s %s" % (site, erfID, modelbox))
