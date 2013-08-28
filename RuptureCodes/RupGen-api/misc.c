@@ -41,6 +41,7 @@ ptr = (void *) malloc (len);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory allocation error\n");
+   fprintf(stderr,"Tried to allocate %ld bytes.\n", len);
    exit(-1);
    }
 
@@ -87,3 +88,16 @@ kperd_n = rperd*radius*(sqrt(1.0 + g2*sinA*sinA*(2.0 + g2)))*den*den*den;
 *slon = (*se)/kperd_e + *elon;
 }
 
+void free_srf_ptrs(struct standrupformat* srf) {
+	struct srf_planerectangle srf_prect = srf->srf_prect;
+	struct srf_allpoints srf_apnts = srf->srf_apnts;
+	
+	free(srf_prect.prectseg);
+	int i;
+	for (i=0; i<srf_apnts.np; i++) {
+		free(srf_apnts.apntvals[i].stf1);
+                free(srf_apnts.apntvals[i].stf2);
+                free(srf_apnts.apntvals[i].stf3);
+	}
+	free(srf_apnts.apntvals);
+}
