@@ -8,20 +8,19 @@ path_add = os.path.dirname(os.path.dirname(full_path))
 
 sys.path.append(path_add)
 
-print sys.path
-print os.getcwd()
-
 import config
 
-if len(sys.argv)<3:
-	print 'Usage: genmod.py <site> <gridout> <model_cords file> <models>'
+if len(sys.argv)<5:
+	print 'Usage: genmod.py <site> <gridout> <model_cords file> <models> [frequency]'
 	sys.exit(-1)
 
 site = sys.argv[1]
 gridout = sys.argv[2]
 modelcords = sys.argv[3]
 models = sys.argv[4]
-zstep = 200.0 #meters
+if len(sys.argv)==6:
+	frequency = float(sys.argv[5])
+	zstep = 100.0/frequency #meters
 
 #get grid steps
 input = open(gridout)
