@@ -1,16 +1,19 @@
-TARGETS = ucvm-mpi merge_cvm
+TARGETS = ucvm-mpi merge_cvm ucvm-single-mpi
 GETPAR_HOME = ../../Getpar/getpar
 #LDLIBS =     ${GETPAR_HOME}/lib/libget.a -lm 
 
 
-UCVM_HOME = /scratch/projects/tg/tera3d/CyberShake2007/software-9.2.0/UCVM/ucvm
-VX_HOME = /scratch/projects/tg/tera3d/CyberShake2007/software-9.2.0/UCVM/cvmh
-CVMS_HOME = /scratch/projects/tg/tera3d/CyberShake2007/software-9.2.0/UCVM/cvms
-UCVMLIBS = -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/gctpc/lib -L${UCVM_HOME}/lib -lucvm -L${CVMS_HOME}/lib -lcvms
+UCVM_HOME = /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0
+VX_HOME = /work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1
+CVMS_HOME = /work/00940/tera3d/CyberShake/software/UCVM/cvms
+ETREE_HOME = /work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3
+PROJ4_HOME = /work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0
+
+UCVMLIBS = -lucvm -L${UCVM_HOME}/lib -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/gctpc/lib -L${CVMS_HOME}/lib -lcvms -L${ETREE_HOME}/libsrc -letree -L${PROJ4_HOME}/lib -lproj
 UCVMINC = -I${UCVM_HOME}/include
 
 
-LDLIBS = -lm ${UCVMLIBS} -L${GETPAR_HOME}/lib -lget -lgfortran
+LDLIBS = -lm -L${GETPAR_HOME}/lib -lget -lgfortran
 
 include ../../Compilers.mk
 CC = $(MY_MPICC)
@@ -36,8 +39,8 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
 # optimized
 #CFLAGS = -O1 -compile-info -link-info ${VXINC}
-CFLAGS = -O1 ${UCVMINC}
-FFLAGS = -O2 -ffixed-line-length-132 -finit-local-zero
+CFLAGS = -O3
+FFLAGS = -O3 -ffixed-line-length-132 -finit-local-zero
 #FFLAGS = -O2
 
 ##### make options
@@ -51,7 +54,10 @@ all: $(TARGETS)
 check_media : check_media.c iofunc.o
 	${CC} ${CFLAGS} -o check_media check_media.c iofunc.o ${LDLIBS}
 ucvm-mpi : ucvm-main_mpi.c subs_mpi.o iofunc.o
-	${CC} ${CFLAGS} -o ucvm-mpi ucvm-main_mpi.c subs_mpi.o iofunc.o ${LDLIBS} ${UCVMLIBS}
+	${CC} ${CFLAGS} -o ucvm-mpi ucvm-main_mpi.c subs_mpi.o iofunc.o ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+
+ucvm-single-mpi : ucvm-single_mpi.c subs_mpi.o iofunc.o
+	${CC} ${CFLAGS} -o ucvm-single-mpi ucvm-single_mpi.c subs_mpi.o iofunc.o ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
 
 merge_cvm : merge_cvm.c subs_mpi.o iofunc.o
 	${CC} ${CFLAGS} -o merge_cvm merge_cvm.c subs_mpi.o iofunc.o ${LDLIBS}
