@@ -11,7 +11,7 @@ import math
 #will keep # of cores below this
 CORE_COUNT = 4000
 
-def build_IN3D(site, gridout, awp_comp):
+def build_IN3D(site, gridout, awp_comp, frequency):
 	fp_in = open("%s/data/IN3D.ref" % (sys.path[0]), "r")
 	data = fp_in.readlines()
 	fp_in.close()
@@ -40,6 +40,15 @@ def build_IN3D(site, gridout, awp_comp):
 		sys.exit(2)
 	
 	param["igreen"] = igreen
+
+	#determine DH, DT, NST, READ_STEP, WRITE_STEP, FP
+	param["DH"] = round(100.0/frequency, 1)
+	param["DT"] = 0.005/frequency
+	param["NST"] = int(round(40000.0/frequency, 0))
+	param["FP"] = frequency
+	param["READ_STEP"] = param["NST"]
+	param["WRITE_STEP"] = param["READ_STEP"]/10
+	param["WRITE_STEP2"] = param["WRITE_STEP"]
 	
 	#determine NX, NY, NZ
 	fp_in = open(gridout, "r")
@@ -66,12 +75,12 @@ def build_IN3D(site, gridout, awp_comp):
 	#Look for highest core count less than CORE_COUNT while 2*NX/NPX > NY/NPY, and NX/NPX < 2*NY/NPY
 
 	#check and see if we are under the threshold
+	adjust = 1
 	if npx*npy>nxny_cores:
 		#how far over?
 		scale_factor = math.sqrt(float(nxny_cores)/float(npx*npy))
 		#Adjust npx
 		npx = int(npx*scale_factor)
-		adjust = 1
 		while not (nx % npx == 0) and npx>0 and npx<nx:
 			npx += adjust
 			adjust = int(math.copysign(abs(adjust)+1, -1*adjust))
@@ -143,6 +152,7 @@ def build_IN3D(site, gridout, awp_comp):
 	param["INVEL"] = "comp_%s/input/awp.%s.media" % (awp_comp, site)
 	param["INSGT"] = "comp_%s/input/awp.%s.cordfile" % (awp_comp, site)
 	param["SGTGRO"] = "comp_%s/output_sgt/awp-strain-%s-f%s" % (awp_comp, site, awp_comp)
+
 	
 	#write IN3D file
 	fp_out = open("IN3D.%s.%s" % (site, awp_comp), "w")
