@@ -7,14 +7,8 @@
 3) Cordfile in AWP format
 4) Velocity mesh in AWP format
 '''
-print "import sys"
 import sys
-sys.stdout.flush()
-print "import os"
-sys.stdout.flush()
 import os
-print "import errno"
-sys.stdout.flush()
 import errno
 
 print "Adding config to path."
@@ -25,24 +19,13 @@ path_add = os.path.dirname(os.path.dirname(os.path.dirname(full_path)))
 
 sys.path.append(path_add)
 
-print "import config"
-sys.stdout.flush()
 import config
+import optparse
 
-print "import build_IN3D"
-sys.stdout.flush()
 from build_IN3D import build_IN3D
-print "import build_src"
-sys.stdout.flush()
 from build_src import build_src
-print "import build_media"
-sys.stdout.flush()
 from build_media import build_media
-print "import build_cordfile"
-sys.stdout.flush()
 from build_cordfile import build_cordfile
-print "Done importing."
-sys.stdout.flush()
 
 def mkdir_p(path):
 	try:
@@ -53,15 +36,34 @@ def mkdir_p(path):
 		else: raise
 
 
+parser = optparse.OptionParser()
+parser.add_option("--site", dest="site", action="store", help="Site name")
+parser.add_option("--gridout", dest="gridout", action="store", help="Path to gridout input file")
+parser.add_option("--fdloc", dest="fdloc", action="store", help="Path to fdloc input file")
+parser.add_option("--cordfile", dest="cordfile", action="store", help="Path to cordfile input file")
+parser.add_option("--velocity-prefix", dest="vel_prefix", action="store", help="RWG velocity prefix.  If omitted, will not reformat velocity file, just symlink.")
+parser.add_option("--frequency", dest="frequency", type=float, action="store", default=0.5, help="Frequency of SGT run, 0.5 Hz by default.")
+
+(option, args) = parser.parse_args()
+
+'''
 if len(sys.argv)<6:
-	print "Usage: %s <site> <gridout> <rwg velocity prefix> <fdloc> <rwg cordfile>" % (sys.argv[0])
+	print "Usage: %s <site> <gridout> <rwg velocity prefix> <fdloc> <rwg cordfile> [frequency]" % (sys.argv[0])
+	sys.exit(1)
+'''
+
+site = option.site
+gridout = option.gridout
+fdloc = option.fdloc
+cordfile = option.cordfile
+
+if site==None or gridout==None or fdloc==None or cordfile==None:
+	print "site, gridout, fdloc, and cordfile must be specified."
+	parser.print_help()
 	sys.exit(1)
 
-site = sys.argv[1]
-gridout = sys.argv[2]
-rwg_vel_prefix = sys.argv[3]
-fdloc = sys.argv[4]
-rwg_cordfile = sys.argv[5]
+rwg_vel_prefix = option.vel_prefix
+frequency = option.frequency
 
 awp_comps = ['x', 'y']
 
@@ -74,13 +76,13 @@ for c in awp_comps:
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
-	rc = build_IN3D(site, gridout, c)
+	rc = build_IN3D(site, gridout, c, frequency)
 	if not rc==0:
 		print "Error in build_IN3D, aborting."
 		sys.exit(2)
 	print "Building source file."
 	sys.stdout.flush()
-	rc = build_src(site, fdloc, c)
+	rc = build_src(site, fdloc, c, frequency)
 	if not rc==0:
 	        print "Error in build_src, aborting."
 	        sys.exit(3)
@@ -95,13 +97,18 @@ for c in awp_comps:
 	if os.path.exists("comp_%s/input/%s" % (c, awp_cordfile)):
 		os.remove("comp_%s/input/%s" % (c, awp_cordfile))
 	os.symlink("../../%s" % awp_cordfile, "comp_%s/input/%s" % (c, awp_cordfile))
+
 awp_media = "awp.%s.media" % (site)
-print "Building media file."
-sys.stdout.flush()
-rc = build_media(site, gridout, rwg_vel_prefix, awp_media)
-if not rc==0:
-        print "Error in build_media, aborting."
-        sys.exit(2)
+if rwg_vel_prefix is not None:
+	print "Building media file."
+	sys.stdout.flush()
+	rc = build_media(site, gridout, rwg_vel_prefix, awp_media)
+	if not rc==0:
+	        print "Error in build_media, aborting."
+	        sys.exit(2)
+else:
+	print "No velocity prefix specified, skipping velocity file reformat."
+
 for c in awp_comps:
 	if os.path.exists("comp_%s/input/%s" % (c, awp_media)):
                 os.remove("comp_%s/input/%s" % (c, awp_media))
