@@ -3,7 +3,7 @@
 import sys
 import os
 
-def build_src(site, fdloc, awp_comp):
+def build_src(site, fdloc, awp_comp, frequency):
 	if awp_comp=='x':
 		comp = "y"
 	elif awp_comp=='y':
@@ -14,13 +14,15 @@ def build_src(site, fdloc, awp_comp):
 		print "Error:  component %s not recognized, aborting." % comp
 		sys.exit(1)
 	
+	nt = int(round(40000.0/frequency, 0))
+
 	fp_in = open(fdloc, "r")
 	data = fp_in.readline()
 	fp_in.close()
 	
 	[src_x, src_y] = data.split()
 	
-	fp_in = open("%s/data/f%s_src" % (sys.path[0], awp_comp))
+	fp_in = open("%s/data/f%s_src_%d" % (sys.path[0], awp_comp, nt))
 	src_data = fp_in.readlines()
 	fp_in.close()
 	
