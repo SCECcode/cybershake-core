@@ -89,7 +89,7 @@ for c in awp_comps:
 awp_cordfile = "awp.%s.cordfile" % site
 print "Building cordfile."
 sys.stdout.flush()
-rc = build_cordfile(site, rwg_cordfile, awp_cordfile)
+rc = build_cordfile(site, cordfile, awp_cordfile)
 if not rc==0:
         print "Error in build_cordfile, aborting."
         sys.exit(2)
