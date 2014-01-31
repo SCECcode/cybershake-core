@@ -1,0 +1,37 @@
+CC 	= mpicc
+CFLAGS	= -O3 -Wall
+GFLAGS	= nvcc -O4 -Xptxas -dlcm=ca -maxrregcount=63 -use_fast_math --ptxas-options=-v -arch=sm_20
+
+INCDIR  = -I/sw/keeneland/cuda/4.1/linux_binary/include -I/sw/keeneland/mvapich2/1.7/centos5.5_intel12.1.2/include 
+OBJECTS	= command.o pmcl3d.o grid.o source.o mesh.o cerjan.o swap.o kernel.o
+LIB	= -lm -ldl -L/sw/keeneland/mvapich2/1.7/centos5.5_intel12.1.2/lib -lmpich -L/sw/keeneland/cuda/4.1/linux_binary/lib64 -lcudart
+
+pmcl3d:	$(OBJECTS)
+	$(CC) $(CFLAGS) $(INCDIR) -o	pmcl3d	$(OBJECTS)	$(LIB)
+
+pmcl3d.o:	pmcl3d.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o pmcl3d.o	pmcl3d.c		
+
+command.o:	command.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o	command.o	command.c	
+
+grid.o:		grid.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o grid.o		grid.c		
+
+source.o:	source.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o source.o	source.c	
+
+mesh.o:		mesh.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o mesh.o		mesh.c		
+
+cerjan.o:	cerjan.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o cerjan.o	cerjan.c
+
+swap.o:		swap.c
+	$(CC) $(CFLAGS) $(INCDIR) -c -o swap.o		swap.c
+
+kernel.o:	kernel.cu
+	$(GFLAGS) $(INCDIR) -c -o	kernel.o	kernel.cu	
+
+clean:	
+	rm *.o
