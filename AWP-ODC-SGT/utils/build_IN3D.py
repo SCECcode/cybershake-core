@@ -44,7 +44,7 @@ def build_IN3D(site, gridout, awp_comp, frequency):
 	#determine DH, DT, NST, READ_STEP, WRITE_STEP, FP
 	param["DH"] = round(100.0/frequency, 1)
 	param["DT"] = 0.005/frequency
-	param["NST"] = int(round(40000.0/frequency, 0))
+	param["NST"] = int(round(10000.0/frequency, 0))
 	param["FP"] = frequency
 	param["READ_STEP"] = param["NST"]
 	param["WRITE_STEP"] = param["READ_STEP"]/10
