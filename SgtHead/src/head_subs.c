@@ -351,6 +351,7 @@ if((fp = fopen(name,mode)) == NULL && errno == ENOENT)
 if((fp = fopen(name,mode)) == NULL)
    {
    fprintf(stderr,"CAN'T FOPEN FILE = %s, MODE = %s\n", name, mode);
+   perror("Error");
    exit(-1);
    }
 return(fp);
@@ -360,8 +361,11 @@ opfile_ro (name)
 char *name;
 {
 int fd;
-if ((fd = open (name, RDONLY_FLAGS, 0444)) == -1)
+if ((fd = open (name, RDONLY_FLAGS, 0444)) == -1) {
    fprintf (stderr, "CAN'T OPEN FILE %s\n", name);
+   perror("Error");
+   exit(-1);
+}
 return (fd);
 }
 
@@ -407,8 +411,10 @@ return(temp);
 int cropfile_rw(char *name)
 {
 int fd;
-if ((fd = open(name,CROP_FLAGS,0664)) == -1)
+if ((fd = open(name,CROP_FLAGS,0664)) == -1) {
    fprintf (stderr, "CAN'T OPEN FILE %s\n", name);
+   exit(-1);
+}
 return(fd);
 }
 
