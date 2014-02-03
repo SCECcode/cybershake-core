@@ -9,10 +9,7 @@ import sys
 import os
 import math
 
-#will keep # of cores below this
-CORE_COUNT = 400
-
-def build_IN3D(site, gridout, awp_comp, frequency):
+def build_IN3D(site, gridout, awp_comp, frequency, proc):
 	fp_in = open("%s/data/IN3D.ref" % (sys.path[0]), "r")
 	data = fp_in.readlines()
 	fp_in.close()
@@ -65,46 +62,21 @@ def build_IN3D(site, gridout, awp_comp, frequency):
 	param["NX"] = nx
 	param["NY"] = ny
 	param["NZ"] = nz
-	
-	#determine NPX, NPY, NPZ
-	#hard-code npz to 1 for now
-	npz = 1
-	nxny_cores = CORE_COUNT/npz
 
-	#First try npx = 20
-	npx = 20
-
-	#nx/npx needs to be an even int
-	adjust = 1
-	while not (nx % npx == 0 and (nx/npx) % 2 == 0):
-		npx += adjust
-		adjust = int(math.copysign(abs(adjust)+1, -1*adjust))
-	
-	#Now try npy = int(400/npx), search down
-	npy = int(400/npx)
-	while not (ny % npy == 0 and (ny/npy) % 2 == 0):
-		npy -= 1	
-		
-	#If they are way too different, throw an error:
-	if npx>5*npy or npy>5*npx:	
-		print "Error in determining load-balanced npx and npy.  Trying to fit %d cores with grid dimensions (%d, %d, %d), but the best we could do was np = (%d, %d, %d).  Aborting.  Perhaps try a different core limit?" % (CORE_COUNT, nx, ny, nz, npx, npy, npz)
+	#Check proc values to make sure they are evenly divisible
+	if nx % proc[0] != 0:
+		print "PX %d must be a factor of NX %d, aborting." % (proc[0], nx)
 		sys.exit(2)
+        if ny % proc[1] != 0:
+                print "PY %d must be a factor of NY %d, aborting." % (proc[1], ny)
+                sys.exit(2)
+        if nz % proc[2] != 0:
+                print "PZ %d must be a factor of NZ %d, aborting." % (proc[2], nz)
+                sys.exit(2)	
 	
-	print "Chose %d for npx, %d for npy" % (npx, npy)
-	#hard-code to 20x20	
-	param["NPX"] = npx
-	param["NPY"] = npy
-	param["NPZ"] = 1
-
-	#if TEST site, 10 x 5
-	if site=="TEST":
-		param["NPX"] = 10
-		param["NPY"] = 5
-		param["NPZ"] = 1
-
-	#param["NPX"] = npx_best
-	#param["NPY"] = npy_best
-	#param["NPZ"] = 1
+	param["NPX"] = proc[0]
+	param["NPY"] = proc[1]
+	param["NPZ"] = proc[2]
 	
 	#doesn't really matter, but set N<BG|ED><comp> values
 	param["NBGX"] = 1

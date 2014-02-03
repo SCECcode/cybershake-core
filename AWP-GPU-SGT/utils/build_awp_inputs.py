@@ -43,14 +43,12 @@ parser.add_option("--fdloc", dest="fdloc", action="store", help="Path to fdloc i
 parser.add_option("--cordfile", dest="cordfile", action="store", help="Path to cordfile input file")
 parser.add_option("--velocity-prefix", dest="vel_prefix", action="store", help="RWG velocity prefix.  If omitted, will not reformat velocity file, just symlink.")
 parser.add_option("--frequency", dest="frequency", type=float, action="store", default=0.5, help="Frequency of SGT run, 0.5 Hz by default.")
+parser.add_option("--px", dest="px", type=int, action="store", help="Number of processors in X-direction.")
+parser.add_option("--py", dest="py", type=int, action="store", help="Number of processors in Y-direction.")
+parser.add_option("--pz", dest="pz", type=int, action="store", help="Number of processors in Z-direction.")
+
 
 (option, args) = parser.parse_args()
-
-'''
-if len(sys.argv)<6:
-	print "Usage: %s <site> <gridout> <rwg velocity prefix> <fdloc> <rwg cordfile> [frequency]" % (sys.argv[0])
-	sys.exit(1)
-'''
 
 site = option.site
 gridout = option.gridout
@@ -59,6 +57,13 @@ cordfile = option.cordfile
 
 if site==None or gridout==None or fdloc==None or cordfile==None:
 	print "site, gridout, fdloc, and cordfile must be specified."
+	parser.print_help()
+	sys.exit(1)
+
+procs = [option.px, option.py, option.pz]
+
+if (procs[0]==None or procs[1]==None or procs[2]==None):
+	print "px, py, pz must be specified."
 	parser.print_help()
 	sys.exit(1)
 
@@ -78,7 +83,7 @@ for c in awp_comps:
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
-	rc = build_IN3D(site, gridout, c, frequency)
+	rc = build_IN3D(site, gridout, c, frequency, procs)
 	if not rc==0:
 		print "Error in build_IN3D, aborting."
 		sys.exit(2)
@@ -114,5 +119,5 @@ else:
 for c in awp_comps:
 	if os.path.lexists("comp_%s/input/%s" % (c, awp_media)):
                 os.remove("comp_%s/input/%s" % (c, awp_media))
-	os.symlink("../../%s" % awp_media, "comp_%s/input/%s" % (c, awp_media))
+	os.symlink("../../../%s" % awp_media, "comp_%s/input/%s" % (c, awp_media))
 
