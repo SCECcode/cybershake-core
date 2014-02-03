@@ -19,8 +19,8 @@ touch $NANFILE
 set np = 0
 while ( $np < $NPROC )
 
-set infile = `echo $FILE_PREFX $np | gawk '{printf "%s%.4d.e3d\n",$1,$2;}'`
-set dumpfile = `echo $np | gawk '{printf "DumpLogs/dump.%.4d\n",$1;}'`
+set infile = `echo $FILE_PREFX $np | gawk '{printf "%s%.5d.e3d\n",$1,$2;}'`
+set dumpfile = `echo $np | gawk '{printf "DumpLogs/dump.%.5d\n",$1;}'`
 
 ${CS_PATH}/SgtTest/bin/dump_rawsgt infile=$infile >& $dumpfile
 grep "nan" $dumpfile >> $NANFILE
@@ -30,7 +30,7 @@ end
 
 if (-z $NANFILE) then
 	echo "No nans detected, cleaning up."
-	rm -rf DumpLogs
+	#rm -rf DumpLogs
 	exit(0)
 else
 	echo "Nans detected in SGTs."
