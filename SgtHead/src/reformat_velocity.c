@@ -31,43 +31,49 @@ int main(int argc, char** argv) {
 	//RWG is fast x, z, y (km)
 	//AWP is fast y, x, z (actually fast x, y, z, but y and x are flipped)
 
-	int chunk_size = (int)(175000000.0/(nx*nz));
+	//on Blue Waters, 64 GB per node -- 10 GB free for chunking (since you need in and out and 3 pieces of data)
+	int chunk_size = (int)(((long)10*1024*1024*1024)/(long)(nx*nz));
 	if (chunk_size>ny) {
 		chunk_size = ny;
 	}
 
 	printf("Using chunk size %d.\n", chunk_size);	
-	p_data = malloc(nx*chunk_size*nz*sizeof(float));
-	s_data = malloc(nx*chunk_size*nz*sizeof(float));	
-	d_data = malloc(nx*chunk_size*nz*sizeof(float));
+	p_data = malloc((long)nx*(long)chunk_size*(long)nz*sizeof(float));
+	s_data = malloc((long)nx*(long)chunk_size*(long)nz*sizeof(float));	
+	d_data = malloc((long)nx*(long)chunk_size*(long)nz*sizeof(float));
+
+	if (p_data==0 || s_data==0 || d_data==0) {
+		fprintf(stderr, "Error allocating input buffers.\n");
+		exit(1);
+	}
 
 	awp_buffer = malloc(3*chunk_size*sizeof(float));
 
 	int y_index = 0;
-	int in_arr_offset, max_y;
-	long outfile_offset;
+	int max_y;
+	long in_arr_offset, outfile_offset;
 	while (y_index<ny) {
 		max_y = chunk_size;
 		if (y_index+chunk_size>ny) {
 			max_y = ny-y_index;
 		}
 
-		fread(p_data, sizeof(float), nx*max_y*nz, p_fp);
-		fread(s_data, sizeof(float), nx*max_y*nz, s_fp);
-		fread(d_data, sizeof(float), nx*max_y*nz, d_fp);
+		fread(p_data, sizeof(float), (long)nx*(long)max_y*(long)nz, p_fp);
+		fread(s_data, sizeof(float), (long)nx*(long)max_y*(long)nz, s_fp);
+		fread(d_data, sizeof(float), (long)nx*(long)max_y*(long)nz, d_fp);
 
 		for(k=0; k<nz; k++) {
 			//printf("%d-%d:  Z slice %d of %d.\n", y_index, y_index+max_y, k+1, nz);
 			//fflush(stdout);
 			for (i=0; i<nx; i++) {
 				for (j=0; j<max_y; j++) {
-					in_arr_offset = j*nx*nz + k*nx + i;
+					in_arr_offset = (long)j*nx*nz + (long)k*nx + (long)i;
 					//printf("In offset: %d\n", in_arr_offset);
 					awp_buffer[3*j] = p_data[in_arr_offset]*1000.0;
 					awp_buffer[3*j+1] = s_data[in_arr_offset]*1000.0;
 					awp_buffer[3*j+2] = d_data[in_arr_offset]*1000.0;
 				}
-				outfile_offset = 3*sizeof(float)*(k*nx*ny + i*ny + y_index);
+				outfile_offset = 3*sizeof(float)*((long)k*nx*ny + (long)i*ny + (long)y_index);
 				fseek(out_fp, outfile_offset, SEEK_SET);
 				fwrite(awp_buffer, sizeof(float), 3*max_y, out_fp);
 			}
