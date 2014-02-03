@@ -8,10 +8,7 @@ import sys
 import os
 import math
 
-#will keep # of cores below this
-CORE_COUNT = 4000
-
-def build_IN3D(site, gridout, awp_comp, frequency):
+def build_IN3D(site, gridout, awp_comp, frequency, proc):
 	fp_in = open("%s/data/IN3D.ref" % (sys.path[0]), "r")
 	data = fp_in.readlines()
 	fp_in.close()
@@ -62,76 +59,21 @@ def build_IN3D(site, gridout, awp_comp, frequency):
 	param["NX"] = nx
 	param["NY"] = ny
 	param["NZ"] = nz
-	
-	#determine NPX, NPY, NPZ
-	#hard-code npz to 4 for now
-	npz = 4
-	nxny_cores = CORE_COUNT/npz
-	
-	#Since we have 5 points per km and the dimensions are multiples of 10 km, we know 50 is a factor
-	npx = nx/50
-	npy = ny/50
-	
-	#Look for highest core count less than CORE_COUNT while 2*NX/NPX > NY/NPY, and NX/NPX < 2*NY/NPY
 
-	#check and see if we are under the threshold
-	adjust = 1
-	if npx*npy>nxny_cores:
-		#how far over?
-		scale_factor = math.sqrt(float(nxny_cores)/float(npx*npy))
-		#Adjust npx
-		npx = int(npx*scale_factor)
-		while not (nx % npx == 0) and npx>0 and npx<nx:
-			npx += adjust
-			adjust = int(math.copysign(abs(adjust)+1, -1*adjust))
-		if npx<=0 or npx>=nx:
-			print "Error:  npx is %d, aborting." % npx
-		print "Chose %d for npx" % npx
-		#Adjust npy
-		npy = nxny_cores/npx
-		#This is the largest it can be without exceeding CORE_COUNT; search down
-		while not (ny % npy == 0) and npy>0 and npy<ny:
-			npy -= 1
-		if npy<=0 or npy>=ny:
-			print "Error:  npy is %d, aborting." % npy
-		if npx>10*npy or npy>10*npx:
-			print "Error in determining load-balanced npx and npy.  Trying to fit %d cores with grid dimensions (%d, %d, %d), but the best we could do was np = (%d, %d, %d).  Aborting.  Perhaps try a different core limit?" % (CORE_COUNT, nx, ny, nz, npx, npy, npz)
-			sys.exit(2)
+	#Check proc values to make sure they are evenly divisible
+	if nx % proc[0] != 0:
+		print "PX %d must be a factor of NX %d, aborting." % (proc[0], nx)
+		sys.exit(2)
+        if ny % proc[1] != 0:
+                print "PY %d must be a factor of NY %d, aborting." % (proc[1], ny)
+                sys.exit(2)
+        if nz % proc[2] != 0:
+                print "PZ %d must be a factor of NZ %d, aborting." % (proc[2], nz)
+                sys.exit(2)	
 	
-	#Now, see if we can improve
-        npx_best = npx
-        npy_best = npy
-	cores_used = npx_best*npy_best
-	print npx, npy
-	sys.stdout.flush()
-	while (2*nx/npx > ny/npy) and (nx/npx < 2*ny/npy) and npx<nx and npy<ny and npx>0 and npy>0:
-		#continue from where we left off
-		npx += adjust
-		adjust = int(math.copysign(abs(adjust)+1, -1*adjust))
-		while not (nx % npx == 0) and npx<nx and npx>0 and npx<nx:
-			print "npx: %d\n" % npx
-			sys.stdout.flush()
-                        npx += adjust
-			adjust = int(math.copysign(abs(adjust)+1, -1*adjust))
-		npy = nxny_cores/npx
-		while not (ny % npy == 0) and npy>0 and npx<ny:
-			#Search down
-			print "npy: %d\n" % npy
-			sys.stdout.flush()
-			npy -= 1
-		#if the values are too extreme, stop looking
-		if not ((2*nx/npx > ny/npy) and (nx/npx < 2*ny/npy)):
-			break
-		if npx*npy > cores_used:
-			npx_best = npx
-			npy_best = npy
-			cores_used = npx*npy
-
-	print "Chose %d for npy" % npy_best
-	
-	param["NPX"] = npx_best
-	param["NPY"] = npy_best
-	param["NPZ"] = npz
+	param["NPX"] = proc[0]
+	param["NPY"] = proc[1]
+	param["NPZ"] = proc[2]
 	
 	#doesn't really matter, but set N<BG|ED><comp> values
 	param["NBGX"] = 1
