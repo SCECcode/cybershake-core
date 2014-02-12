@@ -138,48 +138,119 @@ float TOP_MODEL_EPSILON, ELEV_EPSILON = 0.01;
 float CM_VOXEL_HEIGHT = 1000.0;
 float LR_HR_VOXEL_HEIGHT = 100.0;
 
- fprintf(stderr, "[%d] Sleeping for %d seconds\n", myid, myid*2);
- fflush(stderr);
- sleep(myid*2);
+ //fprintf(stderr, "[%d] Sleeping for %d seconds\n", myid, myid*2);
+ //fflush(stderr);
+ //sleep(myid);
 
 //run ucvm setup
  fprintf(stderr, "[%d] Setting up ucvm\n", myid);
  fflush(stderr);
- if (ucvm_init("/home/rcf-104/CyberShake2007/software/UCVM/ucvm/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+ if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
    fprintf(stderr, "Failed to setup ucvm.\n");
    fflush(stderr);
    exit(-1);
  }
 
-// Query by depth
- if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
-   fprintf(stderr, "Set query mode by depth failed.\n");
-   fflush(stderr);
-   exit(-2);
- }
- //Add CVM-H models
  //separate model names and add them
  if (strstr(models, ",")!=NULL) {
+	 int ucvm_initialized = 0;
+	 int ucvm_no_gtl_initialized = 0;
 	 char* tok = strtok(models, ",");
 	 while (tok!=NULL) {
 		if (strcmp(tok, "cvmh")==0) {
+			if (!ucvm_initialized) {
+				if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+				   fprintf(stderr, "Failed to setup ucvm.\n");
+				   fflush(stderr);
+				   exit(-1);
+				}
+				ucvm_initialized = 1;
+			}
+			if (ucvm_no_gtl_initialized) {
+				fprintf(stderr, "Can't use cvmh with a GTL after initializing UCVM without the GTL.");
+				fflush(stderr);
+				exit(-2);
+			}
 			if (ucvm_add_model(UCVM_MODEL_CVMH)!=UCVM_CODE_SUCCESS) {
 			   fprintf(stderr, "Error retrieving CVM-H.\n");
 			   fflush(stderr);
 			   exit(-1);
 			}
 		} else if (strcmp(tok, "cvms")==0) {
+			if (!ucvm_initialized) {
+	                        if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	                           fprintf(stderr, "Failed to setup ucvm.\n");
+	                           fflush(stderr);
+	                           exit(-1);
+	                        }
+				ucvm_initialized = 1;
+			}
 			if (ucvm_add_model(UCVM_MODEL_CVMS)!=UCVM_CODE_SUCCESS) {
 			   fprintf(stderr, "Error retrieving CVM-S.\n");
 	                   fflush(stderr);
 			   exit(-2);
 	                }
 		} else if (strcmp(tok, "1d")==0) {
+			if (!ucvm_initialized) {
+	                        if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	                           fprintf(stderr, "Failed to setup ucvm.\n");
+	                           fflush(stderr);
+	                           exit(-1);
+	                        }
+				ucvm_initialized = 1;
+			}
 			if (ucvm_add_model(UCVM_MODEL_1D) != UCVM_CODE_SUCCESS) {
 			   fprintf(stderr, "Error retrieving 1D model.\n");
 			   fflush(stderr);
 			   exit(-3);
 			}
+		} else if (strcmp(tok, "cvmsi")==0) {
+			if (!ucvm_initialized) {
+	                        if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	                           fprintf(stderr, "Failed to setup ucvm.\n");
+	                           fflush(stderr);
+	                           exit(-1);
+				}
+				ucvm_initialized = 1;
+                        }
+			if (ucvm_add_model(UCVM_MODEL_CVMSI) != UCVM_CODE_SUCCESS) {
+	  		   fprintf(stderr, "Error retrieving CVM-SI.\n");
+                           fflush(stderr);
+                           exit(-4);
+			}
+		} else if (strcmp(tok, "hk")==0) {
+			//Hadley-Kanamori
+			if (!ucvm_initialized) {
+				if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	  			   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+			}
+			if (ucvm_add_model(UCVM_MODEL_1D) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving Hadley-Kanamori model.\n");
+                           fflush(stderr);
+                           exit(-3);
+                        }
+		} else if (strcmp(tok, "cvmh_nogtl")==0) {
+			if (ucvm_initialized) {
+				fprintf(stderr, "Error: need to put cvmh_nogtl first in list of models.");
+				fflush(stderr);
+				exit(-2);
+			}
+			ucvm_initialized = 1;
+			ucvm_no_gtl_initialized = 1;	
+			if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Failed to setup ucvm.\n");
+                           fflush(stderr);
+                           exit(-1);
+                        }
+                        if (ucvm_add_model(UCVM_MODEL_CVMH) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving CVM-H (no GTL).\n");
+                           fflush(stderr);
+                           exit(-4);
+                        }
 		} else {
 			fprintf(stderr, "Model %s didn't match any known models, aborting.\n", tok);
 			fflush(stderr);
@@ -189,23 +260,71 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	}
  } else {
 	if (strcmp(models, "cvmh")==0) {
+            if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                fprintf(stderr, "Failed to setup ucvm.\n");
+                fflush(stderr);
+                exit(-1);
+             }
              if (ucvm_add_model(UCVM_MODEL_CVMH)!=UCVM_CODE_SUCCESS) {
              	fprintf(stderr, "Error retrieving CVM-H.\n");
              	fflush(stderr);
 		exit(-1);
              }
         } else if (strcmp(models, "cvms")==0) {
+            if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                fprintf(stderr, "Failed to setup ucvm.\n");
+                fflush(stderr);
+                exit(-1);
+             }
    	     if (ucvm_add_model(UCVM_MODEL_CVMS)!=UCVM_CODE_SUCCESS) {
          	    fprintf(stderr, "Error retrieving CVM-S.\n");
                     fflush(stderr);
 		    exit(-2);
              }
         } else if (strcmp(models, "1d")==0) {
+            if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                fprintf(stderr, "Failed to setup ucvm.\n");
+                fflush(stderr);
+                exit(-1);
+             }
              if (ucvm_add_model(UCVM_MODEL_1D)!=UCVM_CODE_SUCCESS) {
 	             fprintf(stderr, "Error retrieving 1D model.\n");
                      fflush(stderr);
                      exit(-3);
              }
+        } else if (strcmp(models, "cvmsi")==0) {
+            if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                fprintf(stderr, "Failed to setup ucvm.\n");
+                fflush(stderr);
+                exit(-1);
+             }
+             if (ucvm_add_model(UCVM_MODEL_CVMSI) != UCVM_CODE_SUCCESS) {
+                     fprintf(stderr, "Error retrieving CVM-SI.\n");
+                     fflush(stderr);
+                     exit(-4);
+             }
+	} else if (strcmp(models, "hk")==0) {
+		    if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+			fprintf(stderr, "Failed to setup ucvm.\n");
+			fflush(stderr);
+			exit(-1);
+		     }
+		     if (ucvm_add_model(UCVM_MODEL_1D) != UCVM_CODE_SUCCESS) {
+			     fprintf(stderr, "Error retrieving 1D model.\n");
+			     fflush(stderr);
+			     exit(-4);
+		     }
+	} else if (strcmp(models, "cvmh_nogtl")==0) {
+		     if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_13.9.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+                        fprintf(stderr, "Failed to setup ucvm.\n");
+                        fflush(stderr);
+                        exit(-1);
+                     }
+                     if (ucvm_add_model(UCVM_MODEL_CVMH) != UCVM_CODE_SUCCESS) {
+                             fprintf(stderr, "Error retrieving 1D model.\n");
+                             fflush(stderr);
+                             exit(-4);
+                     }
 	} else {
  	       fprintf(stderr, "Model %s didn't match any known models, aborting.\n", models);
                fflush(stderr);
@@ -213,6 +332,12 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
         }
  }
 
+ // Query by depth
+ if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+   fprintf(stderr, "Set query mode by depth failed.\n");
+   fflush(stderr);
+   exit(-2);
+ }
 
  fprintf(stderr, "[%d] Generating CVM\n", myid);
  fflush(stderr);
