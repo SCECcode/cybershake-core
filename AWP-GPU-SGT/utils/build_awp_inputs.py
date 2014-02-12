@@ -119,5 +119,5 @@ else:
 for c in awp_comps:
 	if os.path.lexists("comp_%s/input/%s" % (c, awp_media)):
                 os.remove("comp_%s/input/%s" % (c, awp_media))
-	os.symlink("../../../%s" % awp_media, "comp_%s/input/%s" % (c, awp_media))
+	os.symlink("../../%s" % awp_media, "comp_%s/input/%s" % (c, awp_media))
 
