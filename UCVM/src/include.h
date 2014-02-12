@@ -18,3 +18,5 @@
 #include <sys/resource.h>
 #include <sys/signal.h>
 #include <sys/syscall.h>
+
+#include "getpar.h"
