@@ -90,6 +90,7 @@ outfile = sys.argv[3]
 
 gpu = False
 if len(sys.argv) >= 5 and sys.argv[4]=="gpu":
+	print "GPU mode."
 	gpu = True
 
 f = open(outfile,"w")
@@ -214,13 +215,6 @@ ymin = ymin-bpad
 
 xlen=xmax-xmin
 ylen=ymax-ymin
-if gpu:
-	#Round up to the nearest multiple of 40 km so that the # of grid points will be a multiple of 200
-	if xlen % 40 != 0:
-		xlen = (int(xlen)/40 + 1) * 40
-	if ylen % 40 != 0:
-		ylen = (int(ylen)/40 + 1) * 40
-
 
 x0=xmax-0.5*xlen
 y0=ymax-0.5*ylen
@@ -231,8 +225,17 @@ e = (y0*cosR) + (x0*sinR)
 mlon=clon + (e/kplon)
 mlat=clat + (n/kplat)
 
+#Round up to nearest 10km
 xlrnd=10*int((xlen/10.0) + 0.5)
 ylrnd=10*int((ylen/10.0) + 0.5)
+
+if gpu:
+        #Round up to the nearest multiple of 4 km so that the # of grid points will be a multiple of 20
+        print "Old lengths: %d, %d" % (xlrnd, ylrnd)
+        xlrnd += (-1*xlrnd) % 4
+        ylrnd += (-1*ylrnd) % 4
+        print "New lengths: %d, %d" % (xlrnd, ylrnd)
+
 
 f.write("APPROXIMATE CENTROID:\n")
 f.write(" clon=%12.5f clat=%12.5f\n"%(clon,clat))
