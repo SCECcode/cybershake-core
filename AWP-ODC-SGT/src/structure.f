@@ -743,8 +743,8 @@ c     vse(1) = 0.8*vs
       dde(1) = dd
       dde(2) = dd
 
-      do 60 k=-1,nzt+1
-      do 60 j=-1,nyt+1
+      do 60 k=0,nzt+1
+      do 60 j=0,nyt+1
         if (idyna==1) then
            vp=vpe(2)
            vs=vse(2)
@@ -755,7 +755,7 @@ c     vse(1) = 0.8*vs
             dd=dde(1)
           end if
         endif
-      do 60 i=-1,nxt+1
+      do 60 i=0,nxt+1
         lam(i,j,k)=1./(dd*(vp*vp - 2.*vs*vs))
         mu(i,j,k)=1./(dd*vs*vs)
         d1(i,j,k)=dd

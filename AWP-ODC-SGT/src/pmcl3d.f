@@ -186,7 +186,6 @@ C     FOR SGSN DYNAMIC FAULT MODEL
 
 C     SGT Starts
       integer :: igreen, floatsize
-      real, dimension(:,:,:), allocatable :: xyn, xzn, yzn
       real, dimension(:,:,:), allocatable :: sg1, sg2, sg3
       real, dimension(:,:,:,:), allocatable :: sgt
       integer ix, iy, iz
@@ -1157,14 +1156,9 @@ C     =========================
 
 cSGT -------start---------------------------------------
         if (igreen .ne. -1) then
-           allocate(xyn(1:nxt,1:nyt,1:nzt))
-           allocate(xzn(1:nxt,1:nyt,1:nzt))
-           allocate(yzn(1:nxt,1:nyt,1:nzt))
-
            allocate(sg1(1:nxt,1:nyt,1:nzt))
            allocate(sg2(1:nxt,1:nyt,1:nzt))
            allocate(sg3(1:nxt,1:nyt,1:nzt))
-           allocate(sgt(1:6,1:nxt,1:nyt,1:nzt))
 
            do iz = 1,nzt
              do iy = 1,nyt
@@ -1434,7 +1428,7 @@ c        if(fsf==1) call fstr(nxt,nyt,nzt)
          end if       
 
 cSGT -------start---------------------------------------
-        if (igreen .ne. -1 .and. mod(i,ntiskp_sgt).eq.0) then
+!        if (igreen .ne. -1 .and. mod(i,ntiskp_sgt).eq.0) then
 ! off-diagonal stress on staggered-grid interpolate to diagonal stress (P. Chen ?)
 c           xyn=(xy(0:nxt-1,1:nyt,1:nzt)+xy(1:nxt,1:nyt,1:nzt)+xy(0:nxt-1,0:nyt-1,1:nzt)+xy(1:nxt,0:nyt-1,1:nzt))/4.0
 c           xzn=(xz(0:nxt-1,1:nyt,1:nzt)+xz(1:nxt,1:nyt,1:nzt)+xz(0:nxt-1,1:nyt,0:nzt-1)+xz(1:nxt,1:nyt,0:nzt-1))/4.0
@@ -1444,25 +1438,26 @@ c corrected averaging of shear stresses to normal stresses, KBO 7/13/12
 c           xyn=(xy(2:nxt+1,1:nyt,1:nzt)+xy(1:nxt,1:nyt,1:nzt)+xy(2:nxt+1,0:nyt-1,1:nzt)+xy(1:nxt,0:nyt-1,1:nzt))/4.0
 c           xzn=(xz(2:nxt+1,1:nyt,1:nzt)+xz(1:nxt,1:nyt,1:nzt)+xz(2:nxt+1,1:nyt,0:nzt-1)+xz(1:nxt,1:nyt,0:nzt-1))/4.0
 c           yzn=(yz(1:nxt,0:nyt-1,1:nzt)+yz(1:nxt,1:nyt,1:nzt)+yz(1:nxt,0:nyt-1,0:nzt-1)+yz(1:nxt,1:nyt,0:nzt-1))/4.0
-
-           xyn=xy(1:nxt,1:nyt,1:nzt)
-           xzn=xz(1:nxt,1:nyt,1:nzt)
-           yzn=yz(1:nxt,1:nyt,1:nzt)
-
-           do iz = 1,nzt
-             do iy = 1,nyt
-               do ix = 1,nxt
-               sgt(1,ix,iy,iz)=sg1(ix,iy,iz)*xx(ix,iy,iz)+sg2(ix,iy,iz)*yy(ix,iy,iz)+sg2(ix,iy,iz)*zz(ix,iy,iz)
-               sgt(2,ix,iy,iz)=sg2(ix,iy,iz)*xx(ix,iy,iz)+sg1(ix,iy,iz)*yy(ix,iy,iz)+sg2(ix,iy,iz)*zz(ix,iy,iz)
-               sgt(3,ix,iy,iz)=sg2(ix,iy,iz)*xx(ix,iy,iz)+sg2(ix,iy,iz)*yy(ix,iy,iz)+sg1(ix,iy,iz)*zz(ix,iy,iz)
+!
+!           IMPLEMENTED IN THE OUTPUT WRITING PART BELOW!
+!
+!           xyn=xy(1:nxt,1:nyt,1:nzt)
+!           xzn=xz(1:nxt,1:nyt,1:nzt)
+!           yzn=yz(1:nxt,1:nyt,1:nzt)
+!
+!           do j = 1,sgt_nprec
+!               ix = sgt_prec(j,1)
+!               iy = sgt_prec(j,2)
+!               iz = sgt_prec(j,3)
+!               sgt(1,j)=sg1(ix,iy,iz)*xx(ix,iy,iz)+sg2(ix,iy,iz)*yy(ix,iy,iz)+sg2(ix,iy,iz)*zz(ix,iy,iz)
+!               sgt(2,j)=sg2(ix,iy,iz)*xx(ix,iy,iz)+sg1(ix,iy,iz)*yy(ix,iy,iz)+sg2(ix,iy,iz)*zz(ix,iy,iz)
+!               sgt(3,j)=sg2(ix,iy,iz)*xx(ix,iy,iz)+sg2(ix,iy,iz)*yy(ix,iy,iz)+sg1(ix,iy,iz)*zz(ix,iy,iz)
 ! off-diagonal stress on staggered-grid interpolate to diagonal stress
-               sgt(4,ix,iy,iz)=sg3(ix,iy,iz)*xyn(ix,iy,iz)
-               sgt(5,ix,iy,iz)=sg3(ix,iy,iz)*xzn(ix,iy,iz)
-               sgt(6,ix,iy,iz)=sg3(ix,iy,iz)*yzn(ix,iy,iz)
-               enddo
-            enddo
-          enddo
-        endif
+!               sgt(4,j)=sg3(ix,iy,iz)*xyn(ix,iy,iz)
+!               sgt(5,j)=sg3(ix,iy,iz)*xzn(ix,iy,iz)
+!               sgt(6,j)=sg3(ix,iy,iz)*yzn(ix,iy,iz)
+!           enddo
+!        endif
 cSGT --------end--------------------------------------
          
          ! ------------------------------------------
@@ -1538,7 +1533,7 @@ c     wrtrec added in here
          if (io_opt == 1) then
 cSGT -------start---------------------------------------
             !SGT's extended source output mode
-            if (sgt_io_out .eq. 1) then
+            if ((sgt_io_out .eq. 1) .and. (igreen .ne. -1)) then
                 it = ntiskp_sgt*int(i/ntiskp_sgt)
                 if ((i==it) .and. (sgt_nprec .gt. 0)) then
                     ! buffer allocation
@@ -1549,15 +1544,16 @@ cSGT -------start---------------------------------------
                     sgt_count=sgt_count+1
                     ! store data to buffer
                     do j=1,sgt_nprec
-                        xn = sgt_prec(j,1)
-                        yn = sgt_prec(j,2)
-                        zn = sgt_prec(j,3)
-                        sgt_buf(j,1,sgt_count) = sgt(1,xn,yn,zn)
-                        sgt_buf(j,2,sgt_count) = sgt(2,xn,yn,zn)
-                        sgt_buf(j,3,sgt_count) = sgt(3,xn,yn,zn)
-                        sgt_buf(j,4,sgt_count) = sgt(4,xn,yn,zn)
-                        sgt_buf(j,5,sgt_count) = sgt(5,xn,yn,zn)
-                        sgt_buf(j,6,sgt_count) = sgt(6,xn,yn,zn)
+                        ix = sgt_prec(j,1)
+                        iy = sgt_prec(j,2)
+                        iz = sgt_prec(j,3)
+                        sgt_buf(j,1,sgt_count)=sg1(ix,iy,iz)*xx(ix,iy,iz)+sg2(ix,iy,iz)*yy(ix,iy,iz)+sg2(ix,iy,iz)*zz(ix,iy,iz)
+                        sgt_buf(j,2,sgt_count)=sg2(ix,iy,iz)*xx(ix,iy,iz)+sg1(ix,iy,iz)*yy(ix,iy,iz)+sg2(ix,iy,iz)*zz(ix,iy,iz)
+                        sgt_buf(j,3,sgt_count)=sg2(ix,iy,iz)*xx(ix,iy,iz)+sg2(ix,iy,iz)*yy(ix,iy,iz)+sg1(ix,iy,iz)*zz(ix,iy,iz)
+! off-diagonal stress on staggered-grid interpolate to diagonal stress
+                        sgt_buf(j,4,sgt_count)=sg3(ix,iy,iz)*xy(ix,iy,iz)
+                        sgt_buf(j,5,sgt_count)=sg3(ix,iy,iz)*xz(ix,iy,iz)
+                        sgt_buf(j,6,sgt_count)=sg3(ix,iy,iz)*yz(ix,iy,iz)
                     end do
                     if (sgt_count == write_step) then
 ! non-MPI Output doesn't work and needs update.
@@ -2178,13 +2174,9 @@ c     $    " MB/sec (",f9.2," MB/p)")') xmb1/dtout(10),xmb1
 
 cPo SGT closing files
       if(igreen.ne.-1) then
-         deallocate(sgt)
          deallocate(sg1)
          deallocate(sg2)
          deallocate(sg3)
-         deallocate(xyn)
-         deallocate(xzn)
-         deallocate(yzn)
       endif
 cSGT closed files
    
