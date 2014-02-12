@@ -210,6 +210,7 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
              }
              if(tmpdd[i][j][k]<1700.0) tmpdd[i][j][k]=1700.0;   
 */
+/*
 //    for test purposes only!
              if(tmpvs[i][j][k]<200.0)
              {
@@ -224,6 +225,7 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
              }
              if(tmpdd[i][j][k]<1700.0) tmpdd[i][j][k]=1700.0;   
 //    for test purposes only! -END
+*/
              mu[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k]  = 1./(tmpdd[i][j][k]*tmpvs[i][j][k]*tmpvs[i][j][k]);
              lam[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k] = 1./(tmpdd[i][j][k]*(tmpvp[i][j][k]*tmpvp[i][j][k]
                                                                               -2.*tmpvs[i][j][k]*tmpvs[i][j][k]));

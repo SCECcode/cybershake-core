@@ -702,21 +702,21 @@ __global__ void addsrc_cu(int i,      int READ_STEP, int dim,    int npsrc, int*
         }
         else if(igreen == 1)
         {
-          u1[pos] = u1[pos] - vtst*axx[j*READ_STEP+i]/d1[pos];
+          u1[pos] = u1[pos] + vtst*axx[j*READ_STEP+i]/d1[pos];
         }
         else if(igreen == 2)
         {
-          v1[pos] = v1[pos] - vtst*ayy[j*READ_STEP+i]/d1[pos];
+          v1[pos] = v1[pos] + vtst*ayy[j*READ_STEP+i]/d1[pos];
         }
         else if(igreen == 3)
         {
-          w1[pos] = w1[pos] - vtst*azz[j*READ_STEP+i]/d1[pos];
+          w1[pos] = w1[pos] + vtst*azz[j*READ_STEP+i]/d1[pos];
         }
         else if(igreen == -2)
         {
-          u1[pos] = u1[pos] - vtst*axx[j*READ_STEP+i]/d1[pos];
-          v1[pos] = v1[pos] - vtst*ayy[j*READ_STEP+i]/d1[pos];
-          w1[pos] = w1[pos] - vtst*azz[j*READ_STEP+i]/d1[pos];
+          u1[pos] = u1[pos] + vtst*axx[j*READ_STEP+i]/d1[pos];
+          v1[pos] = v1[pos] + vtst*ayy[j*READ_STEP+i]/d1[pos];
+          w1[pos] = w1[pos] + vtst*azz[j*READ_STEP+i]/d1[pos];
         }
         else if(igreen == 4){
           tmp = vtst1*axx[j*READ_STEP+i];
