@@ -18,7 +18,8 @@ paramsfile = os.path.abspath(sys.argv[7])
 boundsfile = os.path.abspath(sys.argv[8])
 gpu = False
 if len(sys.argv) >= 10 and sys.argv[9]=="-gpu":
-	#Using GPU rules; round box to nearest 200 grid points in each dimension
+	#Using GPU rules; adjust volume size
+	print "Using GPU volume rules."
 	gpu = True
 
 os.chdir(os.path.join(sys.path[0], "Modelbox"))
@@ -29,5 +30,8 @@ else:
 if exitcode!=0:
 	sys.exit((exitcode >> 8) & 0xFF)
 os.chdir("../GenGrid_py")
-exitcode = os.system("./gen_grid.py %s %s %s %s %s %s" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile))
+if gpu:
+	exitcode = os.system("./gen_grid.py %s %s %s %s %s %s gpu" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile))
+else:
+	exitcode = os.system("./gen_grid.py %s %s %s %s %s %s" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile))
 sys.exit((exitcode >> 8) & 0xFF)
