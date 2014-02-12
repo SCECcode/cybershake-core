@@ -31,6 +31,7 @@ int format;
 int my_nx, my_ny, my_nz;
 //My endpoint bounds
 int starting_stripe, ending_stripe;
+int pts_per_stripe;
 int local_np;
 
 char infile[512], cordfile[512], depfile[512], outfile[512], modeldir[512], models[512];
@@ -105,43 +106,56 @@ if (format==RWG) {
 	//fast x, z, y	
 	//Assume we have few enough processors that everyone gets an X-stripe
 	int num_x_stripes = ny*nz;
-	int x_stripes_per_proc = (ny*nz)/nproc;
+	float x_stripes_per_proc = ((float)(ny*nz))/((float)nproc);
+	//int x_stripes_per_proc = (ny*nz)/nproc;
 	if (x_stripes_per_proc==0) {
 		fprintf(stderr, "%d) Trying to use too many processors.  Use no more than %d processors.\n", my_id, num_x_stripes);
 		mpi_exit(2);
-	} else if (nproc*x_stripes_per_proc!=ny*nz) {
-		fprintf(stderr, "%d) Error - number of processors must be a factor of ny*nz.  %d must be a factor of %d.\n", my_id, nproc, num_x_stripes);
-		mpi_exit(3);
 	}
+	//Modifying to support non-even divisions
+	// else if (nproc*x_stripes_per_proc!=ny*nz) {
+	//	fprintf(stderr, "%d) Error - number of processors must be a factor of ny*nz.  %d must be a factor of %d.\n", my_id, nproc, num_x_stripes);
+	//	mpi_exit(3);
+	//}
 	
 	//Determine my starting, ending y and z values
-	starting_stripe = my_id*x_stripes_per_proc;
-	ending_stripe = (my_id+1)*x_stripes_per_proc;
+	starting_stripe = (int)(my_id*x_stripes_per_proc);
+	ending_stripe = (int)((my_id+1)*x_stripes_per_proc);
 	if (ending_stripe>num_x_stripes) {
 		ending_stripe = num_x_stripes;
 	}
-	local_np = nx * (ending_stripe - starting_stripe);
+	if (my_id==nproc-1) {
+		ending_stripe = num_x_stripes;
+	}
+	pts_per_stripe = nx;
+	local_np = pts_per_stripe * (ending_stripe - starting_stripe);
 
 } else {
 	//fast y, x, z
 	//Everyone gets a y-stripe here
 	int num_y_stripes = nx*nz;
-	int y_stripes_per_proc = (nx*nz)/nproc;
+	float y_stripes_per_proc = ((float)(nx*nz))/((float)nproc);
+	//int y_stripes_per_proc = (nx*nz)/nproc;
         if (y_stripes_per_proc==0) {
                 fprintf(stderr, "%d) Trying to use too many processors.  Use no more than %d processors.\n", my_id, num_y_stripes);
                 mpi_exit(2);
-        } else if (nproc*y_stripes_per_proc!=nx*nz) {
-                fprintf(stderr, "%d) Error - number of processors must be a factor of nx*nz.  %d must be a factor of %d.\n", my_id, nproc, num_y_stripes);
-		mpi_exit(3);
         }
+	//Modifying to support non-even divisions
+	//else if (nproc*y_stripes_per_proc!=nx*nz) {
+        //        fprintf(stderr, "%d) Error - number of processors must be a factor of nx*nz.  %d must be a factor of %d.\n", my_id, nproc, num_y_stripes);
+	//	mpi_exit(3);
+        //}
 
-	starting_stripe = my_id*y_stripes_per_proc;
-        ending_stripe = (my_id+1)*y_stripes_per_proc;
+	starting_stripe = (int)(my_id*y_stripes_per_proc);
+        ending_stripe = (int)((my_id+1)*y_stripes_per_proc);
         if (ending_stripe>num_y_stripes) {
                 ending_stripe = num_y_stripes;
         }
-
-	local_np = ny * (ending_stripe - starting_stripe);
+	if (my_id==nproc-1) {
+		ending_stripe = num_y_stripes;
+	}
+	pts_per_stripe = ny;
+	local_np = pts_per_stripe * (ending_stripe - starting_stripe);
 }
 
 mlon = check_malloc(nx*ny*sizeof(float));
@@ -200,7 +214,7 @@ if (error!=MPI_SUCCESS) {
 fprintf(stderr,"%d)      Model slice=  %d points\n", my_id, local_np);
 fprintf(stderr,"%d)        Stripes: %d -> %d\n", my_id, starting_stripe, ending_stripe);
 //input arrays, plus UCVM arrays and output array
-fprintf(stderr,"%d)      Approximate memory (RAM)= %.2f Mb\n\n",my_id,((2*nx*ny+nz)*sizeof(float) + (sizeof(ucvm_point_t)+sizeof(ucvm_data_t)+3*sizeof(float))*local_np)*1.0e-06);
+fprintf(stderr,"%d)      Approximate memory (RAM)= %.2f Mb\n\n",my_id,((2*nx*ny+nz)*sizeof(float) + (sizeof(ucvm_point_t)+3*sizeof(float))*local_np+pts_per_stripe*sizeof(ucvm_data_t))*1.0e-06);
 fflush(stderr);
 
 if (format==RWG) {
@@ -219,41 +233,119 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 //run ucvm setup
  fprintf(stderr, "[%d] Setting up ucvm\n", my_id);
  fflush(stderr);
- if (ucvm_init("/work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
-   fprintf(stderr, "Failed to setup ucvm.\n");
-   fflush(stderr);
-   exit(-1);
- }
 
-// Query by depth
- if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
-   fprintf(stderr, "Set query mode by depth failed.\n");
-   fflush(stderr);
-   exit(-2);
- }
  //Add CVM-H models
  //separate model names and add them
  if (strstr(models, ",")!=NULL) {
+	 int ucvm_initialized = 0;
+	 int ucvm_no_gtl_initialized = 0;
 	 char* tok = strtok(models, ",");
 	 while (tok!=NULL) {
 		if (strcmp(tok, "cvmh")==0) {
+			if (ucvm_no_gtl_initialized) {
+				fprintf(stderr, "Error:  Only cvmh or cvmh_nogtl may be used.\n");
+				exit(-2);
+			}
+			if (!ucvm_initialized) {
+		                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+		                   fprintf(stderr, "Failed to setup ucvm.\n");
+		                   fflush(stderr);
+		                   exit(-1);
+	                        }
+				ucvm_initialized = 1;
+			}
 			if (ucvm_add_model(UCVM_MODEL_CVMH)!=UCVM_CODE_SUCCESS) {
 			   fprintf(stderr, "Error retrieving CVM-H.\n");
 			   fflush(stderr);
 			   exit(-1);
 			}
 		} else if (strcmp(tok, "cvms")==0) {
+                        if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
 			if (ucvm_add_model(UCVM_MODEL_CVMS)!=UCVM_CODE_SUCCESS) {
 			   fprintf(stderr, "Error retrieving CVM-S.\n");
 	                   fflush(stderr);
 			   exit(-2);
 	                }
 		} else if (strcmp(tok, "1d")==0) {
+                        if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
 			if (ucvm_add_model(UCVM_MODEL_1D) != UCVM_CODE_SUCCESS) {
 			   fprintf(stderr, "Error retrieving 1D model.\n");
 			   fflush(stderr);
 			   exit(-3);
 			}
+		} else if (strcmp(tok, "cvmsi")==0) {
+                        if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
+                        if (ucvm_add_model(UCVM_MODEL_CVMSI) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving CVM-S4.26 model.\n");
+                           fflush(stderr);
+                           exit(-3);
+                        }
+                } else if (strcmp(tok, "scec1d")==0) {
+                        if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
+                        if (ucvm_add_model(UCVM_MODEL_1D) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving 1D model.\n"); 
+                           fflush(stderr);
+                           exit(-3);
+                        }
+                } else if (strcmp(tok, "cvmh_nogtl")==0) {
+			if (ucvm_initialized) {
+				fprintf(stderr, "Error: cvmh_nogtl must be first in list of models.\n");
+				exit(-2);
+			}
+                        if (!ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_no_gtl_initialized = 1;
+                        }
+                        if (ucvm_add_model(UCVM_MODEL_CVMH) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving CVM-H (no GTL) model.\n"); 
+                           fflush(stderr);
+                           exit(-3);
+                        }
+		} else if (strcmp(tok, "bbp1d")==0) {
+			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
+                        if (ucvm_add_model(UCVM_MODEL_BBP1D) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving BBP 1D model.\n");
+                           fflush(stderr);
+                         }
 		} else {
 			fprintf(stderr, "Model %s didn't match any known models, aborting.\n", tok);
 			fflush(stderr);
@@ -262,6 +354,20 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		tok = strtok(NULL, ",");
 	}
  } else {
+	//If cvmh_nogtl, use the alternative config file
+	if (strcmp(models, "cvmh_nogtl")==0) {
+	     if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+		fprintf(stderr, "Failed to setup ucvm.\n");
+		fflush(stderr);
+		exit(-1);
+		}
+	} else {
+	     if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                fprintf(stderr, "Failed to setup ucvm.\n");
+                fflush(stderr);
+                exit(-1);
+                }
+	}
 	if (strcmp(models, "cvmh")==0) {
              if (ucvm_add_model(UCVM_MODEL_CVMH)!=UCVM_CODE_SUCCESS) {
              	fprintf(stderr, "Error retrieving CVM-H.\n");
@@ -280,6 +386,30 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                      fflush(stderr);
                      exit(-3);
              }
+	} else if (strcmp(models, "cvmsi")==0) {
+             if (ucvm_add_model(UCVM_MODEL_CVMSI)!=UCVM_CODE_SUCCESS) {
+                     fprintf(stderr, "Error retrieving CVM-S4.26 model.\n");
+                     fflush(stderr);
+                     exit(-3);
+             }
+	} else if (strcmp(models, "scec1d")==0) {
+             if (ucvm_add_model(UCVM_MODEL_1D)!=UCVM_CODE_SUCCESS) {
+                     fprintf(stderr, "Error retrieving 1D model.\n");
+                     fflush(stderr);
+                     exit(-3);
+             }
+	} else if (strcmp(models, "cvmh_nogtl")==0) {
+             if (ucvm_add_model(UCVM_MODEL_CVMH)!=UCVM_CODE_SUCCESS) {
+                     fprintf(stderr, "Error retrieving CVM-H (no GTL) model.\n");
+                     fflush(stderr);
+                     exit(-3);
+             }
+	} else if (strcmp(models, "bbp1d")==0) {
+	     if (ucvm_add_model(UCVM_MODEL_BBP1D)!=UCVM_CODE_SUCCESS) {
+		     fprintf(stderr, "Error retrieving BBP 1D model.\n");
+		     fflush(stderr);
+		     exit(-3);
+	     }
 	} else {
  	       fprintf(stderr, "Model %s didn't match any known models, aborting.\n", models);
                fflush(stderr);
@@ -287,6 +417,12 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
         }
  }
 
+ // Query by depth
+ if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+   fprintf(stderr, "Set query mode by depth failed.\n");
+   fflush(stderr);
+   exit(-2);
+ }
 
  fprintf(stderr, "[%d] Generating CVM\n", my_id);
  fflush(stderr);
@@ -294,7 +430,8 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
  // output order: x,z,y
  int num_pts = local_np;
  ucvm_point_t* pts = check_malloc(sizeof(ucvm_point_t)*num_pts);
- ucvm_data_t* props = check_malloc(sizeof(ucvm_data_t)*num_pts);
+ // To conserve memory, only allocate one stripe's worth of ucvm_data_t, but num_pts worth of velocity info
+ ucvm_data_t* props = check_malloc(sizeof(ucvm_data_t)*pts_per_stripe);
 
  //put the if statement out here, for easier optimization
  if (format==RWG) {
@@ -328,67 +465,66 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		}
 	}
  }
-
- if (ucvm_query(local_np, pts, props)!=UCVM_CODE_SUCCESS) {
- 	fprintf(stderr, "Query UCVM failed.\n");
-        exit(-2);
- }
-
- for (i=0; i<nx; i++) {
-	fprintf(stderr, "(%f, %f, %f)->surf=%f, vs30=%f, depth=%f, cmb.vp=%f, cmb.vs=%f, cmb.rho=%f\n", pts[i].coord[0], pts[i].coord[1], pts[i].coord[2], props[i].surf, props[i].vs30, props[i].depth, props[i].cmb.vp, props[i].cmb.vs, props[i].cmb.rho);
- }
-
- /* perform sanity checks on the material properties */     
-
- fprintf(stderr, "Enforcing min_vp=%f, min_vs=%f, min_rho=%f.\n", min_vp, min_vs, min_rho);
-
- for (i=0; i<local_np; i++) { 
-	//Check for nan, inf
-       if (isnan(props[i].cmb.vp) || isnan(props[i].cmb.vs) || isnan(props[i].cmb.rho) ||
-	   isinf(props[i].cmb.vp) || isinf(props[i].cmb.vs) || isinf(props[i].cmb.rho)) {
-	 fprintf(stderr, "NaN/Inf detected at (%f, %f, %f)\n", 
-		 pts[i].coord[0], pts[i].coord[1], pts[i].coord[2]);
-	 fflush(stderr);
-	 exit(-1);
-       }
-	//Check for negative values
-       if ((props[i].cmb.vp < 0.0) || (props[i].cmb.vs < 0.0) || (props[i].cmb.rho < 0.0)) {
-	 fprintf(stderr, "Negative vals detected at (%f, %f, %f)\n", 
-		 pts[i].coord[0], pts[i].coord[1], pts[i].coord[2]);
-	 fprintf(stderr, "vp=%f, vs=%f, rho=%lf\n", 
-		 props[i].cmb.vp, props[i].cmb.vs, props[i].cmb.rho);
-	 fflush(stderr);
-	 exit(-1);
-       }
-
-	//Check for min Vp, Vs, Rho
-	if (props[i].cmb.vp<min_vp) {
-		props[i].cmb.vp = min_vp;
+ 
+ for (s=0; s<(ending_stripe-starting_stripe); s++) {
+	//if (ucvm_query(local_np, pts, props)!=UCVM_CODE_SUCCESS) {
+	if (ucvm_query(pts_per_stripe, pts+s*pts_per_stripe, props)!=UCVM_CODE_SUCCESS) {
+ 		fprintf(stderr, "Query UCVM failed.\n");
+        	exit(-2);
 	}
-	if (props[i].cmb.vs<min_vs) {
-		props[i].cmb.vs = min_vs;
-	}
-	if (props[i].cmb.rho<min_rho) {
-		props[i].cmb.rho = min_rho;
-	}
+
+	 /* perform sanity checks on the material properties */     
+
+ 	//fprintf(stderr, "Enforcing min_vp=%f, min_vs=%f, min_rho=%f.\n", min_vp, min_vs, min_rho);
+
+ 	for (i=0; i<pts_per_stripe; i++) { 
+		//Check for nan, inf
+		if (isnan(props[i].cmb.vp) || isnan(props[i].cmb.vs) || isnan(props[i].cmb.rho) ||
+		   isinf(props[i].cmb.vp) || isinf(props[i].cmb.vs) || isinf(props[i].cmb.rho)) {
+			 fprintf(stderr, "NaN/Inf detected at (%f, %f, %f)\n", 
+			 pts[i].coord[0], pts[i].coord[1], pts[i].coord[2]);
+	 		 fflush(stderr);
+	 		 exit(-1);
+		}
+
+		//Check for negative values
+	       if ((props[i].cmb.vp < 0.0) || (props[i].cmb.vs < 0.0) || (props[i].cmb.rho < 0.0)) {
+		 fprintf(stderr, "Negative vals detected at (%f, %f, %f)\n", 
+			 pts[i].coord[0], pts[i].coord[1], pts[i].coord[2]);
+		 fprintf(stderr, "vp=%f, vs=%f, rho=%lf\n", 
+			 props[i].cmb.vp, props[i].cmb.vs, props[i].cmb.rho);
+		 fflush(stderr);
+		 exit(-1);
+	       }
+
+		//Check for min Vp, Vs, Rho
+		if (props[i].cmb.vp<min_vp) {
+			props[i].cmb.vp = min_vp;
+		}
+		if (props[i].cmb.vs<min_vs) {
+			props[i].cmb.vs = min_vs;
+		}
+		if (props[i].cmb.rho<min_rho) {
+			props[i].cmb.rho = min_rho;
+		}
 	
-	//Check poisson ratio
-	float fac = 1.45;
-	if (props[i].cmb.vp/props[i].cmb.vs < fac) {
-		fprintf(stderr, "Adjusting index %d - changing vs from %f to %f.\n", i, props[i].cmb.vs, props[i].cmb.vp/fac);
-		props[i].cmb.vs = props[i].cmb.vp/fac;
-	}
+		//Check poisson ratio
+		float fac = 1.45;
+		if (props[i].cmb.vp/props[i].cmb.vs < fac) {
+			fprintf(stderr, "Adjusting index %d - changing vs from %f to %f.\n", i, props[i].cmb.vs, props[i].cmb.vp/fac);
+			props[i].cmb.vs = props[i].cmb.vp/fac;
+		}
 
-	if (format==RWG) {
-	        vp_buf[i] = meter2km*props[i].cmb.vp;
-                vs_buf[i] = meter2km*props[i].cmb.vs;
-        	rho_buf[i] = meter2km*props[i].cmb.rho;
-        } else if (format==AWP) {
-		buf[3*i] = props[i].cmb.vp;
-                buf[3*i+1] = props[i].cmb.vs;
-                buf[3*i+2] = props[i].cmb.rho;
+		if (format==RWG) {
+		        vp_buf[s*pts_per_stripe+i] = meter2km*props[i].cmb.vp;
+	                vs_buf[s*pts_per_stripe+i] = meter2km*props[i].cmb.vs;
+	        	rho_buf[s*pts_per_stripe+i] = meter2km*props[i].cmb.rho;
+	        } else if (format==AWP) {
+			buf[3*(s*pts_per_stripe+i)] = props[i].cmb.vp;
+	                buf[3*(s*pts_per_stripe+i)+1] = props[i].cmb.vs;
+	                buf[3*(s*pts_per_stripe+i)+2] = props[i].cmb.rho;
+		}
 	}
-
    }
 
   //Now, everyone opens and writes to the files
@@ -405,7 +541,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp_out);
 		//output is fast x, z, y, but contiguous
 		offset = (long)starting_stripe * nx * sizeof(float);
-		fprintf(stderr, "%d) writing at offset %ld\n", my_id, offset);
+		//fprintf(stderr, "%d) writing at offset %ld\n", my_id, offset);
 		int rc = MPI_File_write_at_all(fp_out, offset, bufs[i], local_np, MPI_FLOAT, &status);
 		if (rc!=MPI_SUCCESS) {
 			char error_string[256];
@@ -419,6 +555,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		MPI_File_close(&fp_out);
 	}
  } else if (format==AWP) {
+	fprintf(stderr, "[%d] Writing to file %s.\n", my_id, outfile);
 	MPI_Info info;
         MPI_File fp_out;
         MPI_Offset offset;
