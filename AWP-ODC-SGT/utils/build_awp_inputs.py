@@ -118,5 +118,5 @@ for c in awp_comps:
 	if os.path.exists("comp_%s/input/%s" % (c, awp_media)):
                 os.remove("comp_%s/input/%s" % (c, awp_media))
 	#Extra level back because of AWP_SGT_<site> subdirectory
-	os.symlink("../../../%s" % awp_media, "comp_%s/input/%s" % (c, awp_media))
+	os.symlink("../../%s" % awp_media, "comp_%s/input/%s" % (c, awp_media))
 
