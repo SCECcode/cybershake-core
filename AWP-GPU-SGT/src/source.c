@@ -78,6 +78,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
             //printf("SOURCE: %d,%d,%d\n",tpsrc[0],tpsrc[1],tpsrc[2]);
             for(j=0;j<READ_STEP;j++){
               fscanf(file, " %f, %f, %f, %f, %f, %f ",
+              //fscanf(file, " %f %f %f %f %f %f ",
                 &taxx[i*READ_STEP+j], &tayy[i*READ_STEP+j],
                 &tazz[i*READ_STEP+j], &taxz[i*READ_STEP+j],
                 &tayz[i*READ_STEP+j], &taxy[i*READ_STEP+j]);
@@ -181,21 +182,21 @@ void addsrc(int i,      float DH,   float DT,   int NST,    int npsrc,  int READ
      }
      else if(igreen == 1)
      {
-        u1[idx][idy][idz] = u1[idx][idy][idz] - vtst*axx[j*READ_STEP+i]/d1[idx][idy][idz];
+        u1[idx][idy][idz] = u1[idx][idy][idz] + vtst*axx[j*READ_STEP+i]/d1[idx][idy][idz];
      }
      else if(igreen == 2)
      {
-        v1[idx][idy][idz] = v1[idx][idy][idz] - vtst*ayy[j*READ_STEP+i]/d1[idx][idy][idz]; 
+        v1[idx][idy][idz] = v1[idx][idy][idz] + vtst*ayy[j*READ_STEP+i]/d1[idx][idy][idz]; 
      }
      else if(igreen == 3)
      {
-        w1[idx][idy][idz] = w1[idx][idy][idz] - vtst*azz[j*READ_STEP+i]/d1[idx][idy][idz];
+        w1[idx][idy][idz] = w1[idx][idy][idz] + vtst*azz[j*READ_STEP+i]/d1[idx][idy][idz];
      }
      else if(igreen == -2)
      {
-        u1[idx][idy][idz] = u1[idx][idy][idz] - vtst*axx[j*READ_STEP+i]/d1[idx][idy][idz];
-        v1[idx][idy][idz] = v1[idx][idy][idz] - vtst*ayy[j*READ_STEP+i]/d1[idx][idy][idz];
-        w1[idx][idy][idz] = w1[idx][idy][idz] - vtst*azz[j*READ_STEP+i]/d1[idx][idy][idz];
+        u1[idx][idy][idz] = u1[idx][idy][idz] + vtst*axx[j*READ_STEP+i]/d1[idx][idy][idz];
+        v1[idx][idy][idz] = v1[idx][idy][idz] + vtst*ayy[j*READ_STEP+i]/d1[idx][idy][idz];
+        w1[idx][idy][idz] = w1[idx][idy][idz] + vtst*azz[j*READ_STEP+i]/d1[idx][idy][idz];
      }
      else if(igreen == 4){
         tmp = vtst1*axx[j*READ_STEP+i];
