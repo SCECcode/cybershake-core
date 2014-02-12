@@ -1,3 +1,5 @@
+C   Efecan added ntiskp_sgt parameter to control SGT strain outputs on Oct 4, 2012
+C
 C   'io.f' READS AND WRITES SIMULATION PARAMETERS AND VARIABLES
 
 
