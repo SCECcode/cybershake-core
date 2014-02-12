@@ -36,11 +36,13 @@ def genBoundfile(gridout, coordfile, boundfile):
     output.close()
 
 
-def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency):
+def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, gpu=False):
     '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
     ZLEN = 40.0
-    #in km
-    SPACING = 0.1/frequency
+    #if gpu:
+    #	#Change ZLEN to 51.2 so it's a multiple of 256 pts
+    #	ZLEN = 51.2
+    SPACING = .2
     
     modelboxInput = open(modelboxFile)
     modelboxData = [line.strip() for line in modelboxInput.readlines()]
@@ -73,9 +75,9 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 
 
 def main():
-    if len(sys.argv) < 8:
-        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency>"
-        print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC 0.5"
+    if len(sys.argv) < 7:
+        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> [gpu]"
+        print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC"
         sys.exit(1)
 	
     modelboxFile = sys.argv[1]
@@ -84,8 +86,10 @@ def main():
     coordfile = sys.argv[4]
     paramfile = sys.argv[5]
     boundsfile = sys.argv[6]
-    frequency = sys.argv[7]
-    genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency)
+    if len(sys.argv)==8 and sys.argv[7]=="gpu":
+    	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, gpu=True)
+    else:
+	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile)
 
 if __name__=="__main__":
     main()
