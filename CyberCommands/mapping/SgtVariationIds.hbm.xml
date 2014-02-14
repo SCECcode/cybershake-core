@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.SgtVariationIds" table="SGT_Variation_IDs" catalog="CyberShake">
+        <comment></comment>
+        <id name="sgtVariationId" type="int">
+            <column name="SGT_Variation_ID" />
+            <generator class="assigned" />
+        </id>
+        <many-to-one name="erfIds" class="mapping.ErfIds" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <property name="sgtVariationName" type="string">
+            <column name="SGT_Variation_Name" length="50" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="sgtVariationDescription" type="string">
+            <column name="SGT_Variation_Description" length="150">
+                <comment></comment>
+            </column>
+        </property>
+        <set name="sgtVariationMetadatas" inverse="true">
+            <key>
+                <column name="SGT_Variation_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.SgtVariationMetadata" />
+        </set>
+        <set name="peakAmplitudeses" inverse="true">
+            <key>
+                <column name="SGT_Variation_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.PeakAmplitudes" />
+        </set>
+    </class>
+</hibernate-mapping>

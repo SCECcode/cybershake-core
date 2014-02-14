@@ -1,0 +1,21 @@
+#!/bin/bash
+
+#PBS -q small
+#PBS -l size=12
+#PBS -l walltime=0:15:00
+#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test.out
+#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi/test.err
+#PBS -V
+#PBS -A TG-MCA03S012
+
+IOBUF_PARAMS='*:size=64M:count=4';export IOBUF_PARAMS;
+
+echo "Job start"
+date
+
+cd /lustre/scratch/${USER}/cybershake/RuptureCodes/GenRand-mpi
+aprun -n 12 ./rupgen rupgen.conf
+
+echo "Jobs done"
+date
+exit 0
