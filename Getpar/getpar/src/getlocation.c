@@ -7,7 +7,7 @@
 #define LOC_FILE "/LOCATIONS"
 
 
-static int getline(FILE *fd, char *line)
+static int _getline(FILE *fd, char *line)
 {
   char c;
   int n;
@@ -42,7 +42,7 @@ int getlocation(char *keyname, char *location, int fatal)
 	}
       else	return(-1);
     }
-  while( (n=getline(fd,line)) != EOF)
+  while( (n=_getline(fd,line)) != EOF)
     {
       for(i=0; i<n; i++)
 	{
