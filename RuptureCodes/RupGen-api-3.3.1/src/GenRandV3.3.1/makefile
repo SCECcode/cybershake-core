@@ -1,15 +1,15 @@
 HEADS = include.h structure.h function.h defs.h
-OBJS = fourg.o iofunc.o misc.o slip.o ruptime.o srf_subs.o
+OBJS = iofunc.o misc.o ruptime.o srf_subs.o
 
 GETPAR = /work/00940/tera3d/CyberShake/software/Getpar/getpar
 
 #GCCLIB = /usr/lib/gcc/x86_64-redhat-linux/3.4.6
-#FORTLIBS = -lfrtbegin -lg2c -lgcc_s
-#FC = ifort
+FORTLIBS = -lfrtbegin -lg2c -lgcc_s
+FC = ifort
 
 #GCCLIB = /usr/lib/gcc/x86_64-redhat-linux/4.3.2
-FORTLIBS = -lgfortranbegin -lgfortran -lgcc_s
-FC = gfortran
+#FORTLIBS = -lgfortranbegin -lgfortran -lgcc_s
+#FC = gfortran
 
 
 LDLIBS = ${OBJS} -lget -L${GETPAR}/lib -lm
@@ -18,18 +18,18 @@ LDLIBS = ${OBJS} -lget -L${GETPAR}/lib -lm
 #
 # use following for large file capability
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
-#CFLAGS = -I${GETPAR}/include -Wall \
-#        -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE \
-#        -D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS -p -xhost -vec-report=3
-CFLAGS = -I${GETPAR}/include -Wall \
+CFLAGS = -I${GETPAR}/include -Wall -I${TACC_FFTW3_INC} \
         -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE \
-        -D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS
+        -D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS -xhost
+#CFLAGS = -I${GETPAR}/include -Wall -I${TACC_FFTW3_INC} \
+#        -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE \
+#        -D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS
 
-UFLAGS = -g
+UFLAGS = -O3 -g
 
 CC = icc
 
-CFLAGS := ${CFLAGS} ${UFLAGS} ${LF_FLAGS}
+CFLAGS := $(CFLAGS) ${UFLAGS} ${LF_FLAGS}
 
 # Uncomment for memcached support
 MEMC = /work/00940/tera3d/CyberShake/utils/libmemcached
@@ -56,6 +56,14 @@ FFLAGS = ${UFLAGS} -ffixed-line-length-132
 
 #test_rhypo : test_rhypo.c ${OBJS}
 #	${CC} -o test_rhypo test_rhypo.c ${LDLIBS}
+
+all: genslip-v3.3.1.fourg.o genslip-v3.3.1.fftw.o
+
+genslip-v3.3.1.o : genslip-v3.3.1.fourg.c ${OBJS} slip.fourg..o fourg.o
+	${CC} ${CFLAGS} -c -o genslip-v3.3.1.fourg.o genslip-v3.3.1.fourg.c ${LIBS}
+	
+genslip-v3.3.1.fftw.o : genslip-v3.3.1.fftw.c ${OBJS} slip.fftw.o
+	${CC} ${CFLAGS} -c -o genslip-v3.3.1.fftw.o genslip-v3.3.1.fftw.c -Wl,-rpath,${TACC_FFTW3_LIB} -L${TACC_FFTW3_LIB} -lfftw3f ${LIBS} 
 
 ${OBJS} : ${HEADS}
 
