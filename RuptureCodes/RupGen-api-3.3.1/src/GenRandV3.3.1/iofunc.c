@@ -27,6 +27,7 @@ for(j=0;j<ny;j++)
 fclose(fpw);
 }
 
+/*
 void _write_spec(char *file,float *as,struct complex *slip,int nx,int ny,float *dx,float *dy,float *dkx,float *dky,float *xl,float *yl,int kflag)
 {
 FILE *fpw;
@@ -34,7 +35,7 @@ float kx, ky, amp, amp0, lamp;
 float xl2, yl2, fac;
 int i, j, ip;
 
-float hcoef = 1.8;  /* H=0.8, hcoef = H + 1 */
+float hcoef = 1.8;  // H=0.8, hcoef = H + 1 
 
 xl2 = (*xl)*(*xl);
 yl2 = (*yl)*(*yl);
@@ -43,7 +44,7 @@ fft2d(slip,nx,ny,-1,dx,dy);
 
 fpw = _fopfile(file,"w");
 
-/* this will normalize max spectrum to one */
+// this will normalize max spectrum to one 
 amp0 = sqrt(slip[0].re*slip[0].re + slip[0].im*slip[0].im);
 
 for(j=0;j<=ny/2;j++)
@@ -64,16 +65,16 @@ for(j=0;j<=ny/2;j++)
 
       amp = kx*kx*xl2 + ky*ky*yl2;
 
-      /* default is somerville scaling */
+      // default is somerville scaling 
       fac = 1.0/sqrt(1.0 + amp*amp);
 
-      if(kflag == MAI_FLAG) /* mai scaling */
+      if(kflag == MAI_FLAG) // mai scaling 
          {
          fac = exp((hcoef)*log(1.0+amp));
          fac = 1.0/sqrt(fac);
 	 }
 
-      if(kflag == SOMERVILLE_FLAG)      /* somerville scaling */
+      if(kflag == SOMERVILLE_FLAG)      // somerville scaling 
          fac = 1.0/sqrt(1.0 + amp*amp);
 
       amp = sqrt(slip[ip].re*slip[ip].re + slip[ip].im*slip[ip].im);
@@ -92,6 +93,7 @@ fclose(fpw);
 
 fft2d(slip,nx,ny,1,dkx,dky);
 }
+*/
 
 void _write_avgspec(char *file,float *as,int ns,int nx,int ny,float *dkx,float *dky)
 {

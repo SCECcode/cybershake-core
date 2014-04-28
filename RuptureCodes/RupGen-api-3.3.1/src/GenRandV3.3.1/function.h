@@ -15,6 +15,8 @@ int _rite(int, void *, int);
 void fft2d(struct complex *, int, int, int,float *,float *);
 void kfilt(struct complex *,int,int,float *,float *,float *,float *,long *,int);
 void kfilt_lw(struct complex *,int,int,float *,float *,float *,float *,long *,int,float *,float *);
+void kfilt_fftw(fftwf_complex *,int,int,float *,float *,float *,float *,long *,int);
+void kfilt_lw_fftw(fftwf_complex *,int,int,float *,float *,float *,float *,long *,int,float *,float *);
 void init_slip(struct complex *,int,int,float *,float *);
 void init_slip_IO(struct complex *,int,int,float *,float *,int,char *);
 
@@ -24,7 +26,7 @@ void taper_slip_all(struct complex *,int,int,float *,float *,float *);
 void scale_slip(struct pointsource *,struct complex *,int,int,int,float *,float *,float *,float *,float *,struct velmodel *,float *,float *);
 
 void _write_field(char *,struct pointsource *,char *,int,int,float *,float *);
-void _write_spec(char *,float *,struct complex *,int,int,float *,float *,float *,float *,float *,float *,int);
+//void _write_spec(char *,float *,struct complex *,int,int,float *,float *,float *,float *,float *,float *,int);
 void _write_avgspec(char *,float *,int,int,int,float *,float *);
 
 void default_velmodel(struct velmodel *);

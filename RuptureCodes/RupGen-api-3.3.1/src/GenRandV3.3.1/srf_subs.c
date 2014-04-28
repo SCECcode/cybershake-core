@@ -178,7 +178,7 @@ for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
 srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 }
 
-void load_slip_srf(struct standrupformat *srf,struct stfpar *spar,struct pointsource *ps)
+void _load_slip_srf(struct standrupformat *srf,struct stfpar *spar,struct pointsource *ps)
 {
 struct srf_allpoints *apnts_ptr;
 struct srf_apointvalues *apval_ptr;

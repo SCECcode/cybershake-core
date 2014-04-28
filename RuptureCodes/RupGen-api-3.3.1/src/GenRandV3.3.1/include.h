@@ -18,6 +18,8 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#include "fftw3.h"
+
 #ifdef _USE_MEMCACHED
 #include <libmemcached/memcached.h>
 #endif
