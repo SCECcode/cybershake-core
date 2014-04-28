@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <libgen.h>
+#include "string.h"
+#include "math.h"
 
 #include "structure.h"
 #include "rupgen_defs.h"
