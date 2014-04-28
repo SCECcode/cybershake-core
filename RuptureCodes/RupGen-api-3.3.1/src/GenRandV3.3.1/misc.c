@@ -74,7 +74,7 @@ for (i=0; i<n; i++) {
 
 }
 
-void set_ne(float *elon,float *elat,float *slon,float *slat,float *sn,float *se)
+void _set_ne(float *elon,float *elat,float *slon,float *slat,float *sn,float *se)
 {
 float kperd_n, kperd_e;
 double e2, den, g2, lat0;
@@ -128,7 +128,7 @@ kperd_n = rperd*radius*(sqrt(1.0 + g2*sinA*sinA*(2.0 + g2)))*den*den*den;
 *slon = (*se)/kperd_e + *elon;
 }
 
-void swap_in_place(int n,char *cbuf)
+void _swap_in_place(int n,char *cbuf)
 {
 char cv;
 

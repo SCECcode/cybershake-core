@@ -9,8 +9,8 @@ double _sfrand(long *seed);
 double _gaus_rand(float *sigma,float *mean,long *seed);
 void _zapit(float *s, int n);
 
-void set_ne(float *elon,float *elat,float *slon,float *slat,float *sn,float *se);
+void _set_ne(float *elon,float *elat,float *slon,float *slat,float *sn,float *se);
 void _set_ll(float *elon,float *elat,float *slon,float *slat,float *sn,float *se);
-void swap_in_place(int n,char *cbuf);
+void _swap_in_place(int n,char *cbuf);
 
 #endif

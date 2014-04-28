@@ -2,10 +2,11 @@
 #include "structure.h"
 #include "function.h"
 #include "defs.h"
-#include "fourg.h"
+//#include "fourg.h"
 #include "misc.h"
 
-void init_slip_IO(struct complex *sc,int nx,int ny,float *dx,float *dy,int flip,char *file)
+void init_slip_IO_fftw(struct complex *sc,int nx,int ny,float *dx,float *dy,int flip,char *file)
+//void init_slip_IO(fftwf_complex *sc, int nx, int ny, float* dx, float* dy, int flip, char* file)
 {
 FILE *fpr;
 char str[1024];
@@ -19,6 +20,7 @@ if(file[0] == '\0')
       {
       sc[ip].re = 0.5;
       sc[ip].im = 0.0;
+      //sc[ip][0] = 0.5;
       }
    }
 else
@@ -32,6 +34,7 @@ else
       {
       sc[ip].re = slip;
       sc[ip].im = 0.0;
+      //sc[ip][0] = slip;
       }
 
    while(fgets(str,1024,fpr) != NULL)
@@ -76,6 +79,7 @@ fprintf(stderr,"ix0= %d ix1= %d iy0= %d iy1= %d\n",ix0,ix1,iy0,iy1);
             {
 	    ip = ix+iy*nx;
 	    sc[ip].re = slip;
+	    //sc[ip][0] = slip;
 	    }
 	 }
 
@@ -104,6 +108,7 @@ fprintf(stderr,"ix0= %d ix1= %d iy0= %d iy1= %d\n",ix0,ix1,iy0,iy1);
             ip1 = ix+((ny-1)-iy)*nx;
 
             sc[ip1].re = sc[ip].re;
+            //sc[ip1][0] = sc[ip][0];
             }
          }
       }
@@ -111,7 +116,7 @@ fprintf(stderr,"ix0= %d ix1= %d iy0= %d iy1= %d\n",ix0,ix1,iy0,iy1);
    }
 }
 
-void init_slip(struct complex *sc,int nx,int ny,float *st,float *bt)
+void init_slip_fftw(struct complex *sc,int nx,int ny,float *st,float *bt)
 {
 float xdamp, ydamp;
 int i;
@@ -128,6 +133,7 @@ taper_slip(sc,nx,ny,st,bt);
 }
 
 void taper_slip_all(struct complex *sc,int nx,int ny,float *st,float *bt,float *tt)
+//void taper_slip_all_fftw(fftwf_complex *sc,int nx,int ny,float *st,float *bt,float *tt)
 {
 float xdamp, ydamp;
 int ix, iy, xb, yt, yb;
@@ -156,6 +162,7 @@ for(iy=0;iy<yt;iy++)
          xdamp = (float)(nx-ix)/(float)(xb);
 
       sc[ix+iy*nx].re = xdamp*ydamp*sc[ix+iy*nx].re;
+      //sc[ix+iy*nx][0] = xdamp*ydamp*sc[ix+iy*nx][0];
       }
    }
 
@@ -171,6 +178,7 @@ for(iy=0;iy<yb;iy++)
          xdamp = (float)(nx-ix)/(float)(xb);
 
       sc[ix+(ny-1-iy)*nx].re = xdamp*ydamp*sc[ix+(ny-1-iy)*nx].re;
+      //sc[ix+(ny-1-iy)*nx][0] = xdamp*ydamp*sc[ix+(ny-1-iy)*nx][0];
       }
    }
 
@@ -181,12 +189,14 @@ for(iy=yt;iy<ny-yb;iy++)
       xdamp = (float)(ix+1)/(float)(xb);
 
       sc[ix+iy*nx].re = xdamp*sc[ix+iy*nx].re;
+      //sc[ix+iy*nx][0] = xdamp*sc[ix+iy*nx][0];
       sc[(nx-1-ix)+iy*nx].re = xdamp*sc[(nx-1-ix)+iy*nx].re;
+      //sc[(nx-1-ix)+iy*nx][0] = xdamp*sc[(nx-1-ix)+iy*nx][0];
       }
    }
 }
 
-void taper_slip(struct complex *sc,int nx,int ny,float *st,float *bt)
+void taper_slip_fftw(struct complex *sc,int nx,int ny,float *st,float *bt)
 {
 float xdamp, ydamp;
 int ix, iy, xb, yb;
@@ -227,7 +237,7 @@ for(iy=yb;iy<ny-yb;iy++)
    }
 }
 
-void scale_slip(struct pointsource *ps,struct complex *cs,int nx,int ny,int nys,float *dx,float *dy,float *dtop,float *dip,float *mom,struct velmodel *vm,float *savg,float *smax)
+void scale_slip_fftw(struct pointsource *ps,struct complex *cs,int nx,int ny,int nys,float *dx,float *dy,float *dtop,float *dip,float *mom,struct velmodel *vm,float *savg,float *smax)
 {
 float sum, fac, sinD, area;
 float zz;
@@ -307,6 +317,7 @@ else
 //fprintf(stderr, "savg=%f, smax=%f\n", *savg, *smax);
 }
 
+//void kfilt_fftw(fftwf_complex *s0,int nx0,int ny0,float *dkx,float *dky,float *xl,float *yl,long *seed,int kflag)
 void kfilt(struct complex *s0,int nx0,int ny0,float *dkx,float *dky,float *xl,float *yl,long *seed,int kflag)
 {
 int i, j, ip;
@@ -324,6 +335,7 @@ hcoef = 1.80; /* H=0.80, hcoef = H + 1 */
 hcoef = 1.75; /* H=0.75, hcoef = H + 1 */
 
 amp0 = sqrt(s0[0].re*s0[0].re + s0[0].im*s0[0].im);
+//amp0 = sqrt(s0[0][0]*s0[0][0] + s0[0][1]*s0[0][1]);
 
 xl2 = (*xl)*(*xl);
 yl2 = (*yl)*(*yl);
@@ -397,15 +409,20 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       phs = pi*_sfrand(seed);
 
       fac1 = sqrt(s0[ip].re*s0[ip].re + s0[ip].im*s0[ip].im);
+      //fac1 = sqrt(s0[ip][0]*s0[ip][0] + s0[ip][1]*s0[ip][1]);
 
       phs1 = 0.5*pi;
       if(s0[ip].re != (float)(0.0))
+      //if(s0[ip][0] != (float)(0.0))
          {
          phs1 = atan(s0[ip].im/s0[ip].re);
+         //phs1 = atan(s0[ip][1]/s0[ip][0]);
          if(s0[ip].re < 0.0)
+         //if(s0[ip][0] < 0.0)
             phs1 = phs1 + pi;
          }
       else if(s0[ip].im < 0.0)
+      //else if (s0[ip][1] < 0.0)
          phs1 = -0.5*pi;
 
 /* 09/24/2009 I have no idea why I put these conditions here, now they're removed
@@ -426,7 +443,9 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       wtS = 1.0 - wtD;
 
       s0[ip].re = wtS*fac*cos(phs) + wtD*fac1*cos(phs1);
+      //s0[ip][0] = wtS*fac*cos(phs) + wtD*fac1*cos(phs1);
       s0[ip].im = wtS*fac*sin(phs) + wtD*fac1*sin(phs1);
+      //s0[ip][1] = wtS*fac*sin(phs) + wtD*fac1*sin(phs1);
 
 /*
 wtD = 0.0;
@@ -502,13 +521,17 @@ s0[ip].im = fac*gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
 for(j=1;j<=(ny0-1)/2;j++)
    {
    s0[(ny0-j)*nx0].re = s0[j*nx0].re;
+   //s0[(ny0-j)*nx0][0] = s0[j*nx0][0];
    s0[(ny0-j)*nx0].im = -s0[j*nx0].im;
+   //s0[(ny0-j)*nx0][1] = -s0[j*nx0][1];
    }
 
 for(i=1;i<=(nx0-1)/2;i++)
    {
    s0[nx0-i].re = s0[i].re;
+   //s0[nx0-i][0] = s0[i][0];
    s0[nx0-i].im = -s0[i].im;
+   //s0[nx0-i][1] = -s0[i][1];
    }
 
 for(j=1;j<=ny0/2;j++)
@@ -520,6 +543,12 @@ for(j=1;j<=ny0/2;j++)
 
       s0[i+(ny0-j)*nx0].re = s0[(nx0-i)+j*nx0].re;
       s0[i+(ny0-j)*nx0].im = -s0[(nx0-i)+j*nx0].im;
+      //
+	//s0[(nx0-i)+(ny0-j)*nx0][0] = s0[i+j*nx0][0];
+        //s0[(nx0-i)+(ny0-j)*nx0][1] = -s0[i+j*nx0][1];
+        
+        //s0[i+(ny0-j)*nx0][0] = s0[(nx0-i)+j*nx0][0];
+        //s0[i+(ny0-j)*nx0][1] = -s0[(nx0-i)+j*nx0][1];
       }
    }
 
@@ -553,7 +582,8 @@ for(j=0;j<ny0;j++)
 */
 }
 
-void fft2d(struct complex *xc,int n1,int n2,int isgn,float *d1,float *d2)
+
+void fft2d_fftw(struct complex *xc,int n1,int n2,int isgn,float *d1,float *d2)
 {
 int i, j, ip;
 float *space;
@@ -562,12 +592,41 @@ float normf;
 
 normf = (*d1)*(*d2);
 
-space = (float *) _check_malloc (2*(n1+n2)*sizeof(float));
+//space = (float *) _check_malloc (2*(n1+n2)*sizeof(float));
 
-for(j=0;j<n2;j++)
-   fourg__(xc+j*n1,&n1,&isgn,space);
+fftwf_plan plan;
+fftwf_complex *arr = _check_malloc(sizeof(fftwf_complex)*n1);
+if (isgn==-1) {
+	printf("fwd plan\n");
+	plan = fftwf_plan_dft_1d(n1, arr, arr, FFTW_FORWARD, FFTW_ESTIMATE);
+} else if (isgn==1){
+	printf("back plan\n");
+	plan = fftwf_plan_dft_1d(n1, arr, arr, FFTW_BACKWARD, FFTW_ESTIMATE);
+}
 
-xtc = (struct complex *) _check_malloc (n2*sizeof(struct complex));
+for(j=0;j<n2;j++) {
+   //fourg__(xc+j*n1,&n1,&isgn,space);
+   for (i=0; i<n1; i++) {
+	arr[i][0] = (xc+j*n1+i)->re;
+	arr[i][1] = (xc+j*n1+i)->im;
+	//printf("Before FFT, xc[%d].re=%e, im=%e\n", j*n1+i, (xc+j*n1+i)->re, (xc+j*n1+i)->im);
+   }
+   fftwf_execute(plan);
+   for (i=0; i<n1; i++) {
+        (xc+j*n1+i)->re = arr[i][0];
+        (xc+j*n1+i)->im = arr[i][1];
+	//printf("xc[%d].re=%e, xc.im=%e\n", j*n1+i, (xc+j*n1+i)->re, (xc+j*n1+i)->im);
+   }
+}
+
+//xtc = (struct complex *) _check_malloc (n2*sizeof(struct complex));
+arr = _check_realloc(arr, n2*sizeof(fftwf_complex));
+
+if (isgn==-1) {
+        plan = fftwf_plan_dft_1d(n2, arr, arr, FFTW_FORWARD, FFTW_ESTIMATE);
+} else if (isgn==1){
+        plan = fftwf_plan_dft_1d(n2, arr, arr, FFTW_BACKWARD, FFTW_ESTIMATE);
+}
 
 for(i=0;i<n1;i++)
    {
@@ -575,25 +634,33 @@ for(i=0;i<n1;i++)
       {
       ip = i + j*n1;
 
-      xtc[j].re = xc[ip].re;
-      xtc[j].im = xc[ip].im;
+      //xtc[j].re = xc[ip].re;
+      //xtc[j].im = xc[ip].im;
+      arr[j][0] = xc[ip].re;
+      arr[j][1] = xc[ip].im;
       }
 
-   fourg__(xtc,&n2,&isgn,space);
+   //fourg__(xtc,&n2,&isgn,space);
+   fftwf_execute(plan);
 
    for(j=0;j<n2;j++)
       {
       ip = i + j*n1;
 
-      xc[ip].re = normf*xtc[j].re;
-      xc[ip].im = normf*xtc[j].im;
+      //xc[ip].re = normf*xtc[j].re;
+      //xc[ip].im = normf*xtc[j].im;
+      xc[ip].re = normf*arr[j][0];
+      xc[ip].im = normf*arr[j][1];
       }
    }
 
-free(xtc);
-free(space);
+//free(xtc);
+//free(space);
+fftwf_free(arr);
 }
 
+
+//void kfilt_lw_fftw(fftwf_complex *s0,int nx0,int ny0,float *dkx,float *dky,float *xl,float *yl,long *seed,int kflag,float *fl,float *fw)
 void kfilt_lw(struct complex *s0,int nx0,int ny0,float *dkx,float *dky,float *xl,float *yl,long *seed,int kflag,float *fl,float *fw)
 {
 int i, j, ip;
@@ -611,6 +678,7 @@ hcoef = 1.80; /* H=0.80, hcoef = H + 1 */
 hcoef = 1.75; /* H=0.75, hcoef = H + 1 */
 
 amp0 = sqrt(s0[0].re*s0[0].re + s0[0].im*s0[0].im);
+//amp0 = sqrt(s0[0][0]*s0[0][0] + s0[0][1]*s0[0][1]);
 
 xl2 = (*xl)*(*xl);
 yl2 = (*yl)*(*yl);
@@ -691,15 +759,20 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       phs = pi*_sfrand(seed);
 
       fac1 = sqrt(s0[ip].re*s0[ip].re + s0[ip].im*s0[ip].im);
+      //fac1 = sqrt(s0[ip][0]*s0[ip][0] + s0[ip][1]*s0[ip][1]);
 
       phs1 = 0.5*pi;
       if(s0[ip].re != (float)(0.0))
+      //if(s0[ip][0] != (float)(0.0))
          {
          phs1 = atan(s0[ip].im/s0[ip].re);
+         //phs1 = atan(s0[ip][1]/s0[ip][0]);
          if(s0[ip].re < 0.0)
+         //if(s0[ip][0] < 0.0)
             phs1 = phs1 + pi;
          }
       else if(s0[ip].im < 0.0)
+      //else if(s0[ip][1] < 0.0)
          phs1 = -0.5*pi;
 
       k2 = (*fl)*(*fl)*kx*kx/(ndkc*ndkc) + (*fw)*(*fw)*ky*ky/(ndkc*ndkc);
@@ -708,7 +781,9 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       wtS = 1.0 - wtD;
 
       s0[ip].re = wtS*fac*cos(phs) + wtD*fac1*cos(phs1);
+      //s0[ip][0] = wtS*fac*cos(phs) + wtD*fac1*cos(phs1);
       s0[ip].im = wtS*fac*sin(phs) + wtD*fac1*sin(phs1);
+      //s0[ip][1] = wtS*fac*sin(phs) + wtD*fac1*sin(phs1);
 
       }
    }
@@ -720,13 +795,17 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
 for(j=1;j<=(ny0-1)/2;j++)
    {
    s0[(ny0-j)*nx0].re = s0[j*nx0].re;
+   //s0[(ny0-j)*nx0][0] = s0[j*nx0][0];
    s0[(ny0-j)*nx0].im = -s0[j*nx0].im;
+   //s0[(ny0-j)*nx0][1] = -s0[j*nx0][1];
    }
 
 for(i=1;i<=(nx0-1)/2;i++)
    {
    s0[nx0-i].re = s0[i].re;
+   //s0[nx0-i][0] = s0[i][0];
    s0[nx0-i].im = -s0[i].im;
+   //s0[nx0-i][1] = -s0[i][1];
    }
 
 for(j=1;j<=ny0/2;j++)
@@ -738,6 +817,11 @@ for(j=1;j<=ny0/2;j++)
 
       s0[i+(ny0-j)*nx0].re = s0[(nx0-i)+j*nx0].re;
       s0[i+(ny0-j)*nx0].im = -s0[(nx0-i)+j*nx0].im;
+	//s0[(nx0-i)+(ny0-j)*nx0][0] = s0[i+j*nx0][0];
+        //s0[(nx0-i)+(ny0-j)*nx0][1] = -s0[i+j*nx0][1];
+        
+        //s0[i+(ny0-j)*nx0][0] = s0[(nx0-i)+j*nx0][0];
+        //s0[i+(ny0-j)*nx0][1] = -s0[(nx0-i)+j*nx0][1];
       }
    }
 

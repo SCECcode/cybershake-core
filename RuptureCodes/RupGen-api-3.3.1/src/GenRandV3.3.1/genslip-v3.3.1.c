@@ -6,6 +6,10 @@
 #include "misc.h"
 #include "getpar.h"
 
+int compareFloat(const void* f1, const void* f2) {
+        return (*(float*)f1 - *(float*)f2);
+}
+
 /*
 ************************************************************************************
 
@@ -188,6 +192,7 @@ int genslip(int ac,char **av, rg_stats_t *stats, struct standrupformat* srf, int
 {
 FILE *fpr, *fpw;
 struct complex *cslip, *crake;
+
 float flen, fwid, dx, dy, sval;
 float dkx, dky, kx, ky, xx, yy, zz;
 float cosA, sinA, cosD, sinD, dd, sn, se;
@@ -227,6 +232,7 @@ float mag_area_Acoef = -1.0;
 float mag_area_Bcoef = -1.0;
 int use_median_mag = 0;
 
+int uniformgrid_hypo = 1;
 int random_hypo = 1;
 int uniform_prob4hypo = 0;
 struct hypo_distr_params hpar_as, hpar_dd;
@@ -236,7 +242,9 @@ float shypo = -1.0e+15;
 float dhypo = -1.0e+15;
 
 int nrup_min = 10;
-float nrup_scale_fac = 0.5;
+float target_hypo_spacing = 4.5;
+float hypo_s0, hypo_d0, hypo_ds, hypo_dd;
+int ih_scnt, ih_dcnt, nhypo_s, nhypo_d;
 
 float avgstk, rake, rt, tsmin;
 float xhypo;
@@ -455,13 +463,18 @@ getpar("shypo","f",&shypo);
 getpar("dhypo","f",&dhypo);
 
 /*XXXX*/
+getpar("generate_seed","d",&generate_seed);
+
+/* RWG 2014-04-24 uniform grid of hypocenters */
+getpar("uniformgrid_hypo","d",&uniformgrid_hypo);
+
 /* RWG 2014-02-20 randomized hypocenter */
 getpar("random_hypo","d",&random_hypo);
-getpar("generate_seed","d",&generate_seed);
-getpar("nrup_min","d",&nrup_min);
-getpar("nrup_scale_fac","f",&nrup_scale_fac);
-
 getpar("uniform_prob4hypo","d",&uniform_prob4hypo);
+
+getpar("nrup_min","d",&nrup_min);
+/* RWG 2014-04-24 target spacing of hypocenters, replaces nrup_scale_fac */
+getpar("target_hypo_spacing","f",&target_hypo_spacing);
 
 getpar("hypo_taperperc_left","f",&hpar_as.x0);
 getpar("hypo_taperval_left","f",&hpar_as.f0);
@@ -751,11 +764,43 @@ if(random_hypo == 1)
 
 if(read_erf == 1)
    {
-   if(random_hypo == 1)
+   if(uniformgrid_hypo == 1) /* RWG 20140424 added option for uniform grid of hypocenters */
       {
       calc_shypo = 0;
 
-      ns = (int)(0.1*nrup_scale_fac*flen*fwid + 0.5);
+      nhypo_s = (int)((float)(flen/target_hypo_spacing));
+      hypo_ds = target_hypo_spacing;
+      if(nhypo_s < 3)
+         {
+         nhypo_s = 3;
+         hypo_ds = flen/(nhypo_s+1);
+         }
+      hypo_s0 = 0.5*(flen - (nhypo_s-1)*hypo_ds) - 0.5*flen;
+
+      nhypo_d = (int)((float)(fwid/target_hypo_spacing));
+      hypo_dd = target_hypo_spacing;
+      if(nhypo_d < 3)
+         {
+         nhypo_d = 3;
+         hypo_dd = fwid/(nhypo_d+1);
+         }
+      hypo_d0 = 0.5*(fwid - (nhypo_d-1)*hypo_dd);
+
+      ns = nhypo_s*nhypo_d;
+      ih_scnt = 0;
+      ih_dcnt = 0;
+
+      nh = 1;
+      }
+   else if(random_hypo == 1)
+      {
+      calc_shypo = 0;
+
+      /* RWG 20140424 OLD way
+        ns = (int)(0.1*nrup_scale_fac*flen*fwid + 0.5);
+               if target_hypo_spacing ~= 4.5, then nrup_scale_fac ~= 0.5
+     */
+      ns = (int)(flen*fwid/(target_hypo_spacing*target_hypo_spacing) + 0.5);
       if(ns < nrup_min)
          ns = nrup_min;
 
@@ -840,6 +885,22 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
 
    fprintf(stderr,"js= %d seed= %d ran= %10.6f\n",js,seed,sval);
 
+   if(uniformgrid_hypo == 1) /* RWG 20140424 added option for uniform grid of hypocenters */
+      {
+      /*if(ih_scnt == nhypo_s)
+          {
+          ih_scnt = 0;
+          ih_dcnt++;
+          }
+       shypo = hypo_s0 + ih_scnt*hypo_ds;
+       dhypo = hypo_d0 + ih_dcnt*hypo_dd;
+
+       ih_scnt++;*/
+      shypo = hypo_s0 + (js%nhypo_s)*hypo_ds;
+      dhypo = hypo_d0 + (js/nhypo_s)*hypo_dd;
+      }
+
+
 /* RWG 2014-02-20 randomized hypocenter */
    if(random_hypo == 1)
       {
@@ -853,12 +914,25 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
       }
 
    printf("shypo=%f, dhypo=%f\n", shypo, dhypo);
-   init_slip_IO(cslip,nx,ny,&dx,&dy,flip_at_surface,init_slip_file);
+   init_slip_IO_fftw(cslip,nx,ny,&dx,&dy,flip_at_surface,init_slip_file);
 
-   fft2d(cslip,nx,ny,-1,&dx,&dy);
+   //fftwf_execute(plan_fwd);
+   fft2d_fftw(cslip,nx,ny,-1,&dx,&dy);
+   /*for(j=0;j<nx*ny;j++) {
+          printf("cslip[%d].re=%f, cslip[j].im=%f\n", j, cslip[j].re, cslip[j].im);
+   }*/
+
    if(kmodel < 100)
       kfilt_lw(cslip,nx,ny,&dkx,&dky,&xl,&yl,&seed,kmodel,&flen,&fwid);
-   fft2d(cslip,nx,ny,1,&dkx,&dky);
+   fft2d_fftw(cslip,nx,ny,1,&dkx,&dky);
+   //fftwf_execute(plan_inv);
+   /*float normalize = 1.0/((float)(nx*ny));
+   for(i=0; i<nx; i++) {
+	for(j=0; j<ny; j++) {
+		cslip[i*ny+j].re = normalize*cslip_fftwf[i*ny+j][0];
+		cslip[i*ny+j].im = normalize*cslip_fftwf[i*ny+j][1];
+	}
+   }*/
 
 /*
    truncate any negative slip values => should double check that spectra is
@@ -875,6 +949,7 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
          {
 	 ip = i + j*nx;
          sum = sum + cslip[ip].re;
+         //sum = sum + cslip[ip][0];
          }
       }
    sum = sum/(float)(nx*(ny_end-ny_str));
@@ -886,6 +961,7 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
          {
 	 ip = i + j*nx;
          sigma = sigma + (cslip[ip].re-sum)*(cslip[ip].re-sum);
+         //sigma = sigma + (cslip[ip][0]-sum)*(cslip[ip][0]-sum);
          }
       }
    sigma = sqrt(sigma/((ny_end-ny_str)*nx))/sum;
@@ -899,6 +975,7 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
             {
 	    ip = i + j*nx;
             cslip[ip].re = sigfac*(cslip[ip].re - sum) + sum;
+            //cslip[ip][0] = sigfac*(cslip[ip][0] - sum) + sum;
             }
          }
       }
@@ -911,14 +988,18 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
          {
 	 ip = i + j*nx;
          if(cslip[ip].re < 0.0 && truncate_zero_slip)
+         //if(cslip[ip][0] < 0.0 && truncate_zero_slip)
 	    {
 	    neg_sum = neg_sum - cslip[ip].re;
+	    //neg_sum = neg_sum - cslip[ip][0];
             cslip[ip].re = 0.0;
+            //cslip[ip][0] = 0.0;
 	    /*
 	    fprintf(stderr,"slip= %13.5e\n",cslip[ip].re);
 	    */
 	    }
 	 sum = sum + cslip[ip].re;
+	 //sum = sum + cslip[ip][0];
 	 }
       }
 
@@ -941,13 +1022,16 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
             if(cslip[ip].re < slipmin)
                cslip[ip].re = slipmin;
             }
+	    /*if(cslip[ip][0] < slipmin)
+		cslip[ip][0] = slipmin;
+	    }*/
          }
       }
 
 /* check moment and scale slip */
    savg = target_savg;
    //fprintf(stderr,"savg=%f\n", savg);
-   scale_slip(psrc,cslip,nx,ny_in,ny_str,&dx,&dy,&dtop,&avgdip,&mom,&vmod,&savg,&smax);
+   scale_slip_fftw(psrc,cslip,nx,ny_in,ny_str,&dx,&dy,&dtop,&avgdip,&mom,&vmod,&savg,&smax);
    fprintf(stderr,"mom= %13.5e avgslip= %.0f maxslip= %.0f\n",mom,savg,smax);
 
    fprintf(stderr,"orig_sigma= %f ... ",sigma);
@@ -1000,16 +1084,16 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
       crake[j].im = 0.0;
       }
 
-   fft2d(crake,nx,ny_in,-1,&dx,&dy);
+   fft2d_fftw(crake,nx,ny_in,-1,&dx,&dy);
    kfilt(crake,nx,ny_in,&dkx_rk,&dky_rk,&xl,&yl,&seed,kmodel);
-   fft2d(crake,nx,ny_in,1,&dkx_rk,&dky_rk);
+   fft2d_fftw(crake,nx,ny_in,1,&dkx_rk,&dky_rk);
 
    printf("A: seed = %ld\n", seed);
 
-   for(j=0;j<ny_in*nx;j++)
-      sort_rake[j] = crake[j].re;
+   //for(j=0;j<ny_in*nx;j++)
+   //   sort_rake[j] = crake[j].re;
 
-   test = 1;
+   /*test = 1;
    while(test)
       {
       test = 0;
@@ -1023,10 +1107,11 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
             test = 1;
             }
          }
-      }
+      }*/
+   //qsort(sort_rake, nx*ny_in, sizeof(float), compareFloat);
 
-   ip = (int)(0.5*nx*ny_in - 0.5);
-   rmed = sort_rake[ip];
+   //ip = (int)(0.5*nx*ny_in - 0.5);
+   //rmed = sort_rake[ip];
 
    rmin = 1.0e+15;
    rmax = -1.0e+15;
