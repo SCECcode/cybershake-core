@@ -17,7 +17,7 @@ int set_memcached_server(char* memcached_server) {
 }
 #endif
 
-int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats) {
+int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats, int hypo_dist) {
 	int writeout = 0;
 
 	int j, rgargc;
@@ -38,6 +38,17 @@ int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats) {
 	}
 	sprintf(rgargv[0], "%s", "rupgen");
 	sprintf(rgargv[1], "infile=%s", rup_geom_file);
+        if (hypo_dist==RUPGEN_RANDOM_HYPO) {
+                sprintf(rgargv[2], "uniformgrid_hypo=0");
+                sprintf(rgargv[3], "random_hypo=1");
+        } else if (hypo_dist==RUPGEN_UNIFORM_HYPO) {
+                sprintf(rgargv[2], "uniformgrid_hypo=1");
+                sprintf(rgargv[3], "random_hypo=0");
+        } else {
+                fprintf(stderr, "Error, did not specify a valid hypocenter location distribution, aborting.\n");
+                exit(2);
+        }
+ 
 
 	/* Run rupture generator */
 	struct standrupformat srf;
@@ -57,7 +68,7 @@ int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats) {
 
 }
 
-int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_flag) {
+int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist) {
 	int write_srf = 1;
 
         int i, j, rgargc;
@@ -85,14 +96,14 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
 	sprintf(rgargv[3], "dohypo=%d", hypo);
 	sprintf(rgargv[4], "write_srf=%d", write_srf);
 	sprintf(rgargv[5], "outfile=%s", srf_out_file);
-	if (hypo_flag==RUPGEN_RANDOM_HYPO) {
+	if (hypo_dist==RUPGEN_RANDOM_HYPO) {
 		sprintf(rgargv[6], "uniformgrid_hypo=0");
 		sprintf(rgargv[7], "random_hypo=1");
-	} else if (hypo_flag==RUPGEN_UNIFORM_HYPO) {
+	} else if (hypo_dist==RUPGEN_UNIFORM_HYPO) {
                 sprintf(rgargv[6], "uniformgrid_hypo=1");
                 sprintf(rgargv[7], "random_hypo=0");
 	} else {
-		fprintf(stderr, "Error, did not specify a valid hypocenter location flag, aborting.\n");
+		fprintf(stderr, "Error, did not specify a valid hypocenter location distribution, aborting.\n");
 		exit(2);
 	}
 
