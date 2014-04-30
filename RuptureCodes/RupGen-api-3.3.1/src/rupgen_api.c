@@ -6,6 +6,7 @@
 
 #include "structure.h"
 #include "rupgen_defs.h"
+#include "rupgen_api.h"
 
 #ifdef _USE_MEMCACHED
 char mc_server[128] = {'\0'};
@@ -56,7 +57,7 @@ int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats) {
 
 }
 
-int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf) {
+int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_flag) {
 	int write_srf = 1;
 
         int i, j, rgargc;
@@ -84,6 +85,16 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
 	sprintf(rgargv[3], "dohypo=%d", hypo);
 	sprintf(rgargv[4], "write_srf=%d", write_srf);
 	sprintf(rgargv[5], "outfile=%s", srf_out_file);
+	if (hypo_flag==RUPGEN_RANDOM_HYPO) {
+		sprintf(rgargv[6], "uniformgrid_hypo=0");
+		sprintf(rgargv[7], "random_hypo=1");
+	} else if (hypo_flag==RUPGEN_UNIFORM_HYPO) {
+                sprintf(rgargv[6], "uniformgrid_hypo=1");
+                sprintf(rgargv[7], "random_hypo=0");
+	} else {
+		fprintf(stderr, "Error, did not specify a valid hypocenter location flag, aborting.\n");
+		exit(2);
+	}
 
         /* Run rupture generator */
 #ifdef _USE_MEMCACHED
