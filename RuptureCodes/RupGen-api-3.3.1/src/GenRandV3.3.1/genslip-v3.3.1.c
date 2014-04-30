@@ -233,7 +233,7 @@ float mag_area_Bcoef = -1.0;
 int use_median_mag = 0;
 
 int uniformgrid_hypo = 1;
-int random_hypo = 1;
+int random_hypo = 0;
 int uniform_prob4hypo = 0;
 struct hypo_distr_params hpar_as, hpar_dd;
 int calc_shypo = 1;
