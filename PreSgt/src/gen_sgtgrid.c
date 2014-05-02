@@ -16,14 +16,14 @@
 void get_filepar(char *str,char *file,int *nh,int *latfirst);
 void merge_sort(int np, int* my_ixv, int* my_iyv, int* my_izv, long long* my_indx, int start, int end);
 
-main(int ac,char **av)
+int main(int ac,char **av)
 {
 FILE *fopfile(), *fp, *fpr;
 float h, *rv, *dv;
 float y2, r;
 int *rinc, *dinc, nrad, ndep;
 int ix, iy, iz, i, id, ir, ifound;
-int nx, ny, nz, np, npz;
+int nx, ny, nz, np=0, npz;
 int xsrc, ysrc;
 int *ixv, *iyv, *izv, *izlevel;
 double invh, invh2;
@@ -130,6 +130,9 @@ ixv = (int *) check_malloc (bcnt*BLOCK_SIZE*sizeof(int));
 iyv = (int *) check_malloc (bcnt*BLOCK_SIZE*sizeof(int));
 izv = (int *) check_malloc (bcnt*BLOCK_SIZE*sizeof(int));
 
+//printf("%d starting adaptive mesh.\n", my_id);
+//fflush(stdout);
+
 //Only rank 0 does adaptive mesh so we don't get duplicates
 np = 0;
 if(my_id==0) {
@@ -228,14 +231,17 @@ int avg_lines_per_proc;
 char ** local_faultlist_data;
 char* tmp;
 int i0;
+
+//printf("%d creating fault files.\n", my_id);
+//fflush(stdout);
+
 //Create fault files for each process
 if (my_id==0) {
 	//gettimeofday(&tv, NULL);
 	//char faultlist_data[10000][200];
-	//Try dynamically allocating to help in debugging
 	char** faultlist_data = check_malloc(sizeof(char*) * 10000);
 	for (i0=0; i0<10000; i0++) {
-		faultlist_data[i0] = check_malloc(sizeof(char) * 200);
+		faultlist_data[i0] = check_malloc(sizeof(char*) * 200);
 	}
 	fp = fopfile(faultlist,"r");
 	int counter = 0;
@@ -248,6 +254,7 @@ if (my_id==0) {
 	num_lines = counter;
 	if (num_lines > 10000) {
 		printf("# of lines is bigger than faultlist_data, exiting.\n");
+		fflush(stdout);
 		exit(1);
 	}
 	MPI_Bcast(&num_lines, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -278,7 +285,6 @@ if (my_id==0) {
                 local_faultlist_data[i0] = check_malloc(sizeof(char)*200);
         }
 	for (i=0; i<lines_per_proc[0]; i++) {
-//		strncpy(local_faultlist_data[i], faultlist_data[i], 200);
 		strncpy(local_faultlist_data[i], faultlist_data[i*num_procs], 200);
 	}
 	free(lines_per_proc);
@@ -290,7 +296,6 @@ if (my_id==0) {
 		free(faultlist_data[i]);
 	}
 	free(faultlist_data);
-
 	//gettimeofday(&new_tv, NULL);
 	//printf("%f sec for individual fault file creation.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
 } else {
@@ -492,7 +497,7 @@ while (iter<num_procs && !flag) {
 		int equal = 0;
 		//printf("Proc %d here.\n", my_id);
 		//printf("my np: %d, partner np: %d\n", np, partner_np);
-		//fflush(stdout);
+		fflush(stdout);
 		while (i0<np || j0<partner_np) {
 			if (ind>=np+partner_np) {
 				printf("ind too large!\n");
@@ -650,6 +655,7 @@ fclose(fp);
 //fflush(stdout);
 
 MPI_Finalize();
+return 0;
 }
 
 void get_filepar(char *str,char *file,int *nh,int *latfirst)
