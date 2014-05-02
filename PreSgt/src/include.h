@@ -10,6 +10,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <libgen.h>
 
 #include <sys/time.h>
 #include <sys/times.h>
