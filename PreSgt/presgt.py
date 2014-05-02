@@ -59,7 +59,7 @@ def genFaultList(outputName, site, erf_id):
     '''Copies the functionality of gen_faultlist.csh:  it serves as a wrapper to CreateFaultList.java, which queries the database to generate a list of ruptures which are applicable for the given site.'''
     print "Generating fault list for %s.\n" % site
     #command = 'java -classpath .:%s:%s/faultlist/mysql-connector-java-5.0.5-bin.jar faultlist/CreateFaultList %s %s %s %s' % (sys.path[0], sys.path[0], site, erf_id, PATH_TO_RUPTURE_VARIATIONS, outputName)
-    command = '%s/faultlist_py/CreateFaultList.py %s %s %s %s' % (sys.path[0], site, erf_id, PATH_TO_RUPTURE_VARIATIONS, outputName)
+    command = '%s/faultlist_py/CreateFaultList.py %s %s %s %s' % (sys.path[0], site, erf_id, PATH_TO_RUPTURE_GEOMETRIES, outputName)
     print command
     returnCode = os.system(command)
     if returnCode!=0:
@@ -94,10 +94,10 @@ def genRadiusFile(radiusfile):
 	output.close()
 
 
-def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfile):
+def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfile, frequency):
 	'''Copies the functionality of gen_sgtgrid.csh:  it generates a list of grid points that the SGTs should be saved for.  This includes an adaptive mesh as well as the locations of the ruptures.  Essentially this serves as a wrapper for gen_sgtgrid.c.'''
 	#magic constants
-	HH = 0.2
+	HH = 0.1/frequency
 	IX_MIN = 20
 	IX_MAX = ns[0]-20
    	IY_MIN = 20
@@ -134,16 +134,17 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 	#cmdFile.write(command)
 	#cmdFile.flush()
 	#cmdFile.close()
+	print command
 	startTime = time.time()
 	returnCode = os.system(command)
 	print "Elapsed time: %f\n" % (time.time()-startTime)
 	if returnCode!=0:
 		sys.exit((returnCode >> 8) & 0xFF)
 
-PATH_TO_RUPTURE_VARIATIONS = config.getProperty('RUPTURE_PATH')
+RUPTURE_ROOT = config.getProperty('RUPTURE_ROOT')
 
 if len(sys.argv) < 10:
-    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords>'
+    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords> [frequency]'
     print 'Example: ./presgt.py USC 33 USC.modelbox gridout_USC model_coords_GC_USC USC.fdloc USC.faultlist USC.radiusfile USC.cordfile'
     sys.exit(1)
 
@@ -157,7 +158,13 @@ faultlistFileName = sys.argv[7]
 radiusFileName = sys.argv[8]
 sgtcordFileName = sys.argv[9]
 
+frequency = 0.5
+if len(sys.argv)==11:
+	frequency = float(sys.argv[10])
+
 erf_id = sys.argv[2]
+
+PATH_TO_RUPTURE_GEOMETRIES = "%s/Ruptures_erf%s" % (RUPTURE_ROOT, erf_id)
 
 input = open(modelbox)
 modelboxContents = input.readlines()
@@ -187,6 +194,6 @@ ns.append(int((gridoutContents[1].split("="))[1]))
 ns.append(int((gridoutContents[1+ns[0]+2].split("="))[1]))
 ns.append(int((gridoutContents[1+ns[0]+2+ns[1]+2].split("="))[1]))
 
-genSgtGrid(sgtcordFileName, site, ns, src, mlon, mlat, mrot, faultlistFileName, radiusFileName)
+genSgtGrid(sgtcordFileName, site, ns, src, mlon, mlat, mrot, faultlistFileName, radiusFileName, frequency)
 sys.exit(0)
 
