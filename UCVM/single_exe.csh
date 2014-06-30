@@ -31,11 +31,14 @@ set MAIN_RUNDIR = ./
 umask 002
 
 mkdir -p ${OUTDIR}
-\mkdir -p ${SCRATCH_OUTDIR}
-ls -lt ${SCRATCH_OUTDIR}
+#\mkdir -p ${SCRATCH_OUTDIR}
+#ls -lt ${SCRATCH_OUTDIR}
 
 #set FILEROOT = v4_sgt
 set FILEROOT = v_sgt-${SITE}
+if ($FORMAT == "awp") then
+	set FILEROOT = awp.${SITE}.media
+endif
 #set LOGDIR = ../../logs/GenLog/${SITE}
 set LOGDIR = ${LOG_ROOT}/GenLog/${SITE}
 
@@ -48,6 +51,15 @@ if ($MPI_CMD == "mpirun") then
 	set MPI_CMD = "${MPI_CMD} -np ${NP} -machinefile ${PBS_NODEFILE}"
 else if ($MPI_CMD == "aprun") then
 	@ NP = $PBS_NUM_NODES * $PBS_NUM_PPN
+	#if ($FORMAT == "rwg") then
+	#	while (`expr $NY \* $NZ % $NP` != 0)
+	#		@ NP = $NP - 1
+	#	end
+	#else if ($FORMAT == "awp") then
+	#	while (`expr $NX \* $NZ % $NP` != 0)
+	#		@ NP = $NP - 1
+	#	end
+	#endif
 	if ${MODELS} == "cvmh" then
 	        set MPI_CMD = "${MPI_CMD} -n ${NP}"
 	else
@@ -62,10 +74,10 @@ set DENMIN = 1700.0
 #Add to LD_LIBRARY_PATH
 setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
 
+echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR}"
 
-echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${SCRATCH_OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT}"
-
-${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${SCRATCH_OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT}
+${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR}
+endif
 
 set RC = $?
 
@@ -76,5 +88,11 @@ else
   exit 1
 endif
 
-\cp -r ${SCRATCH_OUTDIR}/* ${OUTDIR}
+if ($FORMAT == "awp") then
+	#Move to awp.<site>.media
+	mv ${OUTDIR}/${FILEROOT} ${OUTDIR}/awp.${SITE}.media
+endif
+
+#echo "\\cp -r ${SCRATCH_OUTDIR}/* ${OUTDIR}"
+#\cp -r ${SCRATCH_OUTDIR}/* ${OUTDIR}
 
