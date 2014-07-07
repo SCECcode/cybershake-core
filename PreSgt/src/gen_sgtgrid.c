@@ -3,6 +3,9 @@
 #include "function.h"
 #include <stdint.h>
 #include <mpi.h>
+#include <stddef.h>
+
+#include "cfuhash.h"
 
 #define         ERAD            6378.139
 #define         RPERD           0.017453292
@@ -14,7 +17,26 @@
 #endif
 
 void get_filepar(char *str,char *file,int *nh,int *latfirst);
-void merge_sort(int np, int* my_ixv, int* my_iyv, int* my_izv, long long* my_indx, int start, int end);
+
+struct entry {
+	int x;
+	int y;
+	int z;
+	long long index;
+};
+
+int compare_entry(const void* e1, const void* e2) {
+	struct entry* entry1 = (struct entry*) e1;
+	struct entry* entry2 = (struct entry*) e2;
+	long long diff = entry1->index - entry2->index;
+	if (diff>INT_MAX) {
+		return INT_MAX;
+	} else if (diff<INT_MIN) {
+		return INT_MIN;
+	} else {
+		return (int)(diff);
+	}
+}
 
 int main(int ac,char **av)
 {
@@ -25,12 +47,15 @@ int *rinc, *dinc, nrad, ndep;
 int ix, iy, iz, i, id, ir, ifound;
 int nx, ny, nz, np=0, npz;
 int xsrc, ysrc;
-int *ixv, *iyv, *izv, *izlevel;
+int *ixv, *iyv, *izv;
+int *izlevel;
 double invh, invh2;
 
 int bcnt = 1;
 int sflag = 1;
 long long *indx, ll_int;
+
+struct entry* points;
 
 int nhead = 0;
 int latfirst = 0;
@@ -61,8 +86,8 @@ double amat[9], ainv[9];
 double rperd = RPERD;
 float ref_rad = ERAD;
 
-//struct timeval tv;
-//struct timeval new_tv;
+struct timeval tv;
+struct timeval new_tv;
 
 MPI_Init(&ac, &av);
 
@@ -126,17 +151,23 @@ if(izmax < 0 || izmax > nz-izstart)
 invh = 1.0/(double)(h);
 invh2 = invh*invh;
 
-ixv = (int *) check_malloc (bcnt*BLOCK_SIZE*sizeof(int));
-iyv = (int *) check_malloc (bcnt*BLOCK_SIZE*sizeof(int));
-izv = (int *) check_malloc (bcnt*BLOCK_SIZE*sizeof(int));
-
-//printf("%d starting adaptive mesh.\n", my_id);
-//fflush(stdout);
+printf("%d starting adaptive mesh.\n", my_id);
+fflush(stdout);
 
 //Only rank 0 does adaptive mesh so we don't get duplicates
 np = 0;
+
+//hash table
+cfuhash_table_t *hash = cfuhash_new_with_initial_size(10000000);
+char hashkey[16];
+//Need to allocate here because cfuhash doesn't make copies of the data, just the key
+//Use hashvals as the list of unique points
+struct entry* hashvals = check_malloc(sizeof(struct entry)*BLOCK_SIZE);
+struct entry tmp_hashval;
+
+
 if(my_id==0) {
-   //gettimeofday(&tv, NULL);
+   gettimeofday(&tv, NULL);
 
 if(radiusfile[0] != '\0')
    {
@@ -207,22 +238,32 @@ if(radiusfile[0] != '\0')
                   {
                   bcnt++;
 
-                  ixv = (int *) check_realloc (ixv,bcnt*BLOCK_SIZE*sizeof(int));
-                  iyv = (int *) check_realloc (iyv,bcnt*BLOCK_SIZE*sizeof(int));
-                  izv = (int *) check_realloc (izv,bcnt*BLOCK_SIZE*sizeof(int));
+		  hashvals = check_realloc(hashvals, bcnt*BLOCK_SIZE*sizeof(struct entry));
                   }
 
-	       ixv[np-1] = ix;
-	       iyv[np-1] = iy;
-	       izv[np-1] = izlevel[iz];
+		tmp_hashval.x = ix;
+		tmp_hashval.y = iy;
+		tmp_hashval.z = izlevel[iz];
+		tmp_hashval.index = (long long)tmp_hashval.x*(long long)100000000 + (long long)tmp_hashval.y*10000 + (long long)tmp_hashval.z;
+	        sprintf(hashkey, "%ld", tmp_hashval.index);
+
+		if (cfuhash_get(hash, hashkey)==NULL) {
+                        //Add it
+			//np-1 because we already incremented it a few loops ago
+                        hashvals[np-1].x = tmp_hashval.x;
+			hashvals[np-1].y = tmp_hashval.y;
+			hashvals[np-1].z = tmp_hashval.z;
+			hashvals[np-1].index = tmp_hashval.index;
+                        cfuhash_put(hash, hashkey, &(hashvals[np-1]));
+                }
 	       }
 	    }
          }
       }
    }
 
-  //gettimeofday(&new_tv, NULL);
-  //printf("%f sec for adaptive mesh gen.\n", (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));  
+  gettimeofday(&new_tv, NULL);
+  printf("%f sec for adaptive mesh gen.\n", (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));  
   }
 
 int num_lines = 0;
@@ -232,12 +273,12 @@ char ** local_faultlist_data;
 char* tmp;
 int i0;
 
-//printf("%d creating fault files.\n", my_id);
-//fflush(stdout);
+printf("%d creating fault files.\n", my_id);
+fflush(stdout);
 
 //Create fault files for each process
 if (my_id==0) {
-	//gettimeofday(&tv, NULL);
+	gettimeofday(&tv, NULL);
 	//char faultlist_data[10000][200];
 	char** faultlist_data = check_malloc(sizeof(char*) * 10000);
 	for (i0=0; i0<10000; i0++) {
@@ -296,8 +337,8 @@ if (my_id==0) {
 		free(faultlist_data[i]);
 	}
 	free(faultlist_data);
-	//gettimeofday(&new_tv, NULL);
-	//printf("%f sec for individual fault file creation.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
+	gettimeofday(&new_tv, NULL);
+	printf("%f sec for individual fault file creation.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
 } else {
 	MPI_Bcast(&num_lines, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	avg_lines_per_proc = num_lines/num_procs;
@@ -319,17 +360,10 @@ if (my_id==0) {
 	free(tmp);
 }
 
-/*  now read in fault coords */
-//for(i0=0; i0<num_my_lines; i0++) {
-//	printf("Process %d, line %i: %s\n", my_id, i0, local_faultlist_data[i0]);
-//}
-//printf("id %d, np %d\n", my_id, np);
-//fflush(stdout);
-
-
 //change to use buffer
 
-//gettimeofday(&tv, NULL);
+gettimeofday(&tv, NULL);
+
 if(faultlist[0] != '\0')
    {
    char outname[25];
@@ -337,9 +371,9 @@ if(faultlist[0] != '\0')
    FILE* fp_out = fopen(outname, "w");
  
     for (i0=0; i0<num_my_lines; i0++) {
-	strcpy(str, local_faultlist_data[i0]);
+      strcpy(str, local_faultlist_data[i0]);
       get_filepar(str,infile,&nhead,&latfirst);
-
+      printf("%d) Processing file %d of %d.\n", my_id, i0, num_my_lines);
       fpr = fopfile(infile,"r");
 
       i = 0;
@@ -363,39 +397,27 @@ if(faultlist[0] != '\0')
          iyp = (int)((double)(yy)*invh + 0.5);
          izp = (int)((double)(fdep)*invh + 1.5);
 
+	 tmp_hashval.x = ixp;
+	 tmp_hashval.y = iyp;
+	 tmp_hashval.z = izp;
+	 tmp_hashval.index = (long long)ixp*(long long)100000000 + (long long)iyp*(long long)10000 + izp;
+	 sprintf(hashkey, "%ld", tmp_hashval.index); 
 
 	 if(ixp >= BNDPAD && ixp < nx-BNDPAD && iyp >= BNDPAD && iyp < ny-BNDPAD && izp >= 1 && izp < nz-BNDPAD)
 	    {
-	    ifound = 0;
-            for(ir=0;ir<np;ir++)
-	       {
-	       if(ixv[ir] == ixp && iyv[ir] == iyp && izv[ir] == izp)
-	          {
-	          ifound = 1;
-	          break;
-	          }
-	       }
-
-	    if(ifound == 0)
-	       {
-	       np++;
-
-		fprintf(fp_out, "Didn't find (%d, %d, %d) from file %s.\n", ixp, iyp, izp, infile);
-		fflush(fp_out);
-
-               if(np > bcnt*BLOCK_SIZE)
-                  {
-                  bcnt++;
-
-                  ixv = (int *) check_realloc (ixv,bcnt*BLOCK_SIZE*sizeof(int));
-                  iyv = (int *) check_realloc (iyv,bcnt*BLOCK_SIZE*sizeof(int));
-                  izv = (int *) check_realloc (izv,bcnt*BLOCK_SIZE*sizeof(int));
-                  }
-
-	       ixv[np-1] = ixp;
-	       iyv[np-1] = iyp;
-	       izv[np-1] = izp;
-	       }
+		if (cfuhash_get(hash, hashkey)==NULL) {
+			//Add it
+			hashvals[np].x = tmp_hashval.x;
+			hashvals[np].y = tmp_hashval.y;
+			hashvals[np].z = tmp_hashval.z;
+			hashvals[np].index = tmp_hashval.index;
+			cfuhash_put(hash, hashkey, &(hashvals[np]));
+			np++;
+			if (np > bcnt*BLOCK_SIZE) {
+				bcnt++;
+				hashvals = check_realloc(hashvals, sizeof(struct entry)*bcnt*BLOCK_SIZE);
+			}
+		}
 	    }
          }
 
@@ -410,11 +432,19 @@ char outname[25];
 sprintf(outname, "core_%d.out", my_id);
 FILE* fp_out = fopen(outname, "w");
 for (i0=0; i<np; i++) {
-	fprintf(fp_out, "%d %d %d\n", ixv[i], iyv[i], izv[i]);
+	fprintf(fp_out, "%d %d %d %ld\n", hashvals[i].x, hashvals[i].y, hashvals[i].z, hashvals[i].index);
 }
 fflush(fp_out);
 fclose(fp_out);
 */
+
+//check # of entries to be sure it matches
+size_t num_fault_points = cfuhash_num_entries(hash);
+
+if (num_fault_points!=np) {
+	fprintf(stderr, "Error: we think we inserted %d keys but we actually have %d.  Aborting.\n", np, num_fault_points);
+	exit(2);
+}
 
 for(i0=0; i0<num_my_lines; i0++) {
         free(local_faultlist_data[i0]);
@@ -424,170 +454,111 @@ free(local_faultlist_data);
 
 fprintf(stderr,"id=%d, np= %d\n",my_id, np);
 
-//gettimeofday(&new_tv, NULL);
-//printf("proc %d took %f sec for reading in files.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
+gettimeofday(&new_tv, NULL);
+printf("proc %d took %f sec for reading in files.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
 
-indx = check_malloc(np*sizeof(long long));
+printf("%d has np %d\n", my_id, np);
 
-for(ir=0;ir<np;ir++)
-   indx[ir] = (long long)(ixv[ir])*(long long)(100000000) + (long long)(iyv[ir])*(long long)(10000) + (long long)(izv[ir]);
-
-
-//printf("Starting local sort.\n");
-//fflush(stdout);
-//do local sort
-
-//gettimeofday(&tv, NULL);
-merge_sort(np, ixv, iyv, izv, indx, 0, np);
-//gettimeofday(&new_tv, NULL);
-//printf("proc %d took %f sec for local sort.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
-
-//printf("proc %d is done with local sort.\n", my_id);
-//fflush(stdout);
+fflush(stdout);
 
 //parallel merge on ixv, iyv, izv
 
-//printf("%d has np %d\n", my_id, np);
+if (my_id==0) gettimeofday(&tv, NULL);
 
-//if (my_id==0) gettimeofday(&tv, NULL);
-
-int iter=1;
-int flag=0;
-while (iter<num_procs && !flag) {
-	if ((my_id/iter)%2==1) {
-		//send np value 
-		int partner_id = my_id-iter;
-		MPI_Send(&np, 1, MPI_INT, partner_id, 10+iter, MPI_COMM_WORLD);
-		MPI_Send(ixv, np, MPI_INT, partner_id, 20+iter, MPI_COMM_WORLD);
-		MPI_Send(iyv, np, MPI_INT, partner_id, 30+iter, MPI_COMM_WORLD);
-		MPI_Send(izv, np, MPI_INT, partner_id, 40+iter, MPI_COMM_WORLD);
-		flag = 1;
-	} else if ((my_id/iter)%2==0) {
-		MPI_Status stat;
-		//receive and merge
-		//Make sure you have a receiving partner
-		if (my_id+iter>=num_procs) {
-			iter *= 2;
-			continue;
-		}
-		int partner_id = my_id+iter;
-		int partner_np;
-		MPI_Recv(&partner_np, 1, MPI_INT, partner_id, 10+iter, MPI_COMM_WORLD, &stat);
-		int* partner_ixv = check_malloc(sizeof(int)*partner_np);
-		int* partner_iyv = check_malloc(sizeof(int)*partner_np);
-		int* partner_izv = check_malloc(sizeof(int)*partner_np);
-		long long* partner_indx = check_malloc(sizeof(long long)*partner_np);
-		MPI_Recv(partner_ixv, partner_np, MPI_INT, partner_id, 20+iter, MPI_COMM_WORLD, &stat);
-		MPI_Recv(partner_iyv, partner_np, MPI_INT, partner_id, 30+iter, MPI_COMM_WORLD, &stat);
-		MPI_Recv(partner_izv, partner_np, MPI_INT, partner_id, 40+iter, MPI_COMM_WORLD, &stat);
-
-		int* combined_ixv = check_malloc(sizeof(int) * (np + partner_np));
-		int* combined_iyv = check_malloc(sizeof(int) * (np + partner_np));
-		int* combined_izv = check_malloc(sizeof(int) * (np + partner_np));
-		long long * combined_indx = check_malloc(sizeof(long long) * (np + partner_np));
-
-		int combined_np = 0;		
-	
-		for (ir=0;ir<partner_np;ir++)
-   			partner_indx[ir] = (long long)(partner_ixv[ir])*(long long)(100000000) + (long long)(partner_iyv[ir])*(long long)(10000) + (long long)(partner_izv[ir]);
-
-		int j0 = 0;
-		int i0 = 0;
-		int ind = 0;
-		int equal = 0;
-		//printf("Proc %d here.\n", my_id);
-		//printf("my np: %d, partner np: %d\n", np, partner_np);
-		fflush(stdout);
-		while (i0<np || j0<partner_np) {
-			if (ind>=np+partner_np) {
-				printf("ind too large!\n");
-			}
-			if (i0==np) {
-				for (j0; j0<partner_np; j0++) {
-					combined_ixv[ind] = partner_ixv[j0];
-					combined_iyv[ind] = partner_iyv[j0];
-					combined_izv[ind] = partner_izv[j0];
-					combined_indx[ind] = partner_indx[j0];
-					ind++;
-					combined_np++;
-				}
-			} else if (j0==partner_np) {
-				for (i0; i0<np; i0++) {
-					combined_ixv[ind] = ixv[i0];
-					combined_iyv[ind] = iyv[i0];
-					combined_izv[ind] = izv[i0];
-					combined_indx[ind] = indx[i0];
-					ind++;
-					combined_np++;
-				}
-			} else {
-				if (indx[i0]<partner_indx[j0]) {
-                                        combined_ixv[ind] = ixv[i0];
-                                        combined_iyv[ind] = iyv[i0];
-                                        combined_izv[ind] = izv[i0];
-                                        combined_indx[ind] = indx[i0];
-					i0++;
-				} else if (indx[i0]>partner_indx[j0]) {
-                                        combined_ixv[ind] = partner_ixv[j0];
-                                        combined_iyv[ind] = partner_iyv[j0];
-                                        combined_izv[ind] = partner_izv[j0];
-                                        combined_indx[ind] = partner_indx[j0];
-					j0++;
-				} else if (indx[i0]==partner_indx[j0]) {
-					equal++;
-					combined_ixv[ind] = ixv[i0];
-                                        combined_iyv[ind] = iyv[i0];
-                                        combined_izv[ind] = izv[i0];
-                                        combined_indx[ind] = indx[i0];
-                                        i0++;
-					j0++;
-				}
-				ind++;
-				combined_np++;
-			}
-		}
-		np = combined_np;
-
-		//printf("%d equal.\n", equal);
-
-		combined_ixv = check_realloc(combined_ixv, sizeof(int)*np);
-                combined_iyv = check_realloc(combined_iyv, sizeof(int)*np);
-                combined_izv = check_realloc(combined_izv, sizeof(int)*np);
-                combined_indx = check_realloc(combined_indx, sizeof(long long)*np);
-		
-		//printf("Starting frees.\n");
-		//printf("partner_ixv %d, partner_iyv %d, partner_izv %d.\n", partner_ixv, partner_iyv, partner_izv);
-		//fflush(stdout);
-
-		free(partner_ixv);
-		free(partner_iyv);
-		free(partner_izv);
-		free(partner_indx);
-		//fflush(stdout);
-		free(ixv);
-		free(iyv);
-		free(izv);
-		free(indx);
-
-		ixv = combined_ixv;
-		iyv = combined_iyv;
-		izv = combined_izv;
-		indx = combined_indx;
-
-		/*free(combined_ixv);
-		free(combined_iyv);
-		free(combined_izv);
-		free(combined_indx);*/
+//Get total NP
+int global_np = 0;
+int* proc_nps = check_malloc(sizeof(int)*num_procs);
+int* proc_disps = check_malloc(sizeof(int)*num_procs);
+int rc = MPI_Gather(&np, 1, MPI_INT, proc_nps, 1, MPI_INT, 0, MPI_COMM_WORLD);
+if (rc!=MPI_SUCCESS) {
+	fprintf(stderr, "Error in MPI_Gather, aborting.\n");
+	exit(-3);
+}
+if (my_id==0) {
+	for (ir=0; ir<num_procs; ir++) {
+		printf("Proc %d has np=%d\n", ir, proc_nps[ir]);
+		proc_disps[ir] = global_np;
+		global_np += proc_nps[ir];
+		printf("Proc %d has offset=%d\n", ir, proc_disps[ir]);
 	}
-	iter *= 2;
+}
+
+struct entry* recv_points = NULL;
+if (my_id==0) {
+	printf("Total of %d gathered elements.", global_np);
+	fflush(stdout);
+	recv_points = check_malloc(sizeof(struct entry)*(size_t)global_np);
+	//Gather points, put in hashmap, read back out
+}
+MPI_Datatype entry_type;
+int blen[5] = {1, 1, 1, 1, 1};
+//Can't sent an 8-byte LONG via mpi, so use 2 ints
+int x_offset, y_offset, z_offset, index_offset;
+x_offset = offsetof(struct entry, x);
+y_offset = offsetof(struct entry, y);
+z_offset = offsetof(struct entry, z);
+index_offset = offsetof(struct entry, index);
+MPI_Aint disps[5] = {x_offset, y_offset, z_offset, index_offset, index_offset+sizeof(int)};
+MPI_Datatype types[5] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
+MPI_Type_create_struct(5, blen, disps, types, &entry_type);
+MPI_Type_commit(&entry_type);
+
+rc = MPI_Gatherv(hashvals, np, entry_type, recv_points, proc_nps, proc_disps, entry_type, 0, MPI_COMM_WORLD);
+if (rc!=MPI_SUCCESS) {
+	fprintf(stderr, "Error in MPI_Gatherv, aborting.\n");
+	exit(-4);
+}
+
+//Add points in recv_points, starting with np, to hash table
+if (my_id==0) {
+	hashvals = check_realloc(hashvals, sizeof(struct entry)*global_np);
+	for(ir=np; ir<global_np; ir++) {
+		tmp_hashval.x = recv_points[ir].x;
+		tmp_hashval.y = recv_points[ir].y;
+		tmp_hashval.z = recv_points[ir].z;
+		tmp_hashval.index = recv_points[ir].index;
+
+		sprintf(hashkey, "%ld", tmp_hashval.index);
+		if (cfuhash_get(hash, hashkey)==NULL) {
+	        	//Add it
+	                hashvals[np].x = tmp_hashval.x;
+	                hashvals[np].y = tmp_hashval.y;
+	                hashvals[np].z = tmp_hashval.z;
+	                hashvals[np].index = tmp_hashval.index;
+	                cfuhash_put(hash, hashkey, &(hashvals[np]));
+			printf("adding to hashvals: (%d, %d, %d, %ld)\n", hashvals[np].x, hashvals[np].y, hashvals[np].z, hashvals[np].index);
+			np++;
+	        }
+	}
+	hashvals = check_realloc(hashvals, sizeof(struct entry)*np);
+	/*for(ir=0; ir<np; ir++) {
+		printf("hashvals: (%d, %d, %d, %ld)\n", hashvals[ir].x, hashvals[ir].y, hashvals[ir].z, hashvals[ir].index);
+	}*/
+	/*keys = (char**)cfuhash_keys(hash, &num_fault_points, 0);
+	if (num_fault_points!=np) {
+		fprintf(stderr, "Error: expecting %d points but actually %d.\n", np, num_fault_points);
+		exit(-1);
+	}
+	points = check_realloc(points, num_fault_points*sizeof(struct entry));
+	for(ir=0; ir<np; ir++) {
+	        struct entry* val = (struct entry*)cfuhash_get(hash, keys[ir]);
+		printf("points: (%d, %d, %d)\n", val->x, val->y, val->z);
+	        points[ir].index = val->index;
+	        //populate ixv, iyv, izv
+	        points[ir].x = val->x;
+	        points[ir].y = val->y;
+	        points[ir].z = val->z;
+	}*/
+	
+	qsort(hashvals, np, sizeof(struct entry), compare_entry);
 }
 
 if (my_id==0) {
 
-//gettimeofday(&new_tv, NULL);
-//printf("Took %f sec for cross-proc merge.\n", (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
+gettimeofday(&new_tv, NULL);
+printf("Took %f sec for cross-proc merge.\n", (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
 
-//gettimeofday(&tv, NULL);
+gettimeofday(&tv, NULL);
 if(nedfile[0] != '\0')
    {
    fp = fopfile(nedfile,"w");
@@ -598,8 +569,8 @@ if(nedfile[0] != '\0')
    fprintf(fp,"%d\n",np);
    for(ir=0;ir<np;ir++)
       {
-      xp = (xsrc - ixv[ir])*h;
-      yp = (ysrc - iyv[ir])*h;
+      xp = (xsrc - hashvals[ir].x*h);
+      yp = (ysrc - hashvals[ir].y*h);
 
       north = xp*cosR - yp*sinR;
       east  = xp*sinR + yp*cosR;
@@ -608,14 +579,15 @@ if(nedfile[0] != '\0')
       }
 
    fprintf(fp,"%d\n",npz);
-   for(id=0;id<npz;id++)
-      fprintf(fp,"%13.8f\n",(izv[id]-1.0)*h);
+   for(id=0;id<npz;id++) {
+      fprintf(fp,"%13.8f\n",(hashvals[id].z-1.0)*h);
+   }
 
    fclose(fp);
    }
 
-//gettimeofday(&new_tv, NULL);
-//printf("Took %f sec to calc north/east/dist.\n", (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
+gettimeofday(&new_tv, NULL);
+printf("Took %f sec to calc north/east/dist.\n", (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
 fflush(stdout);
 
 if(geoproj == 0)
@@ -624,12 +596,8 @@ else if(geoproj == 1)
    sprintf(str,"great circle arcs");
 
 
-//gettimeofday(&tv, NULL);
+gettimeofday(&tv, NULL);
 fp = fopfile(outfile,"w");
-//char my_outfile[200];
-//sprintf(my_outfile, "%s.%d", outfile, my_id);
-
-//fp = fopfile(my_outfile, "w");
 
 fprintf(fp,"# geoproj= %d (%s)\n",geoproj,str);
 fprintf(fp,"# modellon= %12.5f modellat= %12.5f modelrot= %6.2f\n",modellon,modellat,modelrot);
@@ -639,20 +607,24 @@ fprintf(fp,"#\n");
 fprintf(fp,"%d\n",np);
 for(ir=0;ir<np;ir++)
    {
-   xx = ixv[ir]*h;
-   yy = iyv[ir]*h;
-   zz = (izv[ir]-1)*h;   /* subtract 1 for free-surface */
+   xx = hashvals[ir].x*h;
+   yy = hashvals[ir].y*h;
+   zz = (hashvals[ir].z-1)*h;  /* subtract 1 for free-surface */
    gcproj(&xx,&yy,&flon,&flat,&ref_rad,&g0,&b0,amat,ainv,xy2ll);
-   fprintf(fp,"%6d %6d %6d %.12lld %11.5f %11.5f %12.5f\n",ixv[ir],iyv[ir],izv[ir],indx[ir],flon,flat,zz);
+   fprintf(fp,"%6d %6d %6d %.12lld %11.5f %11.5f %12.5f\n",hashvals[ir].x, hashvals[ir].y, hashvals[ir].z, hashvals[ir].index, flon, flat, zz);
    }
 
 fclose(fp);
-//gettimeofday(&new_tv, NULL);
-//printf("Took %f sec to write output file.\n", (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
+gettimeofday(&new_tv, NULL);
+printf("Took %f sec to write output file.\n", (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
 } //close if (my_id==0)
 
-//printf("%d finalizing.\n", my_id);
-//fflush(stdout);
+free(recv_points);
+
+cfuhash_destroy(hash);
+free(proc_nps);
+free(proc_disps);
+free(hashvals);
 
 MPI_Finalize();
 return 0;
@@ -729,66 +701,5 @@ while(lend == 0)
          sptr++;
       }
    }
-}
-
-void merge_sort(int np, int* my_ixv, int* my_iyv, int* my_izv, long long* my_indx, int start, int end) {
-	if (start<end-1) {
-		int* local_ixv = check_malloc(np*sizeof(int));
-		int* local_iyv = check_malloc(np*sizeof(int));
-		int* local_izv = check_malloc(np*sizeof(int));
-                long long* local_indx = check_malloc(np*sizeof(long long));
-                int i;
-                for (i=start; i<end; i++) {
-			local_ixv[i] = my_ixv[i];
-			local_iyv[i] = my_iyv[i];
-			local_izv[i] = my_izv[i];
-                        local_indx[i] = my_indx[i];
-                }
-                merge_sort(np, local_ixv, local_iyv, local_izv, local_indx, start, (start+end)/2);
-                merge_sort(np, local_ixv, local_iyv, local_izv, local_indx, (start+end)/2, end);
-                i = start;
-                int j = (start+end)/2;
-                int array_ind = i;
-                while (array_ind<end) {
-                        if (i==(start+end)/2) {
-                                for (j; j<end; j++) {
-					my_ixv[array_ind] = local_ixv[j];
-					my_iyv[array_ind] = local_iyv[j];
-					my_izv[array_ind] = local_izv[j];
-                                        my_indx[array_ind] = local_indx[j];
-                                        array_ind++;
-                                }
-                                break;
-                        } else if (j==end) {
-                                for (i; i<(start+end)/2; i++) {
-					my_ixv[array_ind] = local_ixv[i];
-                                        my_iyv[array_ind] = local_iyv[i];
-                                        my_izv[array_ind] = local_izv[i];
-                                        my_indx[array_ind] = local_indx[i];
-                                        array_ind++;
-                                }
-                                break;
-                        } else {
-                                if (local_indx[i]<=local_indx[j]) {
-                                        my_ixv[array_ind] = local_ixv[i];
-                                        my_iyv[array_ind] = local_iyv[i];
-                                        my_izv[array_ind] = local_izv[i];
-                                        my_indx[array_ind] = local_indx[i];
-                                        i++;
-                                } else {
-                                        my_ixv[array_ind] = local_ixv[j];
-                                        my_iyv[array_ind] = local_iyv[j];
-                                        my_izv[array_ind] = local_izv[j];
-                                        my_indx[array_ind] = local_indx[j];
-                                        j++;
-                                }
-                                array_ind++;
-                        }
-                }
-                free(local_ixv);
-		free(local_iyv);
-		free(local_izv);
-		free(local_indx);
-        }
 }
 
