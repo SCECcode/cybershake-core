@@ -42,7 +42,7 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc):
 	#determine DH, DT, NST, READ_STEP, WRITE_STEP, FP
 	param["DH"] = round(100.0/frequency, 1)
 	param["DT"] = 0.005/frequency
-	param["NST"] = int(round(10000.0/frequency, 0))
+	param["NST"] = int(frequency*40000.0)
 	param["FP"] = frequency
 	param["READ_STEP"] = param["NST"]
 	#Divide by 10 because WRITE_STEP is in units of # of steps being written, not total # of timesteps
