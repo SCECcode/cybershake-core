@@ -14,7 +14,7 @@ def build_src(site, fdloc, awp_comp, frequency):
 		print "Error:  component %s not recognized, aborting." % comp
 		sys.exit(1)
 	
-	nt = int(round(10000.0/frequency, 0))
+	nt = int(frequency*40000.0)
 
 	fp_in = open(fdloc, "r")
 	data = fp_in.readline()
