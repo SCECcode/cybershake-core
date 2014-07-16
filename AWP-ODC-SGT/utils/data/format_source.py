@@ -27,7 +27,7 @@ for i in range(2, len(data)):
 	for p in pieces:
 		for j in range(0, 3):
 			if j==pos:
-				fp_out.write("%e, " % (float(p)))
+				fp_out.write("%e, " % (float(p)*1.0e15))
 			else:
 				fp_out.write("0.0, ")
 		fp_out.write("0.0, 0.0, 0.0\n")
