@@ -68,7 +68,7 @@ int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats, int hypo_dist) {
 
 }
 
-int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist) {
+int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist, float dt) {
 	int write_srf = 1;
 
         int i, j, rgargc;
@@ -96,12 +96,13 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
 	sprintf(rgargv[3], "dohypo=%d", hypo);
 	sprintf(rgargv[4], "write_srf=%d", write_srf);
 	sprintf(rgargv[5], "outfile=%s", srf_out_file);
+	sprintf(rgargv[6], "dt=%f", dt);
 	if (hypo_dist==RUPGEN_RANDOM_HYPO) {
-		sprintf(rgargv[6], "uniformgrid_hypo=0");
-		sprintf(rgargv[7], "random_hypo=1");
+		sprintf(rgargv[7], "uniformgrid_hypo=0");
+		sprintf(rgargv[8], "random_hypo=1");
 	} else if (hypo_dist==RUPGEN_UNIFORM_HYPO) {
-                sprintf(rgargv[6], "uniformgrid_hypo=1");
-                sprintf(rgargv[7], "random_hypo=0");
+                sprintf(rgargv[7], "uniformgrid_hypo=1");
+                sprintf(rgargv[8], "random_hypo=0");
 	} else {
 		fprintf(stderr, "Error, did not specify a valid hypocenter location distribution, aborting.\n");
 		exit(2);
@@ -140,5 +141,6 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
         }
 
         free(rgargv);
+	free(srf_out_file);
         return(0);
 }
