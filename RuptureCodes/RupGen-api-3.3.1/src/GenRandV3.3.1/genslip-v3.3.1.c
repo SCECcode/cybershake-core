@@ -341,7 +341,7 @@ struct pointsource *psrc;
 struct stfpar2 stfparams;
 
 int outbin = 0;
-int writeout = 1;
+int writeout = 0;
 int doslip = -1;
 int dohypo = -1;
 
@@ -1380,8 +1380,10 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
          else
             sprintf(str,"%s.srf",outfile);
 
-         write2srf(srf,str,outbin);
-	 }
+	if (writeout) {
+		write2srf(srf,str,outbin);
+	}
+	}
 
       else if(gslip.np > 0 && write_gsf)
          {
