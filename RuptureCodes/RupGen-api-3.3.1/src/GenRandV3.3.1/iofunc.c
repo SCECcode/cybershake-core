@@ -301,6 +301,7 @@ int* num_parts;
 	}
 
 	free(parts_key);
+	memcached_free(mst);
 
 	char* tok;
 	tok = strtok(file_data, "\n"); /* Probability = <float> */
