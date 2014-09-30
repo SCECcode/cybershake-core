@@ -27,12 +27,40 @@ public class BSAFileUtil {
 		totalFileList = new ArrayList<File>();
 		if (fileMode==Mode.ZIP) {
 			createTotalFileListZipHelper(saFile);
-		} else {
+		} else if (fileMode==Mode.BSA || fileMode==Mode.HEAD){
 			//BSA or HEAD mode
 			createTotalFileListHelper(saFile);
+		} else if (fileMode==Mode.ROTD) {
+			createTotalFileListRotd(saFile);
 		}
 		return totalFileList;
 		
+	}
+	
+	private static void createTotalFileListRotd(File saFile) {
+		File[] rotdList;
+		if (saFile.isDirectory()) {
+			rotdList = saFile.listFiles(new RotDFilenameFilter());
+		} else {
+			//just inserting 1 file		totalFileList.addAll(Arrays.asList(zipfilesList));
+			rotdList = new File[1];
+			rotdList[0] = saFile;
+		}
+		
+		if (isInDebugMode) {
+			System.out.println("Printing all files in " + saFile.getName());
+			for (int i=0; i<rotdList.length; i++) {
+				System.out.println(rotdList[i]);
+			}
+		}
+		
+		totalFileList.addAll(Arrays.asList(rotdList));
+		for (int filesIndex=0; filesIndex < rotdList.length; filesIndex++) {
+			if (isInDebugMode) {
+				System.out.println("\tFilename: " + rotdList[filesIndex].getName());
+			}
+			totalFilenameList.add(rotdList[filesIndex].getName());
+		}
 	}
 	
 	private static void createTotalFileListZipHelper(File saFile) {
