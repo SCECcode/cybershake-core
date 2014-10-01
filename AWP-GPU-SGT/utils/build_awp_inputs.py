@@ -11,6 +11,8 @@ import sys
 import os
 import errno
 
+LFS_PATH = "/opt/cray/lustre-cray_gem_s/1.8.6_2.6.32.59_0.7.1_1.0402.7496.5.2-1.0402.47176.8.11.gem/bin/lfs"
+
 print "Adding config to path."
 sys.stdout.flush()
 #Add back 3 levels
@@ -79,7 +81,7 @@ for c in awp_comps:
 	mkdir_p("comp_%s/output_vlm" % c)
 	mkdir_p("comp_%s/output_sgt" % c)
 	#Set striping for output directory
-	os.system("/sw/user/scripts/lfs setstripe -c -1 -s 5m comp_%s/output_sgt" % c)
+	os.system("%s setstripe -c 160 -s 5m comp_%s/output_sgt" % (LFS_PATH, c))
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
@@ -96,7 +98,9 @@ for c in awp_comps:
 awp_cordfile = "awp.%s.cordfile" % site
 print "Building cordfile."
 sys.stdout.flush()
-rc = build_cordfile(site, cordfile, awp_cordfile)
+#Determine max depth based on frequency
+max_depth = 100.0/frequency
+rc = build_cordfile(site, cordfile, awp_cordfile, max_depth)
 if not rc==0:
         print "Error in build_cordfile, aborting."
         sys.exit(2)
