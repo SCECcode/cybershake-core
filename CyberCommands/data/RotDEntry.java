@@ -19,18 +19,11 @@ public class RotDEntry implements Serializable {
 	public RotDEntry() {
 	}
 	
-	public int parse(FileInputStream stream) throws IOException {
-		byte[] byteArray = new byte[16];
-		stream.read(byteArray);
-		byte[] outByteArray = SwapBytes.swapByteArrayToByteArrayForFloats(byteArray);
-		
-		DataInputStream dr = new DataInputStream(new ByteArrayInputStream(outByteArray));
-		period = dr.readFloat();
-		rotD100 = dr.readFloat();
-		rotD100_angle = dr.readInt();
-		rotD50 = dr.readFloat();
-		
-		dr.close();
+	public int populate(DataInputStream stream) throws IOException {
+		period = stream.readFloat();
+		rotD100 = stream.readFloat();
+		rotD100_angle = stream.readInt();
+		rotD50 = stream.readFloat();
 		return 0;
 	}
 	
