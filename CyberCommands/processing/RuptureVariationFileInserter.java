@@ -2,6 +2,7 @@ package processing;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.File;
@@ -30,6 +31,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import commands.CyberLoadamps.Mode;
 import util.BSAFileUtil;
 import util.NumberHelper;
+import util.SwapBytes;
 import data.BSAHeader;
 import data.DirectionalComponent;
 import data.RotDEntry;
@@ -52,8 +54,8 @@ public class RuptureVariationFileInserter {
     private ArrayList<Integer> desiredPeriodsIndices = null;
 	//maps period indices to IM Type IDs
 	HashMap<Integer, Integer> periodIndexToIDMap = null;
-	HashMap<Integer, Integer> rd100periodValueToIDMap = null;
-	HashMap<Integer, Integer> rd50periodValueToIDMap = null;
+	HashMap<Float, Integer> rd100periodValueToIDMap = null;
+	HashMap<Float, Integer> rd50periodValueToIDMap = null;
 	
     private ArrayList<Integer> desiredPeriodsIndicesX = null;
 	HashMap<Integer, Integer> periodIndexToIDMapX = null;
@@ -154,6 +156,7 @@ public class RuptureVariationFileInserter {
 			try {
 				/*Each rotd file has
 				 * <PSA header for RV1>
+				 * <num of rotD entries>
 				 * <RotD entry 1>
 				 * <RotD entry 2>
 				 * ...
@@ -174,18 +177,23 @@ public class RuptureVariationFileInserter {
 							System.exit(-6);
 						}
 						ArrayList<RotDEntry> entries = new ArrayList<RotDEntry>();
-						//16 periods for max det freq = 0.5
-						if (head.det_max_freq==0.5) {
-							int num_periods = 16;
-							for (int i=0; i<num_periods; i++) {
-								RotDEntry rde = new RotDEntry();
-								rde.parse(stream);
-								entries.add(rde);
-							}
-						} else {
-							System.err.println("No support for rotd file and max det freq other than 0.5");
-							System.exit(3);
+						//Get the # of periods
+						byte[] period_bytes = new byte[4];
+						stream.read(period_bytes);
+						byte[] out_period_bytes = SwapBytes.swapByteArrayToByteArrayForFloats(period_bytes);
+						DataInputStream ds = new DataInputStream(new ByteArrayInputStream(out_period_bytes));
+						int num_periods = ds.readInt();
+						//16 bytes per RotD entry
+						byte[] rotdEntryBytes = new byte[num_periods*16];
+						stream.read(rotdEntryBytes);
+						byte[] outByteArray = SwapBytes.swapByteArrayToByteArrayForFloats(rotdEntryBytes);
+						ds = new DataInputStream(new ByteArrayInputStream(outByteArray));
+						for (int i=0; i<num_periods; i++) {
+							RotDEntry rde = new RotDEntry();
+							rde.populate(ds);
+							entries.add(rde);
 						}
+						ds.close();
 						insertRotdRupture(entries, head, sess);
 					}
 				} catch (IOException ie) {
@@ -242,7 +250,6 @@ public class RuptureVariationFileInserter {
 							System.err.println("Header in " + f.getName() + " lists site name as " + head.siteString + ", but the site for run ID " + run_ID.getRunID() + " is " + run_ID.getSiteName());
 							System.exit(-6);
 						}
-						
 						//Get the data
 						//*4 since they're floats
 						byte[] data = new byte[SAPeriods.num_head_periods * head.num_comps * 4];
@@ -377,19 +384,21 @@ public class RuptureVariationFileInserter {
 		
 		//Determine mapping from periods to IM_Type_IDs
 		if (rd100periodValueToIDMap==null) {
-			rd100periodValueToIDMap = new HashMap<Integer, Integer>();
+			rd100periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
 				SQLQuery query = rotdSession.createSQLQuery(rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", Hibernate.INTEGER);
 				int typeID = (Integer)query.list().get(0);
-				rd100periodValueToIDMap.put(i, typeID);
+				rd100periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
+				System.out.println("Adding IM_Type_ID " + typeID + " to list.");
 			}
 		}
 		if (rd50periodValueToIDMap==null) {
-			rd50periodValueToIDMap = new HashMap<Integer, Integer>();
+			rd50periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
 				SQLQuery query = rotdSession.createSQLQuery(rd50Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", Hibernate.INTEGER);
 				int typeID = (Integer)query.list().get(0);
-				rd50periodValueToIDMap.put(i, typeID);
+				rd50periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
+				System.out.println("Adding IM_Type_ID " + typeID + " to list.");
 			}
 		}
 		
@@ -398,6 +407,7 @@ public class RuptureVariationFileInserter {
 		//Look for entries with matching period
 		for (RotDEntry e: entries) {
 			if (rd100periodValueToIDMap.containsKey(e.period)) {
+//				System.out.println("Adding source " + head.source_id + ", rupture " + head.rupture_id + ", rup var " + head.rup_var_id + ", period " + e.period);
 				// Initialize PeakAmplitudes class
 				PeakAmplitude pa = new PeakAmplitude();
 				PeakAmplitudePK paPK = new PeakAmplitudePK();
