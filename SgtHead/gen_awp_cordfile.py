@@ -5,12 +5,13 @@ import os
 from operator import itemgetter
 
 
-if len(sys.argv)<3:
-	print "Usage: %s <rwg cordfile> <awp cordfile>" % sys.argv[0]
+if len(sys.argv)<4:
+	print "Usage: %s <rwg cordfile> <awp cordfile> <max depth index>" % sys.argv[0]
 	sys.exit(1)
 
 fp_in = open(sys.argv[1], "r")
 fp_out = open(sys.argv[2], "w")
+max_depth_index = int(sys.argv[3])
 
 data = fp_in.readlines()
 fp_in.close()
@@ -23,7 +24,7 @@ for i in range(5, len(data), 1):
 	x = int(pieces[0])
 	y = int(pieces[1])
 	z = int(pieces[2])
-	points.add("%d %d %d\n" % (y+1, x+1, min([z+1, 200])))
+	points.add("%d %d %d\n" % (y+1, x+1, min([z+1, max_depth_index])))
 
 p_list = []
 for p in points:
