@@ -573,6 +573,7 @@ public class RuptureVariationFileInserter {
 					double psaValue = currRupVar.geomAvgComp.periods[periodIter];
 					if (psaValue>8400 || psaValue<0.01) {
 						//Tiny PSA values are ok if the event is small and far away
+						System.out.println("Found psaValue " + psaValue + " for source " + currentSource_ID + " rupture " + currentRupture_ID + " rup var " + currRupVar.variationNumber);
 						if (mag==-1.0) {
 							//Then we need to do the query for this rupture
 							Session checkMagSession = sessFactory.openSession();
@@ -580,12 +581,19 @@ public class RuptureVariationFileInserter {
 							"where SR.CS_Site_ID=" + run_ID.getSiteID() + " and SR.ERF_ID=" + run_ID.getErfID() +
 							" and SR.Source_ID=" + currentSource_ID + " and SR.Rupture_ID=" + currentRupture_ID +
 							" and R.ERF_ID=SR.ERF_ID and R.Source_ID=SR.Source_ID and R.Rupture_ID=SR.Rupture_ID";
+							System.out.println(query);
+							System.out.flush();
 							SQLQuery sq = checkMagSession.createSQLQuery(query);
 							sq.addScalar("R.Mag", Hibernate.FLOAT);
 							sq.addScalar("SR.Site_Rupture_Dist", Hibernate.FLOAT);
 							List<Object[]> results = sq.list();
 							mag = (Float)(results.get(0)[0]);
-							rupture_dist = (Float)(results.get(0)[1]);
+							//Rupture distances aren't available for all ruptures
+							if (results.get(0).length>1) {
+								rupture_dist = (Float)(results.get(0)[1]);
+							} else {
+								rupture_dist = -1;
+							}
 							checkMagSession.close();
 						}
 						if (mag>6.8 || rupture_dist<300.0 || psaValue<0.003) {
