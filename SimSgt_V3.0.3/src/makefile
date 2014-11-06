@@ -8,7 +8,7 @@ MAIN_OBJ =  main_mpi.o
 GETPARLIB = ../..//Getpar/getpar/lib
 LDLIBS = -L${GETPARLIB} -lm -lget
 
-UFLAGS = -O1
+UFLAGS = -O3
 CC = mpicc
 FC = mpif77
 
@@ -30,7 +30,7 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 ##### C options
 
 # optimized
-CFLAGS = -O1 ${LF_FLAGS}
+CFLAGS = ${UFLAGS} ${LF_FLAGS}
 FFLAGS = ${UFLAGS} -ffixed-line-length-132
 
 ##### make options
@@ -47,6 +47,9 @@ get_nodeinfo : get_nodeinfo.c ${OBJS}
 
 check_n1n2 : check_n1n2.c ${OBJS}
 	${CC} ${CFLAGS} check_n1n2.c -o check_n1n2 ${OBJS} ${LDLIBS}
+
+gen_source : gen_source.c ${OBJS}
+	${CC} ${CFLAGS} gen_source.c -o gen_source ${OBJS} ${LDLIBS}
 
 ${OBJS} : ${HEADS}
 
