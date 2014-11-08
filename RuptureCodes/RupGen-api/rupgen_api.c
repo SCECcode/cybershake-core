@@ -30,6 +30,7 @@ int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats) {
 	rgargv = malloc(rgargc * sizeof(char*));
 	for (j = 0; j < NUM_GENSLIP_ARGS; j++) {
 		rgargv[j] = malloc(MAX_STR_ARGV);
+		memset(rgargv[j], 0, MAX_STR_ARGV);
 	}
 	sprintf(rgargv[0], "%s", "rupgen");
 	sprintf(rgargv[1], "infile=%s", rup_geom_file);
@@ -71,6 +72,7 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
         rgargv = malloc(rgargc * sizeof(char*));
         for (j = 0; j < NUM_GENSLIP_ARGS; j++) {
                 rgargv[j] = malloc(MAX_STR_ARGV);
+		memset(rgargv[j], 0, MAX_STR_ARGV);
         }
         sprintf(rgargv[0], "%s", "rupgen");
         sprintf(rgargv[1], "infile=%s", rup_geom_file);
