@@ -5,6 +5,9 @@
  *      Author: scott
  */
 #include "include.h"
+#include "structure.h"
+#include "defs.h"
+#include "functions.h"
 
 void getMPIInfo(int *my_id, int* num_procs) {
 	int rc = MPI_Comm_rank(MPI_COMM_WORLD, my_id);
@@ -15,7 +18,7 @@ void getMPIInfo(int *my_id, int* num_procs) {
 	}
 	rc = MPI_Comm_size(MPI_COMM_WORLD, num_procs);
 	if (rc!=MPI_SUCCESS) {
-		fprintf(stderr, "%d) Error computing size.", my_id);
+		fprintf(stderr, "%d) Error computing size.", *my_id);
 		MPI_Finalize();
 		exit(2);
 	}
@@ -66,7 +69,8 @@ void check_send(void* buf, int num_items, MPI_Datatype type, int dest, int tag, 
 }
 
 void check_recv(void* buf, int num_items, MPI_Datatype type, int src, int tag, MPI_Comm comm, char* error_msg, int my_id) {
-	int error = MPI_Recv(buf, num_items, type, src, tag, comm);
+	MPI_Status status;
+	int error = MPI_Recv(buf, num_items, type, src, tag, comm, &status);
     if (error!=MPI_SUCCESS) {
     	fprintf(stderr, "MPI recv error.\n");
 		fflush(stderr);

@@ -19,6 +19,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
+#include <limits.h>
 
 #include <sys/file.h>
 #include <sys/resource.h>
@@ -26,5 +27,7 @@
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+
+#include "cfuhash.h"
 
 #endif /* INCLUDE_H_ */

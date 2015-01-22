@@ -8,6 +8,39 @@
 #ifndef STRUCTURE_H_
 #define STRUCTURE_H_
 
+struct geoprojection
+   {
+   int geoproj;
+   float modellon;
+   float modellat;
+   float modelrot;
+   float xshift;
+   float yshift;
+   int center_origin;
+   double rperd;
+   float erad;
+   float fc;
+   float g2;
+   float radc;
+   float cosR;
+   float sinR;
+   float kmlon;
+   float kmlat;
+   double g0;
+   double b0;
+   double amat[9];
+   double ainv[9];
+   };
+
+struct mechparam
+   {
+   int nmech;
+   int flag[3];
+   float stk;
+   float dip;
+   float rak;
+   };
+
 struct sgtfileparams
    {
    FILE* xfp;
@@ -124,6 +157,12 @@ struct rotD_record {
   float rotD100;
   int rotD100_angle;
   float rotD50;
+};
+
+struct rup_geom_point {
+  float lon;
+  float lat;
+  float dep;
 };
 
 typedef struct master_message

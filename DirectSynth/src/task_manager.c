@@ -22,7 +22,13 @@
 	exit
  */
 
-int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, int nt, int my_id) {
+void broadcast_completion(int num_sgt_handlers, int num_workers, int num_procs, int my_id);
+void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int my_id);
+int handle_work_request(manager_msg msg, worker_task* task_list, int* current_task, int num_tasks, MPI_Datatype worker_msg_type, int my_id);
+int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, int nt, int rup_var_spacing);
+void get_point_mapping(int num_sgt_readers);
+
+int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, int my_id) {
 	//Construct MPI datatype
 	MPI_Datatype sgtmast_type, sgtindx_type;
 	construct_sgtmast_datatype(&sgtmast_type);
@@ -32,8 +38,8 @@ int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long
 	struct sgtmaster sgtmast;
 	struct sgtindex sgtindx;
 	if (debug) write_log("Receiving sgtmast, sgtindx from master.");
-	check_bcast(sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
-	check_bcast(sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
+	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
+	check_bcast(&sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
 
 	get_point_mapping(num_sgt_handlers);
 
@@ -65,7 +71,7 @@ void broadcast_completion(int num_sgt_handlers, int num_workers, int num_procs, 
 	MPI_Group world_group, sgt_handlers_group;
 	MPI_Comm_group(MPI_COMM_WORLD, &world_group);
 	MPI_Group_incl(world_group, num_workers+1, ranks, &sgt_handlers_group);
-	MPI_Comm_create(MPI_COMM_WORLD, sgt_handlers_group, handlers_comm);
+	MPI_Comm_create(MPI_COMM_WORLD, sgt_handlers_group, &handlers_comm);
 	free(ranks);
 	//We are constructing a handler message, but the master message format is identical
 	handler_msg w_msg;
@@ -110,7 +116,7 @@ void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int 
 		} else {
 			fprintf(stderr, "%d) Task manager received message of unknown type %d from %d, aborting.", my_id, msg.msg_type, msg.msg_src);
 			if (debug) close_log();
-			MPI_Finalize()
+			MPI_Finalize();
 			exit(4);
 		}
 		if (debug) {
@@ -137,7 +143,7 @@ int handle_work_request(manager_msg msg, worker_task* task_list, int* current_ta
 		}
 		worker_msg out_msg;
 		out_msg.msg_type = WORK_RESPONSE;
-		out_msg.task = task_list[current_task];
+		out_msg.task = task_list[(*current_task)];
 		check_send(&out_msg, 1, worker_msg_type, msg.msg_src, WORK_RESPONSE_TAG, MPI_COMM_WORLD, "Error sending work message to worker, aborting.", my_id);
 		(*current_task)++;
 		return -1;
@@ -149,7 +155,6 @@ int handle_work_request(manager_msg msg, worker_task* task_list, int* current_ta
 			write_log(buf);
 		}
 		out_msg.msg_type = WORK_COMPLETE;
-		out_msg.task = NULL;
 		check_send(&out_msg, 1, worker_msg_type, msg.msg_src, WORK_COMPLETE_TAG, MPI_COMM_WORLD, "Error sending work complete message to worker, aborting.", my_id);
 		return msg.msg_src;
 	}

@@ -12,6 +12,8 @@
 #include "defs.h"
 #include "functions.h"
 
+#include "rupgen_api.h"
+
 int debug = 0;
 
 int main(int argc, char** argv) {
@@ -27,7 +29,7 @@ int main(int argc, char** argv) {
 	mstpar("sgt_handlers", "d", &num_sgt_handlers);
 
 	MPI_Comm sgt_handler_comm;
-	constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm)
+	constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm);
 
 	//station parameters
 	float slat, slon;
@@ -47,7 +49,7 @@ int main(int argc, char** argv) {
 
 	if(num_comps==0) {
 		if (my_id==0) {
-			printf(stderr,"*** need to specify at least one of sgt_xfile, sgt_yfile, or sgt_zfile; exiting ...\n");
+			fprintf(stderr,"*** need to specify at least one of sgt_xfile, sgt_yfile, or sgt_zfile; exiting ...\n");
 		}
 		MPI_Finalize();
 		exit(-1);
@@ -128,6 +130,7 @@ int main(int argc, char** argv) {
 
 			if (debug) write_log("Entering worker.");
 			worker(num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, my_id);
+		}
 	}
 
 	if (debug) {

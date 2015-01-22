@@ -20,7 +20,8 @@
 		Send output data to process N to aggregate and write
  *
  */
-
+int get_handler_for_sgt_index(long long indx, long long* sgt_cutoffs, int num_sgt_handlers, int my_id);
+void send_data_file(struct seisheader* header, char data_filename[256], void* buf, int data_size_bytes, int my_id);
 
 //This duplicates some of seis_psa.c
 int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id) {
@@ -106,22 +107,27 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 		sgts_by_handler[i] = check_malloc(sizeof(long long)*step_size);
 		num_sgts_by_handler[i] = 0;
 	}
+	//Convert proc_point values, which are the index into sgtindx, into the long long SGT index values, so we can search on them and determine the handler
+	long long* sgt_cutoffs = check_malloc(sizeof(long long)*num_sgt_handlers);
+	for (i=0; i<num_sgt_handlers; i++) {
+		sgt_cutoffs[i] = (t_info->sgtindx)[proc_points[i]].indx;
+	}
+
 	for (i=0; i<nm; i++) {
-		int handler = get_handler_for_sgt_index(indx_master[i], proc_points, my_id);
+		int handler = get_handler_for_sgt_index(indx_master[i], sgt_cutoffs, num_sgt_handlers, my_id);
 		sgts_by_handler[handler][num_sgts_by_handler[handler]] = indx_master[i];
 		num_sgts_by_handler[handler]++;
 		if (num_sgts_by_handler[handler] % step_size == 0) {
 			sgts_by_handler[handler] = check_realloc(sgts_by_handler[handler], sizeof(long long)*(num_sgts_by_handler[handler]+step_size));
 		}
 	}
-
+	free(sgt_cutoffs);
 	//Now shrink to fit
 	for (i=0; i<num_sgt_handlers; i++) {
 		sgts_by_handler[i] = check_realloc(sgts_by_handler[i], sizeof(long long)*num_sgts_by_handler[i]);
 	}
 
 	//Create array of seis ptrs
-	int num_rup_vars = t_info->task->ending_rv_id - t_info->task->starting_rv_id;
 	float** seis = check_malloc(sizeof(float*) * num_rup_vars);
 
 	//Arguments to jbsim3d_synth
@@ -132,7 +138,7 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 
 	if (debug) write_log("Starting jbsim3d_synth.");
 	float** original_seis = jbsim3d_synth(&seis, &header, stat, slon, slat, ntout, seis_filename,
-			t_info->task->rupture_filename, t_info->sgtfilepar, sgtparms, t_info->sgtmast, t_info->sgtindx, geop, indx_master, nm, sgts_by_handler,
+			t_info->task->rupture_filename, t_info->sgtfilepar, sgtparms, *(t_info->sgtmast), t_info->sgtindx, geop, indx_master, nm, sgts_by_handler,
 			num_sgts_by_handler, num_sgt_handlers, num_rup_vars, rup_vars, my_id);
 
 	for(i=0; i<num_sgt_handlers; i++) {
@@ -259,7 +265,7 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 }
 
 //Determine which handler is responsible for this SGT point
-int get_handler_for_sgt_index(long long indx, int* proc_points, int num_sgt_handlers, int my_id) {
+int get_handler_for_sgt_index(long long indx, long long* sgt_cutoffs, int num_sgt_handlers, int my_id) {
 	//SGTs were sorted by lexicographical order
 	//Do binary search for index just smaller than
 	int start_index = 1;
@@ -267,9 +273,9 @@ int get_handler_for_sgt_index(long long indx, int* proc_points, int num_sgt_hand
 	int mid_index = (start_index + end_index) / 2;
 	while(end_index>start_index+1) {
 		mid_index = (start_index + end_index) / 2;
-		if (indx>proc_points[mid_index]) {
+		if (indx>sgt_cutoffs[mid_index]) {
 			start_index = mid_index+1;
-		} else if (indx<proc_points[mid_index]) {
+		} else if (indx<sgt_cutoffs[mid_index]) {
 			end_index = mid_index-1;
 		} else {
 			start_index = mid_index;
@@ -278,8 +284,8 @@ int get_handler_for_sgt_index(long long indx, int* proc_points, int num_sgt_hand
 		}
 	}
 	//Verify that this is right
-	if (!(indx>proc_points[start_index]) || !(indx<proc_points[end_index])) {
-		fprintf(stderr, "%d) Error in determining SGT handler for index %ld: we thought it was on handler %d between indices %ld and %ld, but it's not, so aborting.\n", my_id, indx, proc_points[start_index], proc_points[end_index]);
+	if (!(indx>sgt_cutoffs[start_index]) || !(indx<sgt_cutoffs[end_index])) {
+		fprintf(stderr, "%d) Error in determining SGT handler for index %ld: we thought it was on handler %d between indices %ld and %ld, but it's not, so aborting.\n", my_id, indx, start_index, sgt_cutoffs[start_index], sgt_cutoffs[end_index]);
 		if (debug) close_log();
 		MPI_Finalize();
 		exit(5);
@@ -288,10 +294,10 @@ int get_handler_for_sgt_index(long long indx, int* proc_points, int num_sgt_hand
 }
 
 
-void request_sgt(struct sgtheader* sgthead, char* sgtbuf, int request_from_handler_id, long long** sgts_by_handler, int starting_index, int ending_index, int my_id) {
+void request_sgt(struct sgtheader* sgthead, float* sgtbuf, int request_from_handler_id, long long** sgts_by_handler, int starting_index, int ending_index, int nt, int my_id) {
 	MPI_Datatype sgtheader_type, sgtdata_type;
 	construct_sgtheader_datatype(&sgtheader_type);
-	construct_sgtdata_datatype(&sgtdata_type);
+	construct_sgtdata_datatype(&sgtdata_type, nt);
 
 	handler_msg msg;
 	msg.msg_src = my_id;

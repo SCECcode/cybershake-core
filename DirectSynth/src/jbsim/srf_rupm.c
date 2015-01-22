@@ -1,6 +1,8 @@
 #include "include.h"
 #include "structure.h"
+#include "srf_structure.h"
 #include "function.h"
+#include "defs.h"
 
 void get_srfpars(struct standrupformat *srf,int off, int ip,float *rt,float *vs,float *stk,float *dip,float *rak,struct mechparam *mpar)
 {

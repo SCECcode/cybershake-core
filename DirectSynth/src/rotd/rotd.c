@@ -1,6 +1,7 @@
 #include "../include.h"
 #include "../structure.h"
 #include "../functions.h"
+#include "../defs.h"
 
 #define NUM_INTERP 3
 #define MAX_PERIODS 200
@@ -8,6 +9,7 @@
 
 void write_result(FILE* fp_out, struct seisheader* seis_head, float* rotD100, int* rotD100ang, float* rotD50, int num_periods, float periods[], int inter_flag);
 void calc_acc(float* acc, float* seis_data, int num_comps, int nt, float dt);
+void copy_result(struct rotD_record* output, float* rotD100, int* rotD100ang, float* rotD50, int num_periods, float periods[], int inter_flag);
 
 extern void calc_rotd_(int* inter_flag, int* npairs, int* npts, float* dt, float* acc1, float* acc2, float* rotD100, int* rD100ang, float* rotD50, int* nFreq, float* RSP_Period);
 
@@ -71,7 +73,7 @@ void calc_acc(float* acc, float* seis_data, int num_comps, int nt, float dt) {
 	}
 }
 
-void copy_result(struct rotD_record* output, struct seisheader* seis_head, float* rotD100, int* rotD100ang, float* rotD50, int num_periods, float periods[], int inter_flag) {
+void copy_result(struct rotD_record* output, float* rotD100, int* rotD100ang, float* rotD50, int num_periods, float periods[], int inter_flag) {
 	int i;
 	for (i=0; i<num_periods; i++) {
 		output[i].period = periods[i];

@@ -6,6 +6,9 @@
  */
 
 #include "include.h"
+#include "structure.h"
+#include "defs.h"
+#include "functions.h"
 
 const int CACHE_SIZE = 100;
 
@@ -41,7 +44,7 @@ void find_and_use_fp(fp_cache_entry* fp_cache, char* filename) {
 	} else {
 		//Move some people down, but nothing's being evicted
 		for (i=cur_index-1; i>=0; i++) {
-			fp_cache[i+1] = fp_cache[i]
+			fp_cache[i+1] = fp_cache[i];
 		}
 	}
 	//Put our new entry in 0

@@ -1,6 +1,7 @@
 #include        "include.h"
 #include        "structure.h"
-#include        "function.h"
+#include        "functions.h"
+#include	"defs.h"
 
 FILE *fopfile(char *name,char *mode)
 {

@@ -9,7 +9,7 @@
 
 FILE* log_fp = NULL;
 
-void open_log(int my_id)
+void open_log(int my_id) {
 	if (log_fp==NULL) {
 		char log_filename[256];
 		sprintf(log_filename, "log.%d", my_id);
