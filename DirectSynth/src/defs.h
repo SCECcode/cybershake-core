@@ -4,9 +4,16 @@
  *  Created on: Dec 12, 2014
  *      Author: scott
  */
+#ifndef DEFS_H
+#define DEFS_H
 
-#ifndef DEFS_H_
-#define DEFS_H_
+//Debug flag
+extern int debug;
+
+//component flags
+extern const int X_COMP_FLAG;
+extern const int Y_COMP_FLAG;
+extern const int Z_COMP_FLAG;
 
 //MPI message tags
 #define SGT_HEADER_TAG 10
@@ -14,9 +21,9 @@
 #define SGT_REQUEST_TAG 30
 #define SGT_HEADER_DATA_TAG 40
 #define SGT_RAW_DATA_TAG 50
-#define WORK_REQUEST_TAG 60;
-#define WORK_RESPONSE_TAG 70;
-#define WORK_COMPLETE_TAG 80;
+#define WORK_REQUEST_TAG 60
+#define WORK_RESPONSE_TAG 70
+#define WORK_COMPLETE_TAG 80
 
 //Message types to master
 #define WORKERS_COMPLETE 1
@@ -36,10 +43,6 @@
 #define WORKER_IDLE 0
 #define WORKER_WORKING 1
 #define WORKER_COMPLETE 2
-
-//Rupture variation types
-#define RUPGEN_UNIFORM_HYPO 5
-#define RUPGEN_RANDOM_HYPO 6
 
 //For SGT MPI I/O
 #define N_SGTvars (6)
@@ -85,5 +88,4 @@
 #define MAX_VAR_LIST 100
 #define TAP_PERC 0.05
 
-
-#endif /* DEFS_H_ */
+#endif

@@ -36,7 +36,7 @@ void construct_sgtmast_datatype(MPI_Datatype* sgtmaster_type) {
 	int sll = sizeof(long long);
 	MPI_Aint offsets[9] = {0, si, si+sf, si+2*sf, si+3*sf, si+4*sf, si+5*sf, si+5*sf+si, si+5*sf+2*si};
 	MPI_Datatype types[9] = {MPI_INT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_INT, MPI_INT, MPI_INT};
-	MPI_Type_struct(9, lengths, offsets, types, &sgtmaster_type);
+	MPI_Type_struct(9, lengths, offsets, types, sgtmaster_type);
 	MPI_Type_commit(sgtmaster_type);
 }
 
@@ -46,7 +46,7 @@ void construct_sgtindx_datatype(MPI_Datatype* sgtindex_type) {
 	int sll = sizeof(long long);
 	MPI_Aint offsets_indx[5] = {0, sll, sll+si, sll+2*si, sll+3*si};
 	MPI_Datatype types_indx[5] = {MPI_LONG, MPI_INT, MPI_INT, MPI_INT, MPI_FLOAT};
-	MPI_Type_struct(5, lengths_indx, offsets_indx, types_indx, &sgtindex_type);
+	MPI_Type_struct(5, lengths_indx, offsets_indx, types_indx, sgtindex_type);
 	MPI_Type_commit(sgtindex_type);
 }
 
@@ -88,25 +88,13 @@ void construct_worker_message_datatype(MPI_Datatype* worker_message_type) {
 	MPI_Type_struct(2, lengths_indx, offsets_indx, types_indx, &worker_task_type);
     MPI_Type_commit(&worker_task_type);
 
-    lengths = {1, 1};
+    lengths_indx[0] = 1;
+    lengths_indx[1] = 1;
     offsets_indx[0] = 0;
     offsets_indx[1] = sizeof(int);
-    types_indx = {MPI_INT, worker_task_type};
+    types_indx[0] = MPI_INT;
+    types_indx[1] = worker_task_type;
     MPI_Type_struct(2, lengths_indx, offsets_indx, types_indx, worker_message_type);
     MPI_Type_commit(worker_message_type);
 }
 
-void *check_realloc(void *ptr,size_t len)
-{
-ptr = (char *) realloc (ptr,len);
-//fprintf(stderr,"Reallocing %ld bytes.\n", len);
-
-if(ptr == NULL)
-   {
-   fprintf(stderr,"*****  memory reallocation error\n");
-   fprintf(stderr,"Tried to realloc %ld bytes.\n", len);
-   exit(-1);
-   }
-
-return(ptr);
-}

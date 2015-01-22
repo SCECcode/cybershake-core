@@ -1,6 +1,7 @@
 #include "include.h"
 #include "structure.h"
 #include "function.h"
+#include "defs.h"
 
 #include <libmemcached/memcached.h>
 

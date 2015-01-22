@@ -1,5 +1,6 @@
 #include "include.h"
 #include "structure.h"
+#include "srf_structure.h"
 #include "function.h"
 #include "defs.h"
 

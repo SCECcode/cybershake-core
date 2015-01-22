@@ -1,6 +1,8 @@
 #include "include.h"
 #include "structure.h"
+#include "srf_structure.h"
 #include "function.h"
+#include "defs.h"
 
 void get_radazi(float *az,float *rg,float *de,float *dn,float *x,float *y,float *cs,float *ss,float *e,float *n)
 {
@@ -15,6 +17,74 @@ fn = -(*y)*(*ss) + (*x)*(*cs);
 *az = atan2((*de),(*dn));
 *rg = sqrt((*de)*(*de) + (*dn)*(*dn));
 }
+
+
+int compare_entry(const void* o1, const void* o2) {
+	long long* ll1 = (long long*) o1;
+	long long* ll2 = (long long*) o2;
+	long long diff = *ll1 - *ll2;
+	if (diff>INT_MAX) {
+		return INT_MAX;
+	} else if (diff<INT_MIN) {
+		return INT_MIN;
+	} else {
+		return (int)(diff);
+	}
+}
+
+void get_master_list_opt(struct sgtparams *sgtp, int np, long long* mindx, int* nm) {
+	//Use hashtable and qsort
+	cfuhash_table_t* hash_table = cfuhash_new_with_initial_size(1000000);
+	char hashkey[16];
+
+	int ip, ig, im, ifnd, sflag, mcnt;
+	long long ll_int;
+
+	mcnt = 0;
+	
+	for(ip=0; ip<np; ip++) {
+		for (ig=0; ig<sgtp[ip].nsgt; ig++) {
+			sprintf(hashkey, "%ld", sgtp[ip].indx[ig]);
+			if (cfuhash_get(hash_table, hashkey)==NULL) {
+				mindx[mcnt] = sgtp[ip].indx[ig];
+				long long* hash_entry = check_malloc(sizeof(long long));
+				*hash_entry = sgtp[ip].indx[ig];
+				cfuhash_put(hash_table, hashkey, hash_entry);
+				mcnt++;
+			}
+		}
+	}
+	//Now, sort
+	qsort(mindx, mcnt, sizeof(long long), compare_entry);
+
+	//Now, figure out the mindx index for every point
+	//cfuhash_destroy(hash_table);
+	//Use new hashtable
+	cfuhash_table_t* index_hash_table = cfuhash_new_with_initial_size(1000000);
+	//Populate with mindx -> mcnt entries	
+	int* mcnt_indexes = check_malloc(sizeof(int)*mcnt);
+	for(ip=0; ip<mcnt; ip++) {
+		mcnt_indexes[ip] = ip;
+		sprintf(hashkey, "%ld", mindx[ip]);
+		cfuhash_put(index_hash_table, hashkey, &(mcnt_indexes[ip]));
+	}
+	for(ip=0; ip<np; ip++) {
+		for(ig=0; ig<sgtp[ip].nsgt; ig++) {
+			sprintf(hashkey, "%ld", sgtp[ip].indx[ig]);
+			int* index = cfuhash_get(index_hash_table, hashkey);
+			if (index==NULL) {
+				fprintf(stderr, "Error: hashkey %s isn't in table, aborting.", hashkey);
+				exit(1);
+			}
+			sgtp[ip].master_ip[ig] = *index;
+		}
+	}
+	*nm = mcnt;
+	cfuhash_destroy(hash_table);
+	cfuhash_destroy(index_hash_table);
+	free(mcnt_indexes);
+}
+
 
 void get_master_list(struct sgtparams *sgtp,int np,long long *mindx,int *nm)
 {

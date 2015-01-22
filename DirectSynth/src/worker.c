@@ -28,6 +28,9 @@
 		Send output data to process N to aggregate and write
 	exit
 */
+void do_work(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtfileparams* sgtfilepar, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id);
+void get_task(worker_msg* w_msg, MPI_Datatype* worker_msg_type, int task_manager_id, int my_id);
+
 
 int worker(int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id) {
 	//Construct MPI datatype
@@ -39,8 +42,8 @@ int worker(int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64]
 	struct sgtmaster sgtmast;
 	struct sgtindex sgtindx;
 	if (debug) write_log("Receiving sgtmast, sgtindx from master.");
-	check_bcast(sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
-	check_bcast(sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
+	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
+	check_bcast(&sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
 
 	//Get point-to-process mapping
 	int* proc_points = check_malloc(sizeof(int)*(num_sgt_handlers+1));
@@ -65,7 +68,7 @@ void do_work(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtfile
 	t_info.sgtmast = sgtmast;
 	t_info.sgtindx = sgtindx;
 	t_info.sgtfilepar = sgtfilepar;
-	construct_worker_message_datatype(&worker_msg);
+	construct_worker_message_datatype(&msg);
 	while (1) {
 		if (debug) write_log("Requesting work from task manager.");
 		get_task(&msg, &worker_msg_type, task_manager_id, my_id);
@@ -83,7 +86,7 @@ void do_work(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtfile
 		} else {
 			fprintf(stderr, "%d) SGT handler received message of unknown type %d from task manager, aborting.", my_id, msg.msg_type);
 			if (debug) close_log();
-			MPI_Finalize()
+			MPI_Finalize();
 			exit(4);
 		}
 	}

@@ -1,9 +1,8 @@
 #include "include.h"
 #include "structure.h"
-#include "functions.h"
-#include "defs.h"
-
 #include "rupgen_api.h"
+#include "function.h"
+#include "defs.h"
 
 const int X_COMP_FLAG = 1;
 const int Y_COMP_FLAG = 2;
@@ -210,7 +209,7 @@ while (1) {
 
 	memset(srf_indices_to_process, 0, srf[0].srf_apnts.np);
 
-	request_sgt(sgthead, sgtbuf, request_from_handler_id, sgts_by_handler, starting_index, ending_index, my_id);
+	request_sgt(sgthead, sgtbuf, request_from_handler_id, sgts_by_handler, starting_index, ending_index, sgtmast.nt, my_id);
 
 	//read_part_sgt(&sgtfilepar,&sgtmast,sgtindx,sgthead,sgtbuf,starting_pt,ending_pt);
 
@@ -522,7 +521,6 @@ for (i=0; i<num_rup_vars; i++) {
 //			write_seis(header, seis_file,sname,"grm",sv,&dtout,ntout,&tstart,output_binary);
 		}
 	}
-}
 
 fprintf(stdout,"Total moment= %13.5e\n",tmom);
 
