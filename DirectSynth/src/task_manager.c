@@ -41,6 +41,10 @@ int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long
 	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
 	check_bcast(&sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
 
+        if (debug) close_log();
+        MPI_Finalize();
+        exit(0);
+
 	get_point_mapping(num_sgt_handlers);
 
 	//Get rupture list

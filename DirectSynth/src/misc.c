@@ -12,9 +12,9 @@ void init_sgtfileparams(struct sgtfileparams* sfp) {
 	sfp->zfp = NULL;
 
 	sfp->head_off = 0;
-	sfp->xcur_off;
-	sfp->ycur_off;
-	sfp->zcur_off;
+	sfp->xcur_off = 0;
+	sfp->ycur_off = 0;
+	sfp->zcur_off = 0;
 
 	sfp->x_head_fp = NULL;
 	sfp->y_head_fp = NULL;
@@ -24,9 +24,9 @@ void init_sgtfileparams(struct sgtfileparams* sfp) {
 	sfp->yfile_header[0] = '\0';
 	sfp->zfile_header[0] = '\0';
 
-	sfp->x_head_off;
-	sfp->y_head_off;
-	sfp->z_head_off;
+	sfp->x_head_off = 0;
+	sfp->y_head_off = 0;
+	sfp->z_head_off = 0;
 }
 
 void construct_sgtmast_datatype(MPI_Datatype* sgtmaster_type) {

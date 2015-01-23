@@ -45,6 +45,10 @@ int worker(int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64]
 	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
 	check_bcast(&sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
 
+	if (debug) close_log();
+        MPI_Finalize();
+        exit(0);
+
 	//Get point-to-process mapping
 	int* proc_points = check_malloc(sizeof(int)*(num_sgt_handlers+1));
 	if (debug) write_log("Receiving SGT point-to-process mapping from master.");
