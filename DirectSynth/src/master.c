@@ -34,7 +34,8 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 	//Read in SGT header info
 	struct sgtmaster sgtmast;
 	struct sgtindex sgtindx;
-	get_sgtpars(&sgtfilepar,&sgtmast,&sgtindx);
+	if (debug) write_log("Master reading sgtpars.");
+	get_sgtpars(sgtfilepar,&sgtmast,&sgtindx);
 
 	//Construct MPI datatype
 	MPI_Datatype sgtmast_type, sgtindx_type;
@@ -45,6 +46,10 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 	if (debug) write_log("Sending sgtmast, sgtindx to all.");
 	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error broadcasting sgtmast, aborting.", 0);
 	check_bcast(&sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error broadcasting sgtindx, aborting.", 0);
+	
+	if (debug) close_log();
+	MPI_Finalize();
+	exit(0);
 
 	//Assign points and send out header info
 	distribute_sgt_data(sgtfilepar, &sgtmast, &sgtindx, sgt_handler_comm, num_sgt_readers);

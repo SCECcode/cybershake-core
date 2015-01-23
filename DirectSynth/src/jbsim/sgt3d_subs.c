@@ -348,7 +348,7 @@ if(sgtfpar->xfile[0] != '\0')
    FILE* fp_with_header;
 
    if(sgtfpar->xfile_header[0] != '\0') {
-	printf("Using separate header file for x.\n");
+	printf("Using separate header file %s for x.\n", sgtfpar->xfile_header);
 	filename_with_header = sgtfpar->xfile_header;
 	//It would be nice if we could avoid this, but since we're not caching the individual point headers, we'll have to open it anyway
 	fopfile_ro(sgtfpar->xfile_header, &(sgtfpar->x_head_fp));

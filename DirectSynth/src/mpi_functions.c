@@ -33,6 +33,8 @@ void constructSGTHandlerComm(int sgt_readers, MPI_Comm* sgt_handler_comm) {
 	}
 	MPI_Group world_group, sgt_handler_group;
 	MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+	int check_rank;
+	MPI_Group_rank(world_group, &check_rank);
 	MPI_Group_incl(world_group, sgt_readers, sgt_handler_ranks, &sgt_handler_group);
 	MPI_Comm_create(MPI_COMM_WORLD, sgt_handler_group, sgt_handler_comm);
 	free(sgt_handler_ranks);

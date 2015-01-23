@@ -27,6 +27,7 @@ void write_log(char* string) {
 	time_struct = localtime(&cur_time);
 	strftime(time_buf, 59, "%b %d %T", time_struct);
 	fprintf(log_fp, "%s.%06d> %s\n", time_buf, tv.tv_usec, string);
+	fflush(log_fp);
 }
 
 void close_log() {

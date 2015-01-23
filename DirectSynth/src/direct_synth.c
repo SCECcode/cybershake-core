@@ -24,12 +24,11 @@ int main(int argc, char** argv) {
 	int num_sgt_handlers = 0;
 
 	getMPIInfo(&my_id, &num_procs);
+	printf("My rank is %d of %d.\n", my_id, num_procs);
+	fflush(stdout);
 
-	setpar(&argc, &argv);
+	setpar(argc, argv);
 	mstpar("sgt_handlers", "d", &num_sgt_handlers);
-
-	MPI_Comm sgt_handler_comm;
-	constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm);
 
 	//station parameters
 	float slat, slon;
@@ -81,12 +80,17 @@ int main(int argc, char** argv) {
 		open_log(my_id);
 	}
 
-	if (my_id==0) {
-		if (debug) write_log("Entering master.");
-		master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers);
-	} else if (my_id<num_sgt_handlers) {
-		if (debug) write_log("Entering sgt handler.");
-		sgt_handler(&sgtfilepar, num_comps, &sgt_handler_comm, num_sgt_handlers, my_id);
+	MPI_Comm sgt_handler_comm;
+        constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm);
+
+	if (my_id<num_sgt_handlers) {
+		if (my_id==0) {
+			if (debug) write_log("Entering master.");
+			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers);
+		} else if (my_id<num_sgt_handlers) {
+			if (debug) write_log("Entering sgt handler.");
+			sgt_handler(&sgtfilepar, num_comps, &sgt_handler_comm, num_sgt_handlers, my_id);
+		}
 	} else {
 		//Frequency information
 		float det_max_freq = 0.5;
