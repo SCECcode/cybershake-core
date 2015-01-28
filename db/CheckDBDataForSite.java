@@ -155,9 +155,10 @@ public class CheckDBDataForSite {
             		
             		query = "select count(*) " +
             				"from PeakAmplitudes " +
-            				"where Run_ID=" + runID +
+            				"where Run_ID=" + runID + " " + 
             				"and IM_Type_ID=" + id + ";";
             		
+            		System.out.println(query);
             		ResultSet ampSet = dbc.selectData(query);
                     ampSet.first();
                     if (ampSet.getRow()==0) {
