@@ -44,9 +44,11 @@ public class CheckDBDataForSite {
         Options cmd_opts = new Options();
         Option help = new Option("h", "help", false, "Print help for CheckDBDataForSite");
         Option run_id = OptionBuilder.withArgName("run_id").hasArg().withDescription("Run ID to check (required).").create("r");
+        run_id.setRequired(true);
         Option periods = OptionBuilder.withArgName("periods").hasArg().withDescription("Comma-separated list of periods to check.").create("p");
         Option component = OptionBuilder.withArgName("component").hasArg().withDescription("Component type (geometric, rotd) to check.").create("c");
         Option output = OptionBuilder.withArgName("output").hasArg().withDescription("Path to output file, if something is missing (required).").create("o");
+        output.setRequired(true);
 
         cmd_opts.addOption(help);
         cmd_opts.addOption(run_id);
@@ -68,20 +70,20 @@ public class CheckDBDataForSite {
             System.exit(2);
         }
                
-        if (run_id.getValue()==null) {
+        if (!line.hasOption(run_id.getOpt())) {
         	System.err.println("Run ID option is required.");
         	System.exit(3);
         }
-        if (output.getValue()==null) {
+        if (!line.hasOption(output.getOpt())) {
         	System.err.println("Output option is required.");
         	System.exit(4);
         }
         
-        String runID = run_id.getValue();
-        String outputFile = output.getValue();
+        String runID = line.getOptionValue(run_id.getOpt());
+        String outputFile = line.getOptionValue(output.getOpt());
         
         ArrayList<String> periodsToCheck = new ArrayList<String>();
-        String periodString = periods.getValue();
+        String periodString = line.getOptionValue(periods.getOpt());
         if (periodString!=null) {
         	String[] pieces = periodString.split(",");
         	for (String piece: pieces) {
@@ -91,8 +93,8 @@ public class CheckDBDataForSite {
         
         //Default is geometric mean
         String componentString = "geometric";
-        if (component.getValue()!=null) {
-        	componentString = component.getValue();
+        if (line.hasOption(component.getOpt())) {
+        	componentString = line.getOptionValue(component.getOpt());
         }
         
         checkDBData(runID, periodsToCheck, componentString, outputFile);
