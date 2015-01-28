@@ -144,6 +144,7 @@ public class CheckDBDataForSite {
             				"from IM_Types " +
             				"where abs(IM_Type_Value-" + period + ")<0.0001 " +
             				"and IM_Type_Component='" + componentType + "';";
+                    System.out.println(query);
             		ResultSet idSet = dbc.selectData(query);
             		idSet.first();
             		if (idSet.getRow()==0) {
