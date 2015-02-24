@@ -25,7 +25,7 @@
 void broadcast_completion(int num_sgt_handlers, int num_workers, int num_procs, int my_id);
 void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int my_id);
 int handle_work_request(manager_msg msg, worker_task* task_list, int* current_task, int num_tasks, MPI_Datatype worker_msg_type, int my_id);
-int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, int nt, int rup_var_spacing);
+int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, float dtout, int nt, int globnp, int rup_var_spacing);
 void get_point_mapping(int num_sgt_readers);
 
 int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, int my_id) {
@@ -34,16 +34,18 @@ int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long
 	construct_sgtmast_datatype(&sgtmast_type);
 	construct_sgtindx_datatype(&sgtindx_type);
 
+	//Need dtout to calculate rupture variation size requirements
+	float dtout = 0.1;
+	getpar("dtout", "f", &dtout);
+
 	//Get sgtmast, sgtindx info
 	struct sgtmaster sgtmast;
-	struct sgtindex sgtindx;
-	if (debug) write_log("Receiving sgtmast, sgtindx from master.");
+	struct sgtindex* sgtindx;
+	if (debug) write_log("Receiving sgtmast from master.");
 	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
-	check_bcast(&sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
-
-        if (debug) close_log();
-        MPI_Finalize();
-        exit(0);
+	sgtindx = check_malloc(sizeof(struct sgtindex)*sgtmast.globnp);
+	if (debug) write_log("Receiving sgtindx from master.");
+	check_bcast(sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
 
 	get_point_mapping(num_sgt_handlers);
 
@@ -52,36 +54,36 @@ int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long
 	worker_task* task_list;
 	mstpar("rup_list_file","s",rup_list_file);
 
-	int num_tasks = parse_rupture_list(rup_list_file, &task_list, MAX_BUFFER_SIZE, sgtmast.nt, rup_var_spacing);
+	int num_tasks = parse_rupture_list(rup_list_file, &task_list, MAX_BUFFER_SIZE, dtout, sgtmast.nt, sgtmast.globnp, rup_var_spacing);
 
 	manager_listen(num_workers, task_list, num_tasks, my_id);
 
 	broadcast_completion(num_sgt_handlers, num_workers, num_procs, my_id);
 
+	if (debug) write_log("Shutting down.");
+
+	free(sgtindx);
 	free(task_list);
 	return 0;
 }
 
 void broadcast_completion(int num_sgt_handlers, int num_workers, int num_procs, int my_id) {
-	//Send out completed message to sgt handlers
-	if (debug) write_log("Notifying SGT handlers that all tasks are complete.");
-	MPI_Comm handlers_comm;
-	int* ranks = check_malloc(sizeof(int)*(num_sgt_handlers+1));
-	int i;
-	//"num_sgt_handlers" is the rank of the task_manager
-	for (i=0; i<num_sgt_handlers+1; i++) {
-		ranks[i] = i;
-	}
-	MPI_Group world_group, sgt_handlers_group;
-	MPI_Comm_group(MPI_COMM_WORLD, &world_group);
-	MPI_Group_incl(world_group, num_workers+1, ranks, &sgt_handlers_group);
-	MPI_Comm_create(MPI_COMM_WORLD, sgt_handlers_group, &handlers_comm);
-	free(ranks);
+	//Send out completed message to master + SGT handlers
+	//Need to send point-to-point messages since handlers are just listening
+	if (debug) write_log("Notifying master + SGT handlers that all tasks are complete.");
 	//We are constructing a handler message, but the master message format is identical
 	handler_msg w_msg;
 	w_msg.msg_type = WORKERS_COMPLETE;
 	w_msg.msg_src = my_id;
-	check_bcast(&w_msg, 3, MPI_INT, my_id, sgt_handlers_group, "Error broadcasting complete message to the SGT handlers + master.", my_id);
+	int i;
+	for (i=0; i<num_sgt_handlers; i++) {
+		if (debug) {
+			char buf[256];
+			sprintf(buf, "Sending complete message to process %d.", i);
+			write_log(buf);
+		}
+		check_send(&w_msg, 3, MPI_INT, i, WORK_COMPLETE_TAG, MPI_COMM_WORLD, "Error sending work complete message, aborting.", my_id);
+	}
 }
 
 void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int my_id) {
@@ -107,15 +109,20 @@ void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int 
 				write_log(buf);
 			}
 			int completed_worker = handle_work_request(msg, task_list, &current_task, num_tasks, worker_msg_type, my_id);
+			//Convert the message source into a worker offset for worker_status
+			int worker_offset = msg.msg_src - my_id;
+
 			if (completed_worker==-1) {
-				if (worker_status[msg.msg_src]!=WORKER_WORKING) {
-					worker_status[msg.msg_src] = WORKER_WORKING;
+				if (worker_status[worker_offset]!=WORKER_WORKING) {
+					worker_status[worker_offset] = WORKER_WORKING;
 					workers_working++;
 				}
 			} else {
 				//This means work is completing
-				worker_status[completed_worker] = WORKER_COMPLETE;
-				workers_working--;
+				if (worker_status[worker_offset]==WORKER_WORKING) {
+					workers_working--;
+				}
+				worker_status[worker_offset] = WORKER_COMPLETE;
 			}
 		} else {
 			fprintf(stderr, "%d) Task manager received message of unknown type %d from %d, aborting.", my_id, msg.msg_type, msg.msg_src);
@@ -164,7 +171,7 @@ int handle_work_request(manager_msg msg, worker_task* task_list, int* current_ta
 	}
 }
 
-int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, int nt, int rup_var_spacing) {
+int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, float dtout, int nt, int globnp, int rup_var_spacing) {
 	/*File has format
 	 * <rupture file> <# of slips> <# of hypos> <num_points>
 	 */
@@ -182,7 +189,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 	}
 	//Start here, but will need to grow
 	int task_list_length = num_ruptures;
-	(*task_list) = check_malloc(sizeof(task_list)*task_list_length);
+	(*task_list) = check_malloc(sizeof(worker_task)*task_list_length);
 	int i, j;
 	char rupture_file[256], string[256];
 	int num_slips, num_hypos, num_points, num_tasks;
@@ -192,6 +199,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 
 		//Determine source and rupture ID
 		//Files in format e<ERF_ID>_rv<RV_ID>_<source>_<rupture>.txt
+		//Could also be just <source>_<rupture>.txt
 		//Need 2nd to last, 3rd to last
 		char* tok, *last, *ntl, *ttl;
 		tok = last = ntl = ttl = 0;
@@ -206,15 +214,44 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		int source_id = atoi(ttl);
 		int rupture_id = atoi(ntl);
 
-		//Don't want to use more than MAX_BUFFER_SIZE to store sgts
-		long long sgt_data_required = (long long)num_points*(sizeof(float)*N_SGTvars*nt + sizeof(struct sgtheader));
-		long long num_vars_per_task = sgt_data_required/MAX_BUFFER_SIZE;
+		//Want to make sure we're not exceeding 1.8 GB per task
+		long long full_sgt_data = (long long)num_points*(3*sizeof(float)*N_SGTvars*nt + sizeof(struct sgtheader));
+		long long sgt_size = full_sgt_data;
+		if (sgt_size>MAX_BUFFER_SIZE) {
+			sgt_size = MAX_BUFFER_SIZE;
+		}
+		printf("sgt_size = %ld\n", sgt_size);
+		printf("num_points = %d\n", num_points);
+		printf("dtout = %f\n", dtout);
+		//Each rupture variation adds roughly
+		//14.8 * log10(rupture_points) * rupture_points^1.14 MB worth of storage * 1.1(tolerance) * 0.1/dtout
+		long long single_rv_size = (long long)(14.8 * (long long)log10(num_points) * pow(num_points, 1.14) * 1.1);
+		//Cap rupture size at 80 MB
+		if (single_rv_size > 80*1024*1024) {
+			single_rv_size = 80*1024*1024;
+		}
+		//Take dtout into consideration
+		single_rv_size = (long long)((float)single_rv_size * 0.1/dtout);
+		printf("single_rv_size = %ld\n", single_rv_size);
+		//Do not permit more than this amount to be used
+		long long MAX_ALLOWED = (long long)(1.8 * 1024.0 * 1024.0 * 1024.0);
+		printf("MAX_ALLOWED = %ld\n", MAX_ALLOWED);
+		int num_vars_per_task = (MAX_ALLOWED - sgt_size)/single_rv_size;
+		//Change for debugging
+		//num_vars_per_task = 2;
+		printf("num_vars_per_task = %d\n", num_vars_per_task);
 		int num_vars = num_slips * num_hypos;
-		int tasks_for_rupture = ceil(num_vars/num_vars_per_task);
+		int tasks_for_rupture = ceil(((float)num_vars)/((float)num_vars_per_task));
+		if (debug) {
+			char buf[256];
+			sprintf(buf, "rupture file %s (source_id %d, rupture_id %d) has %d vars, which yield %d tasks.", rupture_file, source_id, rupture_id, num_vars, tasks_for_rupture);
+			write_log(buf);
+		}
 
 		for (j=0; j<tasks_for_rupture; j++) {
 			strcpy((*task_list)[num_tasks].rupture_filename, rupture_file);
-			((*task_list)[num_tasks]).source_id = source_id;
+			printf("rupture_filename = %s\n", (*task_list)[num_tasks].rupture_filename);
+			(*task_list)[num_tasks].source_id = source_id;
 			(*task_list)[num_tasks].rupture_id = rupture_id;
 			(*task_list)[num_tasks].num_slips = num_slips;
 			(*task_list)[num_tasks].num_hypos = num_hypos;
@@ -228,8 +265,14 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 			num_tasks++;
 			if (num_tasks>=task_list_length) {
 				//Needs to be at least enough longer to handle the rest of the tasks
-				task_list_length += tasks_for_rupture-j;
-				(*task_list) = check_realloc(*task_list, sizeof(task_list)*task_list_length);
+				//At least the rest of the tasks for this rupture + the # of rupture left
+				task_list_length += tasks_for_rupture-j + num_ruptures-i - 1;
+				if (debug) {
+					char buf[256];
+					sprintf(buf, "Increasing task list to length %d", task_list_length);
+					write_log(buf);
+				}
+				(*task_list) = check_realloc(*task_list, sizeof(worker_task)*task_list_length);
 			}
 		}
 	}
@@ -243,7 +286,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 
 void get_point_mapping(int num_sgt_readers) {
 	//Even though we don't need it, the point-to-process mapping is broadcast to all
-	int* proc_points = check_malloc(sizeof(int)*num_sgt_readers);
+	int* proc_points = check_malloc(sizeof(int)*(num_sgt_readers+1));
 	if (debug) write_log("Receiving SGT point-to-process mapping from master.");
 	check_bcast(proc_points, num_sgt_readers+1, MPI_INT, 0, MPI_COMM_WORLD, "Error broadcasting SGT point-to-process mapping to all, aborting.", 0);
 

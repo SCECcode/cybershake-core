@@ -548,7 +548,7 @@ c					write(*,*) "Writing record ", i
 299				enddo
 			elseif(output_opt.EQ.2) then
 				do 301 i=1, nt
-					psa_data(krecin*nt+i) = outarray(i)
+					psa_data((krecin-1)*nt+i) = outarray(i)
 301				enddo
 			endif
 		elseif(jout_format .EQ. 1)then

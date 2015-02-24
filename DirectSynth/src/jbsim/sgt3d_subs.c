@@ -422,11 +422,11 @@ if(sgtfpar->xfile[0] != '\0')
 			fprintf(stderr, "Caching %s successful.\n", index_key);
 		}
                 //Cast to char* so our pointer arithmetic works correctly
-                memcpy((char*)*sgtindx+i*one_mb, buf, receive);
+                memcpy((char*)(*sgtindx)+i*one_mb, buf, receive);
                 free(buf);
 	} else {
                 printf("Retrieved key %s from cache.\n", index_key);
-                memcpy((char*)*sgtindx+i*one_mb, buf, receive);
+                memcpy((char*)(*sgtindx)+i*one_mb, buf, receive);
         }
    }
    fseek(fp_with_header, sgtmaster_size + sgtindex_size, SEEK_SET);
@@ -564,7 +564,7 @@ if(sgtfpar->yfile[0] != '\0')
    free(index_key);
 
    if (rflag==0) {
-	memcpy((char*)*sgtindx, tindx, sgtindex_size);
+	memcpy((char*)(*sgtindx), tindx, sgtindex_size);
 	rflag = 1;
    } else {
       //Do index check
@@ -759,8 +759,36 @@ int zflag;
 /* first see if there is an exact match */
 
 ip = 0;
-while(eqindx->indx > sgtindx[ip].indx && ip < (sgtmast->globnp)-1)
-   ip++;
+//while(eqindx->indx > sgtindx[ip].indx && ip < (sgtmast->globnp)-1)
+//   ip++;
+//Do a binary search instead
+int start_index = 0;
+int end_index = sgtmast->globnp-1;
+int mid_index = (start_index + end_index)/2;
+int iterations = 0;
+while (end_index>=start_index) {
+	mid_index = (start_index + end_index)/2;
+	/*if (iterations>30) {
+		fprintf(stderr, "Error in finding SGTs, aborting.\n");
+		if (debug) {
+			char buf[512];
+			sprintf(buf, "Error looking for %ld. start_index = %d, mid_index = %d, end_index = %d.  start_index.indx = %ld, mid_index.indx = %ld, end_index.indx = %ld.", eqindx->indx, start_index, mid_index, end_index, sgtindx[start_index].indx, sgtindx[mid_index].indx, sgtindx[end_index].indx);
+			write_log(buf);
+			close_log();
+		}
+		MPI_Finalize();
+		exit(10);
+	}*/
+	if (eqindx->indx > sgtindx[mid_index].indx) {
+		start_index = mid_index+1;
+	} else if (eqindx->indx < sgtindx[mid_index].indx) {
+		end_index = mid_index-1;
+	} else {
+		break;
+	}
+	iterations++;
+}
+ip = mid_index;
 
 if(eqindx->indx == sgtindx[ip].indx)   /* great, exact match, this will be easy */
    {
@@ -1274,8 +1302,10 @@ for(im=0;im<mp.nmech;im++)
       {
       //sgtheadptr = sgthead + sgtpar->master_ip[ig];
       sgtheadptr = sgtpar->sgt_head_ptrs[ig];
+      //fprintf(stderr, "mech_sgt: head_ptr is at %ld, xmom is %f.\n", sgtheadptr, sgtheadptr->xmom);
       //sgtbufptr = sgtbuf + 18*sgtheadptr->nt*sgtpar->master_ip[ig];
       sgtbufptr = sgtpar->sgtbuf_ptrs[ig];
+      //fprintf(stderr, "mech_sgt: buf_ptr is at %ld.\n", sgtbufptr);
 
       arg = (mp.stk - sgtheadptr->xazim)*rperd;
       cxT = cos(arg);
@@ -1331,12 +1361,14 @@ for(im=0;im<mp.nmech;im++)
       sum = sum + (*scl)*(sgtheadptr->mu)*(sgtpar->wt[ig]);
 
 
-	//fprintf(stderr,"area= %13.5e mu= %13.5e\n",(*scl),(sgtheadptr->mu));
+ 	//fprintf(stderr,"area= %13.5e mu= %13.5e\n",(*scl),(sgtheadptr->mu));
 
 
       xamp = 0.0;
-      if(sgtheadptr->xmom > 0.0)
+      if(sgtheadptr->xmom > 0.0) {
          xamp = (*scl)*(sgtpar->wt[ig])/(sgtheadptr->xmom);
+	 //fprintf(stderr, "scl=%f, wg=%f, xmom=%f, xamp=%f\n", *scl, sgtpar->wt[ig], sgtheadptr->xmom, xamp);
+      }
 	 
       yamp = 0.0;
       if(sgtheadptr->ymom > 0.0)
@@ -1358,6 +1390,12 @@ for(im=0;im<mp.nmech;im++)
          sz = zamp*(cxx[it]*mxx + cyy[it]*myy + czz[it]*mzz
                + cxy[it]*mxy + cxz[it]*mxz + cyz[it]*myz);
 
+	 /*if (it<10) {
+		 fprintf(stderr, "it=%d, sx=%f, sy=%f, sz=%f\n", it, sx, sy, sz);
+		 fprintf(stderr, "axx=%f, mxx=%f, ayy=%f, myy=%f, azz=%f, mzz=%f, axy=%f, mxy=%f, axz=%f, mxz=%f, ayx=%f, myz=%f\n", axx[it], mxx, ayy[it], myy, azz[it], mzz, axy[it], mxy, axz[it], mxz, ayz[it], myz);
+		 fprintf(stderr, "xamp=%f\n", xamp);
+	 }*/
+	
          gfe[it] = sx*sinA + sy*cosA;
          gfn[it] = sx*cosA - sy*sinA;
          gfv[it] = -sz;

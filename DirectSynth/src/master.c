@@ -24,7 +24,7 @@
 			exit
  */
 void master_listen();
-void write_to_file(fp_cache_entry* fp_cache, int data_size, data_file df);
+void write_to_file(int data_size, data_file* df);
 void distribute_sgt_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers);
 void send_header_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
 void assign_sgt_points(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
@@ -33,7 +33,7 @@ void assign_sgt_points(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_
 int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers) {
 	//Read in SGT header info
 	struct sgtmaster sgtmast;
-	struct sgtindex sgtindx;
+	struct sgtindex* sgtindx;
 	if (debug) write_log("Master reading sgtpars.");
 	get_sgtpars(sgtfilepar,&sgtmast,&sgtindx);
 
@@ -43,16 +43,13 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 	construct_sgtindx_datatype(&sgtindx_type);
 
 	//Broadcast sgtmast, sgtindx to everyone - I think the workers need it too
-	if (debug) write_log("Sending sgtmast, sgtindx to all.");
+	if (debug) write_log("Sending sgtmast to all.");
 	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error broadcasting sgtmast, aborting.", 0);
-	check_bcast(&sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error broadcasting sgtindx, aborting.", 0);
+	if (debug) write_log("Sending sgtindx to all.");
+	check_bcast(sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error broadcasting sgtindx, aborting.", 0);
 	
-	if (debug) close_log();
-	MPI_Finalize();
-	exit(0);
-
 	//Assign points and send out header info
-	distribute_sgt_data(sgtfilepar, &sgtmast, &sgtindx, sgt_handler_comm, num_sgt_readers);
+	distribute_sgt_data(sgtfilepar, &sgtmast, sgtindx, sgt_handler_comm, num_sgt_readers);
 
 	//Listen for messages and respond accordingly
 	master_listen();
@@ -64,9 +61,6 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 void master_listen() {
 	//If a process is sending output, write to disk
 	//If process N has finished work, exit
-
-	//Create file pointer cache, most recently used at top
-	fp_cache_entry* fp_cache = NULL;
 
 	master_msg msg;
 	while (1) {
@@ -83,15 +77,17 @@ void master_listen() {
 			int data_src = msg.msg_src;
 			data_file df;
 			df.data = check_malloc(sizeof(char)*data_size);
-			if (debug) write_log("Receiving data file.");
-			check_recv(&df, 256+data_size, MPI_BYTE, data_src, DATA_TAG, MPI_COMM_WORLD, "Error receiving data file, aborting.", 0);
+			if (debug) write_log("Receiving data filename.");
+			check_recv(df.filename, 256, MPI_CHAR, data_src, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error receiving data filename, aborting.", 0);
+			if (debug) write_log("Receiving data contents.");
+			check_recv(df.data, data_size, MPI_BYTE, data_src, DATA_TAG, MPI_COMM_WORLD, "Error receiving data contents, aborting.", 0);
 			//Write data to file
-			write_to_file(fp_cache, data_size, df);
+			write_to_file(data_size, &df);
 			free(df.data);
 		} else if (msg.msg_type==WORKERS_COMPLETE) {
 			//close down file pointers and exit
 			if (debug) write_log("Received workers complete message, shutting down.");
-			remove_fp_cache(&fp_cache);
+			remove_fp_cache();
 			break;
 		} else {
 			fprintf(stderr, "Master received a message with unknown type %d from id %d, aborting.", msg.msg_type, msg.msg_src);
@@ -103,19 +99,16 @@ void master_listen() {
 
 }
 
-void write_to_file(fp_cache_entry* fp_cache, int data_size, data_file df) {
+void write_to_file(int data_size, data_file* df) {
 	//Use file pointer cache to avoid opening and closing files as much
-	if (fp_cache==NULL) {
-		create_fp_cache(&fp_cache);
-	}
 	//This will put our item in position 0
-	find_and_use_fp(fp_cache, df.filename);
+	FILE* out_fp = find_and_use_fp(df->filename);
 	if (debug) {
 		char buf[256];
-		sprintf(buf, "Writing to data file %s.", df.filename);
+		sprintf(buf, "Writing %d bytes to data file %s.", data_size, df->filename);
 		write_log(buf);
 	}
-	frite(fp_cache[0].fp, 1, data_size, df.data);
+	frite(out_fp, df->data, 1, data_size);
 }
 
 void distribute_sgt_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers) {
@@ -150,7 +143,12 @@ void send_header_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmas
 			fseek(header_fps[i], sizeof(struct sgtmaster) + sgtmast->globnp*sizeof(struct sgtindex), SEEK_SET);
 			for (j=1; j<num_sgt_readers; j++) {
 				buffer = check_realloc(buffer, sizeof(struct sgtheader)*(proc_points[j+1] - proc_points[j]));
-				freed(header_fps[j], buffer, sizeof(struct sgtheader), proc_points[j+1] - proc_points[j]);
+				freed(header_fps[i], buffer, sizeof(struct sgtheader), proc_points[j+1] - proc_points[j]);
+				if (debug) {
+					char buf[256];
+					sprintf(buf, "Master sending header info to handler %d.", j);
+					write_log(buf);
+				}
 				check_send(buffer, proc_points[j+1] - proc_points[j], sgtheader_type, j, SGT_HEADER_TAG, *sgt_handler_comm, "Error sending SGT header data, aborting.", 0);
 			}
 			fclose(header_fps[i]);
@@ -173,7 +171,7 @@ void assign_sgt_points(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_
 		if (i==num_sgt_readers-1) {
 			proc_points[i+1] = sgtmast->globnp;
 		} else {
-			proc_points[i+1] = (int)(avg_points_per_proc * (i+1));
+			proc_points[i+1] = (int)(avg_points_per_proc * (i));
 		}
 	}
 	//Just broadcast the points, since we want the workers to have the points-to-process mapping too

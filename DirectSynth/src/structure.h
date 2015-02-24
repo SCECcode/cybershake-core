@@ -217,6 +217,8 @@ typedef struct worker_message {
 
 typedef struct task_info {
 	//Assemble all the info we need to work with a task, so we can pass less around
+	int argc;
+	char** argv;
 	struct sgtmaster* sgtmast;
 	struct sgtindex* sgtindx;
 	struct sgtfileparams* sgtfilepar;

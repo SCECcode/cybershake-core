@@ -26,14 +26,14 @@
 			exit
  */
 
-void handler_listen(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtheader* sgthead[3], char** sgtdata, int num_my_points, int num_comps, int my_id);
+void handler_listen(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtheader* sgthead[3], char** sgtdata, int num_my_points, int my_offset, int num_comps, int my_id);
 void handle_SGT_request(long long* sgts_requested, int num_sgts_requested, cfuhash_table_t* hash_table, struct sgtmaster* sgtmast, struct sgtheader* sgthead[3], char** sgtdata, int num_my_points, int my_id, int num_comps, int dest, MPI_Datatype sgtheader_type, MPI_Datatype sgtdata_type);
-void get_SGT_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, int num_comps, int* proc_points, struct sgtheader*** sgthead, char*** sgtdata, int my_id, MPI_Comm* sgt_handler_comm);
+void get_SGT_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, int num_comps, int* proc_points, struct sgtheader* (*sgthead)[3], char*** sgtdata, int my_id, MPI_Comm* sgt_handler_comm, MPI_Comm* sgt_readers_comm);
 int readSGT_MPI(char *sgt_fname, int nPoints, int nMyPoints, int nt, int indexMyPoint, char *sgt_buf, int separate_header_flag, MPI_Comm* sgt_handler_comm, int my_id);
 
-int sgt_handler(struct sgtfileparams* sgtfilepar, int num_comps, MPI_Comm* sgt_handler_comm, int num_sgt_handlers, int my_id) {
+int sgt_handler(struct sgtfileparams* sgtfilepar, int num_comps, MPI_Comm* sgt_handler_comm, int num_sgt_handlers, MPI_Comm* sgt_readers_comm, int my_id) {
 	struct sgtmaster sgtmast;
-	struct sgtindex sgtindx;
+	struct sgtindex* sgtindx;
 
 	//Construct MPI datatype
 	MPI_Datatype sgtmast_type, sgtindx_type;
@@ -41,13 +41,11 @@ int sgt_handler(struct sgtfileparams* sgtfilepar, int num_comps, MPI_Comm* sgt_h
 	construct_sgtindx_datatype(&sgtindx_type);
 
 	//Get sgtmast, sgtindx info
-	if (debug) write_log("Receiving sgtmast, sgtindx from master.");
+	if (debug) write_log("Receiving sgtmast from master.");
 	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
-	check_bcast(&sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
-
-        if (debug) close_log();
-        MPI_Finalize();
-        exit(0);
+	sgtindx = check_malloc(sizeof(struct sgtindex) * sgtmast.globnp);
+        if (debug) write_log("Receiving sgtindx from master.");
+	check_bcast(sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
 
 	//Get point-to-process mapping
 	int* proc_points = check_malloc(sizeof(int)*(num_sgt_handlers+1));
@@ -58,16 +56,18 @@ int sgt_handler(struct sgtfileparams* sgtfilepar, int num_comps, MPI_Comm* sgt_h
 	struct sgtheader *sgthead[3];
 	char** sgtdata;
 	int num_my_points = proc_points[my_id+1] - proc_points[my_id];
-	get_SGT_data(sgtfilepar, &sgtmast, num_comps, proc_points, &sgthead, &sgtdata, my_id, sgt_handler_comm);
+	int my_offset = proc_points[my_id];
+	get_SGT_data(sgtfilepar, &sgtmast, num_comps, proc_points, &sgthead, &sgtdata, my_id, sgt_handler_comm, sgt_readers_comm);
 
 	//Listen for messages
-	handler_listen(&sgtmast, &sgtindx, sgthead, sgtdata, num_my_points, num_comps, my_id);
+	handler_listen(&sgtmast, sgtindx, sgthead, sgtdata, num_my_points, my_offset, num_comps, my_id);
 
+	free(sgtindx);
 	return 0;
 }
 
 
-void handler_listen(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtheader* sgthead[3], char** sgtdata, int num_my_points, int num_comps, int my_id) {
+void handler_listen(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtheader* sgthead[3], char** sgtdata, int num_my_points, int my_offset, int num_comps, int my_id) {
 	/* Listen for messages:
 			if request for data:
 				service request for SGT data
@@ -81,10 +81,13 @@ void handler_listen(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct 
 	if (debug) write_log("Creating hash table of SGT points.");
 	cfuhash_table_t* hash_table = cfuhash_new_with_initial_size(20000);
 	cfuhash_set_flag(hash_table, CFUHASH_NO_LOCKING);
+	//cfuhash doesn't copy the value, so we need dedicated mem for this
+	int* value_array = check_malloc(sizeof(int)*num_my_points);
 	int key_len = sizeof(long long);
 	int val_len = sizeof(int);
 	for (i=0; i<num_my_points; i++) {
-		cfuhash_put_data(hash_table, &(sgtindx[i].indx), key_len, &i, val_len, NULL);
+		value_array[i] = i;
+		cfuhash_put_data(hash_table, &(sgtindx[i+my_offset].indx), key_len, &(value_array[i]), val_len, NULL);
 	}
 
 	//Get SGT header data
@@ -124,6 +127,7 @@ void handler_listen(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct 
 	}
 	//Clean up
 	cfuhash_destroy(hash_table);
+	free(value_array);
 	free(sgts_requested);
 }
 
@@ -151,22 +155,24 @@ void handle_SGT_request(long long* sgts_requested, int num_sgts_requested, cfuha
 		}
 		sgts_to_send_index_list[i] = *tmp;
 	}
+	//Send header info
+        for (j=0; j<num_sgts_requested; j++) {
+	        int sgt_index = sgts_to_send_index_list[j];
+                memcpy(sending_buffer+j*sizeof(struct sgtheader), &(sgthead[0][sgt_index]), sizeof(struct sgtheader));
+	}
+        if (debug) {
+        	char buf[256];
+                sprintf(buf, "Sending SGT header data to process %d.", dest);
+                write_log(buf);
+	}
+        check_send(sending_buffer, num_sgts_requested, sgtheader_type, dest, SGT_HEADER_DATA_TAG, MPI_COMM_WORLD, "Error sending SGT header data, aborting.", my_id);
+	//Prepare buffer for sending
+	//Don't send 0s for missing components; instead, let worker copy things appropriately
 	for (i=0; i<num_comps; i++) {
-		//Send header info
-		for (j=0; j<num_sgts_requested; j++) {
-			int sgt_index = sgts_to_send_index_list[j];
-			memcpy(sending_buffer+j*sizeof(struct sgtheader), &(sgthead[i][sgt_index]), sizeof(struct sgtheader));
-		}
-		if (debug) {
-			char buf[256];
-			sprintf(buf, "Sending SGT header data, component %d, to process %d.", i, dest);
-			write_log(buf);
-		}
-		check_send(sending_buffer, num_sgts_requested, sgtheader_type, dest, SGT_HEADER_DATA_TAG, MPI_COMM_WORLD, "Error sending SGT header data, aborting.", my_id);
 		//Send raw data info
 		for (j=0; j<num_sgts_requested; j++) {
 			int sgt_index = sgts_to_send_index_list[j];
-			memcpy(sending_buffer+(long long)j*sizeof(float)*N_SGTvars*sgtmast->nt, &(sgtdata[i][sgt_index]), sizeof(float)*N_SGTvars*sgtmast->nt);
+			memcpy(sending_buffer+(long long)j*sizeof(float)*N_SGTvars*sgtmast->nt, sgtdata[i]+(long long)sgt_index*N_SGTvars*sgtmast->nt*sizeof(float), sizeof(float)*N_SGTvars*sgtmast->nt);
 		}
 		if (debug) {
 			char buf[256];
@@ -175,14 +181,15 @@ void handle_SGT_request(long long* sgts_requested, int num_sgts_requested, cfuha
 		}
 		check_send(sending_buffer, num_sgts_requested, sgtdata_type, dest, SGT_RAW_DATA_TAG, MPI_COMM_WORLD, "Error sending raw SGT data, aborting.", my_id);
 	}
+	if (debug) write_log("SGT request complete.");
 
 	free(sending_buffer);
 	free(sgts_to_send_index_list);
 }
 
 
-void get_SGT_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, int num_comps, int* proc_points, struct sgtheader*** sgthead, char*** sgtdata,
-		int my_id, MPI_Comm* sgt_handler_comm) {
+void get_SGT_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, int num_comps, int* proc_points, struct sgtheader* (*sgthead)[3], char*** sgtdata,
+		int my_id, MPI_Comm* sgt_handler_comm, MPI_Comm* sgt_readers_comm) {
 	//Get SGT header data
     MPI_Datatype sgtheader_type;
     construct_sgtheader_datatype(&sgtheader_type);
@@ -199,10 +206,31 @@ void get_SGT_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, i
 	for (i=0; i<3; i++) {
 		(*sgthead)[i] = NULL;
 		if (header_files[i][0] != '\0') {
+			printf("%d) receiving component %d header info.\n", my_id, i);
 			(*sgthead)[i] = check_malloc(num_my_points*sizeof(struct sgtheader));
-			check_recv((*sgthead)[i], num_my_points, sgtheader_type, 0, SGT_HEADER_TAG, MPI_COMM_WORLD, "Error receiving SGT header, aborting.", my_id);
+			printf("%d) receiving %d points of header info into address %ld\n", my_id, num_my_points, (*sgthead)[i]);
+			check_recv((*sgthead)[i], num_my_points, sgtheader_type, 0, SGT_HEADER_TAG, *sgt_handler_comm, "Error receiving SGT header, aborting.", my_id);
 		}
 	}
+	//We are assuming that all the moments are the same; check to make sure that's a correct assumption, if not, abort
+	if (num_comps>=2) {
+		if ((*sgthead)[0][0].xmom!=(*sgthead)[1][0].ymom) {
+			fprintf(stderr, "X-moment and Y-moment are not the same.  We assume this is true so we don't have to send the Y header separately, so we can't handle this and must abort.\n");
+			if (debug) close_log();
+			MPI_Finalize();
+			exit(7);
+		}	
+	} 
+	if (num_comps==3) {
+        	if ((*sgthead)[0][0].xmom!=(*sgthead)[2][0].zmom) {
+                        fprintf(stderr, "X-moment and Z-moment are not the same.  We assume all moments are equal so we don't have to send each header separately, so we can't handle this and must abort.\n"); 
+                        if (debug) close_log();
+                        MPI_Finalize();
+                        exit(8);
+                }
+	}
+	printf("%d) In get SGT data, sgthead[0] = %ld, sgthead[1] = %ld\n", my_id, (*sgthead)[0], (*sgthead)[1]);
+	
 
 		//Read SGT data
 	char* sgt_files[3];
@@ -230,12 +258,12 @@ void get_SGT_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, i
 				sprintf(buf, "Reading from SGT file %s.", sgt_files[i]);
 				write_log(buf);
 			}
-			readSGT_MPI(sgt_files[i], sgtmast->globnp, num_my_points, sgtmast->nt, proc_points[my_id], (*sgtdata)[i], separate_header_flag[0], sgt_handler_comm, my_id);
+			readSGT_MPI(sgt_files[i], sgtmast->globnp, num_my_points, sgtmast->nt, proc_points[my_id], (*sgtdata)[i], separate_header_flag[0], sgt_readers_comm, my_id);
 		}
 	}
 }
 
-int readSGT_MPI(char *sgt_fname, int nPoints, int nMyPoints, int nt, int indexMyPoint, char *sgt_buf, int separate_header_flag, MPI_Comm* sgt_handler_comm, int my_id) {
+int readSGT_MPI(char *sgt_fname, int nPoints, int nMyPoints, int nt, int indexMyPoint, char *sgt_buf, int separate_header_flag, MPI_Comm* sgt_readers_comm, int my_id) {
   MPI_File fh;
   int err;
   int size;
@@ -265,15 +293,9 @@ int readSGT_MPI(char *sgt_fname, int nPoints, int nMyPoints, int nt, int indexMy
 			write_log(buf);
 		}
   }
-  //printf("%d) disp to read MPI=%ld\n", rank, (long)disp);
+  printf("%d) disp to read MPI=%ld\n", my_id, (long)disp);
 
-  //Create communicator of processes 1 to (num_sgt_readers - 1) to open file
-  MPI_Group sgt_handlers_group, sgt_readers_group;
-  int ranks[1] = {0};
-  MPI_Comm_group(*sgt_handler_comm, &sgt_handlers_group);
-  MPI_Group_excl(sgt_handlers_group, 1, ranks, &sgt_readers_group);
-
-  err = MPI_File_open(sgt_readers_group, sgt_fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
+  err = MPI_File_open(*sgt_readers_comm, sgt_fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
   err = MPI_File_set_view(fh, disp, MPI_BYTE, filetype, "native", MPI_INFO_NULL);
   //printf("%d) Ready to read file\n", rank);
   //fflush(stdout);

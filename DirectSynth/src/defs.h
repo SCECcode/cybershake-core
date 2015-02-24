@@ -9,6 +9,7 @@
 
 //Debug flag
 extern int debug;
+extern int my_global_id;
 
 //component flags
 extern const int X_COMP_FLAG;
@@ -17,6 +18,7 @@ extern const int Z_COMP_FLAG;
 
 //MPI message tags
 #define SGT_HEADER_TAG 10
+#define DATA_FILENAME_TAG 15
 #define DATA_TAG 20
 #define SGT_REQUEST_TAG 30
 #define SGT_HEADER_DATA_TAG 40
