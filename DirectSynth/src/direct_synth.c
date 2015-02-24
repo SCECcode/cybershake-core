@@ -15,6 +15,7 @@
 #include "rupgen_api.h"
 
 int debug = 0;
+int my_global_id = -1;
 
 int main(int argc, char** argv) {
 	MPI_Init(&argc, &argv);
@@ -26,6 +27,7 @@ int main(int argc, char** argv) {
 	getMPIInfo(&my_id, &num_procs);
 	printf("My rank is %d of %d.\n", my_id, num_procs);
 	fflush(stdout);
+	my_global_id = my_id;
 
 	setpar(argc, argv);
 	mstpar("sgt_handlers", "d", &num_sgt_handlers);
@@ -80,8 +82,11 @@ int main(int argc, char** argv) {
 		open_log(my_id);
 	}
 
-	MPI_Comm sgt_handler_comm;
+	MPI_Comm sgt_handler_comm, sgt_readers_comm;
+	//Includes ranks 0 through num_sgt_handlers - 1
         constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm);
+	//Includes ranks 1 through num_sgt_handlers - 1, for reading in SGT files
+	constructSGTReaderComm(num_sgt_handlers, &sgt_readers_comm);
 
 	if (my_id<num_sgt_handlers) {
 		if (my_id==0) {
@@ -89,7 +94,7 @@ int main(int argc, char** argv) {
 			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers);
 		} else if (my_id<num_sgt_handlers) {
 			if (debug) write_log("Entering sgt handler.");
-			sgt_handler(&sgtfilepar, num_comps, &sgt_handler_comm, num_sgt_handlers, my_id);
+			sgt_handler(&sgtfilepar, num_comps, &sgt_handler_comm, num_sgt_handlers, &sgt_readers_comm, my_id);
 		}
 	} else {
 		//Frequency information
@@ -99,7 +104,7 @@ int main(int argc, char** argv) {
 		getpar("stoch_max_freq", "f", &stoch_max_freq);
 
 		//Runtime info
-		int max_buf_mb = -1;
+		int max_buf_mb = 1024;
 		getpar("max_buf_mb","d",&max_buf_mb);
 		long long MAX_BUFFER_SIZE = 1024*(long long)1024*max_buf_mb;
 
@@ -133,7 +138,7 @@ int main(int argc, char** argv) {
 			getpar("run_rotd","d",&run_rotd);
 
 			if (debug) write_log("Entering worker.");
-			worker(num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, my_id);
+			worker(argc, argv, num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, my_id);
 		}
 	}
 

@@ -126,6 +126,7 @@ if (strcmp(rupture_spacing_string,"random")==0) {
 }
 //Generate all ruptures
 for (i=0; i<num_rup_vars; i++) {
+	//printf("Generating rupture from file %s, slip %d, hypo %d, spacing %d, dtout %f\n", rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, rupture_spacing, dtout);
 	rupgen_genslip(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout);
 }
 
@@ -140,6 +141,18 @@ for (i=0; i<num_rup_vars; i++) {
 	apv_off[i] = 0;
 }
 
+int num_comps = 0;
+if (sgtfilepar.xfile[0]!='\0') {
+	num_comps++;
+}
+if (sgtfilepar.yfile[0]!='\0') {
+        num_comps++;
+}
+if (sgtfilepar.zfile[0]!='\0') {
+        num_comps++;
+}
+
+
 fprintf(stdout,"Constructing synthetic this rupture\n");
 
 long current_offset = 0;
@@ -153,7 +166,8 @@ long long sgtbufsize = 18*(long long)sgtmast.globnp*sgtmast.nt*sizeof(float);
 fprintf(stderr, "MAX_BUFFER_SIZE = %ld\n", MAX_BUFFER_SIZE);
 fprintf(stderr, "sgtbufsize = %ld\n", sgtbufsize);
 
-int max_points_per_request = MAX_BUFFER_SIZE/(18*sgtmast.nt*sizeof(float)+sizeof(struct sgtheader));
+//Need to consider buffer size too
+int max_points_per_request = MAX_BUFFER_SIZE/(18/3*4*sgtmast.nt*sizeof(float)+sizeof(struct sgtheader));
 
 int request_from_handler_id = 0;
 int starting_index = 0;
@@ -188,16 +202,19 @@ int num_srfs_split = 0;
 int num_data_pts_split = 0;
 memset(srf_pts_used, 0, srf[0].srf_apnts.np);
 while (1) {
+	printf("%d) ending_index = %d, num_sgts_by_handler[%d] = %d\n", my_id, ending_index, request_from_handler_id, num_sgts_by_handler[request_from_handler_id]);
 	if (ending_index==num_sgts_by_handler[request_from_handler_id]) {
 		//Move to next handler
-		while (num_sgts_by_handler[request_from_handler_id]==0 && request_from_handler_id<num_sgt_handlers) {
+		do {
 			request_from_handler_id++;
-		}
+		} while (num_sgts_by_handler[request_from_handler_id]==0 && request_from_handler_id<num_sgt_handlers);
 		if (request_from_handler_id>=num_sgt_handlers) {
 			//No more requests, we are done
 			break;
 		}
 		starting_index = 0;
+		//We will increment ending_index outside the if statement
+		ending_index = 0;
 	} else {
 		starting_index = ending_index;
 	}
@@ -209,15 +226,23 @@ while (1) {
 
 	memset(srf_indices_to_process, 0, srf[0].srf_apnts.np);
 
-	request_sgt(sgthead, sgtbuf, request_from_handler_id, sgts_by_handler, starting_index, ending_index, sgtmast.nt, my_id);
+	request_sgt(sgthead, sgtbuf, num_comps, request_from_handler_id, sgts_by_handler, starting_index, ending_index, sgtmast.nt, my_id);
+
+	if (debug) {
+		struct mallinfo m_info;
+		m_info = mallinfo();
+		char buf[512];
+		sprintf(buf, "non_mmap_alloc=%d, free_blocks=%d, fastbin_free_blocks=%d, mmap_alloc=%d, bytes_mmap_alloc=%d, highwater=%d, fastbin_alloc=%d, total_alloced=%d, total_free=%d, releasable=%d", m_info.arena, m_info.ordblks, m_info.smblks, m_info.hblks, m_info.hblkhd, m_info.usmblks, m_info.fsmblks, m_info.uordblks, m_info.fordblks, m_info.keepcost);
+		write_log(buf);
+	}
 
 	//read_part_sgt(&sgtfilepar,&sgtmast,sgtindx,sgthead,sgtbuf,starting_pt,ending_pt);
 
 	//Generate list of SRF points whose SGTs we have
 	num_srf_pts_found = 0;
-	//for(ip=0; ip<1; ip++) {
 	if (debug) write_log("Processing SGTs from the request.");
 	for (ip=0; ip<srf[0].srf_apnts.np; ip++) {
+	//for(ip=0; ip<1; ip++) {
 		//Only check the points we haven't found yet
 		if (srf_pts_used[ip]==0) {
 			for (i=0; i<4; i++) {
@@ -262,13 +287,16 @@ while (1) {
 				//All the SGTs for this point are here
 				//set up sgtparams pointers
 				for (i=0; i<sgtparms[ip].nsgt; i++) {
+					//fprintf(stderr, "Setting up pointers for SGT with indx %ld\n", sgtparms[ip].indx[i]);
 					int offset = sgt_used_offset[i];
 					//set up sgthead
 					//fprintf(stderr, "sgtparms head offset: %d\n", offset);
 					sgtparms[ip].sgt_head_ptrs[i] = sgthead+offset;
+					//fprintf(stderr, "xmom from sgtparms[%d] = %f, at location %ld\n", ip, sgtparms[ip].sgt_head_ptrs[i]->xmom, sgtparms[ip].sgt_head_ptrs[i]);
 					//set up data
 					//fprintf(stderr, "sgtparms buf offset: %ld\n", (long long)18*sgtmast.nt*offset);
 					sgtparms[ip].sgtbuf_ptrs[i] = sgtbuf+(long long)18*sgtmast.nt*offset;
+					//fprintf(stderr, "sgtbuf location: %ld\n", sgtparms[ip].sgtbuf_ptrs[i]);
 
 				}
 			} else if (num_found>0) {
@@ -351,28 +379,43 @@ while (1) {
 		}
 	}
 
-	fprintf(stderr, "Found %d srf points, processing them.\n", num_srf_pts_found);
+	//fprintf(stderr, "Found %d srf points, processing them.\n", num_srf_pts_found);
 
 	for(ip=0; ip<num_srf_pts_found; ip++) {
 		int srf_index = srf_indices_to_process[ip];
+		/*if (sgtparms[srf_index].indx[0]!=52705670033) {
+			continue;
+		}*/
+		int j;
 		for (i=0; i<num_rup_vars; i++) {
 			zapit(subseis[i],maxmech*3*ntout);
 
 			get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
 			scale = slip_conv*apval_ptr[i][srf_index].area;
-
+	                //fprintf(stderr, "Scale = %e, vslip = %e\n", scale, vslip);
 			mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
 			tmom[i] = tmom[i] + vslip*scale;
-
+                   	//fprintf(stderr, "tmom = %e, scale = %e\n", tmom[i], scale);
+                   	/*for (j=0; j<ntout; j++) {
+                   	     printf("gfmech[%d] = %e\n", j, gfmech[i][j]);
+                   	}*/
 			sum_sgt(subseis[i],ntout,gfmech[i],&sgtparms[srf_index],ntsum,&rt,&tstart,mechpar);
+                        /*for (j=0; j<ntout; j++) {
+                                printf("subseis[%d] = %e\n", j, subseis[i][j]);
+                        }*/
+
 			srf_stf(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
+			/*int j;
+			for (j=0; j<ntout; j++) {
+				printf("subseis[%d] = %e\n", j, subseis[i][j]);
+			}*/
 		}
 	}
 
 }
 //Once we've finished the while loop, iterate over all the points we rolled over
 num_srf_pts_found = 0;
-fprintf(stderr, "%d split points to process.\n", num_srfs_split);
+//fprintf(stderr, "%d split points to process.\n", num_srfs_split);
 for (ip=0; ip<num_srfs_split; ip++) {
 	int srf_index = srf_indices_split[ip];
 	srf_pts_used[srf_index] = 1;
@@ -412,24 +455,29 @@ for (ip=0; ip<num_srfs_split; ip++) {
 	}
 }
 int all_points_processed = 1;
-for (ip=0; ip<srf[0].srf_apnts.np; ip++) {
+/*for (ip=0; ip<srf[0].srf_apnts.np; ip++) {
 	if (srf_pts_used[ip]==0) {
 		fprintf(stderr, "SRF point %d was never processed.\n", ip);
 		all_points_processed = 0;
 	}
 }
 if (!all_points_processed) {
+	if (debug) close_log();
+	MPI_Finalize();
 	exit(-1);
-}
+}*/
 free(srf_indices_to_process);
 free(srf_pts_used);
 
+free(srf_indices_split);
+free(sgt_heads_split);
+free(sgtbuf_split);
 
-free(sgtparms);
-free(sgtindx);
+//free(sgtparms);
+//free(sgtindx);
 free(sgtbuf);
 free(sgthead);
-free(indx_master);
+//free(indx_master);
 for (i=0; i<num_rup_vars; i++) {
 	free(gfmech[i]);
 	free(space[i]);
@@ -442,6 +490,17 @@ free(subseis);
 free(stf);
 
 *seis_return = seis;
+
+if (my_global_id==240 && debug) {
+	char buf[50000];
+	sprintf(buf, "seis = %ld\n", seis);
+	for (i=0; i<num_rup_vars; i++) {
+		char tmp_buf[256];
+		sprintf(tmp_buf, "seis[%d] = %ld\n", i, seis[i]);
+		strcat(buf, tmp_buf);
+	}
+	write_log(buf);
+}
 
 for (i=0; i<num_rup_vars; i++) {
 
@@ -528,6 +587,11 @@ for (i=0; i<num_rup_vars; i++) {
 	free_srf_ptrs(&(srf[i]));
 }
 free(srf);
+free(prect_ptr);
+free(prseg_ptr);
+free(apnts_ptr);
+free(tmom);
+free(apv_off);
 
 return seis;
 }

@@ -108,8 +108,8 @@ return(temp);
 
 void *check_realloc(void *ptr,size_t len)
 {
-ptr = (char *) realloc (ptr,len);
-//fprintf(stderr,"Reallocing %ld bytes.\n", len);
+ptr = realloc(ptr,len);
+//fprintf(stderr,"Reallocing %ld bytes to pointer %ld.\n", len, ptr);
 
 if(ptr == NULL)
    {
@@ -125,13 +125,30 @@ void *check_malloc(size_t len)
 {
 char *ptr;
 
-//fprintf(stderr,"Allocating %ld bytes.\n", len);
+if (debug) {
+	char buf[256];
+	sprintf(buf, "Allocating %ld bytes.", len);
+	write_log(buf);
+}
+//	fprintf(stderr,"%d) Allocating %ld bytes.\n", my_global_id, len);
+
 ptr = (char *) malloc (len);
  
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory allocation error\n");
+   fprintf(stderr,"*****  memory error in process %d\n", my_global_id);
    fprintf(stderr,"Tried to allocate %ld bytes.\n", len);
+   void* array[20];
+   size_t size;
+   char** strings;
+   backtrace(array, 20);
+   strings = backtrace_symbols(array, size);
+   int i;
+   for (i=0; i<size; i++) {
+	fprintf(stderr, "stacktrace %d) %s\n", i, strings[i]);
+   }
+   fflush(stderr);
    exit(-1);
    }
  

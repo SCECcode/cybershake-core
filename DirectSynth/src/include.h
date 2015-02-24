@@ -20,6 +20,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <limits.h>
+#include <execinfo.h>
+#include <malloc.h>
 
 #include <sys/file.h>
 #include <sys/resource.h>
