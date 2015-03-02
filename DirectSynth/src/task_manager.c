@@ -25,7 +25,7 @@
 void broadcast_completion(int num_sgt_handlers, int num_workers, int num_procs, int my_id);
 void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int my_id);
 int handle_work_request(manager_msg msg, worker_task* task_list, int* current_task, int num_tasks, MPI_Datatype worker_msg_type, int my_id);
-int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, float dtout, int nt, int globnp, int rup_var_spacing);
+int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, float dtout, int nt, int globnp, int rup_var_spacing, int my_id);
 void get_point_mapping(int num_sgt_readers);
 
 int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, int my_id) {
@@ -54,7 +54,7 @@ int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long
 	worker_task* task_list;
 	mstpar("rup_list_file","s",rup_list_file);
 
-	int num_tasks = parse_rupture_list(rup_list_file, &task_list, MAX_BUFFER_SIZE, dtout, sgtmast.nt, sgtmast.globnp, rup_var_spacing);
+	int num_tasks = parse_rupture_list(rup_list_file, &task_list, MAX_BUFFER_SIZE, dtout, sgtmast.nt, sgtmast.globnp, rup_var_spacing, my_id);
 
 	manager_listen(num_workers, task_list, num_tasks, my_id);
 
@@ -171,7 +171,8 @@ int handle_work_request(manager_msg msg, worker_task* task_list, int* current_ta
 	}
 }
 
-int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, float dtout, int nt, int globnp, int rup_var_spacing) {
+int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, float dtout, int nt, int globnp, int rup_var_spacing, int my_id) {
+	int i, j;
 	/*File has format
 	 * <rupture file> <# of slips> <# of hypos> <num_points>
 	 */
@@ -187,10 +188,34 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		MPI_Finalize();
 		exit(5);
 	}
+	//Build (source id, rupture id, num rup vars) tuples to send to master, for checkpointing
+	int* tuples_for_master = check_malloc(sizeof(int)*num_ruptures*3);
+
+
+	//Check for checkpoint file
+	char** completed_list = NULL;
+	int num_completed = 0;
+	if (access(CHECKPOINT_FILE, R_OK)==0) {
+		completed_list = check_malloc(sizeof(char*)*num_ruptures);
+		FILE* checkpoint_fp;
+		fopfile_ro(CHECKPOINT_FILE, &checkpoint_fp);
+		char line[16];
+		fgets(line, 16, checkpoint_fp);
+		while (line!=NULL) {
+			char* tok;
+			tok = strtok(line, "\n");
+			completed_list[num_completed] = check_malloc(sizeof(char)*16);
+			strcpy(completed_list[num_completed], tok);
+			num_completed++;
+			fgets(line, 16, checkpoint_fp);
+		}
+		fclose(checkpoint_fp);
+	}
+
+
 	//Start here, but will need to grow
 	int task_list_length = num_ruptures;
 	(*task_list) = check_malloc(sizeof(worker_task)*task_list_length);
-	int i, j;
 	char rupture_file[256], string[256];
 	int num_slips, num_hypos, num_points, num_tasks;
 	num_tasks = 0;
@@ -213,6 +238,24 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		}
 		int source_id = atoi(ttl);
 		int rupture_id = atoi(ntl);
+
+		//If we have a checkpoint file, see if we've done this one already
+		if (num_completed>0) {
+			char search_string[16];
+			sprintf(search_string, "%d %d", source_id, rupture_id);
+			int flag = 0;
+			for (j=0; j<num_completed; j++) {
+				if (strcmp(search_string, completed_list)==0) {
+					//We found it
+					flag = 1;
+					break;
+				}
+			}
+			if (flag==1) {
+				//Move to next entry in rupture list
+				continue;
+			}
+		}
 
 		//Want to make sure we're not exceeding 1.8 GB per task
 		long long full_sgt_data = (long long)num_points*(3*sizeof(float)*N_SGTvars*nt + sizeof(struct sgtheader));
@@ -248,6 +291,10 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 			write_log(buf);
 		}
 
+		tuples_for_master[3*i] = source_id;
+		tuples_for_master[3*i+1] = rupture_id;
+		tuples_for_master[3*i+2] = num_vars;
+
 		for (j=0; j<tasks_for_rupture; j++) {
 			strcpy((*task_list)[num_tasks].rupture_filename, rupture_file);
 			printf("rupture_filename = %s\n", (*task_list)[num_tasks].rupture_filename);
@@ -281,6 +328,12 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		sprintf(buf, "%d tasks constructed from %d ruptures.", num_tasks, num_ruptures);
 		write_log(buf);
 	}
+
+	//Send info to master, for checkpointing
+	if (debug) write_log("Sending task info to master.");
+	check_send(&num_ruptures, 1, MPI_INT, 0, NUM_RUPTURES_TAG, MPI_COMM_WORLD, "Error sending num ruptures to master, aborting.", my_id);
+	check_send(tuples_for_master, 3*num_ruptures, MPI_INT, 0, VARIATION_INFO_TAG, MPI_COMM_WORLD, "Error sending (source, rupture, #rvs) tuples to master, aborting.", my_id);
+
 	return num_tasks;
 }
 

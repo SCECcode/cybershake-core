@@ -72,10 +72,15 @@ int main(int argc, char** argv) {
 	int run_id;
 	mstpar("run_id","d",&run_id);
 
+	int run_PSA, run_rotd;
+	getpar("run_psa","d",&run_PSA);
+	getpar("run_rotd","d",&run_rotd);
+
 	//track timing
 	int timing = 0;
 	struct timeval tv_start, tv_end;
 	getpar("timing","d",&timing);
+
 
 	getpar("debug","d",&debug);
 	if (debug) {
@@ -91,7 +96,7 @@ int main(int argc, char** argv) {
 	if (my_id<num_sgt_handlers) {
 		if (my_id==0) {
 			if (debug) write_log("Entering master.");
-			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers);
+			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers, stat, run_id, run_PSA, run_rotd);
 		} else if (my_id<num_sgt_handlers) {
 			if (debug) write_log("Entering sgt handler.");
 			sgt_handler(&sgtfilepar, num_comps, &sgt_handler_comm, num_sgt_handlers, &sgt_readers_comm, my_id);
@@ -131,11 +136,9 @@ int main(int argc, char** argv) {
 			task_manager(num_sgt_handlers, num_workers, num_procs, MAX_BUFFER_SIZE, rupture_spacing, my_id);
 		} else if (my_id<num_procs){
 			//Output options
-			int ntout, run_PSA, run_rotd;
+			int ntout;
 
 			mstpar("ntout","d",&ntout);
-			getpar("run_psa","d",&run_PSA);
-			getpar("run_rotd","d",&run_rotd);
 
 			if (debug) write_log("Entering worker.");
 			worker(argc, argv, num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, my_id);

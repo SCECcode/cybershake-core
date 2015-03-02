@@ -172,10 +172,11 @@ typedef struct master_message
 	int msg_data;
 } master_msg;
 
-typedef struct data_file {
+typedef struct data_file_metadata {
+	int src_id;
+	int rup_id;
 	char filename[256];
-	char* data;
-} data_file;
+} data_file_metadata;
 
 typedef struct fp_cache_entry {
 	char filename[256];

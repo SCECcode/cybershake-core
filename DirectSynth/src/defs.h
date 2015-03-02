@@ -17,6 +17,8 @@ extern const int Y_COMP_FLAG;
 extern const int Z_COMP_FLAG;
 
 //MPI message tags
+#define NUM_RUPTURES_TAG 3
+#define VARIATION_INFO_TAG 5
 #define SGT_HEADER_TAG 10
 #define DATA_FILENAME_TAG 15
 #define DATA_TAG 20
@@ -56,6 +58,9 @@ extern const int Z_COMP_FLAG;
 
 //num periods as defined in rotd.c
 #define NUM_ROTD_PERIODS 16
+
+//Checkpoint filename
+#define CHECKPOINT_FILE "checkpoint.out"
 
 //Defs from jbsim3d code
 #define         NTMAX              10000

@@ -23,14 +23,14 @@
 		if work complete from process N:
 			exit
  */
-void master_listen();
-void write_to_file(int data_size, data_file* df);
+void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd);
+void write_to_file(int data_size, data_file_metadata* df);
 void distribute_sgt_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers);
 void send_header_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
 void assign_sgt_points(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
 
 
-int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers) {
+int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd) {
 	//Read in SGT header info
 	struct sgtmaster sgtmast;
 	struct sgtindex* sgtindx;
@@ -51,14 +51,29 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 	//Assign points and send out header info
 	distribute_sgt_data(sgtfilepar, &sgtmast, sgtindx, sgt_handler_comm, num_sgt_readers);
 
+	//Get list of (source id, rupture id, #rup vars) from task manager so we can checkpoint
+	int num_ruptures;
+	check_recv(&num_ruptures, 1, MPI_INT, num_sgt_readers, NUM_RUPTURES_TAG, MPI_COMM_WORLD, "Error receiving num ruptures from task manager, aborting.", 0);
+	int* task_tuples = check_malloc(sizeof(int)*3*num_ruptures);
+	check_recv(task_tuples, num_ruptures*3, MPI_INT, num_sgt_readers, VARIATION_INFO_TAG, MPI_COMM_WORLD, "Error receiving variation info tuples from task manager, aborting.", 0);
+
 	//Listen for messages and respond accordingly
-	master_listen();
+	master_listen(task_tuples, num_ruptures, stat, run_id, run_PSA, run_rotd);
 
 	//Everything is done; at least, it better be...
 	return 0;
 }
 
-void master_listen() {
+void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd) {
+	//Construct easy-access task tuples for monitoring status for restart
+	short src_rup_table[500][1300];
+	int i;
+	for (i=0; i<num_ruptures; i++) {
+		src_rup_table[task_tuples[3*i]][task_tuples[3*i+1]] = (short)(1+run_PSA+run_rotd)*(task_tuples[3*i+2]);
+	}
+	//Open checkpoint file
+	FILE* checkpoint_fp = fopfile(CHECKPOINT_FILE, "a");
+
 	//If a process is sending output, write to disk
 	//If process N has finished work, exit
 
@@ -75,15 +90,41 @@ void master_listen() {
 			//The worker is now going to send us a data file
 			int data_size = msg.msg_data;
 			int data_src = msg.msg_src;
-			data_file df;
-			df.data = check_malloc(sizeof(char)*data_size);
-			if (debug) write_log("Receiving data filename.");
-			check_recv(df.filename, 256, MPI_CHAR, data_src, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error receiving data filename, aborting.", 0);
+			data_file_metadata df;
+			if (debug) write_log("Receiving data file metadata.");
+			check_recv(df, sizeof(int) + sizeof(int) + 256, MPI_BYTE, data_src, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error receiving data filename, aborting.", 0);
+			char* data = check_malloc(sizeof(char)*data_size);
 			if (debug) write_log("Receiving data contents.");
-			check_recv(df.data, data_size, MPI_BYTE, data_src, DATA_TAG, MPI_COMM_WORLD, "Error receiving data contents, aborting.", 0);
+			check_recv(data, data_size, MPI_BYTE, data_src, DATA_TAG, MPI_COMM_WORLD, "Error receiving data contents, aborting.", 0);
 			//Write data to file
-			write_to_file(data_size, &df);
-			free(df.data);
+			write_to_file(data_size, &df, data);
+			free(data);
+			//Update src_rup_table
+			src_rup_table[df.src_id][df.rup_id]--;
+			if (src_rup_table[df.src_id][df.rup_id]==0) {
+				//This rupture is done; sync the files and write to checkpoint log
+				char filename[256];
+				sprintf(filename, "Seismogram_%s_%d_%d_%d.grm", site, run_id, df.src_id, df.rup_id);
+				FILE* fp = find_and_use_fp(filename);
+				int fd = fileno(fp);
+				fsync(fd);
+				fclose(fp);
+				if (run_PSA) {
+					sprintf(filename, "PeakVals_%s_%d_%d_%d.bsa", site, run_id, df.src_id, df.rup_id);
+					fp = find_and_use_fp(filename);
+					fd = fileno(fp);
+					fsync(fd);
+					fclose(fp);
+				}
+				if (run_rotd) {
+					sprintf(filename, "RotD_%s_%d_%d_%d.rotd", site, run_id, df.src_id, df.rup_id);
+					fp = find_and_use_fp(filename);
+					fd = fileno(fp);
+					fsync(fd);
+					fclose(fp);
+				}
+				fprintf(checkpoint_fp, "%d %d\n", df.src_id, df.rup_id);
+			}
 		} else if (msg.msg_type==WORKERS_COMPLETE) {
 			//close down file pointers and exit
 			if (debug) write_log("Received workers complete message, shutting down.");
@@ -99,7 +140,7 @@ void master_listen() {
 
 }
 
-void write_to_file(int data_size, data_file* df) {
+void write_to_file(int data_size, data_file_metadata* df, char* data) {
 	//Use file pointer cache to avoid opening and closing files as much
 	//This will put our item in position 0
 	FILE* out_fp = find_and_use_fp(df->filename);
@@ -108,7 +149,7 @@ void write_to_file(int data_size, data_file* df) {
 		sprintf(buf, "Writing %d bytes to data file %s.", data_size, df->filename);
 		write_log(buf);
 	}
-	frite(out_fp, df->data, 1, data_size);
+	frite(out_fp, data, 1, data_size);
 }
 
 void distribute_sgt_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers) {
