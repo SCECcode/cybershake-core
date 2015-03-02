@@ -418,7 +418,7 @@ void request_sgt(struct sgtheader* sgthead, float* sgtbuf, int num_comps, int re
 }
 
 
-void send_data_file(struct seisheader* header, char data_filename[256], void* buf, int data_size_bytes, int my_id) {
+void send_data_file(struct seisheader* header, char data_filename[256], int src_id, int rup_id, void* buf, int data_size_bytes, int my_id) {
 	master_msg msg;
 	msg.msg_src = my_id;
 	msg.msg_type = DATA_FILE;
@@ -429,14 +429,16 @@ void send_data_file(struct seisheader* header, char data_filename[256], void* bu
 		write_log(buf);
 	}
 	check_send(&msg, 3, MPI_INT, 0, DATA_TAG, MPI_COMM_WORLD, "Error sending data incoming message to master, aborting.", my_id);
-	data_file df;
+	data_file_metadata df;
+	df.src_id = src_id;
+	df.rup_id = rup_id;
 	strcpy(df.filename, data_filename);
-	df.data = check_malloc(sizeof(char)*msg.msg_data);
-	memcpy(df.data, header, sizeof(struct seisheader));
-	memcpy(df.data + sizeof(struct seisheader), buf, data_size_bytes);
-	if (debug) write_log("Sending data filename to master.");
-	check_send(df.filename, 256, MPI_CHAR, 0, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error sending data filename to master, aborting.", my_id);
+	if (debug) write_log("Sending data file metadata to master.");
+	check_send(&df, sizeof(int)+sizeof(int)+256, MPI_BYTE, 0, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error sending data file metadata to master, aborting.", my_id);
+	char* data = check_malloc(sizeof(char)*msg.msg_data);
+	memcpy(data, header, sizeof(struct seisheader));
+	memcpy(data + sizeof(struct seisheader), buf, data_size_bytes);
 	if (debug) write_log("Sending data contents to master.");
-	check_send(df.data, msg.msg_data, MPI_BYTE, 0, DATA_TAG, MPI_COMM_WORLD, "Error sending data contents to master, aborting.", my_id);
-	free(df.data);
+	check_send(data, msg.msg_data, MPI_BYTE, 0, DATA_TAG, MPI_COMM_WORLD, "Error sending data contents to master, aborting.", my_id);
+	free(data);
 }
