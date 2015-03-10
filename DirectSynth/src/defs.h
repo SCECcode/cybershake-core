@@ -57,7 +57,7 @@ extern const int Z_COMP_FLAG;
 #define MAXPERIODS 305
 
 //num periods as defined in rotd.c
-#define NUM_ROTD_PERIODS 16
+#define NUM_ROTD_PERIODS 22
 
 //Checkpoint filename
 #define CHECKPOINT_FILE "checkpoint.out"
