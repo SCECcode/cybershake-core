@@ -125,11 +125,11 @@ void *check_malloc(size_t len)
 {
 char *ptr;
 
-if (debug) {
+/*if (debug) {
 	char buf[256];
 	sprintf(buf, "Allocating %ld bytes.", len);
 	write_log(buf);
-}
+}*/
 //	fprintf(stderr,"%d) Allocating %ld bytes.\n", my_global_id, len);
 
 ptr = (char *) malloc (len);
