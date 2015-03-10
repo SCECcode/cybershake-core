@@ -70,6 +70,29 @@ FILE* find_and_use_fp(char* filename) {
 	return fp_cache[0].fp;
 }
 
+void fsync_and_close(char* filename) {
+	int index = find_fp(filename);
+	if (index==-1) {
+		//This filename has already been purged, don't worry about it
+		return;
+	}
+	int fd = fileno(fp_cache[index].fp);
+	fsync(fd);
+	//Close the file pointer, move everyone up
+	fclose(fp_cache[index].fp);
+	//Clear entry
+	fp_cache[index].fp = NULL;
+	fp_cache[index].filename[0] = '\0';
+	int i = index+1;
+	while (i<CACHE_SIZE && fp_cache[i].fp!=NULL) {
+		fp_cache[i-1] = fp_cache[i];
+		i++;
+	}
+	//Set the last one to empty
+	fp_cache[i-1].fp = NULL;
+	fp_cache[i-1].filename[0] = '\0';
+}
+
 
 int find_fp(char* filename) {
 	int i;
