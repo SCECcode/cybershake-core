@@ -60,6 +60,13 @@ void check_bcast(void* buf, int num_items, MPI_Datatype type, int root, MPI_Comm
         printf("%d) receiving %d items to location %ld from %d.\n", my_id, num_items, buf, root);
     }
     fflush(stdout);*/
+    if (my_id==root) {
+	if (debug) {
+		char buf[256];
+		sprintf(buf, "Broadcasting from process %d.", my_id);
+		write_log(buf);
+	}
+    }
     int error = MPI_Bcast(buf, num_items, type, root, comm);
     if (error!=MPI_SUCCESS) {
     	fprintf(stderr, "MPI bcast error.\n");
@@ -75,6 +82,11 @@ void check_bcast(void* buf, int num_items, MPI_Datatype type, int root, MPI_Comm
 }
 
 void check_send(void* buf, int num_items, MPI_Datatype type, int dest, int tag, MPI_Comm comm, char* error_msg, int my_id) {
+	if (debug) {
+		char buf[256];
+		sprintf(buf, "Sending message to processor %d.", dest);
+		write_log(buf);
+	}
 	int error = MPI_Send(buf, num_items, type, dest, tag, comm);
     if (error!=MPI_SUCCESS) {
     	fprintf(stderr, "MPI send error.\n");
