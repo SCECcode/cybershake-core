@@ -545,22 +545,22 @@ for (i=0; i<num_rup_vars; i++) {
 			if (sgtfilepar.yfile[0]!='\0') {
 				if (sgtfilepar.zfile[0]!='\0') { //x,y,z
 					header->comps = (X_COMP_FLAG | Y_COMP_FLAG | Z_COMP_FLAG);
-					send_data_file(header, seis_file, sv, sizeof(float)*3*ntout, my_id);
+					send_data_file(header, seis_file, header->source_id, header->rupture_id, sv, sizeof(float)*3*ntout, my_id);
 //					write_seis(header, seis_file,sname,"grm",sv,&dtout,3*ntout,&tstart,output_binary);
 				} else { //x,y
 					header->comps = X_COMP_FLAG | Y_COMP_FLAG;
-					send_data_file(header, seis_file, sn, sizeof(float)*2*ntout, my_id);
+					send_data_file(header, seis_file, header->source_id, header->rupture_id, sn, sizeof(float)*2*ntout, my_id);
 //					write_seis(header, seis_file,sname,"grm",sn,&dtout,2*ntout,&tstart,output_binary);
 					(*seis_return)[i] = sn;
 				}
 			}
 			else if (sgtfilepar.zfile[0]!='\0') { //x,z
 		                header->comps = X_COMP_FLAG | Z_COMP_FLAG;
-						send_data_file(header, seis_file, sv, sizeof(float)*2*ntout, my_id);
+						send_data_file(header, seis_file, header->source_id, header->rupture_id, sv, sizeof(float)*2*ntout, my_id);
 //        		        write_seis(header, seis_file,sname,"grm",sv,&dtout,2*ntout,&tstart,output_binary);
 			} else { //x
                 		header->comps = X_COMP_FLAG;
-    					send_data_file(header, seis_file, sn, sizeof(float)*ntout, my_id);
+    					send_data_file(header, seis_file, header->source_id, header->rupture_id, sn, sizeof(float)*ntout, my_id);
 //                		write_seis(header, seis_file,sname,"grm",sn,&dtout,ntout,&tstart,output_binary);
                 		(*seis_return)[i] = sn;
 			}
@@ -570,13 +570,13 @@ for (i=0; i<num_rup_vars; i++) {
 				exit(2);
 			} else { //y
 				header->comps = Y_COMP_FLAG;
-				send_data_file(header, seis_file, se, sizeof(float)*ntout, my_id);
+				send_data_file(header, seis_file, header->source_id, header->rupture_id, se, sizeof(float)*ntout, my_id);
 //				write_seis(header, seis_file,sname,"grm",se,&dtout,ntout,&tstart,output_binary);
 				(*seis_return)[i] = se;
 			}
 		} else if (sgtfilepar.zfile[0]!='\0') { //z
 			header->comps = Z_COMP_FLAG;
-			send_data_file(header, seis_file, sv, sizeof(float)*ntout, my_id);
+			send_data_file(header, seis_file, header->source_id, header->rupture_id, sv, sizeof(float)*ntout, my_id);
 //			write_seis(header, seis_file,sname,"grm",sv,&dtout,ntout,&tstart,output_binary);
 		}
 	}
