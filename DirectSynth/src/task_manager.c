@@ -191,7 +191,6 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 	//Build (source id, rupture id, num rup vars) tuples to send to master, for checkpointing
 	int* tuples_for_master = check_malloc(sizeof(int)*num_ruptures*3);
 
-
 	//Check for checkpoint file
 	char** completed_list = NULL;
 	int num_completed = 0;
@@ -200,24 +199,30 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		FILE* checkpoint_fp;
 		fopfile_ro(CHECKPOINT_FILE, &checkpoint_fp);
 		char line[16];
-		fgets(line, 16, checkpoint_fp);
-		while (line!=NULL) {
+		char* ret = fgets(line, 16, checkpoint_fp);
+		while (ret!=NULL) {
 			char* tok;
 			tok = strtok(line, "\n");
 			completed_list[num_completed] = check_malloc(sizeof(char)*16);
 			strcpy(completed_list[num_completed], tok);
 			num_completed++;
-			fgets(line, 16, checkpoint_fp);
+			ret = fgets(line, 16, checkpoint_fp);
 		}
 		fclose(checkpoint_fp);
 	}
-
+	if (debug) {
+		char buf[256];
+		sprintf(buf, "%d ruptures already completed in checkpoint file.", num_completed);
+		write_log(buf);
+	}
 
 	//Start here, but will need to grow
 	int task_list_length = num_ruptures;
 	(*task_list) = check_malloc(sizeof(worker_task)*task_list_length);
 	char rupture_file[256], string[256];
 	int num_slips, num_hypos, num_points, num_tasks;
+	//num ruptures to process is different, because some might have already completed
+	int num_ruptures_to_process = 0;
 	num_tasks = 0;
 	for (i=0; i<num_ruptures; i++) {
 		fscanf(rup_list_in, "%s %d %d %d", rupture_file, &num_slips, &num_hypos, &num_points);
@@ -245,13 +250,18 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 			sprintf(search_string, "%d %d", source_id, rupture_id);
 			int flag = 0;
 			for (j=0; j<num_completed; j++) {
-				if (strcmp(search_string, completed_list)==0) {
+				if (strcmp(search_string, completed_list[j])==0) {
 					//We found it
 					flag = 1;
 					break;
 				}
 			}
 			if (flag==1) {
+				if (debug) {
+					char buf[256];
+					sprintf(buf, "Skipping source %d, rupture %d.", source_id, rupture_id);
+					write_log(buf);
+				}
 				//Move to next entry in rupture list
 				continue;
 			}
@@ -291,9 +301,11 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 			write_log(buf);
 		}
 
-		tuples_for_master[3*i] = source_id;
-		tuples_for_master[3*i+1] = rupture_id;
-		tuples_for_master[3*i+2] = num_vars;
+		tuples_for_master[3*num_ruptures_to_process] = source_id;
+		tuples_for_master[3*num_ruptures_to_process+1] = rupture_id;
+		tuples_for_master[3*num_ruptures_to_process+2] = num_vars;
+
+		num_ruptures_to_process++;
 
 		for (j=0; j<tasks_for_rupture; j++) {
 			strcpy((*task_list)[num_tasks].rupture_filename, rupture_file);
@@ -329,10 +341,15 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		write_log(buf);
 	}
 
+	for (i=0; i<num_completed; i++) {
+		free(completed_list[i]);
+	}
+	free(completed_list);
+
 	//Send info to master, for checkpointing
 	if (debug) write_log("Sending task info to master.");
-	check_send(&num_ruptures, 1, MPI_INT, 0, NUM_RUPTURES_TAG, MPI_COMM_WORLD, "Error sending num ruptures to master, aborting.", my_id);
-	check_send(tuples_for_master, 3*num_ruptures, MPI_INT, 0, VARIATION_INFO_TAG, MPI_COMM_WORLD, "Error sending (source, rupture, #rvs) tuples to master, aborting.", my_id);
+	check_send(&num_ruptures_to_process, 1, MPI_INT, 0, NUM_RUPTURES_TAG, MPI_COMM_WORLD, "Error sending num ruptures to master, aborting.", my_id);
+	check_send(tuples_for_master, 3*num_ruptures_to_process, MPI_INT, 0, VARIATION_INFO_TAG, MPI_COMM_WORLD, "Error sending (source, rupture, #rvs) tuples to master, aborting.", my_id);
 
 	return num_tasks;
 }

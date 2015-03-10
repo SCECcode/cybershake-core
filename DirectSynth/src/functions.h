@@ -1,4 +1,4 @@
-int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers);
+int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd);
 int sgt_handler(struct sgtfileparams* sgtfilepar, int num_comps, MPI_Comm* sgt_handler_comm, int num_sgt_handlers, MPI_Comm* sgt_readers_comm, int my_id);
 int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, int my_id);
 int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id);
@@ -45,7 +45,7 @@ void close_log();
 //synth.c
 int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id);
 void request_sgt(struct sgtheader* sgthead, float* sgtbuf, int num_comps, int request_from_handler_id, long long** sgts_by_handler, int starting_index, int ending_index, int nt, int my_id);
-void send_data_file(struct seisheader* header, char data_filename[256], void* buf, int data_size_bytes, int my_id);
+void send_data_file(struct seisheader* header, char data_filename[256], int src_id, int rup_id, void* buf, int data_size_bytes, int my_id);
 
 //jbsim3d.c
 float** jbsim3d_synth(float*** seis_return, struct seisheader* header, char stat[], float slon, float slat, int ntout, char seis_file[], char rup_geom_file[], struct sgtfileparams* sfp, struct sgtparams* sgtparms, struct sgtmaster sgtmast, struct sgtindex* sgtindx, struct geoprojection geop, long long* indx_master, int num_sgts, long long** sgts_by_handler, int* num_sgts_by_handler, int num_sgt_handlers, int num_rup_vars, struct rupture_variation* rup_vars, int my_id);

@@ -21,7 +21,7 @@
  *
  */
 int get_handler_for_sgt_index(long long indx, long long* sgt_cutoffs, int num_sgt_handlers, int my_id);
-void send_data_file(struct seisheader* header, char data_filename[256], void* buf, int data_size_bytes, int my_id);
+void send_data_file(struct seisheader* header, char data_filename[256], int src_id, int rup_id, void* buf, int data_size_bytes, int my_id);
 
 //This duplicates some of seis_psa.c
 int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id) {
@@ -287,7 +287,7 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 					seis_units_len, output_units_len, output_type_len, period_len, byteswap_len, input_file_len, output_file_len);
 		//Replace null terminator so send_data_file doesn't have an issue
 		printf("%d) output_file: %s\n", my_id, output_file_ext);
-		send_data_file(&header, output_file_ext, psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float), my_id);
+		send_data_file(&header, output_file_ext, t_info->task->source_id, t_info->task->rupture_id, psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float), my_id);
 
 		if (run_rotd) {
 			if (debug) {
@@ -320,7 +320,7 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 			//memcpy(file_buffer, &num_rotd_periods, sizeof(int));
 			//memcpy(file_buffer+sizeof(int), rotD_data, sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
 			memcpy(rotD_data, &num_rotd_periods, sizeof(int));
-			send_data_file(&header, rotd_filename, rotD_data, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
+			send_data_file(&header, rotd_filename, t_info->task->source_id, t_info->task->rupture_id, rotD_data, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
 			//send_data_file(&header, rotd_filename, file_buffer, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
 			//free(file_buffer);
 		}

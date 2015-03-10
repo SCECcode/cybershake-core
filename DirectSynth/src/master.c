@@ -24,7 +24,7 @@
 			exit
  */
 void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd);
-void write_to_file(int data_size, data_file_metadata* df);
+void write_to_file(int data_size, data_file_metadata* df, char* data);
 void distribute_sgt_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers);
 void send_header_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
 void assign_sgt_points(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
@@ -68,8 +68,21 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 	//Construct easy-access task tuples for monitoring status for restart
 	short src_rup_table[500][1300];
 	int i;
+	if (debug) {
+		char buf[256];
+		sprintf(buf, "%d ruptures to be processed.", num_ruptures);
+		write_log(buf);
+	}
 	for (i=0; i<num_ruptures; i++) {
-		src_rup_table[task_tuples[3*i]][task_tuples[3*i+1]] = (short)(1+run_PSA+run_rotd)*(task_tuples[3*i+2]);
+		int src = task_tuples[3*i];
+		int rup = task_tuples[3*i+1];
+		int num_files = (1+run_PSA+run_rotd)*(task_tuples[3*i+2]);
+		if (debug) {
+			char buf[256];
+			sprintf(buf, "Source %d, rupture %d has %d files.", src, rup, num_files);
+			write_log(buf);
+		}
+		src_rup_table[src][rup] = (short)(num_files);
 	}
 	//Open checkpoint file
 	FILE* checkpoint_fp = fopfile(CHECKPOINT_FILE, "a");
@@ -92,7 +105,7 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 			int data_src = msg.msg_src;
 			data_file_metadata df;
 			if (debug) write_log("Receiving data file metadata.");
-			check_recv(df, sizeof(int) + sizeof(int) + 256, MPI_BYTE, data_src, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error receiving data filename, aborting.", 0);
+			check_recv(&df, sizeof(int) + sizeof(int) + 256, MPI_BYTE, data_src, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error receiving data file metadata, aborting.", 0);
 			char* data = check_malloc(sizeof(char)*data_size);
 			if (debug) write_log("Receiving data contents.");
 			check_recv(data, data_size, MPI_BYTE, data_src, DATA_TAG, MPI_COMM_WORLD, "Error receiving data contents, aborting.", 0);
@@ -103,27 +116,24 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 			src_rup_table[df.src_id][df.rup_id]--;
 			if (src_rup_table[df.src_id][df.rup_id]==0) {
 				//This rupture is done; sync the files and write to checkpoint log
+				if (debug) {
+					char buf[256];
+					sprintf(buf, "Source %d, rupture %d finished.  fsyncing files and writing to checkpoint log.", df.src_id, df.rup_id);
+					write_log(buf);
+				}
 				char filename[256];
 				sprintf(filename, "Seismogram_%s_%d_%d_%d.grm", site, run_id, df.src_id, df.rup_id);
-				FILE* fp = find_and_use_fp(filename);
-				int fd = fileno(fp);
-				fsync(fd);
-				fclose(fp);
+				fsync_and_close(filename);
 				if (run_PSA) {
 					sprintf(filename, "PeakVals_%s_%d_%d_%d.bsa", site, run_id, df.src_id, df.rup_id);
-					fp = find_and_use_fp(filename);
-					fd = fileno(fp);
-					fsync(fd);
-					fclose(fp);
+					fsync_and_close(filename);
 				}
 				if (run_rotd) {
 					sprintf(filename, "RotD_%s_%d_%d_%d.rotd", site, run_id, df.src_id, df.rup_id);
-					fp = find_and_use_fp(filename);
-					fd = fileno(fp);
-					fsync(fd);
-					fclose(fp);
+					fsync_and_close(filename);
 				}
 				fprintf(checkpoint_fp, "%d %d\n", df.src_id, df.rup_id);
+				fflush(checkpoint_fp);
 			}
 		} else if (msg.msg_type==WORKERS_COMPLETE) {
 			//close down file pointers and exit
