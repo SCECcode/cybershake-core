@@ -262,6 +262,11 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 	int output_option = 2;
 	//Supply an array to get the data1 back from spectrad
 	float* psa_data = check_malloc(sizeof(float)*MAXPERIODS);
+	//Accumulation array for writing to file
+	int psa_rv_file_size = sizeof(struct seisheader) + sizeof(float)*nx*ny*NUM_SCEC_PERIODS;
+	char* psa_file_buffer = check_malloc(psa_rv_file_size*num_rup_vars);
+	int rotd_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct rotD_record)*NUM_ROTD_PERIODS;
+	char* rotd_file_buffer = check_malloc(rotd_rv_file_size*num_rup_vars);
 
 	if (MAXPERIODS<NUM_SCEC_PERIODS*nx*ny) {
 		fprintf(stderr, "%d) Error!  Need to increase MAXPERIODS in defs.h and maxperiods in surfseis_rspectra.f.  Aborting.", my_id);
@@ -287,7 +292,9 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 					seis_units_len, output_units_len, output_type_len, period_len, byteswap_len, input_file_len, output_file_len);
 		//Replace null terminator so send_data_file doesn't have an issue
 		printf("%d) output_file: %s\n", my_id, output_file_ext);
-		send_data_file(&header, output_file_ext, t_info->task->source_id, t_info->task->rupture_id, psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float), my_id);
+		memcpy(psa_file_buffer+rv*psa_rv_file_size), header, sizeof(struct seisheader));
+		memcpy(psa_file_buffer+rv*psa_rv_file_size+sizeof(struct seisheader)), psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float));
+		//send_data_file(&header, output_file_ext, t_info->task->source_id, t_info->task->rupture_id, psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float), my_id);
 
 		if (run_rotd) {
 			if (debug) {
@@ -312,7 +319,6 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 				MPI_Finalize();
 				exit(rc);
 			}
-			sprintf(rotd_filename, "RotD_%s_%d_%d_%d.rotd", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
 			//Also need to send # of periods as part of the file
 			//Need to put it in an int for memcpy
 			int num_rotd_periods = NUM_ROTD_PERIODS;
@@ -320,11 +326,24 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 			//memcpy(file_buffer, &num_rotd_periods, sizeof(int));
 			//memcpy(file_buffer+sizeof(int), rotD_data, sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
 			memcpy(rotD_data, &num_rotd_periods, sizeof(int));
-			send_data_file(&header, rotd_filename, t_info->task->source_id, t_info->task->rupture_id, rotD_data, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
+			memcpy(rotd_file_buffer+rv*rotd_rv_file_size, header, sizeof(struct seisheader));
+			memcpy(rotd_file_buffer+rv*rotd_rv_file_size+sizeof(struct seisheader), rotD_data, sizeof(int)+sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
+			//send_data_file(&header, rotd_filename, t_info->task->source_id, t_info->task->rupture_id, rotD_data, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
 			//send_data_file(&header, rotd_filename, file_buffer, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
 			//free(file_buffer);
 		}
 	}
+
+	if (run_PSA) {
+		send_data_cluster(output_file_ext, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, psa_file_buffer, num_rup_vars*psa_rv_file_size, my_id);
+	}
+	if (run_rotd) {
+		sprintf(rotd_filename, "RotD_%s_%d_%d_%d.rotd", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
+		send_data_cluster(rotd_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, rotd_file_buffer, num_rup_vars*rotd_rv_file_size, my_id);
+	}
+
+	free(psa_file_buffer);
+	free(rotd_file_buffer);
 
 	free(psa_data);
 	free(rotD_data);
@@ -417,8 +436,30 @@ void request_sgt(struct sgtheader* sgthead, float* sgtbuf, int num_comps, int re
 	free(buffer);
 }
 
+void send_data_cluster(char data_filename[256], int src_id, int rup_id, int start_rv, int end_rv, void* data, int data_size_bytes, int my_id) {
+	master_msg msg;
+	msg.msg_src = my_id;
+	msg.msg_type = DATA_FILE;
+	msg.msg_data = data_size_bytes;
+	if (debug) {
+		char buf[256];
+		sprintf(buf, "Notifying master of request to send %d bytes for data file %s.", msg.msg_data, data_filename);
+		write_log(buf);
+	}
+	check_send(&msg, 3, MPI_INT, 0, DATA_TAG, MPI_COMM_WORLD, "Error sending data incoming message to master, aborting.", my_id);
+	data_file_metadata df;
+	df.src_id = src_id;
+	df.rup_id = rup_id;
+	df.starting_rv = start_rv;
+	df.ending_rv = end_rv;
+	strcpy(df.filename, data_filename);
+	if (debug) write_log("Sending data file metadata to master.");
+	check_send(&df, 4*sizeof(int)+256, MPI_BYTE, 0, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error sending data file metadata to master, aborting.", my_id);
+	if (debug) write_log("Sending data contents to master.");
+	check_send(data, msg.msg_data, MPI_BYTE, 0, DATA_TAG, MPI_COMM_WORLD, "Error sending data contents to master, aborting.", my_id);
+}
 
-void send_data_file(struct seisheader* header, char data_filename[256], int src_id, int rup_id, void* buf, int data_size_bytes, int my_id) {
+/*void send_data_file(struct seisheader* header, char data_filename[256], int src_id, int rup_id, void* buf, int data_size_bytes, int my_id) {
 	master_msg msg;
 	msg.msg_src = my_id;
 	msg.msg_type = DATA_FILE;
@@ -441,4 +482,4 @@ void send_data_file(struct seisheader* header, char data_filename[256], int src_
 	if (debug) write_log("Sending data contents to master.");
 	check_send(data, msg.msg_data, MPI_BYTE, 0, DATA_TAG, MPI_COMM_WORLD, "Error sending data contents to master, aborting.", my_id);
 	free(data);
-}
+}*/

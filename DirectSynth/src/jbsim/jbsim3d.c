@@ -502,7 +502,53 @@ if (my_global_id==240 && debug) {
 	write_log(buf);
 }
 
+//Accumulate data for writing in single buffer
+char* writing_buffer = check_malloc((sizeof(struct seisheader) + sizeof(float)*3*ntout)*num_rup_vars);
+int entry_size = 0;
+int offset = 0;
+
+if (sgtfilepar.xfile[0]!='\0') {
+	if (sgtfilepar.yfile[0]!='\0') {
+		if (sgtfilepar.zfile[0]!='\0') { //x,y,z
+			header->comps = (X_COMP_FLAG | Y_COMP_FLAG | Z_COMP_FLAG);
+			entry_size = 3*sizeof(float)*ntout;
+		} else { //x,y
+			header->comps = X_COMP_FLAG | Y_COMP_FLAG;
+			entry_size = 2*sizeof(float)*ntout;
+			offset = ntout;
+			(*seis_return)[i] = sn;
+		}
+	}
+	else if (sgtfilepar.zfile[0]!='\0') { //x,z
+                header->comps = X_COMP_FLAG | Z_COMP_FLAG;
+    			entry_size = 2*sizeof(float)*ntout;
+	} else { //x
+        		header->comps = X_COMP_FLAG;
+        		offset = ntout;
+        		(*seis_return)[i] = sn;
+	}
+} else if (sgtfilepar.yfile[0]!='\0') {
+	if (sgtfilepar.zfile[0]!='\0') { //y,z
+		printf("Can't output merged Y and Z components.\n");
+		exit(2);
+	} else { //y
+		header->comps = Y_COMP_FLAG;
+		entry_size = sizeof(float)*ntout;
+		offset = 2*ntout;
+		(*seis_return)[i] = se;
+	}
+} else if (sgtfilepar.zfile[0]!='\0') { //z
+	header->comps = Z_COMP_FLAG;
+	entry_size = sizeof(float)*ntout;
+}
+
 for (i=0; i<num_rup_vars; i++) {
+	header->rup_var_id = rup_vars[i].rup_var_id;
+	memcpy(writing_buffer+(sizeof(struct seisheader)+entry_size)*i, header, sizeof(struct seisheader));
+	memcpy(writing_buffer+(sizeof(struct seisheader)+entry_size)*i + sizeof(struct seisheader), seis[i]+offset, entry_size);
+}
+
+/*for (i=0; i<num_rup_vars; i++) {
 
 	sv = seis[i];
 	sn = seis[i] + ntout;
@@ -514,7 +560,7 @@ for (i=0; i<num_rup_vars; i++) {
 	}
 
 	header->comps = 0;
-	header->rup_var_id = rup_vars[i].rup_var_id;
+	header->rup_var_id = rup_vars[i].rup_var_id;*/
 
 //	char* last_slash = strrchr(seis_file, '/');
 //	if (last_slash!=NULL) { //means there was a slash in the filename, might need to create a path
@@ -541,11 +587,12 @@ for (i=0; i<num_rup_vars; i++) {
 //			(*seis_return)[i] = sv;
 //		}
 //	} else { //merging output
-		if (sgtfilepar.xfile[0]!='\0') {
+/*		if (sgtfilepar.xfile[0]!='\0') {
 			if (sgtfilepar.yfile[0]!='\0') {
 				if (sgtfilepar.zfile[0]!='\0') { //x,y,z
 					header->comps = (X_COMP_FLAG | Y_COMP_FLAG | Z_COMP_FLAG);
-					send_data_file(header, seis_file, header->source_id, header->rupture_id, sv, sizeof(float)*3*ntout, my_id);
+					memcpy(writing_buffer+)
+//					send_data_file(header, seis_file, header->source_id, header->rupture_id, sv, sizeof(float)*3*ntout, my_id);
 //					write_seis(header, seis_file,sname,"grm",sv,&dtout,3*ntout,&tstart,output_binary);
 				} else { //x,y
 					header->comps = X_COMP_FLAG | Y_COMP_FLAG;
@@ -579,7 +626,12 @@ for (i=0; i<num_rup_vars; i++) {
 			send_data_file(header, seis_file, header->source_id, header->rupture_id, sv, sizeof(float)*ntout, my_id);
 //			write_seis(header, seis_file,sname,"grm",sv,&dtout,ntout,&tstart,output_binary);
 		}
-	}
+	}*/
+
+//Add 1 to ending rup_var_id because it's exclusive
+send_data_cluster(seis_file, header->source_id, header->rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, writing_buffer, (sizeof(struct seisheader)+entry_size)*num_rup_vars, my_id);
+
+free(writing_buffer);
 
 fprintf(stdout,"Total moment= %13.5e\n",tmom);
 

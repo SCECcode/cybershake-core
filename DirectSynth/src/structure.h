@@ -175,6 +175,9 @@ typedef struct master_message
 typedef struct data_file_metadata {
 	int src_id;
 	int rup_id;
+	int starting_rv;
+	//exclusive
+	int ending_rv;
 	char filename[256];
 } data_file_metadata;
 

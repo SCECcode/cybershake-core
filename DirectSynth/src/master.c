@@ -105,15 +105,15 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 			int data_src = msg.msg_src;
 			data_file_metadata df;
 			if (debug) write_log("Receiving data file metadata.");
-			check_recv(&df, sizeof(int) + sizeof(int) + 256, MPI_BYTE, data_src, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error receiving data file metadata, aborting.", 0);
-			char* data = check_malloc(sizeof(char)*data_size);
+			check_recv(&df, 4*sizeof(int) + 256, MPI_BYTE, data_src, DATA_FILENAME_TAG, MPI_COMM_WORLD, "Error receiving data file metadata, aborting.", 0);
+			char* data = check_malloc(data_size);
 			if (debug) write_log("Receiving data contents.");
 			check_recv(data, data_size, MPI_BYTE, data_src, DATA_TAG, MPI_COMM_WORLD, "Error receiving data contents, aborting.", 0);
 			//Write data to file
 			write_to_file(data_size, &df, data);
 			free(data);
 			//Update src_rup_table
-			src_rup_table[df.src_id][df.rup_id]--;
+			src_rup_table[df.src_id][df.rup_id] -= df.ending_rv - df.starting_rv;
 			if (src_rup_table[df.src_id][df.rup_id]==0) {
 				//This rupture is done; sync the files and write to checkpoint log
 				if (debug) {
