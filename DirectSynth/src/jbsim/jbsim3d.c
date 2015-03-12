@@ -516,7 +516,7 @@ if (sgtfilepar.xfile[0]!='\0') {
 			header->comps = X_COMP_FLAG | Y_COMP_FLAG;
 			entry_size = 2*sizeof(float)*ntout;
 			offset = ntout;
-			(*seis_return)[i] = sn;
+			//(*seis_return)[i] = sn;
 		}
 	}
 	else if (sgtfilepar.zfile[0]!='\0') { //x,z
@@ -525,7 +525,7 @@ if (sgtfilepar.xfile[0]!='\0') {
 	} else { //x
         		header->comps = X_COMP_FLAG;
         		offset = ntout;
-        		(*seis_return)[i] = sn;
+        		//(*seis_return)[i] = sn;
 	}
 } else if (sgtfilepar.yfile[0]!='\0') {
 	if (sgtfilepar.zfile[0]!='\0') { //y,z
@@ -535,7 +535,7 @@ if (sgtfilepar.xfile[0]!='\0') {
 		header->comps = Y_COMP_FLAG;
 		entry_size = sizeof(float)*ntout;
 		offset = 2*ntout;
-		(*seis_return)[i] = se;
+		//(*seis_return)[i] = se;
 	}
 } else if (sgtfilepar.zfile[0]!='\0') { //z
 	header->comps = Z_COMP_FLAG;
@@ -546,6 +546,11 @@ for (i=0; i<num_rup_vars; i++) {
 	header->rup_var_id = rup_vars[i].rup_var_id;
 	memcpy(writing_buffer+(sizeof(struct seisheader)+entry_size)*i, header, sizeof(struct seisheader));
 	memcpy(writing_buffer+(sizeof(struct seisheader)+entry_size)*i + sizeof(struct seisheader), seis[i]+offset, entry_size);
+	if (debug) {
+		char buf[256];
+		sprintf(buf, "Copying %d bytes from offset %d to offset %d", entry_size, offset, (sizeof(struct seisheader)+entry_size)*i);
+		write_log(buf);
+	}
 }
 
 /*for (i=0; i<num_rup_vars; i++) {

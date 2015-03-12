@@ -292,8 +292,8 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 					seis_units_len, output_units_len, output_type_len, period_len, byteswap_len, input_file_len, output_file_len);
 		//Replace null terminator so send_data_file doesn't have an issue
 		printf("%d) output_file: %s\n", my_id, output_file_ext);
-		memcpy(psa_file_buffer+rv*psa_rv_file_size), header, sizeof(struct seisheader));
-		memcpy(psa_file_buffer+rv*psa_rv_file_size+sizeof(struct seisheader)), psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float));
+		memcpy(psa_file_buffer+rv*psa_rv_file_size, &header, sizeof(struct seisheader));
+		memcpy(psa_file_buffer+rv*psa_rv_file_size+sizeof(struct seisheader), psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float));
 		//send_data_file(&header, output_file_ext, t_info->task->source_id, t_info->task->rupture_id, psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float), my_id);
 
 		if (run_rotd) {
@@ -326,7 +326,7 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 			//memcpy(file_buffer, &num_rotd_periods, sizeof(int));
 			//memcpy(file_buffer+sizeof(int), rotD_data, sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
 			memcpy(rotD_data, &num_rotd_periods, sizeof(int));
-			memcpy(rotd_file_buffer+rv*rotd_rv_file_size, header, sizeof(struct seisheader));
+			memcpy(rotd_file_buffer+rv*rotd_rv_file_size, &header, sizeof(struct seisheader));
 			memcpy(rotd_file_buffer+rv*rotd_rv_file_size+sizeof(struct seisheader), rotD_data, sizeof(int)+sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
 			//send_data_file(&header, rotd_filename, t_info->task->source_id, t_info->task->rupture_id, rotD_data, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
 			//send_data_file(&header, rotd_filename, file_buffer, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
