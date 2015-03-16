@@ -18,6 +18,8 @@ fp_in.close()
 
 points = set()
 
+num_pts_in = int(data[4])
+
 for i in range(5, len(data), 1):
 	line = data[i]
 	pieces = line.split()
@@ -38,3 +40,9 @@ for line in p_list:
 	fp_out.write("\n")
 fp_out.flush()
 fp_out.close()
+
+#Make sure both cordfiles have the same number of points
+if num_pts_in!=len(p_list):
+	print "Error: input file %s has %d points, but %d points were written to output file %s." % (sys.argv[1], num_pts_in, sys.argv[2], len(p_list))
+	sys.exit(2)
+
