@@ -81,7 +81,10 @@ for c in awp_comps:
 	mkdir_p("comp_%s/output_vlm" % c)
 	mkdir_p("comp_%s/output_sgt" % c)
 	#Set striping for output directory
-	os.system("%s setstripe -c 160 -s 5m comp_%s/output_sgt" % (LFS_PATH, c))
+	exitcode = os.system("%s setstripe -c 160 -s 5m comp_%s/output_sgt" % (LFS_PATH, c))
+	if exitcode!=0:
+                print "Error striping with command %s setstripe -c 160 -s 5m comp_%s/output_sgt, exiting." % (LFS_PATH, c)
+                sys.exit(exitcode)
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
@@ -99,7 +102,7 @@ awp_cordfile = "awp.%s.cordfile" % site
 print "Building cordfile."
 sys.stdout.flush()
 #Determine max depth based on frequency
-max_depth = 100.0/frequency
+max_depth = frequency*400
 rc = build_cordfile(site, cordfile, awp_cordfile, max_depth)
 if not rc==0:
         print "Error in build_cordfile, aborting."
@@ -118,6 +121,9 @@ if rwg_vel_prefix is not None:
 	        print "Error in build_media, aborting."
 	        sys.exit(2)
 else:
+	if not os.path.exists(awp_media):
+		print "Error, since expected velocity file %s does not exist.  Aborting." % awp_media
+		sys.exit(3)
 	print "No velocity prefix specified, skipping velocity file reformat."
 
 for c in awp_comps:
