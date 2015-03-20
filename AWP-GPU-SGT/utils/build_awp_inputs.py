@@ -48,7 +48,7 @@ parser.add_option("--frequency", dest="frequency", type=float, action="store", d
 parser.add_option("--px", dest="px", type=int, action="store", help="Number of processors in X-direction.")
 parser.add_option("--py", dest="py", type=int, action="store", help="Number of processors in Y-direction.")
 parser.add_option("--pz", dest="pz", type=int, action="store", help="Number of processors in Z-direction.")
-
+parser.add_option("--source-frequency", dest="source_freq", action="store", help="Low-pass filter frequency to use on the source, default is same frequency as the frequency of the run.")
 
 (option, args) = parser.parse_args()
 
@@ -72,6 +72,10 @@ if (procs[0]==None or procs[1]==None or procs[2]==None):
 rwg_vel_prefix = option.vel_prefix
 frequency = option.frequency
 
+source_frequency = frequency
+if option.source_freq!=None:
+	source_frequency = option.source_freq
+
 awp_comps = ['x', 'y']
 
 for c in awp_comps:
@@ -94,7 +98,7 @@ for c in awp_comps:
 		sys.exit(2)
 	print "Building source file."
 	sys.stdout.flush()
-	rc = build_src(site, fdloc, c, frequency)
+	rc = build_src(site, fdloc, c, frequency, filter=source_frequency)
 	if not rc==0:
 	        print "Error in build_src, aborting."
 	        sys.exit(3)
