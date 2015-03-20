@@ -3,7 +3,7 @@
 import sys
 import os
 
-def build_src(site, fdloc, awp_comp, frequency):
+def build_src(site, fdloc, awp_comp, frequency, filter=None):
 	if awp_comp=='x':
 		comp = "y"
 	elif awp_comp=='y':
@@ -22,7 +22,19 @@ def build_src(site, fdloc, awp_comp, frequency):
 	
 	[src_x, src_y] = data.split()
 	
-	fp_in = open("%s/data/f%s_src_%d" % (sys.path[0], awp_comp, nt))
+	#Add to support a filter frequency different from the simulation frequency
+	if filter==None:
+		filter = frequency
+
+	source_name = "f%s_src_%d_%.1fhzFilter" % (awp_comp, nt, filter)
+	if not os.path.exists(source_name):
+		print "Error: could not find a source file with nt=%d and filter frequency = %.1f, aborting." % (nt, filter)
+		return 1
+
+	fp_in = open("%s/data/%s" % (sys.path[0], source_name)
+
+	#fp_in = open("%s/data/f%s_src_%d_2hzFilter" % (sys.path[0], awp_comp, nt))
+	#fp_in = open("%s/data/f%s_src_%d" % (sys.path[0], awp_comp, nt))
 	src_data = fp_in.readlines()
 	fp_in.close()
 	
