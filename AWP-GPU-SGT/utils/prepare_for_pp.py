@@ -27,9 +27,9 @@ def reformat(input_filename, timesteps, num_pts, output_filename, comp):
 	exitcode = os.system(command)
 	return exitcode
 
-def write_head(modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, comp, moment, max_f, media, header_name):
+def write_head(modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, comp, moment, source_freq, media, header_name):
 	#On Titan, need aprun to execute this on a compute node, not the aprun node
-	command = "aprun -n 1 %s/SgtHead/bin/write_head %s %s %s %s %f %d %f %d %s %s %f %s %s" % (CS_PATH, modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, comp, moment, max_f, media, header_name)
+	command = "aprun -n 1 %s/SgtHead/bin/write_head %s %s %s %s %f %d %f %d %s %s %f %s %s" % (CS_PATH, modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, comp, moment, source_freq, media, header_name)
 	if not comp=="z":
 		#Add c flag to use corrected mu
 		command = "%s -c " % command
@@ -38,7 +38,7 @@ def write_head(modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, 
         exitcode = os.system(command)
         return exitcode
 
-usage = "Usage: %s [-n|--no-md5] <site> <AWP SGT> <reformatted SGT filename> <modelbox file> <rwg cordfile> <fdloc file> <gridout file> <IN3D file> <AWP media file> <component> <run_id> <header> [frequency]" % sys.argv[0]
+usage = "Usage: %s <site> <AWP SGT> <reformatted SGT filename> <modelbox file> <rwg cordfile> <fdloc file> <gridout file> <IN3D file> <AWP media file> <component> <run_id> <header> [frequency]" % sys.argv[0]
 
 if len(sys.argv)<13:
 	print usage
@@ -49,7 +49,9 @@ MOMENT = "1.0e20"
 parser = optparse.OptionParser(usage = usage)
 parser.add_option("-n", "--no-md5", dest="no_md5", action="store_true", default=False, help="Skip MD5 sum step.")
 (options, args) = parser.parse_args()
+parser.add_option("-sf", "--source-frequency", type="float", dest="src_freq", action="store", help="Frequency of the SGT source (default is same as simulation frequency)")
 skip_md5 = options.no_md5
+source_freq = options.src_freq
 
 site = args[0]
 awp_sgt_filename = args[1]
@@ -65,6 +67,9 @@ run_id = args[10]
 header_out = args[11]
 MAX_FREQ = float(args[12])
 print "Max frequency: %f" % (MAX_FREQ)
+
+if source_freq==None:
+	source_freq = MAX_FREQ
 
 #determine number of output timesteps
 fp_in = open(IN3D, "r")
@@ -107,7 +112,7 @@ elif comp=="y":
 
 header_name = "%s_f%s_%s.sgthead" % (site, rwg_comp, run_id)
 
-rc = write_head(modelbox, cordfile, fdloc, gridout, spacing, total_ts, float(params["DT"]), decimation, rwg_comp, MOMENT, MAX_FREQ, media, header_name)
+rc = write_head(modelbox, cordfile, fdloc, gridout, spacing, total_ts, float(params["DT"]), decimation, rwg_comp, MOMENT, source_freq, media, header_name)
 if not rc==0:
         print "Error in header creation."
         sys.exit((rc >> 8) & 0xFF)
