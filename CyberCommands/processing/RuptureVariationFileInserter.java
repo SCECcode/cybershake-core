@@ -210,6 +210,7 @@ public class RuptureVariationFileInserter {
 				counter++;
 			} catch (IOException ioe) {
 				System.err.println("Error reading from file " + pathName);
+				ioe.printStackTrace();
 			} catch (ConstraintViolationException ex) {
 				ex.printStackTrace();
 				System.err.println("Offending SQL statement was: " + ex.getSQL());
@@ -239,11 +240,14 @@ public class RuptureVariationFileInserter {
 				FileInputStream stream = new FileInputStream(f);
 				BSAHeader head = new BSAHeader();
 				
+				boolean isFileEmpty = true;
 				try {
 					while (true) { //Will exit when we reach the end of the file
 						//Read the header
 						int ret = head.parse(stream);
 						if (ret==-1) break;
+						//Unset if we read something from the file
+						isFileEmpty = false;
 //						head.print();
 						//Check the site name
 						if (!head.siteString.equals(run_ID.getSiteName())) {
@@ -267,6 +271,12 @@ public class RuptureVariationFileInserter {
 				}
 				
 				stream.close();
+				
+				//Make sure there was something in the file
+				if (isFileEmpty) {
+					System.err.println("File " + f.getName() + " was empty, aborting.");
+					System.exit(-3);
+				}
 				
 				//Do this more often because there are multiple inserts per file
 				if ((counter+1)%25==0) System.gc();
@@ -387,7 +397,7 @@ public class RuptureVariationFileInserter {
 			rd100periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
 				SQLQuery query = rotdSession.createSQLQuery(rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", Hibernate.INTEGER);
-				int typeID = (Integer)query.list().get(0);
+				int typeID = (Integer)(query.list().get(0));
 				rd100periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
 				System.out.println("Adding IM_Type_ID " + typeID + " to list.");
 			}
@@ -396,7 +406,7 @@ public class RuptureVariationFileInserter {
 			rd50periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
 				SQLQuery query = rotdSession.createSQLQuery(rd50Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", Hibernate.INTEGER);
-				int typeID = (Integer)query.list().get(0);
+				int typeID = (Integer)(query.list().get(0));
 				rd50periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
 				System.out.println("Adding IM_Type_ID " + typeID + " to list.");
 			}
