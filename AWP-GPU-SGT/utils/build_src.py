@@ -26,12 +26,12 @@ def build_src(site, fdloc, awp_comp, frequency, filter=None):
 	if filter==None:
 		filter = frequency
 
-	source_name = "f%s_src_%d_%.1fhzFilter" % (awp_comp, nt, filter)
+	source_name = "%s/data/f%s_src_%d_%.1fhzFilter" % (sys.path[0], awp_comp, nt, filter)
 	if not os.path.exists(source_name):
-		print "Error: could not find a source file with nt=%d and filter frequency = %.1f, aborting." % (nt, filter)
+		print "Error: could not find source file %s with nt=%d and filter frequency = %.1f, aborting." % (source_name, nt, filter)
 		return 1
 
-	fp_in = open("%s/data/%s" % (sys.path[0], source_name)
+	fp_in = open("%s" % (source_name), "r")
 
 	#fp_in = open("%s/data/f%s_src_%d_2hzFilter" % (sys.path[0], awp_comp, nt))
 	#fp_in = open("%s/data/f%s_src_%d" % (sys.path[0], awp_comp, nt))
