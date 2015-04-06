@@ -42,14 +42,14 @@ usage = "Usage: %s <site> <AWP SGT> <reformatted SGT filename> <modelbox file> <
 
 if len(sys.argv)<13:
 	print usage
-	sys.exit(0)
+	sys.exit(1)
 
 MOMENT = "1.0e20"
 
 parser = optparse.OptionParser(usage = usage)
 parser.add_option("-n", "--no-md5", dest="no_md5", action="store_true", default=False, help="Skip MD5 sum step.")
+parser.add_option("-s", "--source-frequency", type="float", dest="src_freq", action="store", help="Frequency of the SGT source (default is same as simulation frequency)")
 (options, args) = parser.parse_args()
-parser.add_option("-sf", "--source-frequency", type="float", dest="src_freq", action="store", help="Frequency of the SGT source (default is same as simulation frequency)")
 skip_md5 = options.no_md5
 source_freq = options.src_freq
 
@@ -98,7 +98,7 @@ total_ts = int(float(params["TMAX"])/float(params["DT"])+0.5)
 decimation = int(params["NTISKP_SGT"])
 spacing = float(params["DH"])/1000.0
 
-#rc = reformat(awp_sgt_filename, total_ts/decimation, num_sgt_pts, awp_reformat_sgt_filename, comp)
+rc = reformat(awp_sgt_filename, total_ts/decimation, num_sgt_pts, awp_reformat_sgt_filename, comp)
 rc = 0
 if not rc==0:
 	print "Error in reformatting."
