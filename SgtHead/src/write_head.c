@@ -157,6 +157,7 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 
 	//read in entire coordfile
 	for (i=0; i<sgtmast.globnp; i++) {
+		//fprintf(stderr, "cordfile point %d\n", i);
 		fgets(buffer, 1024, coordfile_fp);
                 sscanf(buffer, "%d %d %d %Ld %f %f %f",&sgtindx[i].xsgt,&sgtindx[i].ysgt,&sgtindx[i].zsgt,&sgtindx[i].indx,&lonsgt,&latsgt,&sgthead[i].sgt_dep);
 		zst = check_malloc(sizeof(struct z_structure));
@@ -170,9 +171,13 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 		z_list[sgtindx[i].zsgt] = zst;
 	}
 
+	fprintf(stderr, "Cordfile complete.\n");
+	fflush(stderr);
 	//Now, iterate through the z_list
 	struct z_structure* cur;
 	for (i=0; i<rpars.nz; i++) {
+		fprintf(stderr, "Z-slice %d of %d.\n", i, rpars.nz);
+		fflush(stderr);
 		cur = z_list[i];
 		if (cur==NULL) {
 			continue;
@@ -180,24 +185,28 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 		//fast y, x, z
 		//Seek to read in 3 z-slices, special cases if z==0 or z==rpars.nz-1
 		if (cur->sgtindx->zsgt!=0) {
-			long loc = lseek(media_fp, 3*sizeof(float)*(cur->sgtindx->zsgt-1)*rpars.nx*rpars.globny, SEEK_SET);
+			long loc = lseek(media_fp, (long)3*sizeof(float)*(cur->sgtindx->zsgt-1)*rpars.nx*rpars.globny, SEEK_SET);
+			//fprintf(stderr, "Seeking to location %ld.\n", loc);
 			if (cur->sgtindx->zsgt==rpars.nz-1) { //last slice
 				//Read slice before, this slice
-				reed(media_fp, vel_data, 3*rpars.nx*rpars.globny*sizeof(float)*2);
+				chunk_reed(media_fp, vel_data, (long)3*rpars.nx*rpars.globny*sizeof(float)*2);
 			} else {
 				//Read 3 slices
-				reed(media_fp, vel_data, 3*rpars.nx*rpars.globny*sizeof(float)*3);
+				//fprintf(stderr, "Reading %ld bytes.\n", (long)3*rpars.nx*rpars.globny*sizeof(float)*3);
+				chunk_reed(media_fp, vel_data, (long)3*rpars.nx*rpars.globny*sizeof(float)*3);
 			}
+			//fprintf(stderr, "Done reading.\n");
 		} else { //z==0
-			lseek(media_fp, 3*sizeof(float)*(cur->sgtindx->zsgt)*rpars.nx*rpars.globny, SEEK_SET);
+			lseek(media_fp, (long)3*sizeof(float)*(cur->sgtindx->zsgt)*rpars.nx*rpars.globny, SEEK_SET);
 			//read in this slice, slice after
-	                reed(media_fp, vel_data, 3*rpars.nx*rpars.globny*sizeof(float)*2);
+	                chunk_reed(media_fp, vel_data, (long)3*rpars.nx*rpars.globny*sizeof(float)*2);
 		}
 
 		while (cur!=NULL) {
 			struct sgtindex* sip = cur->sgtindx;
 			struct sgtheader* shp = cur->sgthdr;
                         //printf("Processing point (%d, %d %d)\n", sip->xsgt, sip->ysgt, sip->zsgt);
+			fflush(stdout);
 			sip->h = spacing;
 	                //sgt header
 	                shp->indx = sip->indx;
@@ -233,6 +242,7 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 	                        shp->zmom = moment;
 	                }
 
+			//Note that flo is now the frequency the source was filtered at
 	                shp->tst = -1.0/flo;
         
 	                xx = shp->xsrc*spacing;
