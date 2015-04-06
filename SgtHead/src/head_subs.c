@@ -298,7 +298,7 @@ while(path[j] != '\0')
                {
                sprintf(str,"makedir() cannot make directory %s, exiting",stmp);
                perror(str);
-               mpi_exit(-1);
+               exit(-1);
                }
             }
          }
@@ -307,7 +307,7 @@ while(path[j] != '\0')
          {
          sprintf(str,"problem with stat() on %s, exiting",stmp);
          perror(str);
-         mpi_exit(-1);
+         exit(-1);
          }
       }
    j++;
@@ -318,17 +318,12 @@ if(rtn == -1 && errno != EEXIST)
    {
    sprintf(str,"makedir() cannot make directory %s, exiting",stmp);
    perror(str);
-   mpi_exit(-1);
+   exit(-1);
    }
 
 return 0;
 }
 
-void mpi_exit(int val)
-{
-MPI_Finalize();
-exit(val);
-}
 
 FILE *fopfile(name,mode)
 char *name, *mode;
@@ -363,7 +358,7 @@ char *name;
 int fd;
 if ((fd = open (name, RDONLY_FLAGS, 0444)) == -1) {
    fprintf (stderr, "CAN'T OPEN FILE %s\n", name);
-   perror("Error");
+   perror("opfile_ro error");
    exit(-1);
 }
 return (fd);
@@ -378,7 +373,7 @@ ptr = (void *) malloc (len);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory allocation error\n");
-   mpi_exit(-1);
+   exit(-1);
    }
 
 return(ptr);
@@ -394,6 +389,32 @@ if ((temp = read(fd, pntr, length)) < length)
    exit(-1);
    }
 return(temp);
+}
+
+//Break read up into smaller pieces, to make Titan's filesystem happy
+size_t chunk_reed(int fd, void* pntr, size_t length) {
+	//64 MB seemed good
+	const size_t MAX_READ_SIZE = 64*1024*1024;
+	size_t temp, read_size, offset;
+	int i;
+	int num_reads = length/MAX_READ_SIZE;
+	if (MAX_READ_SIZE*num_reads<length) {
+		num_reads++;
+	}
+	offset = 0;
+	read_size = length/num_reads;
+	for (i=0; i<num_reads; i++) {
+		if (i==num_reads-1) {
+			read_size = length - MAX_READ_SIZE*(num_reads-1);
+		}
+		if ((temp = read(fd, pntr+offset, read_size)) < read_size) {
+			fprintf (stderr, "READ ERROR\n");
+			fprintf (stderr, "%ld attempted  %ld read\n", read_size, temp);
+			exit(-1);
+		}
+		offset += temp;
+	}
+	return offset;
 }
 
 size_t rite(int fd, void *pntr, size_t length)
@@ -413,6 +434,7 @@ int cropfile_rw(char *name)
 int fd;
 if ((fd = open(name,CROP_FLAGS,0664)) == -1) {
    fprintf (stderr, "CAN'T OPEN FILE %s\n", name);
+   perror("cropfile_rw error");
    exit(-1);
 }
 return(fd);

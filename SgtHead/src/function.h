@@ -1,11 +1,5 @@
 /* Started 07/07/04- attempt to go towards ANSI C */
 
-void mpi_init(int *ac,char ***av,int *np,int *id,char *pname,int *len);
-void mpi_final(char *s);
-
-void mpi_sndrcv2(void *,void *,void *,void *,int,int,int,int);
-void mpi_global_val(void *,void *,char *,int,MPI_Datatype,MPI_Op);
-void mpi_exit(int);
 
 void swap_in_place(int,char *);
 void swap_in_place_d(int,char *);
@@ -46,6 +40,7 @@ void init_media(struct media_input *,float *,struct runparams *,struct qvalues *
 
 void reedmedslice(int,int,int,float *,int,int,int,int,struct qvalues *,int,int,float *,float *,int);
 
+size_t chunk_reed(int fd, void* pntr, size_t length);
 size_t reed(int,void *,size_t);
 size_t rite(int,void *,size_t);
 int cropfile_rw(char *);
