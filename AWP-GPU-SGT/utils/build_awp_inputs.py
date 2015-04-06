@@ -48,7 +48,7 @@ parser.add_option("--frequency", dest="frequency", type=float, action="store", d
 parser.add_option("--px", dest="px", type=int, action="store", help="Number of processors in X-direction.")
 parser.add_option("--py", dest="py", type=int, action="store", help="Number of processors in Y-direction.")
 parser.add_option("--pz", dest="pz", type=int, action="store", help="Number of processors in Z-direction.")
-parser.add_option("--source-frequency", dest="source_freq", action="store", help="Low-pass filter frequency to use on the source, default is same frequency as the frequency of the run.")
+parser.add_option("--source-frequency", type=float, dest="source_freq", action="store", help="Low-pass filter frequency to use on the source, default is same frequency as the frequency of the run.")
 
 (option, args) = parser.parse_args()
 
