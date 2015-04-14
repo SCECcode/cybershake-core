@@ -48,6 +48,6 @@ if exitcode!=0:
 	sys.exit((exitcode >> 8) & 0xFF)
 
 #move output file
-print "Moving %s/SGT0020000 to %s" % (params["SGTGRO"].rsplit("/", 1)[0], params["SGTGRO"])
-shutil.move("%s/SGT0020000" % params["SGTGRO"].rsplit("/", 1)[0], params["SGTGRO"])
+print "Moving %s/SGT00%s to %s" % (params["SGTGRO"].rsplit("/", 1)[0], params["NST"], params["SGTGRO"])
+shutil.move("%s/SGT00%s" % (params["SGTGRO"].rsplit("/", 1)[0], params["NST"]), params["SGTGRO"])
 sys.exit(0)
