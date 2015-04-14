@@ -856,11 +856,11 @@ if (ns<-1 || nh<-1) {
         exit(3);
 }
 
-printf("Calculating for slip %d, hypo %d.\n", doslip, dohypo);
+//printf("Calculating for slip %d, hypo %d.\n", doslip, dohypo);
 //end add
 
-fprintf(stderr,"mag= %.2f median mag= %.2f nslip= %d nhypo= %d\n",mag,mag_med,ns,nh);
-fprintf(stderr,"nx= %d ny= %d dx= %10.4f dy= %10.4f\n",nx,ny_in,dx,dy);
+//fprintf(stderr,"mag= %.2f median mag= %.2f nslip= %d nhypo= %d\n",mag,mag_med,ns,nh);
+//fprintf(stderr,"nx= %d ny= %d dx= %10.4f dy= %10.4f\n",nx,ny_in,dx,dy);
 
 for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
    {
@@ -883,7 +883,7 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
    for(k=0;k<10*js;k++)
       sval = _sfrand(&seed);
 
-   fprintf(stderr,"js= %d seed= %d ran= %10.6f\n",js,seed,sval);
+   //fprintf(stderr,"js= %d seed= %d ran= %10.6f\n",js,seed,sval);
 
    if(uniformgrid_hypo == 1) /* RWG 20140424 added option for uniform grid of hypocenters */
       {
@@ -1006,8 +1006,9 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
    sum = sum/(float)(nx*(ny_end-ny_str));
    neg_sum = neg_sum/(float)(nx*(ny_end-ny_str));
 
-   if(truncate_zero_slip)
-      fprintf(stderr,"ratio (negative slip)/(positive slip)= %f\n",neg_sum/(sum+neg_sum));
+   if(truncate_zero_slip) {
+      //fprintf(stderr,"ratio (negative slip)/(positive slip)= %f\n",neg_sum/(sum+neg_sum));
+   }
 
    taper_slip_all(cslip,nx,ny_in,&side_taper,&bot_taper,&top_taper);
 
@@ -1032,9 +1033,9 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
    savg = target_savg;
    //fprintf(stderr,"savg=%f\n", savg);
    scale_slip_fftw(psrc,cslip,nx,ny_in,ny_str,&dx,&dy,&dtop,&avgdip,&mom,&vmod,&savg,&smax);
-   fprintf(stderr,"mom= %13.5e avgslip= %.0f maxslip= %.0f\n",mom,savg,smax);
+   //fprintf(stderr,"mom= %13.5e avgslip= %.0f maxslip= %.0f\n",mom,savg,smax);
 
-   fprintf(stderr,"orig_sigma= %f ... ",sigma);
+   //fprintf(stderr,"orig_sigma= %f ... ",sigma);
 
 /* recalculate just to check, plus normalize by savg */
    sigma = 0.0;
@@ -1048,9 +1049,9 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
       }
    sigma = sqrt(sigma/((ny_end-ny_str)*nx))/savg;
 
-   fprintf(stderr,"new_sigma= %f\n",sigma);
+   //fprintf(stderr,"new_sigma= %f\n",sigma);
 
-   fprintf(stderr,"seed=%d\n", seed);
+   //fprintf(stderr,"seed=%d\n", seed);
 
    savg = 0.0;
    snum = 0.0;
@@ -1072,8 +1073,8 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
    if(stfparams.rt_scalefac > 0)
       {
       stfparams.rt_scalefac = snum/sden;
-      fprintf(stderr,"snum=%f, den=%f\n", snum, sden);
-      fprintf(stderr,"rt_scalefac= %f\n",stfparams.rt_scalefac);
+      //fprintf(stderr,"snum=%f, den=%f\n", snum, sden);
+      //fprintf(stderr,"rt_scalefac= %f\n",stfparams.rt_scalefac);
       }
 
 /* now do rake */
@@ -1088,7 +1089,7 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
    kfilt(crake,nx,ny_in,&dkx_rk,&dky_rk,&xl,&yl,&seed,kmodel);
    fft2d_fftw(crake,nx,ny_in,1,&dkx_rk,&dky_rk);
 
-   printf("A: seed = %ld\n", seed);
+   //printf("A: seed = %ld\n", seed);
 
    //for(j=0;j<ny_in*nx;j++)
    //   sort_rake[j] = crake[j].re;
@@ -1133,7 +1134,7 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
 
    ravg = ravg/(float)(nx*ny_in);
 
-   fprintf(stderr,"ravg= %13.5e rmed= %13.5e rmin= %13.5e rmax= %13.5e\n",ravg,rmed,rmin,rmax);
+   //fprintf(stderr,"ravg= %13.5e rmed= %13.5e rmin= %13.5e rmax= %13.5e\n",ravg,rmed,rmin,rmax);
 
    if(rmax-ravg >= ravg-rmin)
       rfac = rand_rake_degs/(rmax-ravg);
@@ -1156,7 +1157,7 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
       stfparams.deep_risetimedep = xhypo;
 /* XXXX */
 
-   printf("B: seed = %ld\n", seed);
+   //printf("B: seed = %ld\n", seed);
 
    /*
    if (js<doslip) {
@@ -1349,7 +1350,7 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
             }
          }
 
-      printf("C: seed = %ld\n", seed);
+      //printf("C: seed = %ld\n", seed);
 
       /* adjust to start at rt=0.0 */
       for(j=0;j<nx*ny_in;j++) {
