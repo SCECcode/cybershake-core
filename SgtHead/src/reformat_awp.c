@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
 	FILE* fp_out;
 	float* sgt_data;
 	size_t bytes_read;
+	size_t tot_bytes_read = 0;
 	int timesteps = atoi(argv[2]);
 	int i;
 	sgt_data = malloc(sizeof(float)*6*timesteps);
@@ -35,6 +36,7 @@ int main(int argc, char** argv) {
 
 	bytes_read = fread(sgt_data, sizeof(float), 6*timesteps, fp_in);
 	while (bytes_read==6*timesteps) {
+		tot_bytes_read += bytes_read;
 		if (z_comp==1) {
 			//double everything and negate for flipped source
 			for (i=0; i<timesteps*6; i++) {
