@@ -254,6 +254,7 @@ ptr = (char *) realloc (ptr,len);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory reallocation error\n");
+   fprintf(stderr,"Tried to reallocate %ld bytes.\n", len);
    exit(-1);
    }
 
@@ -269,6 +270,7 @@ ptr = (char *) malloc (len);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory allocation error\n");
+   fprintf(stderr,"Tried to allocate %ld bytes.\n", len);
    exit(-1);
    }
  
