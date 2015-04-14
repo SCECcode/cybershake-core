@@ -46,6 +46,10 @@ log_root = config.getProperty("LOG_PATH")
 mpi_cmd = config.getProperty("MPI_CMD")
 job_id = config.getJobID()
 
+#set up for striping if awp
+if format=="awp":
+	os.system("/sw/user/scripts/lfs setstripe -c 100 -s 5m awp.%s.media" % site)
+
 command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format)
 print command
 exitcode = os.system(command)
