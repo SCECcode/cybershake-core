@@ -11,7 +11,7 @@ import sys
 import os
 import errno
 
-LFS_PATH = "/opt/cray/lustre-cray_gem_s/1.8.6_2.6.32.59_0.7.1_1.0402.7496.5.2-1.0402.47176.8.11.gem/bin/lfs"
+LFS_PATH = "/sw/user/scripts/lfs"
 
 print "Adding config to path."
 sys.stdout.flush()
@@ -87,8 +87,8 @@ for c in awp_comps:
 	#Set striping for output directory
 	exitcode = os.system("%s setstripe -c 160 -s 5m comp_%s/output_sgt" % (LFS_PATH, c))
 	if exitcode!=0:
-                print "Error striping with command %s setstripe -c 160 -s 5m comp_%s/output_sgt, exiting." % (LFS_PATH, c)
-                sys.exit(exitcode)
+		print "Error striping with command %s setstripe -c 160 -s 5m comp_%s/output_sgt, exiting." % (LFS_PATH, c)
+		sys.exit(exitcode)
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
