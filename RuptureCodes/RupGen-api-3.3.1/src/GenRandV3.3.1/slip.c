@@ -597,10 +597,10 @@ normf = (*d1)*(*d2);
 fftwf_plan plan;
 fftwf_complex *arr = _check_malloc(sizeof(fftwf_complex)*n1);
 if (isgn==-1) {
-	printf("fwd plan\n");
+	//printf("fwd plan\n");
 	plan = fftwf_plan_dft_1d(n1, arr, arr, FFTW_FORWARD, FFTW_ESTIMATE);
 } else if (isgn==1){
-	printf("back plan\n");
+	//printf("back plan\n");
 	plan = fftwf_plan_dft_1d(n1, arr, arr, FFTW_BACKWARD, FFTW_ESTIMATE);
 }
 
