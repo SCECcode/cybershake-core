@@ -43,6 +43,6 @@ fp_out.close()
 
 #Make sure both cordfiles have the same number of points
 if num_pts_in!=len(p_list):
-	print "Error: input file %s has %d points, but %d points were written to output file %s." % (sys.argv[1], num_pts_in, sys.argv[2], len(p_list))
+	print "Error: input file %s has %d points, but %d points were written to output file %s." % (sys.argv[1], num_pts_in, len(p_list), sys.argv[2])
 	sys.exit(2)
 
