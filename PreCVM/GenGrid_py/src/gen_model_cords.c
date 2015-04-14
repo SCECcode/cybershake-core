@@ -52,7 +52,7 @@ void setcoef(struct fdcf *,struct fdcf *,float *,int);
 void gelim_double(double *,int,double *);
 void getlens(FILE *,char *,float *,float *,float *,float *,int *);
 
-main(int ac,char **av)
+int main(int ac,char **av)
 {
 struct gridparam gp;
 char gridfile[256], gridout[256];
@@ -386,7 +386,7 @@ r = atan((1.0 - (1.0/FLAT_CONST))*tan(x));
 return(r);
 }
 
-set_g2X(g2,fc)
+void set_g2X(g2,fc)
 float *g2, *fc;
 {
 float f;
@@ -395,7 +395,7 @@ f = (1.0)/(*fc);
 *g2 = ((2.0)*f - f*f)/(((1.0) - f)*((1.0) - f));
 }
 
-latlon2kmX(arg,latkm,lonkm,rc,g2)
+void latlon2kmX(arg,latkm,lonkm,rc,g2)
 float *arg, *latkm, *lonkm, *rc, *g2;
 {
 float cosA, sinA, g2s2, den;
