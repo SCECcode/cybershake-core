@@ -1,5 +1,5 @@
-void *check_malloc(int);
-void *check_realloc(void *, int);
+void *check_malloc(size_t);
+void *check_realloc(void *, size_t);
 float *read_wccseis(char *, struct statdata *, float *, int);
 void write_wccseis(char *, struct statdata *, float *, int);
 FILE *fopfile(char*, char*);
