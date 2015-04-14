@@ -247,7 +247,7 @@ if ((temp = write(fd, pntr, length)) < length)
 return(temp);
 }
 
-void *check_realloc(void *ptr,int len)
+void *check_realloc(void *ptr,size_t len)
 {
 ptr = (char *) realloc (ptr,len);
 
@@ -260,7 +260,7 @@ if(ptr == NULL)
 return(ptr);
 }
 
-void *check_malloc(int len)
+void *check_malloc(size_t len)
 {
 char *ptr;
 
