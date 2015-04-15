@@ -71,7 +71,7 @@ int main(int argc,char **argv)
     int   NBGX, NEDX, NSKPX, NBGY, NEDY, NSKPY, NBGZ, NEDZ, NSKPZ;
     int   IGREEN;
     int   nxt, nyt, nzt;
-    MPI_Offset displacement, displacement_sgt;
+    MPI_Offset displacement, *displacement_sgt;
     float FL, FH, FP;
     char  INSRC[50], INVEL[50], OUT[50], CHKFILE[50];
     double GFLOPS = 1.0;
@@ -90,8 +90,6 @@ int main(int argc,char **argv)
     float vse[2], vpe[2], dde[2];
     FILE *fchk;
 //  SGT CPU Define
-    //Grid3D sgt1=NULL, sgt2=NULL, sgt3=NULL, sgt4=NULL, sgt5=NULL, sgt6=NULL;
-//    Grid1D sgt1=NULL, sgt2=NULL, sgt3=NULL, sgt4=NULL, sgt5=NULL, sgt6=NULL;
     int SGT_BLOCK_SIZE, SGT_NUMBLOCKS;
     Grid3D sg1 =NULL, sg2 =NULL; 
     float *sgtBuf;
@@ -101,10 +99,14 @@ int main(int argc,char **argv)
     int *sgt_sta;
     int *sgt_sta_indices;
     int sgtproc;
+    int sgtmaster;  // master rank among SGT writers
     float *tmp_sgtBuf;
-    int SGT_MAX_WS;
-    int SGT_LAST_WS;
+    int sgt_numstaPerWrite;
+    int sgt_numstaLastWrite;
     int sgt_max_numsta;
+    int sgt_nfiletypes;
+    MPI_Datatype *sgt_filetypes;
+    int sgt_max_nftypes;
 //  GPU variables
     long int num_bytes;
     float* d_d1;
@@ -149,18 +151,10 @@ int main(int argc,char **argv)
 //  SGT GPU Define
     float* d_sg1;
     float* d_sg2;
-/*
-    float* d_sgt1;
-    float* d_sgt2;
-    float* d_sgt3;
-    float* d_sgt4;
-    float* d_sgt5;
-    float* d_sgt6;
-*/
     float* d_sgtBuf;
     int*   d_sgt_sta;
 //  end of GPU variables
-    int i,j,k,idx,idy,idz;
+    int i,j,k,idx,idy,idz,ind;
     long int idtmp;
     long int tmpInd;
     const int maxdim = 3;
@@ -169,6 +163,14 @@ int main(int argc,char **argv)
     int npsrc;
     long int nt, cur_step, source_step;
     double time_un = 0.0;
+    // time_src and time_mesh measures the time spent 
+    // in source and mesh reading
+    double time_src = 0.0, time_mesh = 0.0;
+    double time_inisgt = 0.0;
+    // time_fileio and time_gpuio measures the time spent
+    // in file system IO and gpu memory copying for IO
+    double time_fileio = 0.0, time_gpuio = 0.0;
+    double time_gpuio_tmp = 0.0;
 //  MPI+CUDA variables
     cudaError_t cerr;
     cudaStream_t stream_1, stream_2, stream_i;
@@ -180,9 +182,7 @@ int main(int argc,char **argv)
     MPI_Request  request_x[4], request_y[4];
     MPI_Status   status_x[4],  status_y[4], filestatus;
     MPI_Datatype filetype;
-    MPI_Datatype filetype_sgt, filetype_sgt_last;
     MPI_File fh;
-    int   sgt_output_ind = 0, sgt_output_cnt = 0;
     int   msg_v_size_x, msg_v_size_y, count_x = 0, count_y = 0;
     int   xls, xre, xvs, xve, xss1, xse1, xss2, xse2, xss3, xse3;
     int   yfs, yfe, ybs, ybe, yls,  yre;
@@ -197,7 +197,6 @@ int main(int argc,char **argv)
 //  variable definition ends    
 
     int tmpSize;
-    int tmpSizeLast;
     int WRITE_STEP;
     int NTISKP;
     int NTISKP_SGT;
@@ -389,6 +388,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     ybe  = nyt+4*loop+1;   
 
     if(IGREEN != -1){
+      time_inisgt -= gethrtime();
       if(rank==0) printf("Before inisgt\n");
       err = inisgt(rank, INSGT, &sgt_numsta_all, &sgt_numsta, &sgt_max_numsta,
           &sgt_sta, &sgt_sta_indices, &sgtproc, MCW, NZ, nxt, nyt, nzt, coord);
@@ -397,19 +397,21 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
       }
       err = MPI_Comm_split(MCW, sgt_numsta>0, rank, &MC_SGT);
       if(rank==sgtproc){
-        // compute SGT_MAX_WS!
+        MPI_Allreduce(&rank, &sgtmaster, 1, MPI_INT, MPI_MIN, MC_SGT);
         int nIntBits = sizeof(int)*8-1;
         int maxInt = pow(2,nIntBits);
-        if((long long int)sizeof(float)*sgt_max_numsta*6*WRITE_STEP < maxInt){
-          SGT_MAX_WS = WRITE_STEP;
-          SGT_LAST_WS = WRITE_STEP;
+        if((long long int)sizeof(float)*sgt_numsta*6*WRITE_STEP < maxInt){
+          sgt_nfiletypes = 1;
+          sgt_numstaPerWrite = sgt_numsta;
+          sgt_numstaLastWrite = sgt_numsta;
         }
         else{
-          SGT_MAX_WS = (int)(maxInt/(double)sgt_max_numsta/(double)sizeof(float)/(double)6)-1;
-          SGT_LAST_WS = WRITE_STEP%SGT_MAX_WS;
-          if(!SGT_LAST_WS) SGT_LAST_WS = SGT_MAX_WS;
+          sgt_nfiletypes = (int)((double)sgt_numsta*(double)sizeof(float)*(double)6*(double)WRITE_STEP/maxInt)+1;
+          sgt_numstaPerWrite = (int)(maxInt/(double)sizeof(float)/(double)6/(double)WRITE_STEP);
+          sgt_numstaLastWrite = (int)(sgt_numsta - (long long int)sgt_numstaPerWrite*(sgt_nfiletypes-1));
         }
-        sgt_output_cnt = (WRITE_STEP-1)/SGT_MAX_WS+1;
+        MPI_Allreduce(&sgt_nfiletypes, &sgt_max_nftypes, 1, MPI_INT, MPI_MAX, MC_SGT);
+        sgt_filetypes = (MPI_Datatype*)malloc(sizeof(MPI_Datatype)*sgt_nfiletypes);
         num_bytes = sizeof(int)*3*sgt_numsta;
         cudaMalloc((void**)&d_sgt_sta, num_bytes);
         cudaMemcpy(d_sgt_sta, sgt_sta, num_bytes, cudaMemcpyHostToDevice);
@@ -423,46 +425,58 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
           SGT_BLOCK_SIZE = BLOCK_SIZE_Z;
           SGT_NUMBLOCKS = (sgt_numsta-1)/SGT_BLOCK_SIZE+1;
         }
-        printf("sgtrank=%d NUMBLOCKS=%d, BLOCKSIZE=%d, max-writestep=%d, last-writestep=%d, n-writes=%d\n",
+        printf("sgtrank=%d NUMBLOCKS=%d, BLOCKSIZE=%d, n-filetypes=%d, numstaPerWrite=%d, numstaLastWrite=%d\n",
             rank,SGT_NUMBLOCKS,SGT_BLOCK_SIZE,
-            SGT_MAX_WS, SGT_LAST_WS, sgt_output_cnt);
+            sgt_nfiletypes, sgt_numstaPerWrite, sgt_numstaLastWrite);
+        displacement_sgt = (MPI_Offset*)malloc(sizeof(MPI_Offset)*sgt_nfiletypes);
         // FAST-T
-        err = MPI_Type_contiguous(SGT_MAX_WS, MPI_FLOAT, &filetype_sgt);
-        MPI_Type_commit(&filetype_sgt);
-        err = MPI_Type_hvector(6, 1, WRITE_STEP*sizeof(float), filetype_sgt, &filetype_sgt);
-        MPI_Type_commit(&filetype_sgt);
-        err = MPI_Type_contiguous(SGT_LAST_WS, MPI_FLOAT, &filetype_sgt_last);
-        MPI_Type_commit(&filetype_sgt_last);
-        err = MPI_Type_hvector(6, 1, WRITE_STEP*sizeof(float), filetype_sgt_last, &filetype_sgt_last);
-        MPI_Type_commit(&filetype_sgt_last);
-        int *ones_sgt = (int*)malloc(sizeof(int)*sgt_numsta);
+        for(i=0;i<sgt_nfiletypes;i++){
+          err = MPI_Type_contiguous(WRITE_STEP*6, MPI_FLOAT, &sgt_filetypes[i]);
+          MPI_Type_commit(&sgt_filetypes[i]);
+          displacement_sgt[i] = 0;
+        }
+        int *ones_sgt = (int*)malloc(sizeof(int)*sgt_numstaPerWrite);
         MPI_Aint *dispArray_sgt = (MPI_Aint*)malloc(sizeof(MPI_Aint)*sgt_numsta);
-        displacement_sgt = 0;
         for(i=0;i<sgt_numsta;i++){
+          ind = i/sgt_numstaPerWrite;
           // FAST-T
-          dispArray_sgt[i] = (long long int)sizeof(float)*6*WRITE_STEP*sgt_sta_indices[i] - displacement_sgt;
-          if(i==0){
-            displacement_sgt = dispArray_sgt[0];
-            dispArray_sgt[0] = 0;
+          dispArray_sgt[i] = (long long int)sizeof(float)*6*WRITE_STEP*sgt_sta_indices[i] - displacement_sgt[ind];
+          if(i%sgt_numstaPerWrite==0){
+            displacement_sgt[ind] = dispArray_sgt[i];
+            dispArray_sgt[i] = 0;
           }
-          ones_sgt[i] = 1;
+          if(i<sgt_numstaPerWrite)
+            ones_sgt[i] = 1;
         }
         /*printf("sgt: rank=%d displacements are set: index:%d,%d,%d, dispArray:%d,%d,%d, displacement:%ld\n",
             rank,sgt_sta_indices[0],sgt_sta_indices[1],sgt_sta_indices[2],
             dispArray_sgt[0],dispArray_sgt[1],dispArray_sgt[2],displacement_sgt);*/
-        err = MPI_Type_create_hindexed(sgt_numsta, ones_sgt, dispArray_sgt, filetype_sgt, &filetype_sgt);
-        MPI_Type_commit(&filetype_sgt);
-        err = MPI_Type_create_hindexed(sgt_numsta, ones_sgt, dispArray_sgt, filetype_sgt_last, &filetype_sgt_last);
-        MPI_Type_commit(&filetype_sgt_last);
-        MPI_Type_size(filetype_sgt, &tmpSize);
-        MPI_Type_size(filetype_sgt_last, &tmpSizeLast);
-        printf("SGT: rank=%d disp=%lld filetype_sgt size (supposedly=sgt_numsta*6*SGTMAXWS*4=%d)=%d\tfiletype_sgt_last size (supposedly=%d)=%d\n", 
-            rank,displacement_sgt,sgt_numsta*6*SGT_MAX_WS*4,tmpSize,sgt_numsta*6*SGT_LAST_WS*4,tmpSizeLast);
+        tmpInd = 0;
+        for(i=0;i<sgt_nfiletypes;i++){
+          if(i==sgt_nfiletypes-1)
+            err = MPI_Type_create_hindexed(sgt_numstaLastWrite, ones_sgt, &dispArray_sgt[tmpInd], sgt_filetypes[i], &sgt_filetypes[i]);
+          else
+            err = MPI_Type_create_hindexed(sgt_numstaPerWrite, ones_sgt, &dispArray_sgt[tmpInd], sgt_filetypes[i], &sgt_filetypes[i]);
+          MPI_Type_commit(&sgt_filetypes[i]);
+          tmpInd += sgt_numstaPerWrite;
+        }
+        MPI_Type_size(sgt_filetypes[0], &tmpSize);
+        printf("SGT: rank=%d disp=%lld filetype_sgt size (supposedly=sgt_numstaPerWrite*6*WRITE_STEP*4=%d)=%d\n", 
+            rank,displacement_sgt[0],sgt_numstaPerWrite*6*WRITE_STEP*4,tmpSize);
+        if(sgt_nfiletypes>1){
+          MPI_Type_size(sgt_filetypes[sgt_nfiletypes-1], &tmpSize);
+          printf("SGT: rank=%d disp=%lld filetype_sgt_last size (supposedly=sgt_numstaLastWrite*6*WRITE_STEP*4=%d)=%d\n", 
+            rank,displacement_sgt[0],sgt_numstaLastWrite*6*WRITE_STEP*4,tmpSize);
+        }
         free(ones_sgt);
         free(dispArray_sgt);
       }
+      time_inisgt += gethrtime();
+      if(rank == sgtmaster)
+        printf("SGT is initialized. Time elapsed (sec): %lf\n", time_inisgt);
     }
 
+    time_src -= gethrtime();
     if(rank==0) printf("Before inisource\n");
     err = inisource(rank,   IFAULT, NSRC,  READ_STEP, NST,   &srcproc, NZ, MCW, nxt, nyt, nzt, coord, maxdim, &npsrc,
                     &tpsrc, &taxx,  &tayy, &tazz,     &taxz, &tayz,    &taxy, INSRC);
@@ -471,7 +485,8 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
        printf("source initialization failed\n");
        return -1;
     }
-    if(rank==0) printf("After inisource\n");
+    time_src += gethrtime();
+    if(rank==0) printf("After inisource. Time elapsed (seconds): %lf\n", time_src);
 
     if(rank==srcproc)
     {
@@ -505,11 +520,13 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
        qs   = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
     }
 
+    time_mesh -= gethrtime();
     if(rank==0) printf("Before inimesh\n");
     inimesh(MEDIASTART, d1, mu, lam, qp, qs, &taumax, &taumin, NVAR, FP, FL, FH, 
             nxt, nyt, nzt, PX, PY, NX, NY, NZ, coord, MCW, IDYNA, NVE, SoCalQ, INVEL,
             vse, vpe, dde);
-    if(rank==0) printf("After inimesh\n");
+    time_mesh += gethrtime();
+    if(rank==0) printf("After inimesh. Time elapsed (seconds): %lf\n", time_mesh);
     if(rank==0)
       writeCHK(CHKFILE, NTISKP, DT, DH, nxt, nyt, nzt,
         nt, ARBC, NPC, NVE, FL, FH, FP, vse, vpe, dde);
@@ -624,15 +641,6 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     {
         sg1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
         sg2  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-/*
-//        sgt1 = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
-        sgt1 = Alloc1D(sgt_numsta*6);
-        sgt2 = Alloc1D(sgt_numsta*6);
-        sgt3 = Alloc1D(sgt_numsta*6);
-        sgt4 = Alloc1D(sgt_numsta*6);
-        sgt5 = Alloc1D(sgt_numsta*6);
-        sgt6 = Alloc1D(sgt_numsta*6);
-*/
         for(i=2+4*loop;i<nxt+2+4*loop;i++)
           for(j=2+4*loop;j<nyt+2+4*loop;j++)
             for(k=align;k<nzt+align;k++)
@@ -646,21 +654,6 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
         cudaMemcpy(d_sg1,&sg1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
         cudaMalloc((void**)&d_sg2, num_bytes);
         cudaMemcpy(d_sg2,&sg2[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-/*
-        num_bytes = sizeof(float)*sgt_numsta*6;
-        cudaMalloc((void**)&d_sgt1, num_bytes);
-        cudaMemcpy(d_sgt1,&sgt1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-        cudaMalloc((void**)&d_sgt2, num_bytes);
-        cudaMemcpy(d_sgt2,&sgt2[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-        cudaMalloc((void**)&d_sgt3, num_bytes);
-        cudaMemcpy(d_sgt3,&sgt3[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-        cudaMalloc((void**)&d_sgt4, num_bytes);
-        cudaMemcpy(d_sgt4,&sgt4[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-        cudaMalloc((void**)&d_sgt5, num_bytes);
-        cudaMemcpy(d_sgt5,&sgt5[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-        cudaMalloc((void**)&d_sgt6, num_bytes);
-        cudaMemcpy(d_sgt6,&sgt6[0][0][0],num_bytes,cudaMemcpyHostToDevice);
-*/
     }
 
     source_step = 1;
@@ -716,7 +709,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     Bufz  = Alloc1D(rec_nxt*rec_nyt*rec_nzt*WRITE_STEP);
     if(IGREEN != -1){
       cudaMallocHost((void**)&tmp_sgtBuf,sgt_numsta*6*sizeof(float));
-      cudaMallocHost((void**)&sgtBuf,sgt_numsta*6*sizeof(float)*SGT_MAX_WS);
+      cudaMallocHost((void**)&sgtBuf,sgt_numsta*6*sizeof(float)*WRITE_STEP);
     }
     num_bytes = sizeof(float)*3*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
     cudaMallocHost((void**)&SL_vel, num_bytes);
@@ -790,12 +783,12 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
          dstrqc_H(d_xx, d_yy, d_zz, d_xy,    d_xz,    d_yz,    d_r1, d_r2, d_r3,     d_r4,     d_r5, d_r6,     d_u1, d_v1, d_w1, d_lam,
                   d_mu, d_qp, d_qs, d_dcrjx, d_dcrjy, d_dcrjz, nyt,  nzt,  stream_i, d_lam_mu, NX,   coord[0], coord[1],   xls,  xre,
                   yls,  yre, rank);
-int i_,j_,k_,pos;
          //update source input
          if(rank==srcproc && cur_step<NST)
          {
             ++source_step;
 /*            //printf("call addsrc_H rank=%d cur_step=%ld\n",rank,cur_step);
+int i_,j_,k_,pos;
     i_=2+4*loop;
     j_=2+4*loop;
     k_=align;
@@ -818,42 +811,52 @@ printf("xx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%f\naxx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%
             cerr = cudaGetLastError();
             if(cerr!=cudaSuccess) printf("CUDA ERROR! rank=%d after threadSync: %s\n",rank,cudaGetErrorString(cerr));
             num_bytes = sizeof(float)*sgt_numsta*6;
-            idtmp = (cur_step/NTISKP_SGT-1)%SGT_MAX_WS;
+            idtmp = (cur_step/NTISKP_SGT-1)%WRITE_STEP;
             // FAST-T - 2 lines
             tmpInd = idtmp;
+            if(rank == sgtmaster) time_gpuio_tmp = -gethrtime();
             cerr = cudaMemcpy(tmp_sgtBuf,d_sgtBuf,num_bytes,cudaMemcpyDeviceToHost);
             if(cerr!=cudaSuccess) printf("CUDA ERROR! rank=%d copying d_sgtBuf to sgtBuf: %s\n",rank,cudaGetErrorString(cerr));
             // FAST-T
-            int sgt_varOffset;
-            if(sgt_output_ind+1 < sgt_output_cnt) sgt_varOffset = SGT_MAX_WS;
-            else  sgt_varOffset = SGT_LAST_WS;
             for(i=0;i<sgt_numsta;i++){
               for(j=0;j<6;j++){
                 sgtBuf[tmpInd] = tmp_sgtBuf[i*6+j];
-                tmpInd += sgt_varOffset;
+                tmpInd += WRITE_STEP;
               }
             }
+            if(rank == sgtmaster){
+              time_gpuio_tmp += gethrtime();
+              time_gpuio += time_gpuio_tmp;
+              printf("Output data buffered in (sec): %lf\n",time_gpuio_tmp);
+            }
             // FAST-T end
-            if((sgt_output_ind+1<sgt_output_cnt && (cur_step/NTISKP_SGT)%SGT_MAX_WS == 0)
-                  || (sgt_output_ind+1==sgt_output_cnt && (cur_step/NTISKP_SGT)%WRITE_STEP == 0)){
-              if(!sgt_output_ind)
-                sprintf(filename, "%s%07ld", filenamebase_sgt, cur_step-SGT_MAX_WS+WRITE_STEP);
-              //printf("SGT: %d) ind=%d disp=%lld ftypeSize=%d\n",
-              //  rank,sgt_output_ind,displacement_sgt,tmpSize);
+            if((cur_step/NTISKP_SGT)%WRITE_STEP == 0){
+              sprintf(filename, "%s%07ld", filenamebase_sgt, cur_step);
+              time_fileio = -gethrtime();
+              tmpInd = 0;
               err = MPI_File_open(MC_SGT,filename,MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
-              if(sgt_output_ind+1 < sgt_output_cnt){
-                err = MPI_File_set_view(fh, displacement_sgt, MPI_FLOAT, filetype_sgt, "native", MPI_INFO_NULL);
-                err = MPI_File_write_all(fh, sgtBuf, sgt_numsta*6*SGT_MAX_WS, MPI_FLOAT, &filestatus);
-                displacement_sgt += (long long int)sizeof(float)*SGT_MAX_WS;
-                sgt_output_ind++;
-              }
-              else{
-                err = MPI_File_set_view(fh, displacement_sgt, MPI_FLOAT, filetype_sgt_last, "native", MPI_INFO_NULL);
-                err = MPI_File_write_all(fh, sgtBuf, sgt_numsta*6*SGT_LAST_WS, MPI_FLOAT, &filestatus);
-                displacement_sgt += (long long int)sizeof(float)*SGT_LAST_WS;
-                sgt_output_ind = 0;
+              for(i=0;i<sgt_max_nftypes;i++){
+                printf("SGT rank=%d (%d/%d) tmpInd=%ld\n",rank,i,sgt_nfiletypes,tmpInd);
+                if(i<sgt_nfiletypes){
+                  err = MPI_File_set_view(fh, displacement_sgt[i], MPI_FLOAT, sgt_filetypes[i], "native", MPI_INFO_NULL);
+                  printf("SGT rank=%d (%d/%d) File_set_view: disp=%lld\n",rank,i,sgt_nfiletypes,displacement_sgt[i]);
+                  if(i == sgt_nfiletypes-1)
+                    err = MPI_File_write(fh, &sgtBuf[tmpInd], sgt_numstaLastWrite*6*WRITE_STEP, MPI_FLOAT, &filestatus);
+                  else
+                    err = MPI_File_write(fh, &sgtBuf[tmpInd], sgt_numstaPerWrite*6*WRITE_STEP, MPI_FLOAT, &filestatus);
+                  printf("SGT rank=%d (%d/%d) File_write\n",rank,i,sgt_nfiletypes);
+                  tmpInd += sgt_numstaPerWrite*6*WRITE_STEP;
+                }
+                else{
+                  err = MPI_File_set_view(fh, rank*sizeof(float), MPI_FLOAT, MPI_FLOAT, "native", MPI_INFO_NULL);
+                  //printf("SGT rank=%d (%d/%d) File_set_view: disp=%lld\n",rank,i,sgt_nfiletypes,displacement_sgt[i]);
+                  //err = MPI_File_write(fh, &sgtBuf[0], 0, MPI_FLOAT, &filestatus);
+                  printf("SGT rank=%d (%d/%d) No file_write\n",rank,i,sgt_nfiletypes);
+                }
               }
               err = MPI_File_close(&fh);
+              time_fileio += gethrtime();
+              printf("SGT rank=%d Output data written in (sec): %lf\n",rank,time_fileio);
             }
          }
          cudaThreadSynchronize();
@@ -1068,13 +1071,21 @@ printf("xx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%f\naxx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%
     GFLOPS  = 1.0;
     GFLOPS  = GFLOPS*307.0*(xre - xls)*(yre-yls)*nzt;
     GFLOPS  = GFLOPS/(1000*1000*1000);
-    time_un = time_un/(cur_step-READ_STEP);
+    //time_un = time_un/(cur_step-READ_STEP);
+    time_un = time_un/cur_step;
     GFLOPS  = GFLOPS/time_un;
     MPI_Allreduce( &GFLOPS, &GFLOPS_SUM, 1, MPI_DOUBLE, MPI_SUM, MCW );
+    double time_src_max;
+    MPI_Allreduce( &time_src, &time_src_max, 1, MPI_DOUBLE, MPI_MAX, MCW);
+    double time_fileio_max;
+    MPI_Allreduce( &time_fileio, &time_fileio_max, 1, MPI_DOUBLE, MPI_MAX, MCW);
     if(rank==0)
     {
         printf("GPU benchmark size NX=%d, NY=%d, NZ=%d, ReadStep=%d\n", NX, NY, NZ, READ_STEP);
-    	printf("GPU computing flops=%1.18f GFLOPS, time = %1.18f secs per timestep\n", GFLOPS_SUM, time_un);
+    	  printf("GPU computing flops=%1.18f GFLOPS, time = %1.18f secs per timestep\n", GFLOPS_SUM, time_un);
+        printf("GPU total I/O buffering time (memcpy+buffer)=%lf secs\n", time_gpuio);
+        printf("GPU maximum I/O time (file system)=%lf secs\n", time_fileio_max);
+        printf("GPU source reading time=%lf secs\nGPU mesh reading time=%lf secs\n", time_src_max, time_mesh);
     }	
 //  Main Loop Ends
  
