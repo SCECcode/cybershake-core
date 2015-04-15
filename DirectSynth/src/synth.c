@@ -166,26 +166,10 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 	sprintf(seis_filename, "Seismogram_%s_%d_%d_%d.grm", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
 
 	if (debug) write_log("Starting jbsim3d_synth.");
-	if (my_global_id==240 && debug) {
-		char buf[256];
-		sprintf(buf, "Before jbsim3d, seis pointer = %ld", seis);
-		write_log(buf);
-	}
 	float** original_seis = jbsim3d_synth(&seis, &header, stat, slon, slat, ntout, seis_filename,
 			t_info->task->rupture_filename, t_info->sgtfilepar, sgtparms, *(t_info->sgtmast), t_info->sgtindx, geop, indx_master, nm, sgts_by_handler,
 			num_sgts_by_handler, num_sgt_handlers, num_rup_vars, rup_vars, my_id);
 
-	if (my_global_id==240 && debug) {
-		char buf[50000];
-		sprintf(buf, "After jbsim3d, seis pointer = %ld, original_seis = %ld.\n", seis, original_seis);
-		int i;
-		for (i=0; i<num_rup_vars; i++) {
-			char tmp_buf[256];
-			sprintf(tmp_buf, "seis_ptr[%d] = %ld, original_seis[%d] = %ld.\n", i, seis[i], i, original_seis[i]);
-			strcat(buf, tmp_buf);
-		}
-		write_log(buf);
-	}
 	for(i=0; i<num_sgt_handlers; i++) {
 		free(sgts_by_handler[i]);
 	}
