@@ -10,18 +10,20 @@ ROTD_OBJS = rotd/calcrsp.o rotd/fftsub.o rotd/ft_th.o rotd/sort.o rotd/spline.o 
 
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
+BASE_DIR = /projects/sciteam/jmz/CyberShake
 GETPAR = ../../Getpar/getpar
-LIBCFU = /work/00940/tera3d/CyberShake/utils/libcfu_0.03
-LDLIBS = -L/work/00940/tera3d/CyberShake/software/RuptureCodes/RupGen-api-3.3.1/lib -lrupgen -L${GETPAR}/lib -lget -L/work/00940/tera3d/CyberShake/utils/libmemcached/lib -lmemcached -L${LIBCFU}/lib -lcfu -lm 
-IFLAGS = -I/work/00940/tera3d/CyberShake/software/RuptureCodes/RupGen-api-3.3.1/include -I${GETPAR}/include -I/work/00940/tera3d/CyberShake/utils/libmemcached/include -I${LIBCFU}/include
+LIBCFU = ${BASE_DIR}/utils/libcfu_0.03
+LDLIBS = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-3.3.1/lib -lrupgen -L${GETPAR}/lib -lget -L${BASE_DIR}/utils/libmemcached_1.0.18/lib -lmemcached -L${LIBCFU}/lib -lcfu -lm 
+IFLAGS = -I${BASE_DIR}/software/RuptureCodes/RupGen-api-3.3.1/include -I${GETPAR}/include -I${BASE_DIR}/utils/libmemcached_1.0.18/include -I${LIBCFU}/include
 
 UFLAGS = -O3 -g -Wuninitialized
 
 CFLAGS = ${UFLAGS} ${IFLAGS}
 FFLAGS = ${UFLAGS} -ffixed-line-length-132
+#FFLAGS = ${UFLAGS}
 
-CC = mpicc
-FC = mpif90
+CC = cc
+FC = ftn
 
 all: $(TARGETS)
 	for TARGET in $(TARGETS); do \
