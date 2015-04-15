@@ -491,17 +491,6 @@ free(stf);
 
 *seis_return = seis;
 
-if (my_global_id==240 && debug) {
-	char buf[50000];
-	sprintf(buf, "seis = %ld\n", seis);
-	for (i=0; i<num_rup_vars; i++) {
-		char tmp_buf[256];
-		sprintf(tmp_buf, "seis[%d] = %ld\n", i, seis[i]);
-		strcat(buf, tmp_buf);
-	}
-	write_log(buf);
-}
-
 //Accumulate data for writing in single buffer
 char* writing_buffer = check_malloc((sizeof(struct seisheader) + sizeof(float)*3*ntout)*num_rup_vars);
 int entry_size = 0;
@@ -546,6 +535,7 @@ for (i=0; i<num_rup_vars; i++) {
 	header->rup_var_id = rup_vars[i].rup_var_id;
 	memcpy(writing_buffer+(sizeof(struct seisheader)+entry_size)*i, header, sizeof(struct seisheader));
 	memcpy(writing_buffer+(sizeof(struct seisheader)+entry_size)*i + sizeof(struct seisheader), seis[i]+offset, entry_size);
+	(*seis_return)[i] = seis[i]+offset;
 	if (debug) {
 		char buf[256];
 		sprintf(buf, "Copying %d bytes from offset %d to offset %d", entry_size, offset, (sizeof(struct seisheader)+entry_size)*i);
