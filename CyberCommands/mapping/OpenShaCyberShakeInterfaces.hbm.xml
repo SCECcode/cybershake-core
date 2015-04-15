@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.OpenShaCyberShakeInterfaces" table="OpenSHA_CyberShake_Interfaces" catalog="CyberShake">
+        <comment></comment>
+        <composite-id name="id" class="mapping.OpenShaCyberShakeInterfacesId">
+            <key-property name="interfaceId" type="int">
+                <column name="Interface_ID" />
+            </key-property>
+            <key-property name="interfaceMajorVersion" type="int">
+                <column name="Interface_Major_Version" />
+            </key-property>
+            <key-property name="interfaceMinorVersion" type="int">
+                <column name="Interface_Minor_Version" />
+            </key-property>
+            <key-property name="interfaceBugfixVersion" type="int">
+                <column name="Interface_Bugfix_Version" />
+            </key-property>
+        </composite-id>
+    </class>
+</hibernate-mapping>
