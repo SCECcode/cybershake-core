@@ -230,9 +230,9 @@ xlrnd=10*int((xlen/10.0) + 0.5)
 ylrnd=10*int((ylen/10.0) + 0.5)
 
 if gpu:
-        #Round up to the nearest multiple of 4 km so that the # of grid points will be a multiple of 20
+        #Round X to the nearest multiple of 8 km, Y to 4 km, so that the # of grid points will be a multiple of 80 in X and 40 in Y (for 1 Hz)
         print "Old lengths: %d, %d" % (xlrnd, ylrnd)
-        xlrnd += (-1*xlrnd) % 4
+        xlrnd += (-1*xlrnd) % 8
         ylrnd += (-1*ylrnd) % 4
         print "New lengths: %d, %d" % (xlrnd, ylrnd)
 
