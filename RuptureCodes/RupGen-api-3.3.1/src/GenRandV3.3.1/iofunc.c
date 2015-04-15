@@ -214,6 +214,7 @@ void _mc_add_file(char* filename, char** file_buffer, memcached_st* mst) {
                 if (ret!=MEMCACHED_SUCCESS) {
                 	printf("Caching of %s failed.\n", file_key);
                         printf("%s\n", memcached_strerror(mst, ret));
+			printf("value length: %d bytes\n", strlen(buffer));
                 }
                 i++;
                 memset(buffer, '\0', ONE_MB);
