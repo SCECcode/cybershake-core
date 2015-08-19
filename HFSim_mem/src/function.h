@@ -42,5 +42,5 @@ void read_velmodel(char *,struct velmodel *);
 void sum_srf(struct standrupformat *,struct standrupformat *,struct standrupformat *,float *);
 void join_srf(struct standrupformat *,struct standrupformat *,struct standrupformat *);
 
-void srf2stoch(char* rup_geom_file, int slip_id, int hypo_id, float dx, float dy, int inbin, float avgstk, struct slipfile* sfile);
-void hfsim(char* stat, float slon, float slat, char* local_vmod, char* output, float vs30, float tlen, float dt, float modelrot, struct slipfile* sfile);
+void srf2stoch(char* rup_geom_file, int slip_id, int hypo_id, char* srf_file, float dx, float dy, int inbin, float avgstk, struct slipfile* sfile, float dt);
+void hfsim(char* stat, float slon, float slat, char* local_vmod, char* output, float vs30, float tlen, float dt, float modelrot, struct slipfile* sfile, int do_site_response);
