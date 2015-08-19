@@ -6,7 +6,7 @@
 #define         RPERD           0.017453293
 #define         DPERR           57.29577951
 
-void srf2stoch(char* rup_geom_file, int slip_id, int hypo_id, float dx, float dy, int inbin, float avgstk, struct slipfile* sfile)
+void srf2stoch(char* rup_geom_file, int slip_id, int hypo_id, char* srf_file, float dx, float dy, int inbin, float avgstk, struct slipfile* sfile, float dt)
 {
 FILE *fopfile(), *fpr;
 float len, wid, xp, yp;
@@ -31,12 +31,15 @@ if(avgstk > -1.0e+14)
       avgstk = avgstk + 360.0;
    }
 
-//read_srf(&srf,infile,inbin);
-rg_stats_t stats;
-rupgen_genslip(rup_geom_file, slip_id, hypo_id, &stats, &srf);
-char outfile[256];
-sprintf(outfile, "%d_%d.srf", slip_id, hypo_id);
-write_srf(&srf, outfile, 0);
+if (srf_file[0]!='\0') {
+   read_srf(&srf,srf_file,inbin);
+} else {
+   rg_stats_t stats;
+   rupgen_genslip(rup_geom_file, slip_id, hypo_id, &stats, &srf, RUPGEN_UNIFORM_HYPO, dt);
+   char outfile[256];
+   sprintf(outfile, "%d_%d.srf", slip_id, hypo_id);
+   write_srf(&srf, outfile, 0);
+}
 
 //allocate
 sfile->nseg = srf.srf_prect.nseg;

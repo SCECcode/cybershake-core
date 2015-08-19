@@ -31,17 +31,6 @@ if(ptr == NULL)
 return(ptr);
 }
 
-static  long    frandx = 1;
-
-/* frand() returns a uniform distribution of random numbers
- * in the range -1.0 -> 1.0.
- */
-double frand(void)
-{
-frandx = (frandx * 1103515245 + 12345) & 0x7fffffff;
-return((double)(frandx)/1073741824.0 - 1.0);
-}
-
 /* sfrand() returns a uniform distribution of random numbers
  * in the range -1.0 -> 1.0.
  */
@@ -811,98 +800,6 @@ if(pflag)
 
    fclose(fpw);
    }
-}
-
-void read_Fvelmodel(char *vfile,struct velmodel *vm)
-{
-FILE *fpr, *fopfile();
-int i, nr;
-char str[512];
-
-int nblock = 50;
-
-fpr = fopfile(vfile,"r");
-
-fgets(str,512,fpr);
-
-if(str[0] == '#')
-   {
-   while(str[0] == '#')
-      fgets(str,512,fpr);
-
-   vm->nlay = nblock;
-   vm->vp = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->vs = (double *)check_malloc(vm->nlay*sizeof(double));
-   vm->den = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->th = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->dep = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->mu = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->invb2 = (double *)check_malloc(vm->nlay*sizeof(double));
-
-   i = 0;
-   sscanf(str,"%f %f %lf %f",&vm->th[i],&vm->vp[i],&vm->vs[i],&vm->den[i]);
-
-   vm->dep[i] = vm->th[i];
-   vm->mu[i] = vm->vs[i]*vm->vs[i]*vm->den[i]*1.0e+10;  /* in CMS units */
-
-   while(fgets(str,512,fpr) != NULL)
-      {
-      i++;
-
-      if(i == vm->nlay)
-         {
-	 vm->nlay = vm->nlay + nblock;
-	 vm->vp = (float *)check_realloc(vm->invb2,vm->nlay*sizeof(float));
-	 vm->vs = (double *)check_realloc(vm->invb2,vm->nlay*sizeof(double));
-	 vm->den = (float *)check_realloc(vm->invb2,vm->nlay*sizeof(float));
-	 vm->th = (float *)check_realloc(vm->invb2,vm->nlay*sizeof(float));
-	 vm->dep = (float *)check_realloc(vm->invb2,vm->nlay*sizeof(float));
-	 vm->mu = (float *)check_realloc(vm->invb2,vm->nlay*sizeof(float));
-	 vm->invb2 = (double *)check_realloc(vm->invb2,vm->nlay*sizeof(double));
-	 }
-
-      sscanf(str,"%f %f %lf %f",&vm->th[i],&vm->vp[i],&vm->vs[i],&vm->den[i]);
-
-      vm->dep[i] = vm->dep[i-1] + vm->th[i];
-      vm->mu[i] = vm->vs[i]*vm->vs[i]*vm->den[i]*1.0e+10;  /* in CMS units */
-      }
-
-   vm->nlay = i+1;
-   vm->vp = (float *)check_realloc(vm->vp,vm->nlay*sizeof(float));
-   vm->vs = (double *)check_realloc(vm->vs,vm->nlay*sizeof(double));
-   vm->den = (float *)check_realloc(vm->den,vm->nlay*sizeof(float));
-   vm->th = (float *)check_realloc(vm->th,vm->nlay*sizeof(float));
-   vm->dep = (float *)check_realloc(vm->dep,vm->nlay*sizeof(float));
-   vm->mu = (float *)check_realloc(vm->mu,vm->nlay*sizeof(float));
-   vm->invb2 = (double *)check_realloc(vm->invb2,vm->nlay*sizeof(double));
-   }
-else
-   {
-   sscanf(str,"%d",&vm->nlay);
-
-   vm->vp = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->vs = (double *)check_malloc(vm->nlay*sizeof(double));
-   vm->den = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->th = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->dep = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->mu = (float *)check_malloc(vm->nlay*sizeof(float));
-   vm->invb2 = (double *)check_malloc(vm->nlay*sizeof(double));
-
-   for(i=0;i<vm->nlay;i++)
-      {
-      fgets(str,512,fpr);
-      sscanf(str,"%f %f %lf %f",&vm->th[i],&vm->vp[i],&vm->vs[i],&vm->den[i]);
-
-      if(i==0)
-         vm->dep[i] = vm->th[i];
-      else
-         vm->dep[i] = vm->dep[i-1] + vm->th[i];
-
-      vm->mu[i] = vm->vs[i]*vm->vs[i]*vm->den[i]*1.0e+10;  /* in CMS units */
-      }
-   }
-
-fclose(fpr);
 }
 
 void get_moment(struct standrupformat *srf,struct velmodel *vm)

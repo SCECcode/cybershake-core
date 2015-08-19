@@ -3,7 +3,7 @@
 #include "function.h"
 #include "defs.h"
 
-void init_plane_srf(struct standrupformat *srf,float *elon,float *elat,int nx,int ny,float *fl,float *fw,float *dx,float *dy,float *stk,float *dip,float *dtop,float *sh,float *dh)
+/*void init_plane_srf(struct standrupformat *srf,float *elon,float *elat,int nx,int ny,float *fl,float *fw,float *dx,float *dy,float *stk,float *dip,float *dtop,float *sh,float *dh)
 {
 struct srf_prectsegments *prseg_ptr;
 int ig;
@@ -112,9 +112,9 @@ apval_ptr = apnts_ptr->apntvals;
 
 for(ip=0;ip<apnts_ptr->np;ip++)
    apval_ptr[ip].tinit = ps[ip].rupt;
-}
+}*/
 
-/*
+
 void write_srf(struct standrupformat *srf,char *file,int bflag)
 {
 FILE *fpw, *fopfile();
@@ -289,9 +289,9 @@ else
       }
    fclose(fpw);
    }
-}*/
+}
 
-void free_srf_stf(struct standrupformat *srf)
+/*void free_srf_stf(struct standrupformat *srf)
 {
 struct srf_allpoints *apnts_ptr;
 struct srf_apointvalues *apval_ptr;
@@ -470,14 +470,14 @@ else
          for(it=0;it<(apval_ptr[i].nt3);it++)
             fscanf(fpr,"%f",&stf[it]);
 
-         /* get rouge newline character */
+         // get rouge newline character 
          if((apval_ptr[i].nt1) || (apval_ptr[i].nt2) || (apval_ptr[i].nt3))
             fgets(str,1024,fpr);
          }
       }
    fclose(fpr);
    }
-}
+}*/
 
 void read_srf(struct standrupformat *srf,char *file,int bflag)
 {
@@ -560,9 +560,9 @@ else
       fpr = fopfile(file,"r");
 
    fgets(str,1024,fpr);
-   /*
-   sscanf(str,"%s",&(srf[0].version));
-   */
+   
+   //sscanf(str,"%s",&(srf[0].version));
+   
    sscanf(str,"%s",srf[0].version);
 
    fgets(str,1024,fpr);
@@ -656,7 +656,7 @@ else
          for(it=0;it<(apval_ptr->nt3);it++)
             fscanf(fpr,"%f",&stf[it]);
 
-         /* get rouge newline character */
+         // get rouge newline character 
          if((apval_ptr->nt1) || (apval_ptr->nt2) || (apval_ptr->nt3))
             fgets(str,1024,fpr);
          }
@@ -665,16 +665,16 @@ else
    }
 }
 
-int gen_2tri_stfOLD(float *slip,float *trise,float *stf,int nt,float *dt,float *z0)
+/*int gen_2tri_stfOLD(float *slip,float *trise,float *stf,int nt,float *dt,float *z0)
 {
 int it, nstf;
 int ip, it0, it1, it2;
 float tr, amp, a0;
 float sum;
 
-float alpha = 0.1;      /* 1st triangle has pulse width = 2*alpha*trise */
-float betadeep = 0.2;       /* 2nd triangle has amplitude = beta*A (z0>dmax)*/
-float betashal = 0.5;       /* 2nd triangle has amplitude = beta*A (z0<dmin)*/
+float alpha = 0.1;      // 1st triangle has pulse width = 2*alpha*trise 
+float betadeep = 0.2;       // 2nd triangle has amplitude = beta*A (z0>dmax)
+float betashal = 0.5;       // 2nd triangle has amplitude = beta*A (z0<dmin)
 float beta, dbdd;
 
 float dmin = 4.0;
@@ -744,7 +744,7 @@ for(it=0;it<nstf;it++)
 if(sum <= 0.0)
    return(0);
 
-/* scale STF by slip */
+// scale STF by slip 
 sum = (*slip)/sum;
 for(it=0;it<nstf;it++)
    stf[it] = stf[it]*sum;
@@ -791,9 +791,9 @@ int it, nstf;
 int ip, it0, it1, it2;
 float tr, amp, a0;
 float sum;
-float alpha = 0.1;      /* 1st triangle has pulse width = 2*alpha*trise */
-float betadeep = 0.2;       /* 2nd triangle has amplitude = beta*A (z0>dmax)*/
-float betashal = 0.5;       /* 2nd triangle has amplitude = beta*A (z0<dmin)*/
+float alpha = 0.1;      // 1st triangle has pulse width = 2*alpha*trise 
+float betadeep = 0.2;       // 2nd triangle has amplitude = beta*A (z0>dmax)
+float betashal = 0.5;       // 2nd triangle has amplitude = beta*A (z0<dmin)
 float beta, dbdd;
 
 float dmin = 4.0;
@@ -853,7 +853,7 @@ for(it=0;it<nstf;it++)
 if(sum <= 0.0)
    return(0);
 
-/* scale STF by slip */
+// scale STF by slip 
 sum = (*slip)/sum;
 for(it=0;it<nstf;it++)
    stf[it] = stf[it]*sum;
@@ -919,7 +919,7 @@ for(it=0;it<nstf;it++)
 if(sum <= 0.0)
    return(0);
 
-/* scale STF by slip */
+// scale STF by slip 
 sum = (*slip)/sum;
 for(it=0;it<nstf;it++)
    stf[it] = stf[it]*sum;
@@ -965,7 +965,7 @@ for(it=0;it<nstf;it++)
 if(sum <= 0.0)
    return(0);
 
-/* scale STF by slip */
+// scale STF by slip 
 sum = (*slip)/sum;
 for(it=0;it<nstf;it++)
    stf[it] = stf[it]*sum;
@@ -1000,7 +1000,7 @@ for(it=0;it<nstf;it++)
 if(sum <= 0.0)
    return(0);
 
-/* scale STF by slip */
+// scale STF by slip 
 sum = (*slip)/sum;
 for(it=0;it<nstf;it++)
    stf[it] = stf[it]*sum;
@@ -1041,7 +1041,7 @@ for(it=0;it<nstf;it++)
 if(sum <= 0.0)
    return(0);
 
-/* scale STF by slip */
+// scale STF by slip 
 sum = (*slip)/sum;
 for(it=0;it<nstf;it++)
    stf[it] = stf[it]*sum;
@@ -1066,7 +1066,7 @@ if(srf0[0].srf_apnts.np != srf1[0].srf_apnts.np)
    exit(-1);
    }
 
-/* 1st, copy all header info from srf0 to srf2 */
+// 1st, copy all header info from srf0 to srf2 
 
 strcpy(srf2[0].version,srf0[0].version);
 
@@ -1106,7 +1106,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
    apval_ptr[1] = &(srf1[0].srf_apnts.apntvals[i]);
    apval_ptr[2] = &(srf2[0].srf_apnts.apntvals[i]);
 
-   /* these should be all the same for srf0 and srf1 */
+   // these should be all the same for srf0 and srf1 
    apval_ptr[2]->lon = apval_ptr[0]->lon;
    apval_ptr[2]->lat = apval_ptr[0]->lat;
    apval_ptr[2]->dep = apval_ptr[0]->dep;
@@ -1115,16 +1115,16 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
    apval_ptr[2]->area = apval_ptr[0]->area;
    apval_ptr[2]->dt = apval_ptr[0]->dt;
    
-   /* find earliest initiation time, reset pointers so ptr0 is earliest and ptr2 is latest */
+   // find earliest initiation time, reset pointers so ptr0 is earliest and ptr2 is latest 
 
-   if(apval_ptr[1]->tinit < apval_ptr[0]->tinit) /* need to reset pointers */
+   if(apval_ptr[1]->tinit < apval_ptr[0]->tinit) // need to reset pointers 
       {
       apval_ptr[0] = &(srf1[0].srf_apnts.apntvals[i]);
       apval_ptr[1] = &(srf0[0].srf_apnts.apntvals[i]);
       }
    apval_ptr[2]->tinit = apval_ptr[0]->tinit;
 
-   /* resolve all slip to rake_u1=new_rake, rake_u2=new_rake+90 */
+   // resolve all slip to rake_u1=new_rake, rake_u2=new_rake+90 
 
    apval_ptr[2]->rake = *new_rake;
 
@@ -1140,7 +1140,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
    apval_ptr[2]->nt3 = 0;
    apval_ptr[2]->stf3 = NULL;
 
-   /* loop over u1, u2, u3 for srf0 and srf1 to build up stfs */
+   // loop over u1, u2, u3 for srf0 and srf1 to build up stfs 
 
    for(ir=0;ir<2;ir++)
       {
@@ -1268,7 +1268,7 @@ struct srf_apointvalues *apval_in, *apval_out;
 float *stfin, *stfout;
 int i, j, k, it, ip, ig;
 
-/* 1st, copy all header info from srf0 to srf2 */
+// 1st, copy all header info from srf0 to srf2 
 
 strcpy(srf2[0].version,srf0[0].version);
 
@@ -1382,4 +1382,4 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
       }
 
    }
-}
+}*/

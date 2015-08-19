@@ -39,7 +39,7 @@ void write_slipfile(struct slipfile sfile, char* outfile) {
 
 int main(int argc, char** argv) {
 	//for srf2stoch
-	//char infile[256];
+	char infile[256] = {'\0'};
 	char outfile[256];
 	char slipfile[256];
 	float dx;
@@ -59,6 +59,8 @@ int main(int argc, char** argv) {
 	int slip_id;
 	int hypo_id;
 
+	int do_site_response = 1;
+
 	memset(stat, ' ', 12);
 	memset(local_vmod, ' ', 256);
 	memset(outfile, ' ', 256);	
@@ -66,9 +68,11 @@ int main(int argc, char** argv) {
 	setpar(argc, argv);
 	//for srf2stoch
 	//getpar("infile", "s", infile);
-	mstpar("rup_geom_file", "s", rup_geom_file);
-	mstpar("slip", "d", &slip_id);
-	mstpar("hypo", "d", &hypo_id);
+	//Can use rupture geometry file or SRF
+	getpar("rup_geom_file", "s", rup_geom_file);
+	getpar("slip", "d", &slip_id);
+	getpar("hypo", "d", &hypo_id);
+	getpar("infile", "s", infile);
 	mstpar("dx", "f", &dx);
 	mstpar("dy", "f", &dy);
 	getpar("inbin", "d", &inbin);
@@ -83,6 +87,7 @@ int main(int argc, char** argv) {
         getpar("tlen", "f", &tlen);
         getpar("dt", "f", &dt);
         getpar("modelrot", "f", &modelrot);
+	getpar("do_site_response", "d", &do_site_response);
 	endpar();
 
 
@@ -91,7 +96,7 @@ int main(int argc, char** argv) {
         sfile.tr = check_malloc(NP*NQ*LV*sizeof(float));
         sfile.ti = check_malloc(NP*NQ*LV*sizeof(float));
 
-	srf2stoch(rup_geom_file, slip_id, hypo_id, dx, dy, inbin, avgstk, &sfile);
+	srf2stoch(rup_geom_file, slip_id, hypo_id, infile, dx, dy, inbin, avgstk, &sfile, dt);
 	//sprintf(slipfile, "%s.slip", infile);
 	//write_slipfile(sfile, slipfile);
 	//Need to int the contents of sfile.sp
@@ -108,7 +113,13 @@ int main(int argc, char** argv) {
 		sfile.tr[i] = ((int)(100.0*sfile.tr[i]+0.5))/100.0;
 		sfile.ti[i] = ((int)(100.0*sfile.ti[i]+0.5))/100.0;
 	}
-	hfsim(stat, slon, slat, local_vmod, outfile, vs30, tlen, dt, modelrot, &sfile);
+	for(i=0; i<LV; i++) {
+		sfile.dx[i]=((int)(100.0*sfile.dx[i]+0.5))/100.0;
+		sfile.dy[i]=((int)(100.0*sfile.dy[i]+0.5))/100.0;
+	}
+	//This is the default for LA Basin; other velocity models might be different
+	sfile.qfexp = 0.6;
+	hfsim(stat, slon, slat, local_vmod, outfile, vs30, tlen, dt, modelrot, &sfile, do_site_response);
 
 	free(sfile.sp);
         free(sfile.tr);
