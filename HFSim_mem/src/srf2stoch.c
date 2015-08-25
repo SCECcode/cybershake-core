@@ -6,7 +6,7 @@
 #define         RPERD           0.017453293
 #define         DPERR           57.29577951
 
-void srf2stoch(char* rup_geom_file, int slip_id, int hypo_id, char* srf_file, float dx, float dy, int inbin, float avgstk, struct slipfile* sfile, float dt)
+void srf2stoch(char* rup_geom_file, int slip_id, int hypo_id, char* srf_file, float dx, float dy, int inbin, float avgstk, struct slipfile* sfile, float dt, int debug)
 {
 FILE *fopfile(), *fpr;
 float len, wid, xp, yp;
@@ -35,10 +35,13 @@ if (srf_file[0]!='\0') {
    read_srf(&srf,srf_file,inbin);
 } else {
    rg_stats_t stats;
+   set_memcached_server("localhost");
    rupgen_genslip(rup_geom_file, slip_id, hypo_id, &stats, &srf, RUPGEN_UNIFORM_HYPO, dt);
-   char outfile[256];
-   sprintf(outfile, "%d_%d.srf", slip_id, hypo_id);
-   write_srf(&srf, outfile, 0);
+   if (debug) {
+	   char outfile[256];
+	   sprintf(outfile, "%d_%d.srf", slip_id, hypo_id);
+	   write_srf(&srf, outfile, 0);
+   }
 }
 
 //allocate
@@ -48,7 +51,6 @@ noff = 0;
 for(i=0;i<srf.srf_prect.nseg;i++)
    {
    elon = srf.srf_prect.prectseg[i].elon;
-   printf("%f\n", elon);
    elat = srf.srf_prect.prectseg[i].elat;
    nstk = srf.srf_prect.prectseg[i].nstk;
    ndip = srf.srf_prect.prectseg[i].ndip;
@@ -92,9 +94,11 @@ for(i=0;i<srf.srf_prect.nseg;i++)
 
    nysum = (ndip*nydiv)/ny;
 
-   fprintf(stderr,"seg= %d\n",i);
-   fprintf(stderr,"nstk= %d nx= %d nxdiv= %d nxsum= %d\n",nstk,nx,nxdiv,nxsum);
-   fprintf(stderr,"ndip= %d ny= %d nydiv= %d nysum= %d\n",ndip,ny,nydiv,nysum);
+   if (debug) {
+	fprintf(stderr,"seg= %d\n",i);
+	fprintf(stderr,"nstk= %d nx= %d nxdiv= %d nxsum= %d\n",nstk,nx,nxdiv,nxsum);
+	fprintf(stderr,"ndip= %d ny= %d nydiv= %d nysum= %d\n",ndip,ny,nydiv,nysum);
+   }
 
    slip = (float *) check_malloc (nxdiv*nydiv*nstk*ndip*sizeof(float));
    trise = (float *) check_malloc (nxdiv*nydiv*nstk*ndip*sizeof(float));
@@ -220,7 +224,7 @@ for(i=0;i<srf.srf_prect.nseg;i++)
    if(avgstk > -1.0e+14 && (strike > avgstk + 90.0 || strike < avgstk - 90.0))
       revstk = 1;
 
-   printf("revstk: %d\n", revstk);
+   if (debug) printf("revstk: %d\n", revstk);
 
 //In for loop, need to reverse indices for fortran compatibility
 //so it's y, x, segment

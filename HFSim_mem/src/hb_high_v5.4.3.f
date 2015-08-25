@@ -91,7 +91,7 @@ c      fce=zz*vr/dlm/pai
 
       subroutine hb_high(cap, stlon, stlat, velfile, outname, tlen, dt, ds, nevnt,
      + elonq, elatq, nx, nw, dx, dw, strq, dipq, rakeq, dtop, shyp, dhyp,
-     + sddp, rist, rupt, qfexp)
+     + sddp, rist, rupt, qfexp, debug)
 
       include 'params.h'
 CC      parameter (mm=16348,mmv=30000,mst=6,lv=1000)
@@ -119,7 +119,7 @@ CFFF This replaces ntopq in even_dist1
       CHARACTER*256 asite,slip_model,outname,outname1,outname2,outname3,velfile
       CHARACTER*256 velname,velname1
       CHARACTER*256 dummy
-      integer head_lines, j
+      integer head_lines, j, debug
 
       character*12 cap,cname(3) 
       
@@ -205,7 +205,6 @@ C  is what comes out of python 2.7.5 random(), with seed of 2, on BW.
 	stop 1
       endif
       rvfac = mean_rvfac+range_rvfac*((0.9560342718892494*2)-1)
-      print *,'rvfac=',rvfac
       
       pu =3.1415926/180
       pai=3.1415926
@@ -357,7 +356,9 @@ cc20140422 RWG
 	 deep_dmin_default = zhyp_max
 	 deep_dmax_default = deep_dmin_default + 5.0
       endif
-	    print*,'deep_dmin,deep_dmax,deep_rvfac= ',deep_dmin_default,deep_dmax_default,deep_rvfac
+      if (debug.eq.1) then
+         print*,'deep_dmin,deep_dmax,deep_rvfac= ',deep_dmin_default,deep_dmax_default,deep_rvfac
+      endif
 
       do iv=1,nevnt
 	 if(dx(iv).ne.dx(1)) then
@@ -418,8 +419,10 @@ c      read(5,'(a256)') velname
       if(icflag.ne.0.and.icflag.ne.1) icflag=1
       if(vpsig.le.0.0.and.vshsig.le.0.0.and.rhosig.le.0.0.and.qssig.le.0.0) nplskip=-99
 
-      print*,'nlskip,vpsig,vshsig,rhosig,qssig,icflag= ',nlskip,vpsig,vshsig,rhosig,qssig,icflag
-      print*,'velname= ',velname
+      if (debug.eq.1) then
+        print*,'nlskip,vpsig,vshsig,rhosig,qssig,icflag= ',nlskip,vpsig,vshsig,rhosig,qssig,icflag
+        print*,'velname= ',velname
+      endif
 
       rvsig1 = -1.0
       rvfmax = 1.4
@@ -517,10 +520,9 @@ c     ipdur_model = 12, ENA formulation of BT2015, overpredicts for multiple ray
 
       endif
 
-	    print*,ipdur_model,ndur
-      do kk=1,ndur
-	    print*,'rdur= ',rdur(kk),'dpth= ',dpth(kk),'dpdr= ',dpdr(kk)
-      enddo
+      if (debug.eq.1) then
+        print*,ipdur_model,ndur
+      endif
 
 CCC END 2014-09-19
 
@@ -585,9 +587,7 @@ CFFF also determine total moment if absolute slips are input (sm=-1)
 543         continue
 542         continue
 		
-            print *,'vsh0=',vsh0(k),' rho0=',rho0(k),' dx=',dx(iv),' dw=',dw(iv)
 	    xmu = vsh0(k)*vsh0(k)*rho0(k)*dx(iv)*dw(iv)
-	    print *,'j= ',j,'  mu= ',xmu
 
 	    do 4798 i=1,nx(iv)
 	       sddp(iv,i,j) = xmu*sddp(iv,i,j)
@@ -723,9 +723,12 @@ c      open(24,file=outname3)
       do 20 ja=1,3      
       ds(ja,i)=0.      
 20    continue
-                                                           
-      print*,' '                                       
-      print*,'Site : ', msite,' ifu= ',ifu,outname
+      
+      if (debug.eq.1) then                                                     
+        print*,' '                                       
+        print*,'Site : ', msite,' ifu= ',ifu,' outname=',outname
+        print*,'nlskip:',nlskip
+      endif
 
       if(nlskip.ge.0) then
 
@@ -771,7 +774,9 @@ c      open(24,file=outname3)
       if(fasig1.gt.0.0.or.fasig2.gt.0.0.or.rvsig1.gt.0.0) then
 
          call normal_random_number(mmv,fgrand)
-         print *,' fasig1= ',fasig1*fgrand(1)
+         if (debug.eq.1) then
+            print *,' fasig1= ',fasig1*fgrand(1)
+         endif
 
 cCCCC       do ir=1,mmv
 cCCCC       print*,'fgrand= ',fgrand(ir)
@@ -913,24 +918,20 @@ c     ipdur_model = 11, WUS formulation of BT2014, overpredicts for multiple ray
 c     ipdur_model = 12, ENA formulation of BT2015, overpredicts for multiple rays
 
             do 3461 kk=1,ndur
-               print *,'rlsu=',rlsu(i,j),' rdur=',rdur(kk)
                if(rlsu(i,j).gt.rdur(kk)) then
 	          r0 = rdur(kk)
 		  d0 = dpth(kk)
 		  slp = dpdr(kk)
-                  print *,'r0=',r0,' d0=',d0,' slp=',slp
                endif
 3461        continue
 
             tw0 = pai*dlm/(zz*rvf*bet)
             dpath = d0 + slp*(rlsu(i,j)-r0)
-            print *,'i=',i,' j=',j,' tw0=',tw0,' dpath=',dpath
             twin(i,j) = tw0 + dpath
 
 CCC END 2014-09-19
 
 	    if(twin(i,j).gt.tmax) then
-              print *,'setting tmax to twin(i,j)=',twin(i,j)
               tmax = twin(i,j)
             endif
             d10=amin1(d10,rlsu(i,j))
@@ -938,7 +939,6 @@ CCC END 2014-09-19
 894      continue
 893   continue
 
-      print *,'tmax=',tmax,' dt=',dt
       ntmax = int(2.0*tmax/dt)
 
       np2 = 2
@@ -955,8 +955,6 @@ CNNNN      np2 = 8192
          go to 9555
 
       endif
-
-      print *,'np2= ',np2
 
       if(fasig1.gt.0.0.or.fasig2.gt.0.0) then
 
@@ -984,7 +982,9 @@ CNNNN      np2 = 8192
       do 4 i=1,nx(iv)      
       do 4 j=1,nw(iv)
 
-      print *,'sddp= ',sddp(iv,i,j),iv,i,j
+      if (debug.eq.1) then
+         print *,'sddp= ',sddp(iv,i,j),iv,i,j
+      endif
  
          if(sddp(iv,i,j).lt.0.001) goto4  
 
@@ -1044,7 +1044,9 @@ c adjust for fault depth-> scale rupture velocity factor
 
       endif
 
-       print*,'rvf= ',rvf,rvf0
+      if (debug.eq.1) then
+         print*,'rvf= ',rvf,rvf0
+      endif
 
 c 20131120 RWG added alphaT adjustment
             avgdip = dipq(iv);
@@ -1078,8 +1080,10 @@ c End alphaT
 
       zz = zz*(1.0 + fcfac)/alphaT
 
-      print *,'zz= ',zz,bet,dlm,pai
-      print *,'alphaT= ',alphaT,fD,fR,Calpha
+      if (debug.eq.1) then
+         print *,'zz= ',zz,bet,dlm,pai
+         print *,'alphaT= ',alphaT,fD,fR,Calpha
+      endif
 
       fce=zz*rvf*bet/dlm/pai
 CCCC      fce=fce*(1.0 + 0.4*(2*rand_numb(0) - 1.0))
@@ -1090,7 +1094,9 @@ c  Rise Time  : Rise
 c no modification for the rise time
              rise=rist(iv,i,j)
 
-       print*,'fce= ',fce
+      if (debug.eq.1) then 
+         print*,'fce= ',fce
+      endif
 
 cNNNN start of ray loop
 
@@ -1126,13 +1132,17 @@ c hardwire for SH since only geometric term is considered
          sub_tstart = 0.7*stime
       endif
 
-      print *,'tt= ',sub_tstart,' rp= ',rpath,' bet= ',bet,' twin= ',twin(i,j)
-      print *,'hs= ',zet(i,j),' range= ',dst(i,j),' rho= ',ro
+      if (debug.eq.1) then
+         print *,'tt= ',sub_tstart,' rp= ',rpath,' bet= ',bet,' twin= ',twin(i,j)
+         print *,'hs= ',zet(i,j),' range= ',dst(i,j),' rho= ',ro
+      endif
 
       tvmin=amin1(tvmin,sub_tstart)  
 
 cXXX      print*,'range= ',dst(i,j),' rpath= ',rpath,' t0=',stime,' p0=',p0
-      print*,'irtype= ',irtype(ir),' t0= ',stime,' rpath= ',rpath,' az= ',phsu(i,j)/pu
+      if (debug.eq.1) then
+         print*,'irtype= ',irtype(ir),' t0= ',stime,' rpath= ',rpath,' az= ',phsu(i,j)/pu
+      endif
 
 CFFF the following 9 lines are new
       tw = twin(i,j)
@@ -1182,8 +1192,10 @@ c
 	  th = asin(bet*p0)
        endif
 
-      print *,'  th(deg)= ',th/pu,'  th(rad)= ',th,'  bet*p0= ',bet*p0
-      if(bet*p0.lt.1.0) print *,'                asin(bet*p0)= ',asin(bet*p0)
+      if (debug.eq.1) then
+         print *,'  th(deg)= ',th/pu,'  th(rad)= ',th,'  bet*p0= ',bet*p0
+         if(bet*p0.lt.1.0) print *,'                asin(bet*p0)= ',asin(bet*p0)
+      endif
 
 CCC       if(irtype(ir).eq.1) th = pai - th
        if(irtype(ir).eq.0) then
@@ -1201,13 +1213,17 @@ c     cmp = pa + 90*pu gives tangential component
       CALL RADFRQ_lin(STRA,DIPA,RAKA,pa,th,DFR,NFOLD,CMP,flol,RNA,RNB,nr,rdna) 
       call highcor_f(nfold,mfold,np2,cs(1,1),stdd(1,1),rdna)
 
-      print *,'   rdna-090= ',rdna(30),' th= ',th/pu,' ir= ',ir
+      if (debug.eq.1) then
+         print *,'   rdna-090= ',rdna(30),' th= ',th/pu,' ir= ',ir
+      endif
 
       cmp=0
       CALL RADFRQ_lin(STRA,DIPA,RAKA,pa,th,DFR,NFOLD,CMP,flol,RNA,RNB,nr,rdna)
       call highcor_f(nfold,mfold,np2,cs(1,2),stdd(1,2),rdna)
 
-      print *,'   rdna-000= ',rdna(30),' th= ',th/pu,' ir= ',ir
+      if (debug.eq.1) then
+         print *,'   rdna-000= ',rdna(30),' th= ',th/pu,' ir= ',ir
+      endif
 
        call RADV_lin(STRA,DIPA,RAKA,pa,th,DFR,NFOLD,flol,RNA,RNB,nr,rdna) 
        call highcor_f(nfold,mfold,np2,cs(1,3),stdd(1,3),rdna)
@@ -1243,7 +1259,9 @@ CFFF the following 10 lines are modified
        kend = k2 + np2
        if(kend.gt.ndata) kend = ndata
 
-       print*,'k2= ',k2,sub_tstart,ratim
+       if (debug.eq.1) then
+          print*,'k2= ',k2,sub_tstart,ratim
+       endif
 
 C  RWG 04/20/04
 C  remove scaling by 'ratio', now done in stoc_f() using bigC
@@ -1834,7 +1852,9 @@ c get theoretical radtion pattern for this subfault/station
       CALL RDATN(STRA,DIPA,RAKA,PA,THAA,RDSHA,RDSVA) 
                            
       RDX=RDSVA*COS(THAA)*COS(CMP-PA)+RDSHA*SIN(CMP-PA) 
-      print*,'cos(th)= ',cos(thaa),' cos(cmp-pa)= ',cos(cmp-pa),' sin(cmp-pa)= ',sin(cmp-pa)
+      if (debug.eq.1) then
+         print*,'cos(th)= ',cos(thaa),' cos(cmp-pa)= ',cos(cmp-pa),' sin(cmp-pa)= ',sin(cmp-pa)
+      endif
 
 c  RWG RADPAT FIX 03/19/04
 c  version 2.02 average radiadtion pattern=>
@@ -2436,7 +2456,7 @@ c  calculates the scaling factors for converting degrees into km
         ph(i,j)=azes
         zet(i,j)=zm1
 
-        print*,i,j,stlat,stlon,slat,slon,dis
+c        print*,i,j,stlat,stlon,slat,slon,dis
 
 20      continue
         return
@@ -3081,7 +3101,9 @@ c
       call geom_terms(hs,p0,itype,rpd,qbar)
       rpath = rpd
 
-      print*,'p0= ', p0
+      if (debug.eq.1) then
+         print*,'p0= ', p0
+      endif
 
       return
       end
@@ -3211,15 +3233,12 @@ c     real*8 dpt,th,vp,vs,rho,v,pn,pp,a,r,p0,t0
       real*4 qp,qs
 c          finding the closest branch cut(i.e. highest velocity)
       v=0.
-      print *,'ndp=',ndp
       do 10 i=1,ndp
       if(alp(i).gt.0.) then
         v=dmax1(v,vp(i))
-        print *,'i=',i,' v= ',v
       endif
       if(als(i).gt.0.) then
         v=dmax1(v,vs(i))
-        print *,'i=',i,' v= ',v
       endif
 10    continue
 
@@ -3247,7 +3266,9 @@ c   NEW
 c add another factor of 10 just to be sure-> problems on Linux
       p = ptest - 10.0*eps
 
-        print*,'eps= ',eps,' p= ',p,' ptest= ',ptest,' rp= ',rp
+      if (debug.eq.1) then
+         print*,'eps= ',eps,' p= ',p,' ptest= ',ptest,' rp= ',rp
+      endif
 
 c   end NEW
 

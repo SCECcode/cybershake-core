@@ -4,12 +4,6 @@
 
 #define TAP_PERC 0.05
 
-struct complex
-   {
-   float re;
-   float im;
-   };
-
 int size_float = sizeof(float);
 int size_int = sizeof(int);
 
@@ -19,15 +13,16 @@ void cb2014_ampf(float *,float *,int,float *,float *,float *,float *,float *,flo
 void bssa2014_ampf(float *,float *,int,float *,float *,float *,float *,float *,float *,float *,float *,float *,float *,float *);
 void ampfac(struct complex *,float *,int);
 
-main(int ac,char **av)
+int wcc_siteamp14(float* seis, int nt, float dt, float pga, float vs30)
 {
+printf("pga: %f\n", pga);
 struct statdata head1;
 float *s1, vref, vsite, vpga;
 float *ampf;
 int nt_p2;
 
 float tap_per = TAP_PERC;
-float pga = -1.0;
+//float pga = -1.0;
 
 float fmin = 0.1;
 float fmax = 15.0;
@@ -51,6 +46,7 @@ sprintf(model,"borcherdt");
 */
 sprintf(model,"cb2014");
 
+/*
 setpar(ac,av);
 
 mstpar("infile","s",infile);
@@ -75,15 +71,23 @@ getpar("inbin","d",&inbin);
 getpar("outbin","d",&outbin);
 
 endpar();
+*/
+
+vref = 865;
+vsite=vs30;
+vpga = vref;
 
 if(strncmp(model,"borcherdt",9) != 0 && strncmp(model,"cb2008",6) != 0 && strncmp(model,"bssa2014",6) != 0)
    sprintf(model,"cb2014");
 
-s1 = NULL;
-s1 = read_wccseis(infile,&head1,s1,inbin);
+//s1 = NULL;
+//s1 = read_wccseis(infile,&head1,s1,inbin);
+s1 = seis;
+head1.nt = nt;
+head1.dt = dt;
 
 nt_p2 = getnt_p2(head1.nt);
-s1 = (float *) check_realloc (s1,nt_p2*size_float);
+//s1 = (float *) check_realloc (s1,nt_p2*size_float);
 
 ampf = (float *) check_malloc ((nt_p2/2)*size_float);
 
@@ -112,7 +116,8 @@ ampfac((struct complex *)s1,ampf,nt_p2);
 invfft(s1,nt_p2,1);
 norm(s1,&head1.dt,nt_p2);
 
-write_wccseis(outfile,&head1,s1,outbin);
+free(ampf);
+//write_wccseis(outfile,&head1,s1,outbin);
 }
 
 void borch_ampf(float *ampf,float *dt,int n,float *vref,float *vsite,float *pga,float *fmin,float *fmidbot,float *fmid,float *fhigh,float *fhightop,float *fmax)

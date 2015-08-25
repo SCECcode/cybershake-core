@@ -1,3 +1,6 @@
+#ifndef DEFS_H
+#define DEFS_H
+
 #define         NTMAX              10000
 #define         SOMERVILLE_FLAG    1
 #define         MAI_FLAG           2
@@ -25,5 +28,7 @@
 #define RDONLY_FLAGS    O_RDONLY | O_LARGEFILE
 #define RDWR_FLAGS      O_RDWR | O_LARGEFILE
 #define CROPTR_FLAGS    O_CREAT | O_TRUNC | O_RDWR | O_LARGEFILE
+
+#endif
 
 #endif
