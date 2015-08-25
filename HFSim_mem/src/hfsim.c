@@ -2,7 +2,9 @@
 #include <stdio.h>
 
 #include "string.h"
+#include "include.h"
 #include "structure.h"
+#include "function.h"
 
 /* This code acts as a wrapper for Rob's high frequency code, integrator, and merged into
 * a single seismogram file in GRM format.
@@ -10,7 +12,7 @@
 
 //extern void hb_high__(char* stat, int stat_len, float* slon, float* slat, char* slipfile, int slipfile_len, char* local_vmod, int local_vmod_len, char* outfile, int outfile_len, float* tlen, float* dt, float* seis);
 
-extern void hb_high_(char* stat, float* slon, float* slat, char* local_vmod, char* outfile, float* tlen, float* dt, float* seis, int* nseg, float* elon, float* elat, int* nx, int* ny, float* dx, float* dy, float* strike, float* dip, float* ravg, float* dtop, float* shypo, float* dhypo, float* sp, float* tr, float* ti, float* qfexp, int stat_len, int local_vmod_len, int outfile_len);
+extern void hb_high_(char* stat, float* slon, float* slat, char* local_vmod, char* outfile, float* tlen, float* dt, float* seis, int* nseg, float* elon, float* elat, int* nx, int* ny, float* dx, float* dy, float* strike, float* dip, float* ravg, float* dtop, float* shypo, float* dhypo, float* sp, float* tr, float* ti, float* qfexp, int* debug, int stat_len, int local_vmod_len, int outfile_len);
 
 void integ_diff(int integ_notdiff, float* seis, int nt, float dt);
 float wcc_getpeak(float* seis, int nt, float dt);
@@ -31,7 +33,22 @@ void write_grm(char* outname, float seis[][mmv], int nt) {
 	fclose(fp_out);
 }
 
-void hfsim(char* stat, float slon, float slat, char* local_vmod, char* output, float vs30, float tlen, float dt, float modelrot, struct slipfile* sfile, int do_site_response) {
+void write_grm_head(char* outname, float seis[][mmv], struct seisheader* header) {
+        int i;
+        FILE* fp_out = fopen(outname, "wb");
+        if (fp_out==NULL) {
+                fprintf(stderr, "Unable to open file %s for writing.\n", outname);
+                exit(1);
+        }
+	fwrite(header, sizeof(struct seisheader), 1, fp_out);
+        for (i=0; i<3; i++) {
+                fwrite(seis[i], sizeof(float), header->nt, fp_out);
+        }
+        fflush(fp_out);
+        fclose(fp_out);
+}
+
+void hfsim(float seisC[3][mmv], char* stat, float slon, float slat, char* local_vmod, char* output, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int do_site_response, int debug) {
 	//parse cmd-line args
 	int stat_len;
 	int local_vmod_len;
@@ -39,8 +56,10 @@ void hfsim(char* stat, float slon, float slat, char* local_vmod, char* output, f
 	float seis[mmv][3]; //needs to agree with mmv in hb_high
 	int i;
 
-	int nt = (int)(tlen/dt+.5); //round in case of funny business
-	
+	int nt = header->nt;
+	float dt = header->dt;
+	float tlen = header->nt*header->dt;
+
 	//replace null terminator w/space for fortran
 	stat_len = strlen(stat);
         stat[stat_len] = ' ';
@@ -51,13 +70,15 @@ void hfsim(char* stat, float slon, float slat, char* local_vmod, char* output, f
 
 	//Generate high-frequency seismogram
 	printf("Calculating HF seismogram.\n");
-	hb_high_(stat, &slon, &slat, local_vmod, output, &tlen, &dt, &(seis[0][0]), &(sfile->nseg), sfile->elon, sfile->elat, sfile->nx, sfile->ny, sfile->dx, sfile->dy, sfile->strike, sfile->dip, sfile->ravg, sfile->dtop, sfile->shypo, sfile->dhypo, sfile->sp, sfile->tr, sfile->ti, &(sfile->qfexp), stat_len, local_vmod_len, output_len);
-	//put a null terminator back in output
+	hb_high_(stat, &slon, &slat, local_vmod, output, &tlen, &dt, &(seis[0][0]), &(sfile->nseg), sfile->elon, sfile->elat, sfile->nx, sfile->ny, sfile->dx, sfile->dy, sfile->strike, sfile->dip, sfile->ravg, sfile->dtop, sfile->shypo, sfile->dhypo, sfile->sp, sfile->tr, sfile->ti, &(sfile->qfexp), &debug, stat_len, local_vmod_len, output_len);
+	//put a null terminator back in strings for C
+	stat[stat_len] = '\0';
+	local_vmod[local_vmod_len] = '\0';
 	output[output_len] = '\0';
 	//rearrange seismogram into C-friendly form
 	//change order from 090, 000, ver to 000, 090, ver
 	//While changing order, check that seismogram isn't all zeroes, w/o if statement
-	float seisC[3][mmv];
+	//float seisC[3][mmv];
 	int j;
 	float all_zeroes[3] = {0.0, 0.0, 0.0};
 	//swap 090 and 000
@@ -83,7 +104,7 @@ void hfsim(char* stat, float slon, float slat, char* local_vmod, char* output, f
                 exit(2);
         }
 
-	write_grm("raw_hf", seisC, nt);
+	//write_grm("raw_hf", seisC, header->nt);
 	/*for each component:
 	1) calculate peak PGA
 	2) calculate site response
@@ -91,17 +112,17 @@ void hfsim(char* stat, float slon, float slat, char* local_vmod, char* output, f
 	for (i=0; i<3; i++) {
 		if (do_site_response) {
 			//printf("Calculating peak for component %d.\n", i);
-			float pga = wcc_getpeak(seisC[i], nt, dt)/981.0;
-			//printf("Calculating site amp with pga=%f, vs30=%f.\n", pga, vs30);
-			wcc_siteamp09(seisC[i], nt, dt, pga, vs30);
+			float pga = wcc_getpeak(seisC[i], header->nt, header->dt)/981.0;
+			if (debug) printf("Calculating site amp with pga=%f, vs30=%f.\n", pga, vs30);
+			wcc_siteamp14(seisC[i], header->nt, header->dt, pga, vs30);
 		}
 		//printf("Integrating.\n");
-		integ_diff(1, seisC[i], nt, dt);
+		//integ_diff(1, seisC[i], nt, dt);
 	}
 	//remember seisC is 000, 090, ver
 	//so must rotate so that X has heading 90 + modelrot to get to CyberShake
 	//This is no longer correct; per emails with Rob Graves, jbsim3d rotates the output seismograms to 000/090/ver, in the mech_sgt() function.
 	//wcc_rotate(seisC, nt, dt, modelrot+90);
 
-	write_grm(output, seisC, nt);
+	write_grm_head(output, seisC, header);
 }

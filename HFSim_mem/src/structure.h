@@ -7,9 +7,9 @@
 #define TITLCHAR 64
 
 //for compatibility with params.h
-#define mmv 30000
+#define mmv 60000
 #define LV 1000
-#define NP 50
+#define NP 100
 #define NQ 600
 
 struct statdata
@@ -49,6 +49,29 @@ struct slipfile {
    float* tr;
    float* ti;
    float qfexp;
+};
+
+//All the information needed to regenerate a seismogram
+//For version 12.10, try avoiding CyberShake-specific data
+struct seisheader {
+  char version[8];
+  char site_name[8];
+  //in case we think of something later
+  char padding[8];
+  int source_id;
+  int rupture_id;
+  int rup_var_id;
+  float dt;
+  int nt;
+  int comps;
+  float det_max_freq;
+  float stoch_max_freq;
+};
+
+struct rupture_variation {
+  int rup_var_id;
+  int slip_id;
+  int hypo_id;
 };
 
 #endif
