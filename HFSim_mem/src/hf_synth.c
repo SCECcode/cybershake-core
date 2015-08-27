@@ -60,9 +60,10 @@ int main(int argc, char** argv) {
 	float dt = 0.025;
 	float modelrot = -55;
 
-	char rup_geom_file[256];
+	char rup_geom_file[256] = {0};
 	int slip_id;
 	int hypo_id;
+	int i;
 
 	int source_id = -1;
 	int rupture_id = -1;
@@ -73,7 +74,8 @@ int main(int argc, char** argv) {
 	int do_site_response = 1;
 
 	int num_rup_vars = -1;
-	char rup_var_string[16384];
+	char rup_var_string[16384] = {0};
+	int num_comps = 2;
 
 	int debug = 0;
 
@@ -108,6 +110,7 @@ int main(int argc, char** argv) {
         mstpar("rupture_id", "d", &rupture_id);
         getpar("det_max_freq", "f", &det_max_freq);
         getpar("stoch_max_freq", "f", &stoch_max_freq);
+	getpar("num_comps", "d", &num_comps);
 
 	//If vs30 is not given, then use UCVM to determine it
 	if (vs30==-1.0) {
@@ -132,9 +135,26 @@ int main(int argc, char** argv) {
 		rup_vars[0].slip_id = slip_id;
 		rup_vars[0].hypo_id = hypo_id;
 	} else {
-		mstpar("rup_vars", "s", rup_var_string);
+		getpar("rup_vars", "s", rup_var_string);
 		rup_vars = check_malloc(sizeof(struct rupture_variation)*num_rup_vars);
-		parse_rup_vars(rup_var_string, num_rup_vars, rup_vars);
+		//If rup_vars aren't defined, then we do all the rupture variations for this rupture
+		//Figure out how many from rupgen_get_num_rv
+		if (rup_var_string[0]==0) {
+			if (rup_geom_file[0]==0) {
+				fprintf(stderr, "Rupture geometry file was not specified, aborting.\n");
+				exit(3);
+			}
+			rg_stats_t stats;
+			set_memcached_server("localhost");
+			rupgen_get_num_rv(rup_geom_file, &stats, RUPGEN_UNIFORM_HYPO);
+			for (i=0; i<num_rup_vars; i++) {
+				rup_vars[i].rup_var_id = i;
+				rup_vars[i].slip_id = i;
+				rup_vars[i].hypo_id = 0;
+			}
+		} else {
+			parse_rup_vars(rup_var_string, num_rup_vars, rup_vars);
+		}
 	}
 	endpar();
 
@@ -154,7 +174,9 @@ int main(int argc, char** argv) {
 	        header.stoch_max_freq = stoch_max_freq;
 		header.dt = dt;
 		header.nt = (int)(tlen/dt+0.5);
-		header.comps = X_COMP_FLAG | Y_COMP_FLAG | Z_COMP_FLAG;
+		header.comps = X_COMP_FLAG | Y_COMP_FLAG;
+
+		printf("tlen=%f, dt=%f, nt=%d\n", tlen, dt, header.nt);
 
 	        struct slipfile sfile;
 	        sfile.sp = check_malloc(NP*NQ*LV*sizeof(float));
@@ -184,19 +206,13 @@ int main(int argc, char** argv) {
 		}
 		//This is the default for LA Basin; other velocity models might be different
 		sfile.qfexp = 0.6;
-		hfsim(seis, stat, slon, slat, local_vmod, outfile, vs30, &header, modelrot, &sfile, do_site_response, debug);
-
-		//Write to file
-	        fwrite(&header, sizeof(struct seisheader), 1, fp_out);
-	        for (i=0; i<3; i++) {
-	                fwrite(seis[i], sizeof(float), header.nt, fp_out);
-	        }
-		fflush(fp_out);
+		hfsim(seis, stat, slon, slat, local_vmod, fp_out, vs30, &header, modelrot, &sfile, num_comps, do_site_response, debug);
 
 		free(sfile.sp);
         	free(sfile.tr);
         	free(sfile.ti);
 	}
+	fflush(fp_out);
 	fclose(fp_out);
 }
 

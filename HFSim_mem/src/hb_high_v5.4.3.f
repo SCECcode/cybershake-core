@@ -1122,7 +1122,7 @@ c hardwire for SH since only geometric term is considered
       irtyp = irtype(ir)
       if(irtyp.eq.0) irtyp = 1
 
-      call gf_amp_tt(j0,zet(i,j),dst(i,j),sgc,irtyp,mode,p0,stime,rpath,qbar)
+      call gf_amp_tt(j0,zet(i,j),dst(i,j),sgc,irtyp,mode,p0,stime,rpath,qbar,debug)
       sub_tstart = stime - tw_eps*twin(i,j)
 
       if(irtype(ir).eq.0) then
@@ -1210,7 +1210,7 @@ cNNN  cmp = pa gives radial component
 c     cmp = pa + 90*pu gives tangential component
 
       cmp=-90.*pu
-      CALL RADFRQ_lin(STRA,DIPA,RAKA,pa,th,DFR,NFOLD,CMP,flol,RNA,RNB,nr,rdna) 
+      CALL RADFRQ_lin(STRA,DIPA,RAKA,pa,th,DFR,NFOLD,CMP,flol,RNA,RNB,nr,rdna,debug) 
       call highcor_f(nfold,mfold,np2,cs(1,1),stdd(1,1),rdna)
 
       if (debug.eq.1) then
@@ -1218,7 +1218,7 @@ c     cmp = pa + 90*pu gives tangential component
       endif
 
       cmp=0
-      CALL RADFRQ_lin(STRA,DIPA,RAKA,pa,th,DFR,NFOLD,CMP,flol,RNA,RNB,nr,rdna)
+      CALL RADFRQ_lin(STRA,DIPA,RAKA,pa,th,DFR,NFOLD,CMP,flol,RNA,RNB,nr,rdna,debug)
       call highcor_f(nfold,mfold,np2,cs(1,2),stdd(1,2),rdna)
 
       if (debug.eq.1) then
@@ -1796,9 +1796,10 @@ c Theoretical rad. coeff
 
                                                                              
       SUBROUTINE RADFRQ_lin(STRA,DIPA,RAKA,PA,THAA,DFR,NFOLD,                  
-     & CMP,fr1,RNA,RNB,nr,rdna)   
+     & CMP,fr1,RNA,RNB,nr,rdna,debug)   
       parameter (mm=16348)                               
       DIMENSION Rdna(mm),DFR(mm),RNA(nr),RNB(nr)
+      integer debug
       PU=3.1415926/180   
 
 c RADFRQ_lin() calculates "averaged" radiation pattern as a function of
@@ -2226,51 +2227,51 @@ c integrate
         return
         end
        
-       	SUBROUTINE RANN2(NTOT,ACC)
-	dimension ACC(1)
-	COMMON/RANDO/ifu1
-	
-	J=1
-	ACC(1)=0.
-	X=RAND(ifu1)
-	DO 8 N=2,NTOT
-	GOTO (1,2),J
-1       X1=RAND(0)
-
-964     continue
-        if(x1.eq.0.0) then
-           X1=RAND(0)
-           go to 964
-        endif
-
-        X2=RAND(0)
-963     continue
-        if(x2.eq.0.0) then
-           X2=RAND(0)
-           go to 963
-        endif
-
-	X2=6.2831853*X2
-	X1=-ALOG(X1)
-	X1=SQRT(X1+X1)
-	W=X1*COS(X2)
-	J=2
-	GO TO 3
-2	W=X1*SIN(X2)
-	J=1
-3	CONTINUE
-	ACC(N)=W
-8	CONTINUE
-	S=0.
-	DO 10 I=1,NTOT
-	S=S+ACC(I)*ACC(I)
-10	CONTINUE
-	S=S/NTOT
-	DO 11 I=1,NTOT
-	ACC(I)=ACC(I)/SQRT(S)
-11	CONTINUE
-	RETURN
-	END
+c       	SUBROUTINE RANN2(NTOT,ACC)
+c	dimension ACC(1)
+c	COMMON/RANDO/ifu1
+c	
+c	J=1
+c	ACC(1)=0.
+c	X=RAND(ifu1)
+c	DO 8 N=2,NTOT
+c	GOTO (1,2),J
+c1       X1=RAND(0)
+c
+c964     continue
+c        if(x1.eq.0.0) then
+c           X1=RAND(0)
+c           go to 964
+c        endif
+c
+c        X2=RAND(0)
+c963     continue
+c        if(x2.eq.0.0) then
+c           X2=RAND(0)
+c           go to 963
+c        endif
+c
+c	X2=6.2831853*X2
+c	X1=-ALOG(X1)
+c	X1=SQRT(X1+X1)
+c	W=X1*COS(X2)
+c	J=2
+c	GO TO 3
+c2	W=X1*SIN(X2)
+c	J=1
+c3	CONTINUE
+c	ACC(N)=W
+c8	CONTINUE
+c	S=0.
+c	DO 10 I=1,NTOT
+c	S=S+ACC(I)*ACC(I)
+c10	CONTINUE
+c	S=S/NTOT
+c	DO 11 I=1,NTOT
+c	ACC(I)=ACC(I)/SQRT(S)
+c11	CONTINUE
+c	RETURN
+c	END
 C
 
 	SUBROUTINE FLZERO(N,DT,A)
@@ -2964,7 +2965,7 @@ cPPP      nn = nfreq
       return
       end
 
-      subroutine gf_amp_tt(j0,src_depth,range,sgc,itype,md,rp0,stime,rpath,qbar)
+      subroutine gf_amp_tt(j0,src_depth,range,sgc,itype,md,rp0,stime,rpath,qbar,debug)
       include 'params.h'
       implicit real*8 (a-h,o-z)
       common/vmod/dpt(nlaymax),th(nlaymax),vp(nlaymax),vs(nlaymax),rho(nlaymax),qp(nlaymax),qs(nlaymax)
@@ -2974,6 +2975,7 @@ cPPP      nn = nfreq
       complex *16 rcv,cp0,gc
       complex sgc
       real *4 src_depth,range,stime,rpath,rp0,qbar
+      integer debug
     
       krec = 2
       ir = 1
@@ -3091,7 +3093,7 @@ c now loop over Moho multiples, if any
       endif
 
       call trav(ir,hs,hr)
-      call pnot(ir,p0,t0,rr)
+      call pnot(ir,p0,t0,rr,debug)
       call ttime(ir,p0,t0,p1,t1,rr)
       rp0 = p0
       stime = t0
@@ -3222,7 +3224,7 @@ c
       return
       end
 c
-      subroutine pnot(ir,p0,t0,r)
+      subroutine pnot(ir,p0,t0,r,debug)
       include 'params.h'
       implicit real*8 (a-h,o-z)
 c     real*8 dpt,th,vp,vs,rho,v,pn,pp,a,r,p0,t0
@@ -3230,6 +3232,7 @@ c     real*8 dpt,th,vp,vs,rho,v,pn,pp,a,r,p0,t0
       common/travel/alp(nlaymax),als(nlaymax),ndp,nnup
       common/vmod/dpt(nlaymax),th(nlaymax),vp(nlaymax),vs(nlaymax),rho(nlaymax),qp(nlaymax),qs(nlaymax)
       complex*16  t,cagcon,dtdp,p
+      integer debug
       real*4 qp,qs
 c          finding the closest branch cut(i.e. highest velocity)
       v=0.

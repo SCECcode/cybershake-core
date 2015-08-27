@@ -28,15 +28,14 @@ LDLIBS = -L${RUPGEN_DIR}/lib -lrupgen -L${MEMCACHED_DIR}/lib -lmemcached ${LIBS}
 # use following for large file capability
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
-UFLAGS = -O3 -g
+UFLAGS = -O3
 
 FC = ftn
 CC = cc
 
 CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS}
 FFLAGS = ${UFLAGS} -ffixed-line-length-132 -finit-local-zero -Wuninitialized
-#FFLAGS = ${UFLAGS} -extend-source -nofor-main -zero
-
+#FFLAGS = ${UFLAGS} -N 132 -e 0 
 ##### make options
 
 all: hf_synth

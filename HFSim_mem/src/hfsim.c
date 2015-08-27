@@ -33,28 +33,22 @@ void write_grm(char* outname, float seis[][mmv], int nt) {
 	fclose(fp_out);
 }
 
-void write_grm_head(char* outname, float seis[][mmv], struct seisheader* header) {
+void write_grm_head(FILE* fp_out, float seis[][mmv], struct seisheader* header, int num_comps) {
         int i;
-        FILE* fp_out = fopen(outname, "wb");
-        if (fp_out==NULL) {
-                fprintf(stderr, "Unable to open file %s for writing.\n", outname);
-                exit(1);
-        }
 	fwrite(header, sizeof(struct seisheader), 1, fp_out);
-        for (i=0; i<3; i++) {
+        for (i=0; i<num_comps; i++) {
                 fwrite(seis[i], sizeof(float), header->nt, fp_out);
         }
-        fflush(fp_out);
-        fclose(fp_out);
 }
 
-void hfsim(float seisC[3][mmv], char* stat, float slon, float slat, char* local_vmod, char* output, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int do_site_response, int debug) {
+void hfsim(float seisC[3][mmv], char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, int debug) {
 	//parse cmd-line args
 	int stat_len;
 	int local_vmod_len;
 	int output_len;
 	float seis[mmv][3]; //needs to agree with mmv in hb_high
 	int i;
+	char output[16] = "output.tmp";
 
 	int nt = header->nt;
 	float dt = header->dt;
@@ -117,12 +111,12 @@ void hfsim(float seisC[3][mmv], char* stat, float slon, float slat, char* local_
 			wcc_siteamp14(seisC[i], header->nt, header->dt, pga, vs30);
 		}
 		//printf("Integrating.\n");
-		//integ_diff(1, seisC[i], nt, dt);
+		integ_diff(1, seisC[i], nt, dt);
 	}
 	//remember seisC is 000, 090, ver
 	//so must rotate so that X has heading 90 + modelrot to get to CyberShake
 	//This is no longer correct; per emails with Rob Graves, jbsim3d rotates the output seismograms to 000/090/ver, in the mech_sgt() function.
 	//wcc_rotate(seisC, nt, dt, modelrot+90);
 
-	write_grm_head(output, seisC, header);
+	write_grm_head(output_fp, seisC, header, num_comps);
 }
