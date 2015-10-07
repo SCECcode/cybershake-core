@@ -298,6 +298,8 @@ for(i=0;i<srf.srf_prect.nseg;i++)
    free(tr);
    free(ti);
 
+   free_srf_ptrs(&srf);
+
    noff = noff + nstk*ndip;
    }
 }
