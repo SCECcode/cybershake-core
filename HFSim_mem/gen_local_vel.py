@@ -3,19 +3,21 @@
 import sys
 import os
 
-if len(sys.argv)<2:
-	print "Usage: %s <1D velocity model>" % sys.argv[0]
+if len(sys.argv)<3:
+	print "Usage: %s <1D velocity model> <output>" % sys.argv[0]
 	sys.exit(1)
 
 velocity_model = sys.argv[1]
+out_filename = sys.argv[2]
 c0=57
 c1=34
 i=0
 vm_fp = open(velocity_model, "r")
 vel_in_data = vm_fp.readlines()
 vm_fp.close()
-vel_out = "local_%s" % velocity_model
-vel_out_fp = open(vel_out, "w")
+#vel_out = "local_%s" % velocity_model
+#vel_out_fp = open(vel_out, "w")
+vel_out_fp = open(out_filename, "w")
 for line in vel_in_data:
 	i += 1
         if line.startswith("#") or line.startswith("%"):
