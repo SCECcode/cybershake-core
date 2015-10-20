@@ -25,7 +25,7 @@ public class CyberLoadamps {
 	private static final String NO_RUNID_OPTION_MESSAGE = "Please use -run to specify the RunID";
 	private static final String NO_PERIODS_OPTION_MESSAGE = "Please use -periods to specify the periods to insert";
 
-	public enum Mode {BSA, ZIP, HEAD, ROTD};
+	public enum Mode {BSA, ZIP, HEAD, ROTD, DURATION};
 	/**
 	 * @param args
 	 */
@@ -41,13 +41,16 @@ public class CyberLoadamps {
         Option valuesToInsert = OptionBuilder.withArgName("insertion_values").hasArg().withDescription("Which values to insert -\ngm:\tgeometric mean PSA data (default)\nxy:\tX and Y component PSA data\ngmxy:  Geometric mean and X and Y components").create("i");
         Option periods = OptionBuilder.withArgName("periods").hasArg().withDescription("Comma-delimited periods to insert").create("periods");
         Option rotd = new Option("r", "Read rotd files (instead of bsa.)");
+        Option duration = new Option("u", "Read duration files (instead of bsa.)");
         Option convert = new Option("c", "Convert values from g to cm/sec^2");
+        Option force = new Option("f", "Don't apply value checks to insertion values; use with care!.");
         Option help = new Option("help", "print this message");
 
         OptionGroup fileGroup = new OptionGroup();
         fileGroup.addOption(zip);
         fileGroup.addOption(header);
         fileGroup.addOption(rotd);
+        fileGroup.addOption(duration);
         
 		options.addOption(sgt);
 		options.addOption(path);
@@ -56,10 +59,13 @@ public class CyberLoadamps {
         options.addOption(valuesToInsert);
         options.addOption(periods);
         options.addOption(convert);
+        options.addOption(force);
         options.addOptionGroup(fileGroup);
         
 		CommandLineParser parser = new GnuParser();
 
+		boolean forceInsert = false;
+		
 		try {
 			if (args.length==0) {
 				HelpFormatter formatter = new HelpFormatter();
@@ -94,6 +100,10 @@ public class CyberLoadamps {
                 	return;
                 }
 
+                if (cmd.hasOption("f")) {
+                	forceInsert = true;
+                }
+                
 				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " with Run ID: " + cmd.getOptionValue("run"));
 				RunID rid = new RunID(Integer.parseInt(cmd.getOptionValue("run")));
 //				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid.getSiteName(), rid.getSgtVarID(), cmd.getOptionValue("server"), rid.getRuptVarScenID(), rid.getErfID(), cmd.hasOption("z"));
@@ -113,6 +123,8 @@ public class CyberLoadamps {
 					m = Mode.HEAD;
 				} else if (cmd.hasOption("r")) {
 					m = Mode.ROTD;
+				} else if (cmd.hasOption("u")) {
+					m = Mode.DURATION;
 				}
 				
 				boolean convertGtoCM = false;
@@ -120,7 +132,7 @@ public class CyberLoadamps {
 					convertGtoCM = true;
 				}
 				
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), m, cmd.getOptionValue("periods"), insertValues, convertGtoCM);
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), m, cmd.getOptionValue("periods"), insertValues, convertGtoCM, forceInsert);
 				rvfi.performInsertions();
 			}
 
