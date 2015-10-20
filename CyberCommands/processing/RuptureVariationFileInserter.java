@@ -34,6 +34,7 @@ import util.NumberHelper;
 import util.SwapBytes;
 import data.BSAHeader;
 import data.DirectionalComponent;
+import data.DurationEntry;
 import data.RotDEntry;
 import data.RunID;
 import data.SAPeriods;
@@ -62,17 +63,22 @@ public class RuptureVariationFileInserter {
     private ArrayList<Integer> desiredPeriodsIndicesY = null;
 	HashMap<Integer, Integer> periodIndexToIDMapY = null;
 
+	private HashMap<String, Integer> durationToTypeID = null;
+	
 	private Mode fileMode;
     private boolean insertGeoMean = false;
     private boolean insertXY = false;
     
     private boolean convertGtoCM = false;
     private final float G_TO_CM_2 = 980.665f;
+    
+    private boolean forceInsert = false;
 
-	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, Mode m, String periods, String insertValues, boolean convert) throws IOException {
+	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, Mode m, String periods, String insertValues, boolean convert, boolean forceInsert) throws IOException {
 		pathName = newPathName;
 		fileMode = m;
 		run_ID = rid;
+		this.forceInsert = forceInsert;
 		if (insertValues.indexOf("gm")!=-1) {
 			insertGeoMean = true;
 		}
@@ -142,6 +148,8 @@ public class RuptureVariationFileInserter {
 			insertRuptureVariationFilesWithHeader(sess);
 		} else if (fileMode==Mode.ROTD) {
 			insertRotDFiles(sess);
+		} else if (fileMode==Mode.DURATION) {
+			insertDurationFiles(sess);
 		} else {
 			insertAllRuptureVariationFiles(sess);
 
@@ -150,6 +158,80 @@ public class RuptureVariationFileInserter {
 		sess.close();
 	}
 
+	private void insertDurationFiles(Session sess) {
+		int counter = 0;
+		for (File f: totalFilesList) {
+			try {
+				/*Each duration file has
+				 * <Header for RV1>
+				 * <number of duration entries per component
+				 * <X comp, duration entry 1>
+				 * <X comp, duration entry 2>
+				 * ...
+				 * <X comp, duration entry N>
+				 * <Y comp, duration entry 1>
+				 * ...
+				 * <Y comp, duration entry N>
+				 * <Header for RV2>
+				 * ...
+				 */
+				System.out.println("Processing file " + f.getName());
+				FileInputStream stream = new FileInputStream(f);
+				BSAHeader head = new BSAHeader();
+				
+				try {
+					while (true) {
+						int ret = head.parse(stream);
+						if (ret==-1) break;
+						//Check the site name
+						if (!head.siteString.equals(run_ID.getSiteName())) {
+							System.err.println("Header in " + f.getName() + " lists site name as " + head.siteString + ", but the site for run ID " + run_ID.getRunID() + " is " + run_ID.getSiteName());
+							System.exit(-6);
+						}
+						ArrayList<DurationEntry> entries = new ArrayList<DurationEntry>();
+						//Get the # of durations per component
+						byte[] num_durations_bytes = new byte[4];
+						stream.read(num_durations_bytes);
+						byte[] out_durations_bytes = SwapBytes.swapByteArrayToByteArrayForFloats(num_durations_bytes);
+						DataInputStream ds = new DataInputStream(new ByteArrayInputStream(out_durations_bytes));
+						int num_durations = ds.readInt();
+						//16 bytes per duration entry (type, type_value, component, value)
+						byte[] durationEntryBytes = new byte[num_durations*16];
+						stream.read(durationEntryBytes);
+						byte[] outByteArray = SwapBytes.swapByteArrayToByteArrayForFloats(durationEntryBytes);
+						ds = new DataInputStream(new ByteArrayInputStream(outByteArray));
+						for (int i=0; i<num_durations; i++) {
+							DurationEntry de = new DurationEntry();
+							de.populate(ds);
+							entries.add(de);
+						}
+						ds.close();
+						insertDurationRupture(entries, head, sess);
+					}
+				} catch (IOException ie) {
+					ie.printStackTrace();
+				}
+				
+				//Do this more often because there are multiple inserts per file
+				if ((counter+1)%25==0) System.gc();
+				if ((counter+1)%5==0) {
+				// flush a batch of inserts and release memory
+					sess.flush();
+					sess.clear();
+				}
+				counter++;
+				
+			} catch (IOException ioe) {
+				System.err.println("Error reading from file " + pathName);
+				ioe.printStackTrace();
+			} catch (ConstraintViolationException ex) {
+				ex.printStackTrace();
+				System.err.println("Offending SQL statement was: " + ex.getSQL());
+				System.exit(-2);
+			}
+		}
+	}
+	
 	private void insertRotDFiles(Session sess) {
 		int counter = 0;
 		for (File f: totalFilesList) {
@@ -386,6 +468,59 @@ public class RuptureVariationFileInserter {
 		insertRupture(saRuptureWithSingleRupVar, sess, false);
 	}
 
+	private void insertDurationRupture(ArrayList<DurationEntry> entries, BSAHeader head, Session sess) {
+		Session durationSession = sessFactory.openSession();
+		
+		String durationPrefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = ";
+		
+		
+		//Determine mapping to IM_Type_IDs
+		//For now, we will insert for both X and Y components, for both acceleration and velocity, 5-75% and 5-95% cutoffs
+		String[] type = {"acceleration", "velocity"};
+		String[] measure = {"5% to 75%", "5% to 95%"};
+		String[] component = {"X", "Y"};
+		for (String c: component) {
+			for (String t: type) {
+				for (String m: measure) {
+					String typeMeasureString = t + " significant duration, " + m;
+					String query = durationPrefix + "'" + typeMeasureString + "' AND IM_Type_Component=" + c;
+					SQLQuery q = durationSession.createSQLQuery(query);
+					int typeID = (Integer)(q.list().get(0));
+					String keyString = DurationEntry.getKeyString(typeMeasureString, c);
+					durationToTypeID.put(keyString, typeID);
+				}
+			}
+		}
+		
+		sess.beginTransaction();
+		
+		for (DurationEntry e: entries) {
+			String keyString = "" + e.type;
+			if (e.type_value!=-1) {
+				keyString += "_" + e.type_value;
+			}
+			keyString += "_" + e.component;
+			
+			if (durationToTypeID.containsKey(keyString)) {
+				PeakAmplitude pa = new PeakAmplitude();
+				PeakAmplitudePK paPK = new PeakAmplitudePK();
+				paPK.setRun_ID(run_ID.getRunID());
+				paPK.setSource_ID(head.source_id);				
+				paPK.setRupture_ID(head.rupture_id);
+				paPK.setRup_Var_ID(head.rup_var_id);
+				paPK.setIM_Type_ID(durationToTypeID.get(keyString));
+				pa.setPaPK(paPK);
+				pa.setIM_Value(e.value);
+				try {
+					sess.save(pa);
+				} catch (NonUniqueObjectException nuoe) {
+					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
+					System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
+				}
+			}
+		}
+	}
+	
 	private void insertRotdRupture(ArrayList<RotDEntry> entries, BSAHeader head, Session sess) {
 		Session rotdSession = sessFactory.openSession();
 		
@@ -397,6 +532,7 @@ public class RuptureVariationFileInserter {
 			rd100periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
 				SQLQuery query = rotdSession.createSQLQuery(rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", Hibernate.INTEGER);
+				System.out.println(query.getQueryString());
 				int typeID = (Integer)(query.list().get(0));
 				rd100periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
 				System.out.println("Adding IM_Type_ID " + typeID + " to list.");
@@ -437,7 +573,7 @@ public class RuptureVariationFileInserter {
 					sess.save(pa);
 				} catch (NonUniqueObjectException nuoe) {
 					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
-					System.err.println("ERROR:  found duplicate entry for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
+					System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
 				}
 			}
 			if (rd50periodValueToIDMap.containsKey(e.period)) {
@@ -582,37 +718,43 @@ public class RuptureVariationFileInserter {
 					pa.setPaPK(paPK);
 					double psaValue = currRupVar.geomAvgComp.periods[periodIter];
 					if (psaValue>8400 || psaValue<0.01) {
-						//Tiny PSA values are ok if the event is small and far away
-						System.out.println("Found psaValue " + psaValue + " for source " + currentSource_ID + " rupture " + currentRupture_ID + " rup var " + currRupVar.variationNumber);
-						if (mag==-1.0) {
-							//Then we need to do the query for this rupture
-							Session checkMagSession = sessFactory.openSession();
-							String query = "select R.Mag, SR.Site_Rupture_Dist from Ruptures R, CyberShake_Site_Ruptures SR " +
-							"where SR.CS_Site_ID=" + run_ID.getSiteID() + " and SR.ERF_ID=" + run_ID.getErfID() +
-							" and SR.Source_ID=" + currentSource_ID + " and SR.Rupture_ID=" + currentRupture_ID +
-							" and R.ERF_ID=SR.ERF_ID and R.Source_ID=SR.Source_ID and R.Rupture_ID=SR.Rupture_ID";
-							System.out.println(query);
-							System.out.flush();
-							SQLQuery sq = checkMagSession.createSQLQuery(query);
-							sq.addScalar("R.Mag", Hibernate.FLOAT);
-							sq.addScalar("SR.Site_Rupture_Dist", Hibernate.FLOAT);
-							List<Object[]> results = sq.list();
-							mag = (Float)(results.get(0)[0]);
-							//Rupture distances aren't available for all ruptures
-							if (results.get(0).length>1) {
-								rupture_dist = (Float)(results.get(0)[1]);
-							} else {
-								rupture_dist = -1;
-							}
-							checkMagSession.close();
-						}
-						if (mag>6.8 || rupture_dist<300.0 || psaValue<0.003) {
-							System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
-							System.err.println("Mag=" + mag + " rupture_dist=" + rupture_dist);
-							throw new IllegalArgumentException();
+						//If force insert is on, we don't care
+						if (forceInsert) {
+							System.out.println("Found psaValue " + psaValue + " for source " + currentSource_ID + " rupture " + currentRupture_ID + " rup var " + currRupVar.variationNumber);
+							System.out.println("Force-insert option was selected, inserting anyway.");
 						} else {
-							System.out.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
-							System.out.println("Since mag=" + mag + " and source rupture dist=" + rupture_dist + ", permitting insertion.");
+							//Tiny PSA values are ok if the event is small and far away
+							System.out.println("Found psaValue " + psaValue + " for source " + currentSource_ID + " rupture " + currentRupture_ID + " rup var " + currRupVar.variationNumber);
+							if (mag==-1.0) {
+								//Then we need to do the query for this rupture
+								Session checkMagSession = sessFactory.openSession();
+								String query = "select R.Mag, SR.Site_Rupture_Dist from Ruptures R, CyberShake_Site_Ruptures SR " +
+									"where SR.CS_Site_ID=" + run_ID.getSiteID() + " and SR.ERF_ID=" + run_ID.getErfID() +
+									" and SR.Source_ID=" + currentSource_ID + " and SR.Rupture_ID=" + currentRupture_ID +
+									" and R.ERF_ID=SR.ERF_ID and R.Source_ID=SR.Source_ID and R.Rupture_ID=SR.Rupture_ID";
+								System.out.println(query);
+								System.out.flush();
+								SQLQuery sq = checkMagSession.createSQLQuery(query);
+								sq.addScalar("R.Mag", Hibernate.FLOAT);
+								sq.addScalar("SR.Site_Rupture_Dist", Hibernate.FLOAT);
+								List<Object[]> results = sq.list();
+								mag = (Float)(results.get(0)[0]);
+								//Rupture distances aren't available for all ruptures
+								if (results.get(0).length>1) {
+									rupture_dist = (Float)(results.get(0)[1]);
+								} else {
+									rupture_dist = -1;
+								}
+								checkMagSession.close();
+							}
+							if (mag>6.8 || rupture_dist<300.0 || psaValue<0.003) {
+								System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
+								System.err.println("Mag=" + mag + " rupture_dist=" + rupture_dist);
+								throw new IllegalArgumentException();
+							} else {
+								System.out.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
+								System.out.println("Since mag=" + mag + " and source rupture dist=" + rupture_dist + ", permitting insertion.");
+							}
 						}
 					}
 //				System.out.println("Inserting value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + saPeriods.values[periodIter]);

@@ -32,9 +32,37 @@ public class BSAFileUtil {
 			createTotalFileListHelper(saFile);
 		} else if (fileMode==Mode.ROTD) {
 			createTotalFileListRotd(saFile);
+		} else if (fileMode==Mode.DURATION) {
+			createTotalFileListDuration(saFile);
 		}
 		return totalFileList;
 		
+	}
+	
+	private static void createTotalFileListDuration(File saFile) {
+		File[] durList;
+		if (saFile.isDirectory()) {
+			durList = saFile.listFiles(new DurationFilenameFilter());
+		} else {
+			//just inserting 1 file
+			durList = new File[1];
+			durList[0] = saFile;
+		}
+		
+		if (isInDebugMode) {
+			System.out.println("Printing all files in " + saFile.getName());
+			for (int i=0; i<durList.length; i++) {
+				System.out.println(durList[i]);
+			}
+		}
+		
+		totalFileList.addAll(Arrays.asList(durList));
+		for (int filesIndex=0; filesIndex < durList.length; filesIndex++) {
+			if (isInDebugMode) {
+				System.out.println("\tFilename: " + durList[filesIndex].getName());
+			}
+			totalFilenameList.add(durList[filesIndex].getName());
+		}
 	}
 	
 	private static void createTotalFileListRotd(File saFile) {
