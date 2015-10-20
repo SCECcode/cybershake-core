@@ -35,6 +35,7 @@ import org.apache.commons.cli.ParseException;
 public class CheckDBDataForSite {
     private static final String DB_SERVER = "focal.usc.edu";
     private static final String DB = "CyberShake";
+    private static DBConnect dbc = new DBConnect(DB_SERVER, DB);
     
 //    private static final int NUM_PERIODS_INSERTED = 3;  //3, 5, and 10s
     
@@ -45,14 +46,16 @@ public class CheckDBDataForSite {
         Option help = new Option("h", "help", false, "Print help for CheckDBDataForSite");
         Option run_id = OptionBuilder.withArgName("run_id").hasArg().withDescription("Run ID to check (required).").create("r");
         run_id.setRequired(true);
-        Option periods = OptionBuilder.withArgName("periods").hasArg().withDescription("Comma-separated list of periods to check.").create("p");
-        Option component = OptionBuilder.withArgName("component").hasArg().withDescription("Component type (geometric, rotd) to check.").create("c");
+        Option periods = OptionBuilder.withArgName("periods").hasArg().withDescription("Comma-separated list of periods to check, for geometric and rotd.").create("p");
+        Option typeIDs = OptionBuilder.withArgName("type_ids").hasArg().withDescription("Comma-separated list of type IDs to check, for duration.").create("t");
+        Option component = OptionBuilder.withArgName("component").hasArg().withDescription("Component type (geometric, rotd, duration) to check.").create("c");
         Option output = OptionBuilder.withArgName("output").hasArg().withDescription("Path to output file, if something is missing (required).").create("o");
         output.setRequired(true);
 
         cmd_opts.addOption(help);
         cmd_opts.addOption(run_id);
         cmd_opts.addOption(periods);
+        cmd_opts.addOption(typeIDs);
         cmd_opts.addOption(component);
         cmd_opts.addOption(output);
         
@@ -82,26 +85,61 @@ public class CheckDBDataForSite {
         String runID = line.getOptionValue(run_id.getOpt());
         String outputFile = line.getOptionValue(output.getOpt());
         
-        ArrayList<String> periodsToCheck = new ArrayList<String>();
-        String periodString = line.getOptionValue(periods.getOpt());
-        if (periodString!=null) {
-        	String[] pieces = periodString.split(",");
-        	for (String piece: pieces) {
-        		periodsToCheck.add(piece);
-        	}
-        }
-        
         //Default is geometric mean
         String componentString = "geometric";
         if (line.hasOption(component.getOpt())) {
         	componentString = line.getOptionValue(component.getOpt());
         }
         
-        checkDBData(runID, periodsToCheck, componentString, outputFile);
+        ArrayList<Integer> imTypesToCheck = new ArrayList<Integer>();
+        if (line.hasOption(periods.getOpt())) {
+        	String periodString = line.getOptionValue(periods.getOpt());
+        	if (periodString!=null) {
+        		String[] pieces = periodString.split(",");
+        		for (String piece: pieces) {
+        			//Determine IM Type ID which matches this period
+        			String query = null;
+        			if (componentString.equals("geometric")) {
+        				query = "select IM_Type_ID from IM_Types where abs(IM_Type_Value-" +
+        					piece + ") and IM_Type_Component='geometric mean';";
+        			} else if (componentString.equals("rotd")) {
+        				query = "select IM_Type_ID from IM_Types where abs(IM_Type_Value-" +
+            					piece + ") and (IM_Type_Component='RotD50' or IM_Type_Component='RotD100');";
+        			}
+    				ResultSet imTypeSet = dbc.selectData(query);
+    				try {
+        				imTypeSet.first();
+        				if (imTypeSet.getRow()==0) {
+        	                System.err.println("Query '" + query + "' did not return any results, aborting.");
+        	                System.exit(2);
+        				}
+        				while (!imTypeSet.isAfterLast()) {
+        					int imTypeID = imTypeSet.getInt("IM_Type_ID");
+        					imTypesToCheck.add(imTypeID);
+        					imTypeSet.next();
+        				}
+        				imTypeSet.close();
+    				} catch (SQLException sqe) {
+    					sqe.printStackTrace();
+    					System.exit(3);
+    				}
+        		}
+        	}
+        } else if (line.hasOption(typeIDs.getOpt())) {
+        	String typeString = line.getOptionValue(typeIDs.getOpt());
+        	if (typeString!=null) {
+        		String[] pieces = typeString.split(",");
+        		for (String piece: pieces) {
+        			imTypesToCheck.add(Integer.parseInt(piece));
+        		}
+        	}
+        }
+        
+        checkDBData(runID, imTypesToCheck, componentString, outputFile);
     }
 
-    private static void checkDBData(String runID, ArrayList<String> periodsToCheck, String componentString, String outputFile) {
-        DBConnect dbc = new DBConnect(DB_SERVER, DB);
+    private static void checkDBData(String runID, ArrayList<Integer> imTypesToCheck, String componentString, String outputFile) {
+        
         
         //Determine number of rupture variations
         String query = "select count(*) " +
@@ -127,59 +165,33 @@ public class CheckDBDataForSite {
             
             int rupVarsExpected = rupVarSet.getInt("count(*)");
             
-            ArrayList<String> componentsToCheck = new ArrayList<String>();
-            if (componentString.equals("geometric")) {
-            	componentsToCheck.add("geometric mean");
-            } else if (componentString.equals("rotd")) {
-            	componentsToCheck.add("RotD50");
-            	componentsToCheck.add("RotD100");
-            }
-            
             //For each component type
-            for (String componentType: componentsToCheck) {
-            	//For each period, see if we actually have this many
-            	for (String period: periodsToCheck) {
-            		//Get IM Type ID
-            		query = "select IM_Type_ID " +
-            				"from IM_Types " +
-            				"where abs(IM_Type_Value-" + period + ")<0.0001 " +
-            				"and IM_Type_Component='" + componentType + "';";
-                    System.out.println(query);
-            		ResultSet idSet = dbc.selectData(query);
-            		idSet.first();
-            		if (idSet.getRow()==0) {
-                         System.err.println("Couldn't find IM_Type_ID with query " + query);
-                         System.exit(2);
-                    }
-            		int id = idSet.getInt("IM_Type_ID");
+            for (int imTypeID: imTypesToCheck) {
+        		query = "select count(*) " +
+        				"from PeakAmplitudes " +
+        				"where Run_ID=" + runID + " " + 
+        				"and IM_Type_ID=" + imTypeID + ";";
             		
-            		query = "select count(*) " +
-            				"from PeakAmplitudes " +
-            				"where Run_ID=" + runID + " " + 
-            				"and IM_Type_ID=" + id + ";";
-            		
-            		System.out.println(query);
-            		ResultSet ampSet = dbc.selectData(query);
-                    ampSet.first();
-                    if (ampSet.getRow()==0) {
-                        System.err.println("No rup vars in DB.");
-                        System.exit(2);
-                    }
-                    int ampSetNum = ampSet.getInt("count(*)");
-                    
-                    if (rupVarsExpected!=ampSetNum) {
-                        System.out.println(rupVarsExpected + " variations for run " + runID + " in RupVar table, but " + (ampSetNum) + " variations in PeakAmp table with IM_Type_ID " + id + ".");
-                        rupVarSet.close();
-                        idSet.close();
-                        ampSet.close();
-                        findDifferences2(dbc, runID, id, outputFile);
-                        System.exit(3);
-                    } else {
-                    	System.out.println("All ruptures are registered.");
-                    }
-                    idSet.close();
+        		System.out.println(query);
+        		ResultSet ampSet = dbc.selectData(query);
+                ampSet.first();
+                if (ampSet.getRow()==0) {
+                    System.err.println("No rup vars in DB.");
+                    System.exit(2);
+                }
+                int ampSetNum = ampSet.getInt("count(*)");
+                
+                if (rupVarsExpected!=ampSetNum) {
+                    System.out.println(rupVarsExpected + " variations for run " + runID + " in RupVar table, but " + (ampSetNum) +
+                    		" variations in PeakAmp table with IM_Type_ID " + imTypeID + ".");
+                    rupVarSet.close();
                     ampSet.close();
-            	}
+                    findDifferences2(dbc, runID, imTypeID, outputFile);
+                    System.exit(3);
+                } else {
+                	System.out.println("All ruptures are registered.");
+                }
+                ampSet.close();
             }
         } catch (SQLException e) {
             e.printStackTrace();
