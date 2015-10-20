@@ -284,7 +284,8 @@ CS_Site_Name varchar(50) not null,
 CS_Short_Name varchar(5) not null unique,
 CS_Site_Lat double not null,
 CS_Site_Lon double not null,
-primary key (CS_Site_ID)
+primary key (CS_Site_ID),
+unique key (CS_Short_Name)
 ) ENGINE=InnoDB;
 
 #
