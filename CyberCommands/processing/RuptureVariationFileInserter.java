@@ -484,6 +484,7 @@ public class RuptureVariationFileInserter {
 				for (String m: measure) {
 					String typeMeasureString = t + " significant duration, " + m;
 					String query = durationPrefix + "'" + typeMeasureString + "' AND IM_Type_Component=" + c;
+					System.out.println(query);
 					SQLQuery q = durationSession.createSQLQuery(query);
 					int typeID = (Integer)(q.list().get(0));
 					String keyString = DurationEntry.getKeyString(typeMeasureString, c);
