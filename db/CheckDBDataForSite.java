@@ -101,10 +101,10 @@ public class CheckDBDataForSite {
         			String query = null;
         			if (componentString.equals("geometric")) {
         				query = "select IM_Type_ID from IM_Types where abs(IM_Type_Value-" +
-        					piece + ") and IM_Type_Component='geometric mean';";
+        					piece + ")<0.0001 and IM_Type_Component='geometric mean';";
         			} else if (componentString.equals("rotd")) {
         				query = "select IM_Type_ID from IM_Types where abs(IM_Type_Value-" +
-            					piece + ") and (IM_Type_Component='RotD50' or IM_Type_Component='RotD100');";
+            					piece + ")<0.0001 and (IM_Type_Component='RotD50' or IM_Type_Component='RotD100');";
         			}
     				ResultSet imTypeSet = dbc.selectData(query);
     				try {
