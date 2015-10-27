@@ -6,10 +6,10 @@
 #define         RPERD           0.017453293
 #define         DPERR           57.29577951
 
-main(int ac,char **av)
+void srf2stoch(char* rup_geom_file, int slip_id, int hypo_id, char* srf_file, float dx, float dy, int inbin, float avgstk, struct slipfile* sfile, float dt, int debug)
 {
-FILE *fopfile(), *fpr, *fpw;
-float dx, dy, len, wid, xp, yp;
+FILE *fopfile(), *fpr;
+float len, wid, xp, yp;
 float dtop, strike, dip;
 float rr, ss, tt, tl, ravg, savg, *slip, *trise, *tinit, *sp, *tr, *ti;
 float s1, s2, xx, yy, rake, cosA, sinA, sum;
@@ -19,35 +19,16 @@ int i, is, id, ip, nstk, ndip, nseg;
 int ix, iy, j, k, m, kp, noff;
 int nx, ny, nxdiv, nydiv, nxsum, nysum;
 float shypo, dhypo, elon, elat, fac;
-char infile[256], outfile[256];
 char string[1024];
 
 struct standrupformat srf;
-int inbin = 0;
 
-float target_dx = -1.0;
-float target_dy = -1.0;
+FILE* fpw = fopen("test.stoch", "w");
 
-float avgstk = -1.0e+15;
+float target_dx = dx;
+float target_dy = dy;
+
 int revstk;
-
-sprintf(infile,"stdin");
-sprintf(outfile,"stdout");
-
-setpar(ac,av);
-getpar("infile","s",infile);
-getpar("outfile","s",outfile);
-
-getpar("target_dx","f",&target_dx);
-if(target_dx < 0.0)
-   mstpar("dx","f",&dx);
-getpar("target_dy","f",&target_dy);
-if(target_dy < 0.0)
-   mstpar("dy","f",&dy);
-
-getpar("inbin","d",&inbin);
-getpar("avgstk","f",&avgstk);
-endpar();
 
 if(avgstk > -1.0e+14)
    {
@@ -57,14 +38,20 @@ if(avgstk > -1.0e+14)
       avgstk = avgstk + 360.0;
    }
 
-read_srf(&srf,infile,inbin);
+if (srf_file[0]!='\0') {
+	read_srf(&srf,srf_file,inbin);
+} else {
+   rg_stats_t stats;
+   set_memcached_server("localhost");
+   rupgen_genslip(rup_geom_file, slip_id, hypo_id, &stats, &srf, RUPGEN_UNIFORM_HYPO, dt);
+   if (debug) {
+           char outfile[256];
+           sprintf(outfile, "%d_%d.srf", slip_id, hypo_id);
+           write_srf(&srf, outfile, 0);
+   }
+}
 
-if(strcmp(outfile,"stdout") == 0)
-   fpw = stdout;
-else
-   fpw = fopfile(outfile,"w");
-
-fprintf(fpw,"%d\n",srf.srf_prect.nseg);
+sfile->nseg = srf.srf_prect.nseg;
 
 noff = 0;
 for(i=0;i<srf.srf_prect.nseg;i++)
@@ -109,6 +96,7 @@ for(i=0;i<srf.srf_prect.nseg;i++)
       nxdiv++;
 
    nxsum = (nstk*nxdiv)/nx;
+   fprintf(stderr, "nxsum=%d\n", nxsum);
 
    if(target_dy > 0.0)
       {
@@ -129,8 +117,10 @@ for(i=0;i<srf.srf_prect.nseg;i++)
       nydiv++;
 
    nysum = (ndip*nydiv)/ny;
+   fprintf(stderr, "nysum=%d\n", nysum);
 
-   fprintf(stderr,"seg= %d\n",i);
+   if (debug) {
+	fprintf(stderr,"seg= %d\n",i);
    /*
    fprintf(stderr,"nstk= %d nx= %d nxdiv= %d nxsum= %d\n",nstk,nx,nxdiv,nxsum);
    fprintf(stderr,"ndip= %d ny= %d nydiv= %d nysum= %d\n",ndip,ny,nydiv,nysum);
@@ -139,8 +129,9 @@ for(i=0;i<srf.srf_prect.nseg;i++)
    trise = (float *) check_malloc (nxdiv*nydiv*nstk*ndip*sizeof(float));
    tinit = (float *) check_malloc (nxdiv*nydiv*nstk*ndip*sizeof(float));
    */
-   fprintf(stderr,"nstk= %d nx= %d\n",nstk,nx);
-   fprintf(stderr,"ndip= %d ny= %d\n",ndip,ny);
+	   fprintf(stderr,"nstk= %d nx= %d\n",nstk,nx);
+	   fprintf(stderr,"ndip= %d ny= %d\n",ndip,ny);
+   }
 
    slip = (float *) check_malloc (nstk*ndip*sizeof(float));
    trise = (float *) check_malloc (nstk*ndip*sizeof(float));
@@ -221,6 +212,7 @@ for(i=0;i<srf.srf_prect.nseg;i++)
 
    ravg = ravg/savg;
    savg = savg/(nstk*ndip);
+   fprintf(stderr, "ravg=%f, savg=%f\n", ravg, savg);
 
    fac = 1.0/(float)(nx*ny);
 
@@ -248,6 +240,18 @@ for(i=0;i<srf.srf_prect.nseg;i++)
          }
       }
 
+   sfile->elon[i] = elon;
+   sfile->elat[i] = elat;
+   sfile->nx[i] = nx;
+   sfile->ny[i] = ny;
+   sfile->dx[i] = dx;
+   sfile->dy[i] = dy;
+   sfile->strike[i] = strike;
+   sfile->dip[i] = dip;
+   sfile->ravg[i] = ravg;
+   sfile->dtop[i] = dtop;
+   sfile->shypo[i] = shypo;
+   sfile->dhypo[i] = dhypo;
    fprintf(fpw,"%10.4f %10.4f %5d %5d %8.2f %8.2f\n",elon,elat,nx,ny,dx,dy);
    fprintf(fpw,"%4.0f %4.0f %4.0f %8.2f %8.2f %8.2f\n",strike,dip,ravg,dtop,shypo,dhypo);
 
@@ -255,17 +259,23 @@ for(i=0;i<srf.srf_prect.nseg;i++)
    if(avgstk > -1.0e+14 && (strike > avgstk + 90.0 || strike < avgstk - 90.0))
       revstk = 1;
 
+//In for loop, need to reverse indices for fortran compatibility
+//so it's y, x, segment
    for(iy=0;iy<ny;iy++)
       {
       if(revstk)
          {
-         for(ix=nx-1;ix>=0;ix--)
-            fprintf(fpw," %5.0f",sp[ix + iy*nx]);
+         for(ix=nx-1;ix>=0;ix--) {
+              sfile->sp[iy*NQ*LV + (nx-1-ix)*LV + i] = sp[ix + iy*nx];
+              fprintf(fpw," %5.0f",sp[ix + iy*nx]);
+         }
 	 }
       else
          {
-         for(ix=0;ix<nx;ix++)
+         for(ix=0;ix<nx;ix++) {
+              sfile->sp[iy*NQ*LV + ix*LV + i] = sp[ix + iy*nx];
             fprintf(fpw," %5.0f",sp[ix + iy*nx]);
+         }
 	 }
 
       fprintf(fpw,"\n");
@@ -275,13 +285,17 @@ for(i=0;i<srf.srf_prect.nseg;i++)
       {
       if(revstk)
          {
-         for(ix=nx-1;ix>=0;ix--)
+         for(ix=nx-1;ix>=0;ix--) {
+            sfile->tr[iy*NQ*LV + (nx-1-ix)*LV + i] = tr[ix + iy*nx];
             fprintf(fpw," %5.2f",tr[ix + iy*nx]);
+         }
 	 }
       else
          {
-         for(ix=0;ix<nx;ix++)
+         for(ix=0;ix<nx;ix++) {
+            sfile->tr[iy*NQ*LV + ix*LV + i] = tr[ix + iy*nx];
             fprintf(fpw," %5.2f",tr[ix + iy*nx]);
+         }
 	 }
 
       fprintf(fpw,"\n");
@@ -291,13 +305,17 @@ for(i=0;i<srf.srf_prect.nseg;i++)
       {
       if(revstk)
          {
-         for(ix=nx-1;ix>=0;ix--)
+         for(ix=nx-1;ix>=0;ix--) {
+              sfile->ti[iy*NQ*LV + (nx-1-ix)*LV + i] = ti[ix + iy*nx];
             fprintf(fpw," %5.2f",ti[ix + iy*nx]);
+         }
 	 }
       else
          {
-         for(ix=0;ix<nx;ix++)
+         for(ix=0;ix<nx;ix++) {
+              sfile->ti[iy*NQ*LV + ix*LV + i] = ti[ix + iy*nx];
             fprintf(fpw," %5.2f",ti[ix + iy*nx]);
+         }
 	 }
 
       fprintf(fpw,"\n");
@@ -311,8 +329,11 @@ for(i=0;i<srf.srf_prect.nseg;i++)
    free(ti);
    free(navg);
 
-   noff = noff + nstk*ndip;
-   }
+   free_srf_ptrs(&srf);
 
-fclose(fpw);
+   noff = noff + nstk*ndip;
+
+   fflush(fpw);
+   fclose(fpw);
+   }
 }
