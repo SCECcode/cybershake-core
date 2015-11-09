@@ -9,10 +9,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -25,6 +32,7 @@ import org.hibernate.NonUniqueObjectException;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.StatelessSession;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.exception.ConstraintViolationException;
 
@@ -73,6 +81,8 @@ public class RuptureVariationFileInserter {
     private final float G_TO_CM_2 = 980.665f;
     
     private boolean forceInsert = false;
+    
+    private Connection conn = null;
 
 	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, Mode m, String periods, String insertValues, boolean convert, boolean forceInsert) throws IOException {
 		pathName = newPathName;
@@ -153,7 +163,7 @@ public class RuptureVariationFileInserter {
 		} else {
 			insertAllRuptureVariationFiles(sess);
 
-		}
+		}		
 		sess.getTransaction().commit();
 		sess.close();
 	}
@@ -196,11 +206,12 @@ public class RuptureVariationFileInserter {
 						DataInputStream ds = new DataInputStream(new ByteArrayInputStream(out_durations_bytes));
 						int num_durations = ds.readInt();
 						//16 bytes per duration entry (type, type_value, component, value)
-						byte[] durationEntryBytes = new byte[num_durations*16];
+						//Times 2 because 2 components
+						byte[] durationEntryBytes = new byte[num_durations*2*16];
 						stream.read(durationEntryBytes);
 						byte[] outByteArray = SwapBytes.swapByteArrayToByteArrayForFloats(durationEntryBytes);
 						ds = new DataInputStream(new ByteArrayInputStream(outByteArray));
-						for (int i=0; i<num_durations; i++) {
+						for (int i=0; i<2*num_durations; i++) {
 							DurationEntry de = new DurationEntry();
 							de.populate(ds);
 							entries.add(de);
@@ -231,8 +242,15 @@ public class RuptureVariationFileInserter {
 			}
 		}
 	}
+		
 	
 	private void insertRotDFiles(Session sess) {
+		//Track time
+		long start, end;
+		long fileReading = 0;
+		long insertionSetup = 0;
+		long dbCommit = 0;
+		long garbageCollection = 0;
 		int counter = 0;
 		for (File f: totalFilesList) {
 			try {
@@ -245,12 +263,16 @@ public class RuptureVariationFileInserter {
 				 * <RotD entry 16>
 				 * <PSA header for RV2
 				 */
+				start = System.currentTimeMillis();
 				System.out.println("Processing file " + f.getName());
 				FileInputStream stream = new FileInputStream(f);
 				BSAHeader head = new BSAHeader();
+				end = System.currentTimeMillis();
+				fileReading += (end-start);
 				
 				try {
 					while (true) {
+						start = System.currentTimeMillis();
 						int ret = head.parse(stream);
 						if (ret==-1) break;
 						//Check the site name
@@ -276,18 +298,32 @@ public class RuptureVariationFileInserter {
 							entries.add(rde);
 						}
 						ds.close();
+						end = System.currentTimeMillis();
+						fileReading += (end-start);
+						start = System.currentTimeMillis();
+//						insertRotdRuptureSQL(entries, head);
 						insertRotdRupture(entries, head, sess);
+						end = System.currentTimeMillis();
+						insertionSetup += (end-start);
 					}
 				} catch (IOException ie) {
 					ie.printStackTrace();
 				}
 				
 				//Do this more often because there are multiple inserts per file
-				if ((counter+1)%25==0) System.gc();
-				if ((counter+1)%5==0) {
+				if ((counter+1)%25==0) {
+					start = System.currentTimeMillis();
+					System.gc();
+					end = System.currentTimeMillis();
+					garbageCollection += (end-start);
+				}
+				if ((counter+1)%25==0) {
 				// flush a batch of inserts and release memory
+					start = System.currentTimeMillis();
 					sess.flush();
 					sess.clear();
+					end = System.currentTimeMillis();
+					dbCommit += (end-start);
 				}
 				counter++;
 			} catch (IOException ioe) {
@@ -299,6 +335,10 @@ public class RuptureVariationFileInserter {
 				System.exit(-2);
 			}
 		}
+		System.out.println("File reading (sec): " + (fileReading/1000));
+		System.out.println("Insertion setup (sec): " + (insertionSetup/1000));
+		System.out.println("Garbage collection (sec): " + (garbageCollection/1000));
+		System.out.println("DB Commit (sec): " + (dbCommit/1000));
 	}
 
 	
@@ -473,22 +513,23 @@ public class RuptureVariationFileInserter {
 		
 		String durationPrefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = ";
 		
-		
-		//Determine mapping to IM_Type_IDs
-		//For now, we will insert for both X and Y components, for both acceleration and velocity, 5-75% and 5-95% cutoffs
-		String[] type = {"acceleration", "velocity"};
-		String[] measure = {"5% to 75%", "5% to 95%"};
-		String[] component = {"X", "Y"};
-		for (String c: component) {
-			for (String t: type) {
-				for (String m: measure) {
-					String typeMeasureString = t + " significant duration, " + m;
-					String query = durationPrefix + "'" + typeMeasureString + "' AND IM_Type_Component=" + c;
-					System.out.println(query);
-					SQLQuery q = durationSession.createSQLQuery(query);
-					int typeID = (Integer)(q.list().get(0));
-					String keyString = DurationEntry.getKeyString(typeMeasureString, c);
-					durationToTypeID.put(keyString, typeID);
+		if (durationToTypeID==null) {
+			durationToTypeID = new HashMap<String, Integer>();
+			//Determine mapping to IM_Type_IDs
+			//For now, we will insert for both X and Y components, for both acceleration and velocity, 5-75% and 5-95% cutoffs
+			String[] type = {"acceleration", "velocity"};
+			String[] measure = {"5% to 75%", "5% to 95%"};
+			String[] component = {"X", "Y"};
+			for (String c: component) {
+				for (String t: type) {
+					for (String m: measure) {
+						String typeMeasureString = t + " significant duration, " + m;
+						String query = durationPrefix + "'" + typeMeasureString + "' AND IM_Type_Component='" + c + "'";
+						SQLQuery q = durationSession.createSQLQuery(query);
+						int typeID = (Integer)(q.list().get(0));
+						String keyString = DurationEntry.getKeyString(typeMeasureString, c);
+						durationToTypeID.put(keyString, typeID);
+					}
 				}
 			}
 		}
@@ -521,6 +562,113 @@ public class RuptureVariationFileInserter {
 			}
 		}
 	}
+	
+	//Insert rupture data using SQL queries directly, not hibernate
+	private void insertRotdRuptureSQL(ArrayList<RotDEntry> entries, BSAHeader head) {
+		String rd100Prefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND IM_Type_Component = 'RotD100' AND ";
+		String rd50Prefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND IM_Type_Component = 'RotD50' AND ";
+		
+		try {
+			if (conn==null) {
+				Properties props = new Properties();
+				props.put("user", "cybershk");
+				props.put("password", "***REMOVED***");
+				conn = DriverManager.getConnection("jdbc:mysql://focal.usc.edu:3306/CyberShake", props);
+			}
+			Statement stmt = conn.createStatement();
+
+			//Determine mapping from periods to IM_Type_IDs
+			if (rd100periodValueToIDMap==null) {
+				rd100periodValueToIDMap = new HashMap<Float, Integer>();
+				for (int i=0; i<desiredPeriods.size(); i++) {
+					String query = rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i);
+					System.out.println(query);
+					ResultSet rs = stmt.executeQuery(query);
+					try {
+						rs.first();
+					 	if (rs.getRow()==0) {
+				      	    System.err.println("No IM_Type_ID found for RotD100, value " + desiredPeriods.get(i) + ".");
+				      	    System.exit(1);
+				      	}
+					} catch (SQLException e) {
+						e.printStackTrace();
+						System.exit(2);
+					}
+					int typeID = rs.getInt(1);
+					rd100periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
+					System.out.println("Adding IM_Type_ID " + typeID + " to list.");
+				}
+			}
+			if (rd50periodValueToIDMap==null) {
+				rd50periodValueToIDMap = new HashMap<Float, Integer>();
+				for (int i=0; i<desiredPeriods.size(); i++) {
+					String query = rd50Prefix + "IM_Type_Value = " + desiredPeriods.get(i);
+					ResultSet rs = stmt.executeQuery(query);
+					try {
+						rs.first();
+					 	if (rs.getRow()==0) {
+				      	    System.err.println("No IM_Type_ID found for RotD50, value " + desiredPeriods.get(i) + ".");
+				      	    System.exit(1);
+				      	}
+					} catch (SQLException e) {
+						e.printStackTrace();
+						System.exit(2);
+					}
+					int typeID = rs.getInt(1);
+					rd50periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
+					System.out.println("Adding IM_Type_ID " + typeID + " to list.");
+				}
+			}
+			String insertString = "insert into PeakAmplitudes " + 
+					"(Run_ID, Source_ID, Rupture_ID, Rup_Var_ID, IM_Type_ID, IM_Value) " +
+					"values (" + run_ID.getRunID() + ", ?, ?, ?, ?, ?)";
+			PreparedStatement ps = conn.prepareStatement(insertString);
+			int counter = 0;
+			for (RotDEntry e: entries) {
+				if (rd100periodValueToIDMap.containsKey(e.period)) {
+//					System.out.println("Adding source " + head.source_id + ", rupture " + head.rupture_id + ", rup var " + head.rup_var_id + ", period " + e.period);
+					// Initialize PeakAmplitudes class
+					ps.setString(1, "" + head.source_id);
+					ps.setString(2, "" + head.rupture_id);
+					ps.setString(3, "" + head.rup_var_id);
+					ps.setString(4, "" + rd100periodValueToIDMap.get(e.period));
+					float rd100 = e.rotD100;
+					if (convertGtoCM) {
+						rd100 = e.rotD100 * G_TO_CM_2;
+					}
+					ps.setString(5, "" + rd100);
+					ps.addBatch();
+				}
+				if (rd50periodValueToIDMap.containsKey(e.period)) {
+					// Initialize PeakAmplitudes class
+					ps.setString(1, "" + head.source_id);
+					ps.setString(2, "" + head.rupture_id);
+					ps.setString(3, "" + head.rup_var_id);
+					ps.setString(4, "" + rd50periodValueToIDMap.get(e.period));
+					float rd50 = e.rotD50;
+					if (convertGtoCM) {
+						rd50 = e.rotD50 * G_TO_CM_2;
+					}
+					ps.setString(5, "" + rd50);
+					ps.addBatch();
+				}
+				counter++;
+				if (counter % 1000==0) {
+					ps.executeBatch();
+				}
+			}
+			if ((counter%1000)!=0) {
+				//do the stragglers
+				ps.executeBatch();
+			}
+			ps.close();
+			stmt.close();
+		} catch (SQLException sqe) {
+			sqe.printStackTrace();
+			System.exit(2);
+		}
+	}
+	
 	
 	private void insertRotdRupture(ArrayList<RotDEntry> entries, BSAHeader head, Session sess) {
 		Session rotdSession = sessFactory.openSession();
@@ -572,6 +720,7 @@ public class RuptureVariationFileInserter {
 				pa.setIM_Value(rd100);
 				try {
 					sess.save(pa);
+//					sess.insert(pa);
 				} catch (NonUniqueObjectException nuoe) {
 					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
 					System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
@@ -595,6 +744,7 @@ public class RuptureVariationFileInserter {
 				pa.setIM_Value(rd50);
 				try {
 					sess.save(pa);
+//					sess.insert(pa);
 				} catch (NonUniqueObjectException nuoe) {
 					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
 					System.err.println("ERROR:  found duplicate entry for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
