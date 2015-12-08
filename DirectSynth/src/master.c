@@ -83,6 +83,18 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 			write_log(buf);
 		}
 		src_rup_table[src][rup] = (short)(num_files);
+		//If the output files already exist, clear them
+		char filename[256];
+		sprintf(filename, "Seismogram_%s_%d_%d_%d.grm", site, run_id, src, rup);
+		unlink(filename);
+		if (run_PSA) {
+			sprintf(filename, "PeakVals_%s_%d_%d_%d.bsa", site, run_id, src, rup);
+			unlink(filename);
+		}
+		if (run_rotd) {
+			sprintf(filename, "RotD_%s_%d_%d_%d.rotd", site, run_id, src, rup);
+			unlink(filename);
+		}
 	}
 	//Open checkpoint file
 	FILE* checkpoint_fp = fopfile(CHECKPOINT_FILE, "a");
