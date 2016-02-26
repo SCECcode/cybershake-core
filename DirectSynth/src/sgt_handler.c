@@ -282,7 +282,12 @@ int readSGT_MPI(char *sgt_fname, int nPoints, int nMyPoints, int nt, int indexMy
   }
   disp += indexMyPoint*sgt_pointDataSize;
 
-  //printf("%d) nMyPoints: %d, sgt_pointDataSize: %ld\n", rank, nMyPoints, sgt_pointDataSize);
+  //printf("%d) nMyPoints: %d, sgt_pointDataSize: %ld\n", my_id, nMyPoints, sgt_pointDataSize);
+  //Check to make sure first argument to contiguous is less than INT_MAX
+  if ((long)nMyPoints*(long)sgt_pointDataSize > INT_MAX) {
+	fprintf(stderr, "%d) nMyPoints (%d) times sgt_pointDataSize (%d) is greater than INT_MAX, and will crash if passed to MPI_Type_contiguous.  Increase the number of sgt_handlers by at least %.1fx\n", my_id, nMyPoints, sgt_pointDataSize, ((float)nMyPoints*(float)sgt_pointDataSize)/INT_MAX);
+	exit(2);
+  }
   MPI_Type_contiguous(nMyPoints*sgt_pointDataSize, MPI_BYTE, &filetype);
   MPI_Type_commit(&filetype);
   MPI_Type_size(filetype, &size);
