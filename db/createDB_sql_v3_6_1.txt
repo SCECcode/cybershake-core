@@ -7,7 +7,8 @@
 #
 # 3.6.1 - 25 February 2016
 #   Fixed the following small issues:
-#
+#   1) Fixed typo in foreign key for CyberShake Runs
+#   2) Added missing comma in PeakAmplitudes table
 #
 # 3.6.0 - 20 August 2015
 #   Needed to change engine of live DB to InnoDB; used the opportunity to
