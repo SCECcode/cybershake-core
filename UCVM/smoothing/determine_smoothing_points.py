@@ -46,9 +46,9 @@ def add_points(y, x, direction):
 
 
 #number of mesh points away from boundary to smooth
-#400m spacing in the mesh
-#4800m on either size
-SMOOTHING_DIST = 12
+#100m spacing in the mesh
+#10000m on either size
+SMOOTHING_DIST = 100
 
 if len(sys.argv)<6:
 	print "Usage: %s <surf file> <model coords file> <nx> <ny> <output file>" % sys.argv[0]
