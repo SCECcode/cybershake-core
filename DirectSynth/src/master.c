@@ -66,7 +66,7 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 
 void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd) {
 	//Construct easy-access task tuples for monitoring status for restart
-	short src_rup_table[500][1300];
+	short src_rup_table[MAX_SOURCE_ID][MAX_RUPTURE_ID];
 	int i;
 	if (debug) {
 		char buf[256];
@@ -82,6 +82,13 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 			sprintf(buf, "Source %d, rupture %d has %d files.", src, rup, num_files);
 			write_log(buf);
 		}
+		if (src>=MAX_SOURCE_ID || rup>=MAX_RUPTURE_ID) {
+			fprintf(stderr, "Source ID %d, rupture ID %d is in the input file, but MAX_SOURCE_ID=%d and MAX_RUPTURE_ID=%d.  Change these values in defs.h.\n", src, rup, MAX_SOURCE_ID, MAX_RUPTURE_ID);
+                        if (debug) close_log();
+                        MPI_Finalize();
+                        exit(5);
+		}
+
 		src_rup_table[src][rup] = (short)(num_files);
 		//If the output files already exist, clear them
 		char filename[256];
