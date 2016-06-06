@@ -62,6 +62,10 @@ extern const int Z_COMP_FLAG;
 //Checkpoint filename
 #define CHECKPOINT_FILE "checkpoint.out"
 
+//Dimensions of lookup table with number of files per rupture
+#define MAX_SOURCE_ID 11000
+#define MAX_RUPTURE_ID 1300
+
 //Defs from jbsim3d code
 #define         NTMAX              10000
 #define         SOMERVILLE_FLAG    1
