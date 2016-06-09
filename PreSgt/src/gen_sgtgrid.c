@@ -244,7 +244,8 @@ if(radiusfile[0] != '\0')
 		tmp_hashval.x = ix;
 		tmp_hashval.y = iy;
 		tmp_hashval.z = izlevel[iz];
-		tmp_hashval.index = (long long)tmp_hashval.x*(long long)100000000 + (long long)tmp_hashval.y*10000 + (long long)tmp_hashval.z;
+		//Changed the way this is built to allot more digits per dimension
+		tmp_hashval.index = (long long)tmp_hashval.x*(long long)1000000000000 + (long long)tmp_hashval.y*1000000 + (long long)tmp_hashval.z;
 	        sprintf(hashkey, "%ld", tmp_hashval.index);
 
 		if (cfuhash_get(hash, hashkey)==NULL) {
@@ -400,7 +401,7 @@ if(faultlist[0] != '\0')
 	 tmp_hashval.x = ixp;
 	 tmp_hashval.y = iyp;
 	 tmp_hashval.z = izp;
-	 tmp_hashval.index = (long long)ixp*(long long)100000000 + (long long)iyp*(long long)10000 + izp;
+	 tmp_hashval.index = (long long)ixp*(long long)1000000000000 + (long long)iyp*(long long)1000000 + izp;
 	 sprintf(hashkey, "%ld", tmp_hashval.index); 
 
 	 if(ixp >= BNDPAD && ixp < nx-BNDPAD && iyp >= BNDPAD && iyp < ny-BNDPAD && izp >= 1 && izp < nz-BNDPAD)
@@ -487,6 +488,7 @@ struct entry* recv_points = NULL;
 if (my_id==0) {
 	printf("Total of %d gathered elements.", global_np);
 	fflush(stdout);
+	printf("Allocating %ld bytes.\n", sizeof(struct entry)*(size_t)global_np);
 	recv_points = check_malloc(sizeof(struct entry)*(size_t)global_np);
 	//Gather points, put in hashmap, read back out
 }
