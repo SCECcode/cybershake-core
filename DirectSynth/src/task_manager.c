@@ -99,6 +99,24 @@ void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int 
 	for (i=0; i<num_workers; i++) {
 		worker_status[i] = WORKER_IDLE;
 	}
+	if (num_tasks==0) {
+		//Need to tell everyone that there's no more work
+		int num_to_notify = num_workers;
+		while(num_to_notify>0) {
+			check_recv(&msg, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, "Error listening for message, aborting.", my_id);
+			if (msg.msg_type==WORK_REQUEST) {
+	                        if (debug) {
+	                                char buf[256];
+	                                sprintf(buf, "Received request for work from process %d.", msg.msg_src);
+	                                write_log(buf);
+	                        }
+	                        handle_work_request(msg, task_list, &current_task, num_tasks, worker_msg_type, my_id);
+				num_to_notify--;
+			}
+		}
+		return;
+	}
+
 	while (1) {
 		if (debug) write_log("Waiting for messages.");
 		check_recv(&msg, 2, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, "Error listening for message, aborting.", my_id);
