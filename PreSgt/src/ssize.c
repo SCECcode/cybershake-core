@@ -30,7 +30,7 @@ long long indx;
 
 while(scanf("%d %d %d",&ix,&iy,&iz) == 3)
    {
-   indx = (long long)(ix)*(long long)(100000000) + (long long)(iy)*(long long)(10000) + (long long)(iz);
+   indx = (long long)(ix)*(long long)(1000000000000) + (long long)(iy)*(long long)(1000000) + (long long)(iz);
 
    fprintf(stderr,"%.4d %.4d %.4d\n",ix,iy,iz);
    fprintf(stderr,"%.12Ld\n",indx);
