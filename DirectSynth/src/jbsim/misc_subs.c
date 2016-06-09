@@ -168,7 +168,7 @@ else if(gp->geoproj == 1)
 indx->xsgt = (int)((double)(xr)*invh + 0.5);
 indx->ysgt = (int)((double)(yr)*invh + 0.5);
 indx->zsgt = (int)((double)((*dep))*invh + 1.5);
-indx->indx = (long long)(indx->xsgt)*(long long)(100000000) + (long long)(indx->ysgt)*(long long)(10000) + (long long)(indx->zsgt);
+indx->indx = (long long)(indx->xsgt)*(long long)(1000000000000) + (long long)(indx->ysgt)*(long long)(1000000) + (long long)(indx->zsgt);
 }
 
 void get_ard_srf(struct standrupformat *srf,int off,int ip,float *az,float *rg,float *z0,float *de,float *dn,float *slon,float *slat,struct geoprojection *gp)
