@@ -74,6 +74,9 @@ void do_work(int argc, char** argv, struct sgtmaster* sgtmast, struct sgtindex* 
 	t_info.sgtindx = sgtindx;
 	t_info.sgtfilepar = sgtfilepar;
 	construct_worker_message_datatype(&worker_msg_type);
+	//Sleep for a bit, so that we don't overwhelm the task manager with a bunch of simultaneous requests while starting up, or overwhelm the low-rank SGT handlers
+	//Since the pair of 1 Hz SGTs takes about 6 minutes to read in, distribute the requests over about 10 minutes
+	sleep(my_id/6);
 	while (1) {
 		if (debug) write_log("Requesting work from task manager.");
 		get_task(&msg, &worker_msg_type, task_manager_id, my_id);
