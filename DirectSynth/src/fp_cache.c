@@ -109,6 +109,9 @@ int find_fp(char* filename) {
 
 void remove_fp_cache() {
 	int i;
+	if (fp_cache==NULL) {
+		return;
+	}
 	for (i=0; i<CACHE_SIZE; i++) {
 		if (fp_cache[i].fp!=NULL) {
 			fflush(fp_cache[i].fp);
