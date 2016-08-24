@@ -49,6 +49,7 @@ parser.add_option("--px", dest="px", type=int, action="store", help="Number of p
 parser.add_option("--py", dest="py", type=int, action="store", help="Number of processors in Y-direction.")
 parser.add_option("--pz", dest="pz", type=int, action="store", help="Number of processors in Z-direction.")
 parser.add_option("--source-frequency", type=float, dest="source_freq", action="store", help="Low-pass filter frequency to use on the source, default is same frequency as the frequency of the run.")
+parser.add_option("--spacing", type=float, dest="spacing", action="store", default=None, help="Override default spacing, derived from frequency.")
 
 (option, args) = parser.parse_args()
 
@@ -92,13 +93,13 @@ for c in awp_comps:
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
-	rc = build_IN3D(site, gridout, c, frequency, procs)
+	rc = build_IN3D(site, gridout, c, frequency, procs, spacing=option.spacing)
 	if not rc==0:
 		print "Error in build_IN3D, aborting."
 		sys.exit(2)
 	print "Building source file."
 	sys.stdout.flush()
-	rc = build_src(site, fdloc, c, frequency, filter=source_frequency)
+	rc = build_src(site, fdloc, c, frequency, filter=source_frequency, spacing=option.spacing)
 	if not rc==0:
 	        print "Error in build_src, aborting."
 	        sys.exit(3)

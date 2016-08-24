@@ -9,7 +9,7 @@ import sys
 import os
 import math
 
-def build_IN3D(site, gridout, awp_comp, frequency, proc):
+def build_IN3D(site, gridout, awp_comp, frequency, proc, spacing=None):
 	fp_in = open("%s/data/IN3D.ref" % (sys.path[0]), "r")
 	data = fp_in.readlines()
 	fp_in.close()
@@ -40,9 +40,21 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc):
 	param["igreen"] = igreen
 
 	#determine DH, DT, NST, READ_STEP, WRITE_STEP, FP
-	param["DH"] = round(100.0/frequency, 1)
-	param["DT"] = 0.005/frequency
-	param["NST"] = int(frequency*40000.0)
+	if spacing is not None:
+		param["DH"] = 1000.0*spacing
+	else:
+		param["DH"] = round(100.0/frequency, 1)
+	if spacing is not None:
+		param["DT"] = spacing/20.0
+	else:
+		param["DT"] = 0.005/frequency
+	
+	SIMULATED_TIME = 200.0
+	#Round up to nearest 1000
+	nst = int(SIMULATED_TIME/param["DT"])
+	if (nst % 1000)!=0:
+		nst = 1000*(nst/1000 + 1)
+	param["NST"] = nst
 	#Talked to Kim and Rob, FP should remain 0.5
 	param["FP"] = 0.5
 	param["READ_STEP"] = param["NST"]

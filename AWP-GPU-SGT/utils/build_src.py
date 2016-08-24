@@ -3,7 +3,7 @@
 import sys
 import os
 
-def build_src(site, fdloc, awp_comp, frequency, filter=None):
+def build_src(site, fdloc, awp_comp, frequency, filter=None, spacing=None):
 	if awp_comp=='x':
 		comp = "y"
 	elif awp_comp=='y':
@@ -14,7 +14,16 @@ def build_src(site, fdloc, awp_comp, frequency, filter=None):
 		print "Error:  component %s not recognized, aborting." % comp
 		sys.exit(1)
 	
-	nt = int(frequency*40000.0)
+	if spacing is not None:
+		#Always simulate 200.0 seconds of time
+		#dt = spacing in km/20.0
+		dt = spacing/20.0
+		nt = int(200.0/dt)
+		#Round to nearest 1000
+		if (nt % 1000)!=0:
+			nt = 1000*((nt/1000)+1)
+	else:
+		nt = int(frequency*40000.0)
 
 	fp_in = open(fdloc, "r")
 	data = fp_in.readline()
