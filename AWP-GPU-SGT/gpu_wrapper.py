@@ -36,7 +36,7 @@ nproc = int(params["NPX"])*int(params["NPY"])*int(params["NPZ"])
 path = "%s/AWP-GPU-SGT/bin/pmcl3d" % config.getProperty("CS_PATH")
 
 
-exec_string = "%s -n %d -N 1 %s -T %s --IGREEN %s --DH %s --DT %s --NSRC %s --NST %s -X %s -Y %s -Z %s -x %s -y %s --IFAULT %s --MEDIASTART %s --FL %s --FH %s --FP %s --READ_STEP %s --WRITE_STEP %s -o %s --INSGT %s -c %s --INSRC %s --INVEL %s --NTISKP_SGT %s --NTISKP %s" % (mpi_cmd, nproc, path, params["TMAX"], params["igreen"], params["DH"], params["DT"], params["NSRC"], params["NST"], params["NX"], params["NY"], params["NZ"], params["NPX"], params["NPY"], params["IFAULT"], params["MEDIARESTART"], params["FL"], params["FH"], params["FP"], params["READ_STEP"], params["WRITE_STEP"], params["SGTGRO"].rsplit("/", 1)[0], params["INSGT"], params["CHKP"], params["INSRC"], params["INVEL"], params["NTISKP_SGT"], params["NTISKP"])
+exec_string = "export APRUN_BALANCED_INJECTION=64; %s -n %d -N 1 %s -T %s --IGREEN %s --DH %s --DT %s --NSRC %s --NST %s -X %s -Y %s -Z %s -x %s -y %s --IFAULT %s --MEDIASTART %s --FL %s --FH %s --FP %s --READ_STEP %s --WRITE_STEP %s -o %s --INSGT %s -c %s --INSRC %s --INVEL %s --NTISKP_SGT %s --NTISKP %s" % (mpi_cmd, nproc, path, params["TMAX"], params["igreen"], params["DH"], params["DT"], params["NSRC"], params["NST"], params["NX"], params["NY"], params["NZ"], params["NPX"], params["NPY"], params["IFAULT"], params["MEDIARESTART"], params["FL"], params["FH"], params["FP"], params["READ_STEP"], params["WRITE_STEP"], params["SGTGRO"].rsplit("/", 1)[0], params["INSGT"], params["CHKP"], params["INSRC"], params["INVEL"], params["NTISKP_SGT"], params["NTISKP"])
 
 #run exec_string
 print exec_string
