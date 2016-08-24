@@ -106,9 +106,13 @@ for c in awp_comps:
 awp_cordfile = "awp.%s.cordfile" % site
 print "Building cordfile."
 sys.stdout.flush()
-#Determine max depth based on frequency
-max_depth = frequency*400
-rc = build_cordfile(site, cordfile, awp_cordfile, max_depth)
+#Determine max depth index from gridout file
+with open(gridout, "r") as fp_in:
+	lines = fp_in.readlines()
+	max_depth_index = int(lines[-1].split()[0].strip()) + 1
+	fp_in.close()
+
+rc = build_cordfile(site, cordfile, awp_cordfile, max_depth_index)
 if not rc==0:
         print "Error in build_cordfile, aborting."
         sys.exit(2)
