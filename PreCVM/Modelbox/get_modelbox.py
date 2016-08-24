@@ -79,17 +79,19 @@ pwd = "CyberShake2007"
 port = 3306
 db="CyberShake"
 
-if len(sys.argv) < 4:
-  print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name"
-  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt"
+if len(sys.argv) < 6:
+  print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name Spacing Server"
+  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 200.0 focal.usc.edu"
   sys.exit()
 
 site = sys.argv[1]
 erf = sys.argv[2]
 outfile = sys.argv[3]
+spacing = float(sys.argv[4])
+host = sys.argv[5]
 
 gpu = False
-if len(sys.argv) >= 5 and sys.argv[4]=="gpu":
+if len(sys.argv) >= 7 and sys.argv[6]=="gpu":
 	print "GPU mode."
 	gpu = True
 
@@ -226,15 +228,45 @@ mlon=clon + (e/kplon)
 mlat=clat + (n/kplat)
 
 #Round up to nearest 10km
-xlrnd=10*int((xlen/10.0) + 0.5)
-ylrnd=10*int((ylen/10.0) + 0.5)
+xlrnd=10.0*int((xlen/10.0) + 0.5)
+ylrnd=10.0*int((ylen/10.0) + 0.5)
+
 
 if gpu:
-        #Round X to the nearest multiple of 4 km, Y to 8 km, so that the # of grid points will be a multiple of 80 in X and 40 in Y (for 1 Hz)
-        print "Old lengths: %d, %d" % (xlrnd, ylrnd)
-        xlrnd += (-1*xlrnd) % 4
-        ylrnd += (-1*ylrnd) % 8
-        print "New lengths: %d, %d" % (xlrnd, ylrnd)
+	#Round up so integral number of grid points in each dimension
+        print "Old lengths: %f, %f" % (xlrnd, ylrnd)
+        if spacing<0:
+                spacing = 0.1
+        nx = int(float(xlrnd)/spacing)
+        #Pad out to be divisible by spacing
+        if nx*spacing!=float(xlrnd):
+                xlrnd += spacing - (float(xlrnd)-nx*spacing)
+                nx += 1
+        ny = int(float(ylrnd)/spacing)
+        if ny*spacing!=float(ylrnd):
+                ylrnd += spacing - (float(ylrnd)-ny*spacing)
+                ny += 1
+	#Want a rule so we use (in AWP coords) 10x10x1 for 0.5 Hz/200m meshes, 20x10x1 for 1Hz/175m meshes, 40x20x1 for 1 Hz/100m meshes; will use spacing for now
+	if spacing==0.2:
+		xlrnd += spacing*((-1*nx) % 20)
+		ylrnd += spacing*((-1*ny) % 20)
+	elif spacing==0.1:
+                xlrnd += spacing*((-1*nx) % 20)
+                ylrnd += spacing*((-1*ny) % 40)
+	else:
+                xlrnd += spacing*((-1*nx) % 40)
+                ylrnd += spacing*((-1*ny) % 80)
+        print "New lengths: %f, %f" % (xlrnd, ylrnd)
+else:
+	#Pad so that X and Y dims are divisible by the gridspacing, if specified
+	if spacing>0:
+		nx = int(float(xlrnd)/spacing)
+		if nx*spacing!=float(xlrnd):
+			xlrnd += spacing - (float(xlrnd)-nx*spacing)
+		ny = int(float(ylrnd)/spacing)
+		if ny*spacing!=float(ylrnd):
+			ylrnd += spacing - (float(ylrnd)-ny*spacing)
+		print "Padded to %f, %f to be evenly divisible by the requested spacing, %f km" % (xlrnd, ylrnd, spacing)
 
 
 f.write("APPROXIMATE CENTROID:\n")

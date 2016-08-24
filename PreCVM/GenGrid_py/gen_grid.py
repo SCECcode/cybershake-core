@@ -36,15 +36,18 @@ def genBoundfile(gridout, coordfile, boundfile):
     output.close()
 
 
-def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, freq, gpu=False):
+def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, freq, sp, gpu=False):
     '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
-    ZLEN = 40.0
+    #Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance
+    ZLEN = 50.4
     #if gpu:
     #	#Change ZLEN to 51.2 so it's a multiple of 256 pts
     #	ZLEN = 51.2
     #SPACING = .2
     SPACING = 0.1/freq
-    
+    if sp>0:
+	SPACING = sp
+ 
     modelboxInput = open(modelboxFile)
     modelboxData = [line.strip() for line in modelboxInput.readlines()]
     modelboxInput.close()
@@ -76,8 +79,8 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 
 
 def main():
-    if len(sys.argv) < 8:
-        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency> [gpu]"
+    if len(sys.argv) < 9:
+        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency> <spacing> [gpu]"
         print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC 0.5"
         sys.exit(1)
 	
@@ -88,10 +91,11 @@ def main():
     paramfile = sys.argv[5]
     boundsfile = sys.argv[6]
     frequency = float(sys.argv[7])
-    if len(sys.argv)==9 and sys.argv[8]=="gpu":
-    	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency, gpu=True)
+    spacing = float(sys.argv[8])
+    if len(sys.argv)==10 and sys.argv[9]=="gpu":
+    	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency, spacing, gpu=True)
     else:
-	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency)
+	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, spacing, frequency)
 
 if __name__=="__main__":
     main()
