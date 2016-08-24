@@ -1,7 +1,7 @@
 #!/bin/csh
 
-if ($# != 12) then
-  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format>"
+if ($# != 12 && $# != 13) then
+  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> [min vs]"
   exit 1
 endif
 
@@ -17,6 +17,16 @@ set MODELS = $9
 set MPI_CMD = $10
 set JOB_ID = $11
 set FORMAT = $12
+
+if ($# == 13) then
+	set VSMIN = $13
+	set VPMIN = `bc <<< 3.4 * $VSMIN`
+	set DENMIN = $VPMIN
+else
+	set VSMIN = 500.0
+	set VPMIN = 1700.0
+	set DENMIN = 1700.0
+endif
 
 #set BPATH = `pwd`
 set BPATH = ${CS_PATH}/UCVM
@@ -50,7 +60,7 @@ if ($MPI_CMD == "mpirun") then
 	set NP = `wc -l < ${PBS_NODEFILE}`
 	set MPI_CMD = "${MPI_CMD} -np ${NP} -machinefile ${PBS_NODEFILE}"
 else if ($MPI_CMD == "aprun") then
-	@ NP = $PBS_NUM_NODES * $PBS_NUM_PPN
+	@ NP = $PBS_NUM_NODES * 16
 	#if ($FORMAT == "rwg") then
 	#	while (`expr $NY \* $NZ % $NP` != 0)
 	#		@ NP = $NP - 1
@@ -65,11 +75,12 @@ else if ($MPI_CMD == "aprun") then
 	else
 	        set MPI_CMD = "${MPI_CMD} -n ${NP}"
 	endif
+	set MPI_CMD = "${MPI_CMD} -S 4"
 endif
 
-set VPMIN = 1700.0
-set VSMIN = 500.0
-set DENMIN = 1700.0
+#set VPMIN = 1700.0
+#set VSMIN = 500.0
+#set DENMIN = 1700.0
 
 #Add to LD_LIBRARY_PATH
 setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
@@ -77,7 +88,6 @@ setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/l
 echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR}"
 
 ${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR}
-endif
 
 set RC = $?
 
