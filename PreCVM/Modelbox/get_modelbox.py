@@ -103,27 +103,23 @@ f.write("%s\n"%(site))
 conn = opendb(host,port,username,pwd,db)
 cur = conn.cursor()
 
-sql_string = "select * from CyberShake_Sites"
+sql_string = "select CS_Site_Lon, CS_Site_Lat, CS_Site_ID from CyberShake_Sites where CS_Short_Name='%s'" % site
 try:
   cur.execute(sql_string)
 except MySQLdb.DatabaseError,e:
   print e
   sys.exit(-1)
   
-station_set = cur.fetchall()
-
-found = 0
-for stas in station_set:
-  if site == stas[2]:
-    siteid=stas[0]
-    found = 1
-    break
-
-if found !=1:
+res = cur.fetchall()
+if len(res)==0:
    print "Unable to find station %s in DB. Exiting\n" % site
    sys.exit(-1)
- 
-sql_string = "select distinct Ruptures.Source_ID,Ruptures.Rupture_ID,Source_Name,Mag,Prob,Start_Lat,Start_Lon,End_Lat,End_Lon from CyberShake_Sites,Ruptures,CyberShake_Site_Ruptures where Ruptures.ERF_ID=%s and Ruptures.ERF_ID=CyberShake_Site_Ruptures.ERF_ID and CyberShake_Site_Ruptures.CS_Site_ID=%s and CyberShake_Site_Ruptures.Source_ID=Ruptures.Source_ID and CyberShake_Site_Ruptures.Rupture_ID=Ruptures.Rupture_ID order by Mag desc"%(erf,stas[0])
+
+site_lon = float(res[0][0])
+site_lat = float(res[0][1])
+site_id = int(res[0][2])
+
+sql_string = "select distinct Ruptures.Source_ID,Ruptures.Rupture_ID,Source_Name,Mag,Prob,Start_Lat,Start_Lon,End_Lat,End_Lon from CyberShake_Sites,Ruptures,CyberShake_Site_Ruptures where Ruptures.ERF_ID=%s and Ruptures.ERF_ID=CyberShake_Site_Ruptures.ERF_ID and CyberShake_Site_Ruptures.CS_Site_ID=%s and CyberShake_Site_Ruptures.Source_ID=Ruptures.Source_ID and CyberShake_Site_Ruptures.Rupture_ID=Ruptures.Rupture_ID order by Mag desc"%(erf,site_id)
 try:
   cur.execute(sql_string)
 except MySQLdb.DatabaseError,e:
@@ -172,6 +168,10 @@ np = 0
 lon = []
 lat = []
 
+#Add site lat, site lon
+lon.append(site_lon)
+lat.append(site_lat)
+
 for flts in faults:
   np = np+1
   lon.append(flts.mnlon)
@@ -210,6 +210,7 @@ for i in range(0,np-1):
   if ym[i]>ymax:
     ymax=ym[i]
 
+print xmax, xmin, ymax, ymin
 xmax = xmax+bpad
 xmin = xmin-bpad
 ymax = ymax+bpad
