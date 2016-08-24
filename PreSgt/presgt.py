@@ -14,7 +14,8 @@ import config
 
 def getSiteCoords(site):
 	print "Retrieving coordinates from the database for %s.\n" % site
-	host = "focal.usc.edu"
+	#host = "focal.usc.edu"
+	host = "moment.usc.edu"
 	user = "cybershk_ro"
 	passwd = "CyberShake2007"
 	db = "CyberShake"
@@ -94,10 +95,12 @@ def genRadiusFile(radiusfile):
 	output.close()
 
 
-def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfile, frequency):
+def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfile, frequency, spacing):
 	'''Copies the functionality of gen_sgtgrid.csh:  it generates a list of grid points that the SGTs should be saved for.  This includes an adaptive mesh as well as the locations of the ruptures.  Essentially this serves as a wrapper for gen_sgtgrid.c.'''
 	#magic constants
 	HH = 0.1/frequency
+	if spacing>0:
+		HH = spacing
 	IX_MIN = 20
 	IX_MAX = ns[0]-20
    	IY_MIN = 20
@@ -145,9 +148,9 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 
 RUPTURE_ROOT = config.getProperty('RUPTURE_ROOT')
 
-if len(sys.argv) < 10:
-    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords> [frequency]'
-    print 'Example: ./presgt.py USC 33 USC.modelbox gridout_USC model_coords_GC_USC USC.fdloc USC.faultlist USC.radiusfile USC.cordfile'
+if len(sys.argv) < 11:
+    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords> <spacing> [frequency]'
+    print 'Example: ./presgt.py USC 33 USC.modelbox gridout_USC model_coords_GC_USC USC.fdloc USC.faultlist USC.radiusfile USC.cordfile 200.0 0.1'
     sys.exit(1)
 
 site = sys.argv[1]
@@ -160,9 +163,11 @@ faultlistFileName = sys.argv[7]
 radiusFileName = sys.argv[8]
 sgtcordFileName = sys.argv[9]
 
+spacing = float(sys.argv[10])
+
 frequency = 0.5
-if len(sys.argv)==11:
-	frequency = float(sys.argv[10])
+if len(sys.argv)==12:
+	frequency = float(sys.argv[11])
 
 erf_id = sys.argv[2]
 
@@ -196,6 +201,6 @@ ns.append(int((gridoutContents[1].split("="))[1]))
 ns.append(int((gridoutContents[1+ns[0]+2].split("="))[1]))
 ns.append(int((gridoutContents[1+ns[0]+2+ns[1]+2].split("="))[1]))
 
-genSgtGrid(sgtcordFileName, site, ns, src, mlon, mlat, mrot, faultlistFileName, radiusFileName, frequency)
+genSgtGrid(sgtcordFileName, site, ns, src, mlon, mlat, mrot, faultlistFileName, radiusFileName, frequency, spacing)
 sys.exit(0)
 
