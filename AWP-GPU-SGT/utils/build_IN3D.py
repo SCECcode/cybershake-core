@@ -49,12 +49,13 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, spacing=None):
 	else:
 		param["DT"] = 0.005/frequency
 	
-	SIMULATED_TIME = 200.0
+	SIMULATED_TIME = float(param["TMAX"])
 	#Round up to nearest 1000
 	nst = int(SIMULATED_TIME/param["DT"])
 	if (nst % 1000)!=0:
 		nst = 1000*(nst/1000 + 1)
 	param["NST"] = nst
+	param["TMAX"] = param["NST"]*param["DT"]
 	#Talked to Kim and Rob, FP should remain 0.5
 	param["FP"] = 0.5
 	param["READ_STEP"] = param["NST"]
