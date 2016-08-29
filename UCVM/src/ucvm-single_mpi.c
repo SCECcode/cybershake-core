@@ -247,7 +247,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 				exit(-2);
 			}
 			if (!ucvm_initialized) {
-		                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+		                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		                   fprintf(stderr, "Failed to setup ucvm.\n");
 		                   fflush(stderr);
 		                   exit(-1);
@@ -261,7 +261,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			}
 		} else if (strcmp(tok, "cvms")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -275,7 +275,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	                }
 		} else if (strcmp(tok, "1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -289,7 +289,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			}
 		} else if (strcmp(tok, "cvmsi")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -303,7 +303,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
                 } else if (strcmp(tok, "scec1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -321,7 +321,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 				exit(-2);
 			}
                         if (!ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -335,7 +335,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
 		} else if (strcmp(tok, "bbp1d")==0) {
 			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -346,6 +346,32 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                            fprintf(stderr, "Error retrieving BBP 1D model.\n");
                            fflush(stderr);
                          }
+		} else if (strcmp(tok, "cca1d")==0) {
+                        if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
+                        if (ucvm_add_model(UCVM_MODEL_BBP1D) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving CCA 1D model.\n");
+                           fflush(stderr);
+                         }
+                /*} else if (strcmp(tok, "cca")==0) {
+                        if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
+                        if (ucvm_add_model(UCVM_MODEL_CCA) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving CCA model.\n");
+                           fflush(stderr);
+                         }*/
 		} else {
 			fprintf(stderr, "Model %s didn't match any known models, aborting.\n", tok);
 			fflush(stderr);
@@ -362,7 +388,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		exit(-1);
 		}
 	} else {
-	     if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	     if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Failed to setup ucvm.\n");
                 fflush(stderr);
                 exit(-1);
@@ -407,6 +433,12 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	} else if (strcmp(models, "bbp1d")==0) {
 	     if (ucvm_add_model(UCVM_MODEL_BBP1D)!=UCVM_CODE_SUCCESS) {
 		     fprintf(stderr, "Error retrieving BBP 1D model.\n");
+		     fflush(stderr);
+		     exit(-3);
+	     }
+	} else if (strcmp(models, "cca1d")==0) {
+	     if (ucvm_add_model(UCVM_MODEL_BBP1D)!=UCVM_CODE_SUCCESS) {
+		     fprintf(stderr, "Error retrieving CCA 1D model.\n");
 		     fflush(stderr);
 		     exit(-3);
 	     }
