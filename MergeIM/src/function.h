@@ -42,7 +42,11 @@ void read_velmodel(char *,struct velmodel *);
 void sum_srf(struct standrupformat *,struct standrupformat *,struct standrupformat *,float *);
 void join_srf(struct standrupformat *,struct standrupformat *,struct standrupformat *);
 
+void integ_diff(int integ_notdiff, float* seis, int nt, float dt);
+
 void merge(char* lf_seis_name, char* hf_seis_name, char* outfile, float match_freq, int num_comps, float*** merged_seis, struct seisheader* merged_header);
 void merge_data(float** lf_seis, struct seisheader lf_header, float** hf_seis, struct seisheader hf_header, float match_freq, int num_comps, float** merged_seis, struct seisheader* merged_header);
 
 int rotd(struct seisheader* header, float* seis_data, FILE* fp_out);
+
+int duration(struct seisheader header, float** full_seis, FILE* fp_out);
