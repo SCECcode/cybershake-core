@@ -44,6 +44,10 @@ int tomobg = 1;
 int geot_layer = 1;
 int max_iter = 20;
 
+//Apply a constant mantle below some depth
+int const_mantle = 0;
+float const_mantle_depth = 45000.0;
+
 //In m/s (RWG expects km/s)
 float min_vp, min_vs, min_rho;
 
@@ -79,6 +83,9 @@ getpar("models","s",models);
 
 strcpy(format_name, "rwg");
 getpar("format","s",format_name);
+
+getpar("const_mantle", "d", &const_mantle);
+getpar("const_mantle_depth", "f", &const_mantle_depth);
 
 endpar();
 
@@ -239,7 +246,8 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
  if (strstr(models, ",")!=NULL) {
 	 int ucvm_initialized = 0;
 	 int ucvm_no_gtl_initialized = 0;
-	 char* tok = strtok(models, ",");
+	 char* save;
+	 char* tok = strtok_r(models, ",", &save);
 	 while (tok!=NULL) {
 		if (strcmp(tok, "cvmh")==0) {
 			if (ucvm_no_gtl_initialized) {
@@ -247,7 +255,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 				exit(-2);
 			}
 			if (!ucvm_initialized) {
-		                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+		                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		                   fprintf(stderr, "Failed to setup ucvm.\n");
 		                   fflush(stderr);
 		                   exit(-1);
@@ -261,7 +269,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			}
 		} else if (strcmp(tok, "cvms")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm_15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -275,7 +283,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	                }
 		} else if (strcmp(tok, "1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -289,7 +297,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			}
 		} else if (strcmp(tok, "cvmsi")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -303,7 +311,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
                 } else if (strcmp(tok, "scec1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -315,13 +323,45 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                            fflush(stderr);
                            exit(-3);
                         }
+		} else if (strcmp(tok, "usgs")==0) {
+			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
+			if (ucvm_add_model(UCVM_MODEL_CENCAL) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving USGS Bay Area model.\n");
+                           fflush(stderr);
+                           exit(-3);
+                        } else {
+			   printf("Added USGS.\n");
+			}
+		} else if (strcmp(tok, "cvms5")==0) {
+                        if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                   fprintf(stderr, "Failed to setup ucvm.\n");
+                                   fflush(stderr);
+                                   exit(-1);
+                                }
+                                ucvm_initialized = 1;
+                        }
+                        if (ucvm_add_model("cvms5") != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving CVM-S5 model.\n");
+                           fflush(stderr);
+                           exit(-3);
+                        } else {
+			   printf("Added CVM-S5.\n");
+			}
                 } else if (strcmp(tok, "cvmh_nogtl")==0) {
 			if (ucvm_initialized) {
 				fprintf(stderr, "Error: cvmh_nogtl must be first in list of models.\n");
 				exit(-2);
 			}
                         if (!ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -335,7 +375,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
 		} else if (strcmp(tok, "bbp1d")==0) {
 			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -377,18 +417,18 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			fflush(stderr);
 			exit(-4);
 		}
-		tok = strtok(NULL, ",");
+		tok = strtok_r(NULL, ",", &save);
 	}
  } else {
 	//If cvmh_nogtl, use the alternative config file
 	if (strcmp(models, "cvmh_nogtl")==0) {
-	     if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_bbp1d/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+	     if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to setup ucvm.\n");
 		fflush(stderr);
 		exit(-1);
 		}
 	} else {
-	     if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	     if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Failed to setup ucvm.\n");
                 fflush(stderr);
                 exit(-1);
@@ -437,11 +477,11 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		     exit(-3);
 	     }
 	} else if (strcmp(models, "cca1d")==0) {
-	     if (ucvm_add_model(UCVM_MODEL_BBP1D)!=UCVM_CODE_SUCCESS) {
-		     fprintf(stderr, "Error retrieving CCA 1D model.\n");
-		     fflush(stderr);
-		     exit(-3);
-	     }
+             if (ucvm_add_model(UCVM_MODEL_BBP1D)!=UCVM_CODE_SUCCESS) {
+                     fprintf(stderr, "Error retrieving CCA 1D model.\n");
+                     fflush(stderr);
+                     exit(-3);
+             }
 	} else {
  	       fprintf(stderr, "Model %s didn't match any known models, aborting.\n", models);
                fflush(stderr);
@@ -472,13 +512,18 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		//Get z and y values from stripe
 		int z_ind = s % nz;
 		int y_ind = s / nz;
+		//Check to see if we should use const mantle
+		float z_value = mdep[z_ind];
+		if (const_mantle && z_value>const_mantle_depth) {
+			z_value = const_mantle_depth;
+		}
 		for(i=0; i<nx; i++) {
 			//offset in coordinate list (fast x, y)
 			int input_offset = y_ind*nx + i;
 			int output_offset = (s-starting_stripe)*nx+i;
 			pts[output_offset].coord[0] = mlon[input_offset];
                         pts[output_offset].coord[1] = mlat[input_offset];
-                        pts[output_offset].coord[2] = mdep[z_ind];
+                        pts[output_offset].coord[2] = z_value;
 		}
 	}
 
@@ -488,12 +533,16 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	for(s=starting_stripe; s<ending_stripe; s++) {
 		int x_ind = s % nx;
 		int z_ind = s / nx;
+		float z_value = mdep[z_ind];
+                if (const_mantle && z_value>const_mantle_depth) {
+                        z_value = const_mantle_depth;
+                }
 		for(j=0; j<ny; j++) {
 			int input_offset = j*nx + x_ind;
 			int output_offset = (s-starting_stripe)*ny + j;
 			pts[output_offset].coord[0] = mlon[input_offset];
                         pts[output_offset].coord[1] = mlat[input_offset];
-                        pts[output_offset].coord[2] = mdep[z_ind];
+                        pts[output_offset].coord[2] = z_value;
 		}
 	}
  }
