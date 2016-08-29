@@ -63,6 +63,7 @@ int main(int argc, char**argv) {
 			rc = fread(lf_seis[rv][i], sizeof(float), lf_headers[rv].nt, lf_in);
 			if (rc!=lf_headers[rv].nt) {
 				fprintf(stderr, "Error reading from file %s.\n", lf_seis_name);
+				perror("fread");
 	                        exit(11);
 			}
 		}
@@ -161,10 +162,19 @@ int main(int argc, char**argv) {
         char rotd_filename[256];
         getpar("run_rotd", "d", &run_rotd);
         getpar("rotd_out", "s", rotd_filename);
-        endpar();
-	FILE* rotd_fp;
+	FILE* rotd_fp = NULL;
 	if (run_rotd) {
 		rotd_fp = fopfile(rotd_filename, "wb");
+	}
+
+	//Duration
+	int run_duration = 1;
+	char duration_filename[256];
+	getpar("run_duration", "d", &run_duration);
+	getpar("duration_out", "s", duration_filename);
+	FILE* duration_fp;
+	if (run_duration) {
+		duration_fp = fopfile(duration_filename, "wb");
 	}
 	
 	//Now, operate on each LF rupture variation
@@ -189,9 +199,9 @@ int main(int argc, char**argv) {
 		struct seisheader merged_header;
 		merge_data(lf_seis[rv], lf_headers[rv], hf_seis[hf_index], hf_headers[hf_index], match_freq, num_comps, merged_seis, &merged_header);
 
-        	fwrite(&merged_header, sizeof(struct seisheader), 1, seis_out);
+        	long bytes = fwrite(&merged_header, sizeof(struct seisheader), 1, seis_out);
         	for (i=0; i<num_comps; i++) {
-        	        fwrite(merged_seis[i], sizeof(float), merged_header.nt, seis_out);
+        	        bytes = fwrite(merged_seis[i], sizeof(float), merged_header.nt, seis_out);
         	}
 
 		//Copy to 1-D array for use with PSA
@@ -204,8 +214,8 @@ int main(int argc, char**argv) {
         	        memcpy(seis+(i*merged_header.nt), merged_seis[i], sizeof(float)*merged_header.nt);
 		}
 	        spectrad_(&merged_header, &nx, &ny, &npts, &dt, seis_units, output_units, output_type, period, &filter_high_hz, byteswap, input_file, psa_output_file, seis, &output_option, psa_data, seis_units_len, output_units_len, output_type_len, period_len, byteswap_len, input_file_len, output_file_len);
-		fwrite(&merged_header, sizeof(struct seisheader), 1, psa_out);
-	        fwrite(psa_data, sizeof(float), nx*ny*NUM_SCEC_PERIODS, psa_out);
+		bytes = fwrite(&merged_header, sizeof(struct seisheader), 1, psa_out);
+	        bytes = fwrite(psa_data, sizeof(float), nx*ny*NUM_SCEC_PERIODS, psa_out);
 		
 		if (run_rotd) {
 	                int rc = rotd(&merged_header, seis, rotd_fp);
@@ -214,6 +224,14 @@ int main(int argc, char**argv) {
 	                        exit(rc);
 	                }
 	        }
+	
+		if (run_duration) {
+			int rc = duration(merged_header, merged_seis, duration_fp);
+			if (rc!=0) {
+				fprintf(stderr, "Error in duration code, aborting.\n");
+				exit(rc);
+			}
+		}
 	}
 
 /*
@@ -224,8 +242,15 @@ int main(int argc, char**argv) {
 	fclose(seis_out);
 	fflush(psa_out);
 	fclose(psa_out);
-	fflush(rotd_fp);
-	fclose(rotd_fp);
+	if (run_rotd) {
+		fflush(rotd_fp);
+		fclose(rotd_fp);
+	}
+	if (run_duration) {
+		fflush(duration_fp);
+		fclose(duration_fp);
+	}
+	
 
 	for(rv=0; rv<num_rup_vars; rv++) {
 		for(i=0; i<num_comps; i++) {
@@ -241,4 +266,5 @@ int main(int argc, char**argv) {
 	free(lf_headers);
 	free(hf_headers);
 	free(seis);
+	return 0;
 }

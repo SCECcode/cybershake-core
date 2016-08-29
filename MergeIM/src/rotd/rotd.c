@@ -46,8 +46,9 @@ int rotd(struct seisheader* header, float* seis_data, FILE* fp_out) {
 	int* rD100ang = check_malloc(sizeof(float*) * NUM_INTERP * MAX_PERIODS);
 	
 	//Added periods for 1 Hz
-	int num_periods = 22;
-	float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0};
+	//Added periods for 10 Hz stochastic
+	int num_periods = 30;
+	float periods[] = {0.1, 0.125, 0.1666667, 0.2, 0.25, 0.3333333, 0.5, 0.6666667, 1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0};
 
 	calc_acc(acc, seis_data, num_comps, header->nt, header->dt);
 	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), acc, acc+header->nt, rotD100, rD100ang, rotD50, &num_periods, periods);
