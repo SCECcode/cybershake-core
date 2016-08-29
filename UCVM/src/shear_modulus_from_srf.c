@@ -51,19 +51,20 @@ int main(int argc, char** argv) {
 	int num_close_points = 0;
 	int closest_indices[4];
 	float closest_dists[4];
-	for (i=0; i<4; i++) {
-		closest_indices[i] = -1;
-		closest_dists[i] = 1.0e20;
-	}
 
 	//Determine shear modulus = rho*vs^2
 	for (i=0; i<srf.srf_apnts.np; i++) {
+		for (j=0; j<4; j++) {
+                	closest_indices[j] = -1;
+                	closest_dists[j] = 1.0e20;
+        	}
 		if (i%100==0) {
 			printf("SRF point %d of %d.\n", i, srf.srf_apnts.np);
 		}
 		float srf_lon = srf.srf_apnts.apntvals[i].lon;
 		float srf_lat = srf.srf_apnts.apntvals[i].lat;
 		float srf_dep = srf.srf_apnts.apntvals[i].dep;
+		//printf("Searching for %f, %f, %f\n", srf_lon, srf_lat, srf_dep);
 		//Find depth just above (nearest grid point)
 		int top_dep_index = ((int)(srf.srf_apnts.apntvals[i].dep/grid_spacing));
 		//Calculate distance to all points, keep the closest
@@ -77,11 +78,11 @@ int main(int argc, char** argv) {
 				continue;
 			}
 			float lat_dist = (entry.lat-srf_lat)*3.1416*RAD/180.0;
-			float med_lat = (entry.lat-srf_lat)/2.0;
+			float med_lat = (entry.lat+srf_lat)/2.0;
 			float lon_dist = (entry.lon-srf_lon)*3.1416*RAD/180.0*cos(med_lat*3.1416/180.0);
 			float dist = sqrt(lat_dist*lat_dist+lon_dist*lon_dist);
 			//Continue if the dist is greater than 2 grid points, not one of the close ones
-			if (dist>0.8) {
+			if (dist>2*grid_spacing) {
 				continue;
 			}
 			for (k=0; k<4; k++) {
@@ -112,8 +113,9 @@ int main(int argc, char** argv) {
 				shear_mod = mesh_data[2]*mesh_data[1]*mesh_data[1];
 				//include depth in dist calc
 				float full_dist = sqrt(closest_dists[j]*closest_dists[j] + (top_dep_index*grid_spacing - srf_dep)*(top_dep_index*grid_spacing - srf_dep));
-				tot += 1.0/full_dist*shear_mod;
-				dist_tot += 1.0/full_dist;
+				//printf("Point (%f, %f, %f) has XY distance %f, 3D distance %f, vs=%f, rho=%f\n", entry.lon, entry.lat, (top_dep_index*grid_spacing), closest_dists[j], full_dist, mesh_data[1], mesh_data[2]);
+				tot += 1.0/(full_dist*full_dist)*shear_mod;
+				dist_tot += 1.0/(full_dist*full_dist);
 				//If there's a deeper point available, do it again
 				if (top_dep_index+1 < nz) {
 					num_close_points++;
@@ -122,15 +124,18 @@ int main(int argc, char** argv) {
 	                                fread(mesh_data, sizeof(float), 3, fp_in);
 	                                shear_mod = mesh_data[2]*mesh_data[1]*mesh_data[1];
 					full_dist = sqrt(closest_dists[j]*closest_dists[j] + ((top_dep_index+1)*grid_spacing - srf_dep)*((top_dep_index+1)*grid_spacing - srf_dep));
-	                                tot += full_dist*shear_mod;
-					dist_tot += full_dist;
+					//printf("Point (%f, %f, %f) has XY distance %f, 3D distance %f, vs=%f, rho=%f\n", entry.lon, entry.lat, ((top_dep_index+1)*grid_spacing), closest_dists[j], full_dist, mesh_data[1], mesh_data[2]);
+	                                tot += 1.0/(full_dist*full_dist)*shear_mod;
+					dist_tot += 1.0/(full_dist*full_dist);
 				}
 			} else {
 				//done with points
 				break;
 			}
 		}
-		fprintf(fp_out, "%f %f %f %f\n", srf_lon, srf_lat, srf_dep, (tot/dist_tot));
+		int nearest_z_index = ((int)(srf_dep/0.4 + 0.5));
+		//Add 1 so it's 1-indexed
+		fprintf(fp_out, "%f %f %f %d %d %d %f\n", srf_lon, srf_lat, srf_dep, grid_points[closest_indices[0]].grid_x+1, grid_points[closest_indices[0]].grid_y+1, nearest_z_index+1, (tot/dist_tot));
 	}
 	fflush(fp_out);
 	fclose(fp_out);
