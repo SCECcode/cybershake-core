@@ -399,7 +399,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
       if(rank==sgtproc){
         MPI_Allreduce(&rank, &sgtmaster, 1, MPI_INT, MPI_MIN, MC_SGT);
         int nIntBits = sizeof(int)*8-1;
-        int maxInt = pow(2,nIntBits);
+        long int maxInt = pow(2,nIntBits);
         if((long long int)sizeof(float)*sgt_numsta*6*WRITE_STEP < maxInt){
           sgt_nfiletypes = 1;
           sgt_numstaPerWrite = sgt_numsta;
@@ -889,9 +889,26 @@ printf("xx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%f\naxx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%
             cudaThreadSynchronize();
             sprintf(filename, "%s%07ld", filenamebasex, cur_step);
             err = MPI_File_open(MCW,filename,MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
+	    if (err!=MPI_SUCCESS) {
+			printf("Error on open: %d\n", err);
+			exit(1);
+		}
             err = MPI_File_set_view(fh, displacement, MPI_FLOAT, filetype, "native", MPI_INFO_NULL);
+            if (err!=MPI_SUCCESS) {
+                        printf("Error on set view: %d\n", err);
+                        exit(1);
+                }
             err = MPI_File_write_all(fh, Bufx, rec_nxt*rec_nyt*rec_nzt*WRITE_STEP, MPI_FLOAT, &filestatus);
+	    if (err!=MPI_SUCCESS) {
+                        printf("Error on write_all: %d\n", err);
+			printf("Buffer size: %ld\n", rec_nxt*rec_nyt*rec_nzt*WRITE_STEP*sizeof(float));
+                        exit(1);
+                }
             err = MPI_File_close(&fh);
+            if (err!=MPI_SUCCESS) {
+                        printf("Error on close: %d\n", err);
+                        exit(1);
+                }
             sprintf(filename, "%s%07ld", filenamebasey, cur_step);
             err = MPI_File_open(MCW,filename,MPI_MODE_CREATE|MPI_MODE_WRONLY,MPI_INFO_NULL,&fh);
             err = MPI_File_set_view(fh, displacement, MPI_FLOAT, filetype, "native", MPI_INFO_NULL);
@@ -1206,7 +1223,9 @@ printf("xx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%f\naxx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%
     }
 
     MPI_Comm_free( &MC1 );
-    MPI_Comm_free( &MC_SGT );
+    if (IGREEN!=-1) {
+	    MPI_Comm_free( &MC_SGT );
+    }
     MPI_Finalize();
     return (0);
 }
