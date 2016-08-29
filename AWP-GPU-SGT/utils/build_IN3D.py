@@ -55,7 +55,9 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, spacing=None):
 	if (nst % 1000)!=0:
 		nst = 1000*(nst/1000 + 1)
 	param["NST"] = nst
+	#Change TMAX based on DT and NST
 	param["TMAX"] = param["NST"]*param["DT"]
+
 	#Talked to Kim and Rob, FP should remain 0.5
 	param["FP"] = 0.5
 	param["READ_STEP"] = param["NST"]
