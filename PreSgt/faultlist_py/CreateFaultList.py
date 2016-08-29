@@ -5,7 +5,8 @@ import sys
 
 import MySQLdb
 
-server = "focal.usc.edu"
+#server = "focal.usc.edu"
+server = "moment.usc.edu"
 db = "CyberShake"
 user = "cybershk_ro"
 passwd = "CyberShake2007"
