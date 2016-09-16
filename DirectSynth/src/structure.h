@@ -77,9 +77,10 @@ struct sgtmaster
    int nt;          /* number of time points                                */
    };
 
+/*Scott modified on 6/7/16 to allot more digits per direction */
 struct sgtindex   /* indices for all 'globnp' SGT locations */
    {
-   long long indx; /* indx= xsgt*10000000 + ysgt*1000 + zsgt */
+   long long indx; /* indx= xsgt*1,000,000,000 + ysgt*10,000 + zsgt */
    int xsgt;     /* x grid location */
    int ysgt;     /* y grid location */
    int zsgt;     /* z grid location */
