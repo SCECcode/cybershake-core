@@ -8,6 +8,22 @@
 #ifndef STRUCTURE_H_
 #define STRUCTURE_H_
 
+struct statdata
+   {
+   char stat[STATCHAR];
+   char comp[COMPCHAR];
+   char stitle[TITLCHAR];
+   int nt;
+   float dt;
+   int hr;
+   int min;
+   float sec;
+   float edist;
+   float az;
+   float baz;
+   };
+
+
 struct geoprojection
    {
    int geoproj;

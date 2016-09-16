@@ -8,8 +8,9 @@
  */
 
 #include "include.h"
-#include "structure.h"
 #include "defs.h"
+#include "structure.h"
+#include "duration.h"
 #include "functions.h"
 
 #include "rupgen_api.h"
@@ -72,9 +73,14 @@ int main(int argc, char** argv) {
 	int run_id;
 	mstpar("run_id","d",&run_id);
 
-	int run_PSA, run_rotd;
+	int run_PSA, run_rotd, run_duration;
+	//Default is to run everything
+	run_PSA = 1;
+	run_rotd = 1;
+	run_duration = 1;
 	getpar("run_psa","d",&run_PSA);
 	getpar("run_rotd","d",&run_rotd);
+	getpar("run_duration","d",&run_duration);
 
 	//track timing
 	int timing = 0;
@@ -141,7 +147,7 @@ int main(int argc, char** argv) {
 			mstpar("ntout","d",&ntout);
 
 			if (debug) write_log("Entering worker.");
-			worker(argc, argv, num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, my_id);
+			worker(argc, argv, num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, my_id);
 		}
 	}
 

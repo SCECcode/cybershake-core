@@ -802,6 +802,11 @@ if(eqindx->indx == sgtindx[ip].indx)   /* great, exact match, this will be easy 
    }
 else  /* more difficult, find up to 4 SGT that bracket point in range and depth */
    {
+   if (debug) {
+	char buf[512];
+	sprintf(buf, "No exact match found for %ld.\n", eqindx->indx);
+	write_log(buf);
+   }
    sgtpar->nsgt = 0;
    p0 = -1; p1 = -1; p2 = -1; p3 = -1;
 

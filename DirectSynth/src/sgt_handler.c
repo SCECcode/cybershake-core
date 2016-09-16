@@ -6,9 +6,9 @@
  */
 
 #include "include.h"
+#include "defs.h"
 #include "structure.h"
 #include "functions.h"
-#include "defs.h"
 
 #include "cfuhash.h"
 
@@ -288,7 +288,8 @@ int readSGT_MPI(char *sgt_fname, int nPoints, int nMyPoints, int nt, int indexMy
 	fprintf(stderr, "%d) nMyPoints (%d) times sgt_pointDataSize (%d) is greater than INT_MAX, and will crash if passed to MPI_Type_contiguous.  Increase the number of sgt_handlers by at least %.1fx\n", my_id, nMyPoints, sgt_pointDataSize, ((float)nMyPoints*(float)sgt_pointDataSize)/INT_MAX);
 	exit(2);
   }
-  MPI_Type_contiguous(nMyPoints*sgt_pointDataSize, MPI_BYTE, &filetype);
+  //MPI_Type_contiguous(nMyPoints*sgt_pointDataSize, MPI_BYTE, &filetype);
+  MPI_Type_contiguous(nMyPoints*sgt_pointDataSize/sizeof(float), MPI_FLOAT, &filetype);
   MPI_Type_commit(&filetype);
   MPI_Type_size(filetype, &size);
   if(my_id==1) {
@@ -301,10 +302,12 @@ int readSGT_MPI(char *sgt_fname, int nPoints, int nMyPoints, int nt, int indexMy
   printf("%d) disp to read MPI=%ld\n", my_id, (long)disp);
 
   err = MPI_File_open(*sgt_readers_comm, sgt_fname, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-  err = MPI_File_set_view(fh, disp, MPI_BYTE, filetype, "native", MPI_INFO_NULL);
+  //err = MPI_File_set_view(fh, disp, MPI_BYTE, filetype, "native", MPI_INFO_NULL);
+  err = MPI_File_set_view(fh, disp, MPI_FLOAT, filetype, "native", MPI_INFO_NULL);
   //printf("%d) Ready to read file\n", rank);
   //fflush(stdout);
-  err = MPI_File_read_at_all(fh, 0, sgt_buf, 1, filetype, &stat);
+  //err = MPI_File_read_at_all(fh, 0, sgt_buf, 1, filetype, &stat);
+  err = MPI_File_read_all(fh, sgt_buf, 1, filetype, &stat);
 
   err = MPI_File_close(&fh);
 
