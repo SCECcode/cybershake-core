@@ -1,7 +1,7 @@
 int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd);
 int sgt_handler(struct sgtfileparams* sgtfilepar, int num_comps, MPI_Comm* sgt_handler_comm, int num_sgt_handlers, MPI_Comm* sgt_readers_comm, int my_id);
 int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, int my_id);
-int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id);
+int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id);
 
 //misc.c
 void init_sgtfileparams(struct sgtfileparams* sfp);
@@ -43,7 +43,7 @@ void write_log(char* string);
 void close_log();
 
 //synth.c
-int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id);
+int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id);
 void request_sgt(struct sgtheader* sgthead, float* sgtbuf, int num_comps, int request_from_handler_id, long long** sgts_by_handler, int starting_index, int ending_index, int nt, int my_id);
 void send_data_cluster(char data_filename[256], int src_id, int rup_id, int start_rv, int end_rv, void* data, int data_size_bytes, int my_id);
 
@@ -65,5 +65,11 @@ void set_geoproj(struct sgtmaster *sgtmast,struct geoprojection *geop);
 
 //rotd.c
 int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_records);
+
+//duration.c
+int duration(struct seisheader* header, float* full_seis, struct duration_record* out);
+
+//integ_diff.c
+void integ_diff(int integ_notdiff, float* seis, int nt, float dt);
 
 extern void spectrad_(struct seisheader* header, int* nx, int* ny, int* npts, float* dt, char* seis_units, char* output_units, char* output_type, char* period, float* filter_high_hz, char* byteswap, char* input_file, char* output_file, float* seis, int* output_option, float* psa_data, int seis_units_len, int output_units_len, int output_type_len, int period_len, int byteswap_len, int input_file_len, int output_file_len);

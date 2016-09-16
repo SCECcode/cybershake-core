@@ -28,6 +28,30 @@ struct srf_apointvalues
    float area;
    float tinit;
    float dt;
+   float vs;                    /* added for V2.0 */
+   float den;                   /* added for V2.0 */
+   float rake;
+   float slip1;
+   int nt1;
+   float slip2;
+   int nt2;
+   float slip3;
+   int nt3;
+   float *stf1;
+   float *stf2;
+   float *stf3;
+   };
+
+struct srf_apointvalues20141109
+   {
+   float lon;
+   float lat;
+   float dep;
+   float stk;
+   float dip;
+   float area;
+   float tinit;
+   float dt;
    float rake;
    float slip1;
    int nt1;
@@ -69,7 +93,24 @@ struct srf_planerectangle
    struct srf_prectsegments *prectseg;
    };
 
+struct srf_headercomment
+   {
+   int nline;
+   char *cbuf;
+   };
+
 struct standrupformat
+   {
+   char version[32];
+   char type[32];
+   int nseg;                    /* added for V2.0 */
+   int *np_seg;                 /* added for V2.0 */
+   struct srf_headercomment srf_hcmnt;          /* added for V2.0 */
+   struct srf_planerectangle srf_prect;
+   struct srf_allpoints srf_apnts;
+   };
+
+struct standrupformat20141109
    {
    char version[32];
    char type[32];

@@ -7,8 +7,8 @@
 
 #include "include.h"
 #include "structure.h"
-#include "functions.h"
 #include "defs.h"
+#include "functions.h"
 
 /*
  * if my_id==N:

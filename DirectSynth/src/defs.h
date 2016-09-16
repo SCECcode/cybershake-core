@@ -95,6 +95,14 @@ extern const int Z_COMP_FLAG;
 
 #endif
 
+//integ_diff constants
+#define FD_STATCHAR 8
+#define STATCHAR 12
+#define COMPCHAR 4
+#define TITLCHAR 64
+
+#define mmv 30000
+
 #define SWAP_FLAG -12345
 #define MAX_VAR_LIST 100
 #define TAP_PERC 0.05

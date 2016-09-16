@@ -6,9 +6,10 @@
  */
 
 #include "include.h"
-#include "structure.h"
-#include "functions.h"
 #include "defs.h"
+#include "structure.h"
+#include "duration.h"
+#include "functions.h"
 
 /*
  * 		Get list of SGTs needed
@@ -24,7 +25,7 @@ int get_handler_for_sgt_index(long long indx, long long* sgt_cutoffs, int num_sg
 void send_data_file(struct seisheader* header, char data_filename[256], int src_id, int rup_id, void* buf, int data_size_bytes, int my_id);
 
 //This duplicates some of seis_psa.c
-int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int my_id) {
+int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id) {
     struct geoprojection geop;
     struct sgtindex statindx;
     int ip, i;
@@ -251,6 +252,9 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 	char* psa_file_buffer = check_malloc(psa_rv_file_size*num_rup_vars);
 	int rotd_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct rotD_record)*NUM_ROTD_PERIODS;
 	char* rotd_file_buffer = check_malloc(rotd_rv_file_size*num_rup_vars);
+	//Use nx*ny here to capture the number of components
+	int duration_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES;
+	char* duration_file_buffer = check_malloc(duration_rv_file_size*num_rup_vars);
 
 	if (MAXPERIODS<NUM_SCEC_PERIODS*nx*ny) {
 		fprintf(stderr, "%d) Error!  Need to increase MAXPERIODS in defs.h and maxperiods in surfseis_rspectra.f.  Aborting.", my_id);
@@ -260,7 +264,9 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 
 	int rv;
 	struct rotD_record* rotD_data = NULL;
+	struct duration_record* duration_data = NULL;
 	char rotd_filename[256];
+	char duration_filename[256];
 	for (rv=0; rv<num_rup_vars; rv++) {
 		if (debug) {
 			char buf[256];
@@ -316,6 +322,32 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 			//send_data_file(&header, rotd_filename, file_buffer, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
 			//free(file_buffer);
 		}
+
+		if (run_duration) {
+			if (debug) {
+				char buf[256];
+				sprintf(buf, "Performing duration calculations for rv %d.", rv);
+				write_log(buf);
+			}
+			if (duration_data==NULL) {
+				duration_data = check_malloc(sizeof(int)+sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES);
+			}
+			//Put the # of measures into the first spot
+			int num_dur_measures = NUM_DURATION_MEASURES;
+			memcpy(duration_data, &num_dur_measures, sizeof(int));
+			//Offset by int
+			char* start_ptr = ((char*)(duration_data))+sizeof(int);
+			int rc = duration(&header, seis[rv], (struct duration_record*)start_ptr);
+			if (rc!=0) {
+				fprintf(stderr, "%d) Error in duration code, aborting.\n", my_id);
+				if (debug) close_log();
+				MPI_Finalize();
+				exit(rc);
+			}
+			//Add header info to the file buffer
+			memcpy(duration_file_buffer+rv*duration_rv_file_size, &header, sizeof(struct seisheader));
+			memcpy(duration_file_buffer+rv*duration_rv_file_size+sizeof(struct seisheader), duration_data, sizeof(int)+sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES);
+		}			
 	}
 
 	if (run_PSA) {
@@ -325,12 +357,18 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 		sprintf(rotd_filename, "RotD_%s_%d_%d_%d.rotd", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
 		send_data_cluster(rotd_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, rotd_file_buffer, num_rup_vars*rotd_rv_file_size, my_id);
 	}
+	if (run_duration) {
+		sprintf(duration_filename, "Duration_%s_%d_%d_%d.dur", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
+		send_data_cluster(duration_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, duration_file_buffer, num_rup_vars*duration_rv_file_size, my_id);
+	}
 
 	free(psa_file_buffer);
 	free(rotd_file_buffer);
+	free(duration_file_buffer);
 
 	free(psa_data);
 	free(rotD_data);
+	free(duration_data);
 	free(sgtparms);
 	free(indx_master);
 	free(rup_vars);
