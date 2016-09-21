@@ -215,6 +215,7 @@ void free_srf_ptrs(struct standrupformat* srf) {
                 free(srf_apnts.apntvals[i].stf3);
         }
         free(srf_apnts.apntvals);
+	free(srf->np_seg);
 }
 
 void copy_psrc(struct pointsource *ps_orig,struct pointsource *ps_copy,int ns,int nd)
