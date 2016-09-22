@@ -5,8 +5,8 @@
  *      Author: scott
  */
 #include "include.h"
-#include "structure.h"
 #include "defs.h"
+#include "structure.h"
 #include "functions.h"
 
 void getMPIInfo(int *my_id, int* num_procs) {

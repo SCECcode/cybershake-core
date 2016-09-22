@@ -1,7 +1,7 @@
 #include "../include.h"
+#include "../defs.h"
 #include "../structure.h"
 #include "../functions.h"
-#include "../defs.h"
 
 #define NUM_INTERP 3
 #define MAX_PERIODS 200

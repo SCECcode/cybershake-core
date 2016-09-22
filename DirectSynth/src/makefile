@@ -14,8 +14,8 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 BASE_DIR = /projects/sciteam/jmz/CyberShake
 GETPAR = ../../Getpar/getpar
 LIBCFU = ${BASE_DIR}/utils/libcfu_0.03
-LDLIBS = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-3.3.1/lib -lrupgen -L${GETPAR}/lib -lget -L${BASE_DIR}/utils/libmemcached_1.0.18/lib -lmemcached -L${LIBCFU}/lib -lcfu -lm 
-IFLAGS = -I${BASE_DIR}/software/RuptureCodes/RupGen-api-3.3.1/include -I${GETPAR}/include -I${BASE_DIR}/utils/libmemcached_1.0.18/include -I${LIBCFU}/include
+LDLIBS = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-5.2.3/lib -lrupgen -L${GETPAR}/lib -lget -L${BASE_DIR}/utils/libmemcached_1.0.18/lib -lmemcached -L${LIBCFU}/lib -lcfu -lm 
+IFLAGS = -I${BASE_DIR}/software/RuptureCodes/RupGen-api-5.2.3/include -I${GETPAR}/include -I${BASE_DIR}/utils/libmemcached_1.0.18/include -I${LIBCFU}/include
 
 UFLAGS = -O3 -g -Wuninitialized -dynamic
 

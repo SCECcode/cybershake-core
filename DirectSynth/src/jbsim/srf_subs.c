@@ -1,8 +1,8 @@
 #include "include.h"
+#include "defs.h"
 #include "structure.h"
 #include "srf_structure.h"
 #include "function.h"
-#include "defs.h"
 
 void init_plane_srf(struct standrupformat *srf,float *elon,float *elat,int nx,int ny,float *fl,float *fw,float *dx,float *dy,float *stk,float *dip,float *dtop,float *sh,float *dh)
 {

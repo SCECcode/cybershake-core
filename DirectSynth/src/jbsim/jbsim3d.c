@@ -1,8 +1,8 @@
 #include "include.h"
+#include "defs.h"
 #include "structure.h"
 #include "rupgen_api.h"
 #include "function.h"
-#include "defs.h"
 
 const int X_COMP_FLAG = 1;
 const int Y_COMP_FLAG = 2;
