@@ -1,6 +1,6 @@
 #include "include.h"
-#include "structure.h"
 #include "defs.h"
+#include "structure.h"
 
 void init_sgtfileparams(struct sgtfileparams* sfp) {
 	sfp->xfile[0] = '\0';

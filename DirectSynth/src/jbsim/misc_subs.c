@@ -1,8 +1,8 @@
 #include "include.h"
+#include "defs.h"
 #include "structure.h"
 #include "srf_structure.h"
 #include "function.h"
-#include "defs.h"
 
 void get_radazi(float *az,float *rg,float *de,float *dn,float *x,float *y,float *cs,float *ss,float *e,float *n)
 {

@@ -67,6 +67,7 @@ void set_geoproj(struct sgtmaster *sgtmast,struct geoprojection *geop);
 int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_records);
 
 //duration.c
+#include "duration.h"
 int duration(struct seisheader* header, float* full_seis, struct duration_record* out);
 
 //integ_diff.c

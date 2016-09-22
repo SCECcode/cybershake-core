@@ -6,9 +6,9 @@
  */
 
 #include "include.h"
+#include "defs.h"
 #include "structure.h"
 #include "functions.h"
-#include "defs.h"
 
 
 /*if my_id>N:

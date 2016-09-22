@@ -6,8 +6,8 @@
  */
 
 #include "include.h"
-#include "structure.h"
 #include "defs.h"
+#include "structure.h"
 #include "functions.h"
 
 /*
