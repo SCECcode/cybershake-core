@@ -33,7 +33,7 @@ endpar();
 for(i=0;i<n;i++)
    {
    if(gaus_dist == 1)
-      rvfrac = mean_rvfrac*exp(gaus_rand(&sigma_rvfrac,&fzero,&seed));
+      rvfrac = mean_rvfrac*exp(_gaus_rand(&sigma_rvfrac,&fzero,&seed));
    else
       rvfrac = mean_rvfrac + range_rvfrac*_sfrand(&seed);
 

@@ -26,7 +26,7 @@ else if((*z0) < dmax && (*z0) > dmin)
 else
    beta = betashal;
 
-zapit(stf,nt);
+_zapit(stf,nt);
 
 tr = (*trise);
 alpha = alpha*tr;
@@ -85,7 +85,7 @@ int it, nstf;
 float t95, tend, sfac, tfac;
 float sum;
 
-zapit(stf,nt);
+_zapit(stf,nt);
 
 t95 = 1.745*exp(1.0)*(*t0);
 tend = 3.0*t95;
@@ -119,7 +119,7 @@ float tau, tau1, tau2, tau1x2, arg1, arg2;
 float sum, t, alpha;
 float pi = 3.141592654;
 
-zapit(stf,nt);
+_zapit(stf,nt);
 
 tau = (*t0);
 tau1 = 0.13*tau;
@@ -181,7 +181,7 @@ float tau, tau1, tau2, tau1x2, arg1, arg2;
 float sum, t, alpha;
 float pi = 3.141592654;
 
-zapit(stf,nt);
+_zapit(stf,nt);
 
 tau = (*t0);
 tau1 = 0.13*tau;
@@ -252,7 +252,7 @@ float tau, dadt, amp, tau2;
 float sum, t, alpha;
 float pi = 3.141592654;
 
-zapit(stf,nt);
+_zapit(stf,nt);
 
 tau = (*t0);
 
