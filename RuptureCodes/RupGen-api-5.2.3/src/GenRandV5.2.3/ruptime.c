@@ -743,7 +743,7 @@ for(iy=0;iy<ny;iy++)
       ip = ix + iy*nx;
 
       if(*tsf > 0.0)
-         sf = exp(gaus_rand(tsf,&fzero,seed));
+         sf = exp(_gaus_rand(tsf,&fzero,seed));
 
       rslw[ip] = sf/rspd[ip];
       }
@@ -765,7 +765,7 @@ for(j=0;j<nd;j++)
       iq = i+isoff + (j+idoff)*nsfd;
 
       if(*tsf > 0.0)
-         sf = exp(gaus_rand(tsf,&fzero,seed));
+         sf = exp(_gaus_rand(tsf,&fzero,seed));
 
       rslw[iq] = sf/rspd[ip];
       }
@@ -779,7 +779,7 @@ for(j=0;j<nd;j++)
       iq = i + (j+idoff)*nsfd;
 
       if(*tsf > 0.0)
-         sf = exp(gaus_rand(tsf,&fzero,seed));
+         sf = exp(_gaus_rand(tsf,&fzero,seed));
 
       rslw[iq] = sf/rspd[ip];
       }
@@ -793,7 +793,7 @@ for(j=0;j<nd;j++)
       iq = i + (j+idoff)*nsfd;
 
       if(*tsf > 0.0)
-         sf = exp(gaus_rand(tsf,&fzero,seed));
+         sf = exp(_gaus_rand(tsf,&fzero,seed));
 
       rslw[iq] = sf/rspd[ip];
       }

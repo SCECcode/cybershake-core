@@ -28,7 +28,7 @@ val = (float *)check_malloc(n*sizeof(float));
 avg = 0.0;
 for(i=0;i<n;i++)
    {
-   val[i] = sigma*gaus_rand(&fone,&fzero,&seed);
+   val[i] = sigma*_gaus_rand(&fone,&fzero,&seed);
    avg = avg + val[i];
    /*
    fprintf(stdout,"%.6f %.6f\n",val[i],avg/i);

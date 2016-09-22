@@ -46,7 +46,7 @@ void conv2vrup_dd2(struct velmodel *,struct velmodel *,float *,float *,float *,f
 
 double frand(void);
 double _sfrand(long *);
-double gaus_rand(float *,float *,long *);
+double _gaus_rand(float *,float *,long *);
 
 int _gen_brune_stf(float *,float *,float *,int,float *);
 int _gen_ucsb_stf(float *,float *,float *,int,float *);
@@ -54,8 +54,8 @@ int _gen_Mliu_stf(float *,float *,float *,int,float *);
 int _gen_tri_stf(float *,float *,float *,int,float *);
 int _gen_2tri_stf(float *,float *,float *,int,float *,float *);
 
-void set_ll(float *,float *,float *,float *,float *,float *);
-void swap_in_place(int,char *);
+void _set_ll(float *,float *,float *,float *,float *,float *);
+void _swap_in_place(int,char *);
 
 struct pointsource *_read_ruppars(char *,struct pointsource *,float *,int *,int *,float *,float *,float *,float *,float *,float *,float *);
 struct pointsource *_read_gsfpars(char *,struct pointsource *,struct generic_slip *,float *,float *,float *,float *);
@@ -91,7 +91,7 @@ void latlon2km(float *,float *,float *,float *,float *);
 void set_g2(float *,float *);
 void geocen(float *,double);
 
-void zapit(float *, int);
+void _zapit(float *, int);
 
 int get_seg_bounds(struct standrupformat *,float *);
 void get_rsegdelay(float *,int,int,double *,int,float *,float *,float *);

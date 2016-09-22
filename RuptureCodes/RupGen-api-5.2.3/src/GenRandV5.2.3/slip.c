@@ -579,8 +579,8 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
 /*
 wtD = 0.0;
 wtS = 20.0;
-s0[ip].re = fac*gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
-s0[ip].im = fac*gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
+s0[ip].re = fac*_gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
+s0[ip].im = fac*_gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
 */
 
 /*
@@ -1201,8 +1201,8 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
             fac = amp0*exp(-0.5*beta2*log(amp));
 	 }
 
-      fre = fnorm*gaus_rand(&fone,&fzero,seed);
-      fim = fnorm*gaus_rand(&fone,&fzero,seed);
+      fre = fnorm*_gaus_rand(&fone,&fzero,seed);
+      fim = fnorm*_gaus_rand(&fone,&fzero,seed);
 
       s0[ip].re = fac*fre;
       s0[ip].im = fac*fim;
@@ -1384,8 +1384,8 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       else
          kx = (i - nx0)*(*dkx);
 
-      fre = fnorm*gaus_rand(&fone,&fzero,seed);
-      fim = fnorm*gaus_rand(&fone,&fzero,seed);
+      fre = fnorm*_gaus_rand(&fone,&fzero,seed);
+      fim = fnorm*_gaus_rand(&fone,&fzero,seed);
 
       if(i == 0 && j == 0)
          amp = 0.0;

@@ -138,7 +138,7 @@ if(gslip->np > 0)
       se = -0.5*prseg_ptr[i].dwid*cos(rperd*prseg_ptr[i].dip)*cos(rperd*prseg_ptr[i].stk);
       sn = 0.5*prseg_ptr[i].dwid*cos(rperd*prseg_ptr[i].dip)*sin(rperd*prseg_ptr[i].stk);
 
-      set_ll(&avglon,&avglat,&prseg_ptr[i].elon,&prseg_ptr[i].elat,&sn,&se);
+      _set_ll(&avglon,&avglat,&prseg_ptr[i].elon,&prseg_ptr[i].elat,&sn,&se);
 
       prseg_ptr[i].shyp = -999.9;
       prseg_ptr[i].dhyp = -999.9;
@@ -310,7 +310,7 @@ if(gslip->np > 0)
       se = -prseg_ptr[i].dwid*sin(rperd*prseg_ptr[i].dip)*cos(rperd*prseg_ptr[i].stk);
       sn = prseg_ptr[i].dwid*sin(rperd*prseg_ptr[i].dip)*sin(rperd*prseg_ptr[i].stk);
 
-      set_ll(&avglon,&avglat,&prseg_ptr[i].elon,&prseg_ptr[i].elat,&sn,&se);
+      _set_ll(&avglon,&avglat,&prseg_ptr[i].elon,&prseg_ptr[i].elat,&sn,&se);
 
       prseg_ptr[i].shyp = -999.9;
       prseg_ptr[i].dhyp = -999.9;
@@ -659,7 +659,7 @@ for(iseg=0;iseg<nseg;iseg++)
 */
 
                if(spar->rt_rand > 0.0)
-                  rtfac = rtfac*exp(gaus_rand(&(spar->rt_rand),&fzero,seed));
+                  rtfac = rtfac*exp(_gaus_rand(&(spar->rt_rand),&fzero,seed));
 
                if(rtfac < rtfac_min)
                   rtfac = rtfac_min;

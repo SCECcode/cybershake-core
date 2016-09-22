@@ -506,7 +506,7 @@ for(j=0;j<(*ny);j++)
 
       se = xx*sinA + yy*cosA;
       sn = xx*cosA - yy*sinA;
-      set_ll(elon,elat,&psrc[ip].lon,&psrc[ip].lat,&sn,&se);
+      _set_ll(elon,elat,&psrc[ip].lon,&psrc[ip].lat,&sn,&se);
 
       psrc[ip].dep = zz;
       psrc[ip].stk = (*stk);

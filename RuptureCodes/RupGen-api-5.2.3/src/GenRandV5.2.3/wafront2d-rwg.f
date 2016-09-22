@@ -114,7 +114,7 @@ c      print *,'starting right, JPOS= ',JPOS,'JB= ',JB,'JU= ',JU
           TI(J) = ttime(J + m*(JPOS-2))
           JM(J) = J
         enddo
-        call sort(ju,jb,ti,jm)
+        call sort1(ju,jb,ti,jm)
         do 30 j=ju,jb        
 c
          index = 0
@@ -231,7 +231,7 @@ c      print *,'starting top'
           TI(J) = ttime(IPOS+1 + m*(J-1))
           JM(J) = J
    41   CONTINUE
-        call sort(jl,jr,ti,jm)
+        call sort1(jl,jr,ti,jm)
         do 40 j=jl,jr
 c
          index = 0
@@ -346,7 +346,7 @@ c      print *,'starting left'
           TI(J) = ttime(J + m*(JPOS))
           JM(J) = J
         enddo
-        call sort(ju,jb,ti,jm)
+        call sort1(ju,jb,ti,jm)
         do 50 j=ju,jb
 c        
          index =0
@@ -463,7 +463,7 @@ c      print *,'starting bottom, IPOS= ',IPOS,'JL= ',JL,'JR= ',JR
           TI(J) = ttime(IPOS-1 + m*(J-1))
           JM(J) = J
    61   CONTINUE
-        call sort(jl,jr,ti,jm)
+        call sort1(jl,jr,ti,jm)
         do 60 j=jl,jr
          index = 0
          if(jm(j).eq.n) then
@@ -578,7 +578,7 @@ c
       return
       end
 c
-      SUBROUTINE SORT(MIN,MAX,TI,JM)
+      SUBROUTINE SORT1(MIN,MAX,TI,JM)
       IMPLICIT REAL*8 (A-H,O-Z)
       DIMENSION TI(400), JM(400)
 C
