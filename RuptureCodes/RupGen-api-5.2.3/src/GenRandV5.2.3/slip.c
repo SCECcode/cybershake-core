@@ -713,8 +713,14 @@ normf = (*d1)*(*d2);
 //space = (float *) _check_malloc (2*(n1+n2)*sizeof(float));
 
 fftwf_plan plan;
-fftwf_complex *arr = _check_malloc(sizeof(fftwf_complex)*n1);
+//printf("A1\n");
+//fflush(stdout);
+fftwf_complex *arr = fftwf_malloc(sizeof(fftwf_complex)*n1);
+//printf("A2\n");
+//fflush(stdout);
 
+//printf("A2A\n");
+//fflush(stdout);
 if (isgn==-1) {
         //printf("fwd plan\n");
         plan = fftwf_plan_dft_1d(n1, arr, arr, FFTW_FORWARD, FFTW_ESTIMATE);
@@ -722,6 +728,8 @@ if (isgn==-1) {
         //printf("back plan\n");
         plan = fftwf_plan_dft_1d(n1, arr, arr, FFTW_BACKWARD, FFTW_ESTIMATE);
 }
+//printf("A2B\n");
+//fflush(stdout);
 
 for(j=0;j<n2;j++) {
    //fourg__(xc+j*n1,&n1,&isgn,space);
@@ -738,7 +746,11 @@ for(j=0;j<n2;j++) {
    }
 }
 //xtc = (struct complex *) _check_malloc (n2*sizeof(struct complex));
+//printf("A3\n");
+//fflush(stdout);
 arr = _check_realloc(arr, n2*sizeof(fftwf_complex));
+//printf("A4\n");
+//fflush(stdout);
 
 if (isgn==-1) {
         plan = fftwf_plan_dft_1d(n2, arr, arr, FFTW_FORWARD, FFTW_ESTIMATE);
@@ -775,6 +787,7 @@ for(i=0;i<n1;i++)
 //free(xtc);
 //free(space);
 fftwf_free(arr);
+//free(arr);
 }
 
 

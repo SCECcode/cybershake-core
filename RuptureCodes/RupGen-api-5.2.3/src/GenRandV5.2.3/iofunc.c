@@ -384,6 +384,8 @@ int* num_parts;
                                 //This piece is missing
                                 //Easiest to add the whole file
                                 free(file_data);
+				//Set explicitly to null in case freed again at end of function
+				file_data = NULL;
                                 _mc_add_file(file, &file_data, mst);
                                 break;
                         } else {

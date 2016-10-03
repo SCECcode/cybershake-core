@@ -12,6 +12,7 @@ ptr = (void *) malloc (len);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory allocation error\n");
+   fprintf(stderr,"Tried to allocate %ld bytes.\n");
    exit(-1);
    }
 
