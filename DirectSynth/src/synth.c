@@ -344,9 +344,12 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 				MPI_Finalize();
 				exit(rc);
 			}
+			struct duration_record* ad_rec = (struct duration_record*)start_ptr + 4;
+			//printf("AD value after function: %d, %d, %d, %f\n", ad_rec->type, ad_rec->type_value, ad_rec->component, ad_rec->value);
 			//Add header info to the file buffer
 			memcpy(duration_file_buffer+rv*duration_rv_file_size, &header, sizeof(struct seisheader));
 			memcpy(duration_file_buffer+rv*duration_rv_file_size+sizeof(struct seisheader), duration_data, sizeof(int)+sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES);
+			//printf("Arias duration value in duration_file_buffer: %f\n", duration_file_buffer+rv*duration_rv_file_size+sizeof(struct seisheader)+sizeof(int)+76);
 		}			
 	}
 

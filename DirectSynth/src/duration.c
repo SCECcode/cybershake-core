@@ -85,8 +85,15 @@ int duration(struct seisheader* header, float* full_seis, struct duration_record
 	//fwrite(&NUM_DURATION_MEASURES, sizeof(int), 1, fp_out);
 	int nt = header->nt;
 	float dt = header->dt;
+	//printf("nt = %d\n", header->nt);
+	//printf("out addr: %p\n", out);
+	//Save accel seismogram to debug
+	//char acc_filename[256];
+	//sprintf(acc_filename, "ACC_Seis_%d_%d_%d.grm", header->source_id, header->rupture_id, header->rup_var_id);
+	//FILE* acc_out = fopen(acc_filename, "wb");
 	for (i=0; i<2; i++) {
 		entry = out+i*NUM_DURATION_MEASURES;
+                //printf("starting entry addr: %p\n", entry);
 		seis = full_seis+i*nt;
 
 		float energy_integral = intensity(seis, nt, dt, 0);
@@ -121,6 +128,7 @@ int duration(struct seisheader* header, float* full_seis, struct duration_record
         	//fwrite(&entry, sizeof(struct duration_record), 1, fp_out);
 
 		integ_diff(0, seis, nt, dt);
+		//fwrite(seis, sizeof(float), nt, acc_out);	
 
 		float arias_intensity = intensity(seis, nt, dt, 1);
 		entry += 1;
@@ -128,6 +136,7 @@ int duration(struct seisheader* header, float* full_seis, struct duration_record
         	entry->type = ARIAS_INTENSITY;
         	entry->type_value = -1;
         	entry->value = arias_intensity;
+		//printf("arias intensity value in entry: %f at addr %p\n", entry->value, entry);
         	//fwrite(&entry, sizeof(struct duration_record), 1, fp_out);
 
         	float da_5_75 = significant_duration(seis, 0.05, 0.75, nt, dt, 1);
@@ -163,5 +172,7 @@ int duration(struct seisheader* header, float* full_seis, struct duration_record
         	//fwrite(&entry, sizeof(struct duration_record), 1, fp_out);
 	}
 	//fflush(fp_out);
+	//fflush(acc_out);
+	//fclose(acc_out);
 	return 0;
 }

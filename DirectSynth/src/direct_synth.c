@@ -126,12 +126,18 @@ int main(int argc, char** argv) {
 		getpar("rupture_spacing", "s", rupture_spacing_string);
 		if (strcmp(rupture_spacing_string,"random")==0) {
 		        rupture_spacing = RUPGEN_RANDOM_HYPO;
-		        printf("Using random spacing.\n");
+			if (my_id==0) {
+			        printf("Using random spacing.\n");
+			}
 		} else if (strcmp(rupture_spacing_string,"uniform")==0) {
 		        rupture_spacing = RUPGEN_UNIFORM_HYPO;
-		        printf("Using uniform spacing.\n");
+			if (my_id==0) {
+			        printf("Using uniform spacing.\n");
+			}
 		} else {
-		        fprintf(stderr, "rupture_spacing argument %s must be one of 'random' or 'uniform', aborting.", rupture_spacing_string);
+			if (my_id==0) {
+			        fprintf(stderr, "rupture_spacing argument %s must be one of 'random' or 'uniform', aborting.", rupture_spacing_string);
+			}
 		        exit(5);
 		}
 

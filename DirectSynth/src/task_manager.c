@@ -128,7 +128,7 @@ void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int 
 			}
 			int completed_worker = handle_work_request(msg, task_list, &current_task, num_tasks, worker_msg_type, my_id);
 			//Convert the message source into a worker offset for worker_status
-			int worker_offset = msg.msg_src - my_id;
+			int worker_offset = msg.msg_src - my_id - 1;
 
 			if (completed_worker==-1) {
 				if (worker_status[worker_offset]!=WORKER_WORKING) {
@@ -291,11 +291,12 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		if (sgt_size>MAX_BUFFER_SIZE) {
 			sgt_size = MAX_BUFFER_SIZE;
 		}
-		printf("sgt_size = %ld\n", sgt_size);
-		printf("num_points = %d\n", num_points);
-		printf("dtout = %f\n", dtout);
-		//Each rupture variation adds roughly
-		//14.8 * log10(rupture_points) * rupture_points^1.14 MB worth of storage * 1.1(tolerance) * 0.1/dtout
+		//printf("sgt_size = %ld\n", sgt_size);
+		//printf("num_points = %d\n", num_points);
+		//printf("dtout = %f\n", dtout);
+		#ifdef V_3_3_1
+                //Each rupture variation adds roughly
+                //14.8 * log10(rupture_points) * rupture_points^1.14 MB worth of storage * 1.1(tolerance) * 0.1/dtout
 		long long single_rv_size = (long long)(14.8 * (long long)log10(num_points) * pow(num_points, 1.14) * 1.1);
 		//Cap rupture size at 80 MB
 		if (single_rv_size > 80*1024*1024) {
@@ -303,14 +304,22 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		}
 		//Take dtout into consideration
 		single_rv_size = (long long)((float)single_rv_size * 0.1/dtout);
-		printf("single_rv_size = %ld\n", single_rv_size);
+		//printf("single_rv_size = %ld\n", single_rv_size);
+		#else
+		//For v5.2.3; assumes dtout=0.05.  size = 6.491 * num_points ^ 1.314 * 1.1 (tolerance)
+		long long single_rv_size = (long long)(6.491*pow(num_points, 1.314)*1.1);
+		//Cap at 120 MB
+		if (single_rv_size > 120*1024*1024) {
+			single_rv_size = 120*1024*1024;
+		}
+		#endif
 		//Do not permit more than this amount to be used
-		long long MAX_ALLOWED = (long long)(1.8 * 1024.0 * 1024.0 * 1024.0);
-		printf("MAX_ALLOWED = %ld\n", MAX_ALLOWED);
+		long long MAX_ALLOWED = (long long)(1.7 * 1024.0 * 1024.0 * 1024.0);
+		//printf("MAX_ALLOWED = %ld\n", MAX_ALLOWED);
 		int num_vars_per_task = (MAX_ALLOWED - sgt_size)/single_rv_size;
 		//Change for debugging
 		//num_vars_per_task = 2;
-		printf("num_vars_per_task = %d\n", num_vars_per_task);
+		//printf("num_vars_per_task = %d\n", num_vars_per_task);
 		int num_vars = num_slips * num_hypos;
 		int tasks_for_rupture = ceil(((float)num_vars)/((float)num_vars_per_task));
 		if (debug) {
@@ -327,7 +336,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 
 		for (j=0; j<tasks_for_rupture; j++) {
 			strcpy((*task_list)[num_tasks].rupture_filename, rupture_file);
-			printf("rupture_filename = %s\n", (*task_list)[num_tasks].rupture_filename);
+			//printf("rupture_filename = %s\n", (*task_list)[num_tasks].rupture_filename);
 			(*task_list)[num_tasks].source_id = source_id;
 			(*task_list)[num_tasks].rupture_id = rupture_id;
 			(*task_list)[num_tasks].num_slips = num_slips;

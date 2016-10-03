@@ -18,6 +18,29 @@ struct pointsource
    float rupt;
    };
 
+#ifdef _V3_3_1
+struct srf_apointvalues
+   {
+   float lon;
+   float lat;
+   float dep;
+   float stk;
+   float dip;
+   float area;
+   float tinit;
+   float dt;
+   float rake;
+   float slip1;
+   int nt1;
+   float slip2;
+   int nt2;
+   float slip3;
+   int nt3;
+   float *stf1;
+   float *stf2;
+   float *stf3;
+   };
+#else
 struct srf_apointvalues
    {
    float lon;
@@ -63,6 +86,7 @@ struct srf_apointvalues20141109
    float *stf2;
    float *stf3;
    };
+#endif
 
 struct srf_allpoints
    {
@@ -99,6 +123,15 @@ struct srf_headercomment
    char *cbuf;
    };
 
+#ifdef _V3_3_1
+struct standrupformat
+   {
+   char version[32];
+   char type[32];
+   struct srf_planerectangle srf_prect;
+   struct srf_allpoints srf_apnts;
+   };
+#else
 struct standrupformat
    {
    char version[32];
@@ -117,6 +150,7 @@ struct standrupformat20141109
    struct srf_planerectangle srf_prect;
    struct srf_allpoints srf_apnts;
    };
+#endif
 
 struct slippars
    {
