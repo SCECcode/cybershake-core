@@ -124,10 +124,19 @@ if (strcmp(rupture_spacing_string,"random")==0) {
         fprintf(stderr, "rupture_spacing argument %s must be one of 'random' or 'uniform', aborting.", rupture_spacing_string);
         exit(5);
 }
+if (debug) {
+	gettimeofday(&tv_start, NULL);
+}
 //Generate all ruptures
 for (i=0; i<num_rup_vars; i++) {
 	//printf("Generating rupture from file %s, slip %d, hypo %d, spacing %d, dtout %f\n", rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, rupture_spacing, dtout);
 	rupgen_genslip(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout);
+}
+if (debug) {
+	gettimeofday(&tv_end, NULL);
+	char buf[256];
+	sprintf(buf, "Generating %d variations took %d sec.\n", num_rup_vars, tv_end.tv_sec - tv_start.tv_sec);
+	write_log(buf);
 }
 
 //write_srf(&srf, "out.srf", 0);
@@ -163,8 +172,8 @@ fprintf(stdout,"Total memory for SGTs= %.2f Mb\n",memlen*1.0e-06);
 //sgthead = (struct sgtheader *) check_malloc ((sgtmast.globnp)*sizeof(struct sgtheader));
 long long sgtbufsize = 18*(long long)sgtmast.globnp*sgtmast.nt*sizeof(float);
 
-fprintf(stderr, "MAX_BUFFER_SIZE = %ld\n", MAX_BUFFER_SIZE);
-fprintf(stderr, "sgtbufsize = %ld\n", sgtbufsize);
+//fprintf(stderr, "MAX_BUFFER_SIZE = %ld\n", MAX_BUFFER_SIZE);
+//fprintf(stderr, "sgtbufsize = %ld\n", sgtbufsize);
 
 //Need to consider buffer size too
 int max_points_per_request = MAX_BUFFER_SIZE/(18/3*4*sgtmast.nt*sizeof(float)+sizeof(struct sgtheader));
@@ -358,7 +367,6 @@ while (1) {
 		mechpar.flag[1] = 0;
 		mechpar.flag[2] = 0;
 
-		fprintf(stderr, "gfmech\n");
 		gfmech = check_malloc(sizeof(float*) * num_rup_vars);
 		space = check_malloc(sizeof(float*) * num_rup_vars);
 		seis = check_malloc(sizeof(float*) * num_rup_vars);

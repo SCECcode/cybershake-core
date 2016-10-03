@@ -206,9 +206,9 @@ void get_SGT_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, i
 	for (i=0; i<3; i++) {
 		(*sgthead)[i] = NULL;
 		if (header_files[i][0] != '\0') {
-			printf("%d) receiving component %d header info.\n", my_id, i);
+			//printf("%d) receiving component %d header info.\n", my_id, i);
 			(*sgthead)[i] = check_malloc(num_my_points*sizeof(struct sgtheader));
-			printf("%d) receiving %d points of header info into address %ld\n", my_id, num_my_points, (*sgthead)[i]);
+			//printf("%d) receiving %d points of header info into address %ld\n", my_id, num_my_points, (*sgthead)[i]);
 			check_recv((*sgthead)[i], num_my_points, sgtheader_type, 0, SGT_HEADER_TAG, *sgt_handler_comm, "Error receiving SGT header, aborting.", my_id);
 		}
 	}

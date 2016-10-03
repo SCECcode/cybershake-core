@@ -44,7 +44,7 @@ int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sg
 	if (debug) write_log("Receiving sgtmast from master.");
 	check_bcast(&sgtmast, 1, sgtmast_type, 0, MPI_COMM_WORLD, "Error receiving sgtmast, aborting.", my_id);
 	sgtindx = check_malloc(sizeof(struct sgtindex)*sgtmast.globnp);
-	printf("sgtindx size: %d\n", sizeof(struct sgtindex)*sgtmast.globnp);
+	//printf("sgtindx size: %d\n", sizeof(struct sgtindex)*sgtmast.globnp);
 	if (debug) write_log("Receiving sgtindx from master.");
 	check_bcast(sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
 
