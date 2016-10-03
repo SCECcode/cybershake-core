@@ -439,6 +439,11 @@ int ih_scnt, ih_dcnt, nhypo_s, nhypo_d;
 float avgstk, rake, rt, tsmin;
 float xhypo, xdep;
 struct velmodel rvmod;
+//Set pointers to null, so if we don't initialize we don't have a free problem
+rvmod.vs = NULL;
+rvmod.th = NULL;
+rvmod.invb2 = NULL;
+
 double rayp, rupt_rad;
 
 int seg_delay = 0;
@@ -608,9 +613,10 @@ float alphaT, fD, fR, avgrak;
 int fdrup_time = 0;
 int fdrup_scale_slip = 0;
 double dh, *fdrt, *rslw, *fspace;
-float *rspd;
+float *rspd = NULL;
 int nstk_fd, ndip_fd, istk_off, idip_off;
 int ixs, iys, nsring, ntot, *ispace;
+fdrt = fspace = ispace = NULL;
 float rvfmin = 0.25;
 float rvfmax = 1.414;
 float rvel_rand = 0.0;
@@ -898,6 +904,7 @@ gslip.np = -1;
 gslip.spar = (struct slippars *)NULL;
 
 //CyberShake change
+
 if(read_erf == 1)
 #ifdef _USE_MEMCACHED
    psrc_orig = _mc_read_ruppars(infile,psrc,&mag,&nstk,&ndip,&dstk,&ddip,&dtop,&avgstk,&avgdip,&elon,&elat,memcached_server);
@@ -1268,6 +1275,7 @@ if (state==GET_STATS) {
         free(stk_r);
         free(dip_r);
 
+        free(psrc_orig);
         free(psrc);
         return 0;
 }
@@ -1380,7 +1388,11 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
       slip_c[j].im = 0.0;
       }
 
+   //printf("A\n");
+   //fflush(stdout);
    fft2d_fftw(slip_c,nstk2,ndip2,-1,&dstk,&ddip);
+   //printf("B\n");
+   //fflush(stdout);
 
    if(kmodel < 100)
       {
@@ -1389,9 +1401,9 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
       else
          kfilt_rphs(slip_c,nstk2,ndip2,&dks2,&dkd2,&clen_s,&clen_d,&seed,kmodel);
       }
-
+   //printf("C");
    fft2d_fftw(slip_c,nstk2,ndip2,1,&dks2,&dkd2);
-
+   //printf("D");
 /*
    Copy in to real array.
 
@@ -2348,6 +2360,7 @@ fprintf(stderr,"ixs= %d iys= %d\n",ixs,iys);
          ntot = nstk_fd*ndip_fd;
 
          rslw = (double *)_check_realloc(rslw,ntot*sizeof(double));
+	 printf("rslw addr = %p\n", rslw);
          fdrt = (double *)_check_realloc(fdrt,ntot*sizeof(double));
          fspace = (double *)_check_realloc(fspace,(nstk_fd+ndip_fd)*sizeof(double));
          ispace = (int *)_check_realloc(ispace,(nstk_fd+ndip_fd)*sizeof(int));
@@ -2517,6 +2530,7 @@ if(dump_last_seed == 1)
 
 //CyberShake change
 //Free things
+
  free(rvfac_seg);
  free(gwid);
  free(gbnd);
@@ -2560,7 +2574,6 @@ if(dump_last_seed == 1)
 
  free(fspace);
  free(ispace);
-
 
  return 0;
 
