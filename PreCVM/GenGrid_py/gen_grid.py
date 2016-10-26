@@ -38,8 +38,11 @@ def genBoundfile(gridout, coordfile, boundfile):
 
 def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, freq, sp, gpu=False):
     '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
-    #Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance
-    ZLEN = 50.4
+    #Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance, requires GPU or CPU counts get all off
+    if gpu:
+	ZLEN = 50.4
+    else:
+	ZLEN = 50.0
     #if gpu:
     #	#Change ZLEN to 51.2 so it's a multiple of 256 pts
     #	ZLEN = 51.2
@@ -47,7 +50,8 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
     SPACING = 0.1/freq
     if sp>0:
 	SPACING = sp
- 
+
+    print "SPACING = %f, freq = %f, sp= %f\n" % (SPACING, freq, sp)
     modelboxInput = open(modelboxFile)
     modelboxData = [line.strip() for line in modelboxInput.readlines()]
     modelboxInput.close()
@@ -95,7 +99,7 @@ def main():
     if len(sys.argv)==10 and sys.argv[9]=="gpu":
     	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency, spacing, gpu=True)
     else:
-	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, spacing, frequency)
+	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency, spacing)
 
 if __name__=="__main__":
     main()
