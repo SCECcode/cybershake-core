@@ -100,6 +100,7 @@ void do_work(int argc, char** argv, struct sgtmaster* sgtmast, struct sgtindex* 
 			exit(4);
 		}
 	}
+	MPI_Type_free(&worker_msg_type);
 }
 
 

@@ -26,8 +26,6 @@ int main(int argc, char** argv) {
 	int num_sgt_handlers = 0;
 
 	getMPIInfo(&my_id, &num_procs);
-	printf("My rank is %d of %d.\n", my_id, num_procs);
-	fflush(stdout);
 	my_global_id = my_id;
 
 	setpar(argc, argv);
@@ -93,6 +91,16 @@ int main(int argc, char** argv) {
 		open_log(my_id);
 	}
 
+	//Determine core, hostname
+	int core = sched_getcpu();
+	char hostname[256];
+	gethostname(hostname, 256);
+	if (debug) {
+		char buf[512];
+		sprintf(buf, "Running on core %d of host %s", core, hostname);
+		write_log(buf);
+	}
+
 	MPI_Comm sgt_handler_comm, sgt_readers_comm;
 	//Includes ranks 0 through num_sgt_handlers - 1
         constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm);
@@ -102,7 +110,7 @@ int main(int argc, char** argv) {
 	if (my_id<num_sgt_handlers) {
 		if (my_id==0) {
 			if (debug) write_log("Entering master.");
-			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers, stat, run_id, run_PSA, run_rotd);
+			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers, stat, run_id, run_PSA, run_rotd, run_duration);
 		} else if (my_id<num_sgt_handlers) {
 			if (debug) write_log("Entering sgt handler.");
 			sgt_handler(&sgtfilepar, num_comps, &sgt_handler_comm, num_sgt_handlers, &sgt_readers_comm, my_id);

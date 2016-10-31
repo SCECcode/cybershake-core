@@ -62,7 +62,16 @@ int sgt_handler(struct sgtfileparams* sgtfilepar, int num_comps, MPI_Comm* sgt_h
 	//Listen for messages
 	handler_listen(&sgtmast, sgtindx, sgthead, sgtdata, num_my_points, my_offset, num_comps, my_id);
 
+	int i;
+	for (i=0; i<3; i++) {
+		free(sgtdata[i]);
+		free(sgthead[i]);
+	}
+	free(sgtdata);
 	free(sgtindx);
+	free(proc_points);
+	MPI_Type_free(&sgtmast_type);
+	MPI_Type_free(&sgtindx_type);
 	return 0;
 }
 
@@ -129,6 +138,8 @@ void handler_listen(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct 
 	cfuhash_destroy(hash_table);
 	free(value_array);
 	free(sgts_requested);
+	MPI_Type_free(&sgtheader_type);
+	MPI_Type_free(&sgtdata_type);
 }
 
 void handle_SGT_request(long long* sgts_requested, int num_sgts_requested, cfuhash_table_t* hash_table, struct sgtmaster* sgtmast, struct sgtheader* sgthead[3],
@@ -310,6 +321,8 @@ int readSGT_MPI(char *sgt_fname, int nPoints, int nMyPoints, int nt, int indexMy
   err = MPI_File_read_all(fh, sgt_buf, 1, filetype, &stat);
 
   err = MPI_File_close(&fh);
+
+  MPI_Type_free(&filetype);
 
   return 0;
 }

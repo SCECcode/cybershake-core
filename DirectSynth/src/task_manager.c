@@ -159,6 +159,7 @@ void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int 
 		}
 	}
 	free(worker_status);
+	MPI_Type_free(&worker_msg_type);
 }
 
 int handle_work_request(manager_msg msg, worker_task* task_list, int* current_task, int num_tasks, MPI_Datatype worker_msg_type, int my_id) {
@@ -378,6 +379,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 	check_send(&num_ruptures_to_process, 1, MPI_INT, 0, NUM_RUPTURES_TAG, MPI_COMM_WORLD, "Error sending num ruptures to master, aborting.", my_id);
 	check_send(tuples_for_master, 3*num_ruptures_to_process, MPI_INT, 0, VARIATION_INFO_TAG, MPI_COMM_WORLD, "Error sending (source, rupture, #rvs) tuples to master, aborting.", my_id);
 
+	free(tuples_for_master);
 	return num_tasks;
 }
 
