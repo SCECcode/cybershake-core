@@ -26,6 +26,9 @@ for i in range(5, len(data), 1):
 	x = int(pieces[0])
 	y = int(pieces[1])
 	z = int(pieces[2])
+	point_str = "%d %d %d\n" % (y+1, x+1, min([z+1, max_depth_index]))
+	if point_str in points:
+		print "Duplicate point entry %s" % point_str
 	points.add("%d %d %d\n" % (y+1, x+1, min([z+1, max_depth_index])))
 
 p_list = []
