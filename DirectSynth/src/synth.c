@@ -375,7 +375,12 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 	free(sgtparms);
 	free(indx_master);
 	free(rup_vars);
+	for (rv=0; rv<num_rup_vars; rv++) {
+		free(original_seis[rv]);
+	}
 	free(original_seis);
+
+	free(rg_points);
 
 	return 0;
 }
@@ -459,6 +464,8 @@ void request_sgt(struct sgtheader* sgthead, float* sgtbuf, int num_comps, int re
 	}
 
 	free(buffer);
+	MPI_Type_free(&sgtheader_type);
+        MPI_Type_free(&sgtdata_type);
 }
 
 void send_data_cluster(char data_filename[256], int src_id, int rup_id, int start_rv, int end_rv, void* data, int data_size_bytes, int my_id) {

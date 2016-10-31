@@ -497,7 +497,7 @@ free(space);
 free(subseis);
 free(stf);
 
-*seis_return = seis;
+//*seis_return = seis;
 
 //Accumulate data for writing in single buffer
 char* writing_buffer = check_malloc((sizeof(struct seisheader) + sizeof(float)*3*ntout)*num_rup_vars);
