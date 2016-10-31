@@ -176,7 +176,7 @@ struct sgtmaster
  
 struct sgtindex   /* indices for all 'globnp' SGT locations */
    {
-   long long indx; /* indx= xsgt*10000000 + ysgt*1000 + zsgt */
+   long long indx; /* indx= xsgt*1000000000000 + ysgt*1000000 + zsgt */
    int xsgt;     /* x grid location */
    int ysgt;     /* y grid location */
    int zsgt;     /* z grid location */
