@@ -6,6 +6,7 @@ from pylab import *
 import sys
 import os
 import struct
+import math
 import numpy as np
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -14,7 +15,7 @@ from mpl_toolkits import basemap
 from operator import itemgetter
 
 if len(sys.argv)<8:
-	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <z-depth> <output file>" % sys.argv[0]
+	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <z-depth> <decimation> <output file>" % sys.argv[0]
 	sys.exit(1)
 
 
@@ -24,14 +25,23 @@ nx = int(sys.argv[3])
 ny = int(sys.argv[4])
 nz = int(sys.argv[5])
 zslice = int(sys.argv[6])
-output_file = sys.argv[7]
+decimation = int(sys.argv[7])
+output_file = sys.argv[8]
+
+x_dim = math.ceil(float(nx)/float(decimation))
+y_dim = math.ceil(float(ny)/float(decimation))
 
 coords = []
 print "Reading model coods file."
 with open(model_coords_file, "r") as fp_in:
-        for line in fp_in:
-                pieces = line.split()
-                coords.append([float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])])
+	data = fp_in.readlines()
+	for y in range(0, ny, decimation):
+		print "%d of %d y-points" % (y, ny)
+		for x in range(0, nx, decimation):
+			line_index = x + y*nx
+			line = data[line_index]
+			pieces = line.split()
+			coords.append([float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])])
 
 slice_floats = []
 vs = []
@@ -43,10 +53,11 @@ with open(velocity_file, "rb") as fp_in:
 	fp_in.seek(offset)
 	slice_data = fp_in.read(nx*ny*3*4)
 	#Plot Vs
-	for i in range(0, nx):
+	for i in range(0, nx, decimation):
+		print "%d of %d x-slices" % (i, nx)
 		offset = i*ny*3*4
 		slice_floats = (struct.unpack("%df" % 3*ny, slice_data[offset:offset+ny*3*4]))
-		vs.extend(slice_floats[1::3])
+		vs.extend(slice_floats[1::3*decimation])
 	
 ordered_coords = sorted(coords, key=itemgetter(2,3))
 
@@ -72,10 +83,13 @@ m.drawcountries()
 
 #pcolormesh needs 2d arrays
 x_coords = np.array([a[0] for a in ordered_coords])
-x_2d = x_coords.reshape((nx, ny))
+#x_2d = x_coords.reshape((nx, ny))
+x_2d = x_coords.reshape((x_dim, y_dim))
 y_coords = np.array([a[1] for a in ordered_coords])
-y_2d = y_coords.reshape((nx, ny))
-vs_2d = np.array(vs).reshape((nx, ny))
+#y_2d = y_coords.reshape((nx, ny))
+y_2d = y_coords.reshape((x_dim, y_dim))
+#vs_2d = np.array(vs).reshape((nx, ny))
+vs_2d = np.array(vs).reshape((x_dim, y_dim))
 
 fp_out = open("surface_vel.txt", "w")
 for i in range(0, len(vs)):
