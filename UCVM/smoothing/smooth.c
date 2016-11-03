@@ -53,7 +53,14 @@ void process_mesh(char* mesh_in, char* pts_file, int nx, int ny, int nz, int smo
 	float lon, lat;
 	float vals[3];
 	int num_pts = 0;
-	int points[1000000][2];
+	//int points[1000000][2];
+	int** points;
+	int i;
+	int MAX_PTS = 4000000;
+	points = malloc(sizeof(int*)*MAX_PTS);
+	for (i=0; i<MAX_PTS; i++) {
+		points[i] = malloc(sizeof(int)*2);
+	}
 	while (fscanf(pts_in, "%d %d %f %f\n", &pt_x, &pt_y, &lon, &lat)!=EOF) {
 		points[num_pts][0] = pt_x;
 		points[num_pts][1] = pt_y;
@@ -62,7 +69,7 @@ void process_mesh(char* mesh_in, char* pts_file, int nx, int ny, int nz, int smo
 	fclose(pts_in);
 
 	int point_index = 0;
-	int i, j, k;
+	int j, k;
 	//Iterate over horizontal slices
 	//Fast y, x
 	for (i=0; i<nz; i++) {
@@ -90,6 +97,10 @@ void process_mesh(char* mesh_in, char* pts_file, int nx, int ny, int nz, int smo
 	fflush(fp_out);
 	fclose(fp_out);
 	fclose(fp_in);
+	for (i=0; i<MAX_PTS; i++) {
+		free(points[i]);
+	}
+	free(points);
 }
 
 
