@@ -33,7 +33,7 @@ import org.apache.commons.cli.ParseException;
  * Window - Preferences - Java - Code Style - Code Templates
  */
 public class CheckDBDataForSite {
-    private static final String DB_SERVER = "focal.usc.edu";
+    private static final String DB_SERVER = "moment.usc.edu";
     private static final String DB = "CyberShake";
     private static DBConnect dbc = new DBConnect(DB_SERVER, DB);
     
@@ -50,6 +50,7 @@ public class CheckDBDataForSite {
         Option typeIDs = OptionBuilder.withArgName("type_ids").hasArg().withDescription("Comma-separated list of type IDs to check, for duration.").create("t");
         Option component = OptionBuilder.withArgName("component").hasArg().withDescription("Component type (geometric, rotd, duration) to check.").create("c");
         Option output = OptionBuilder.withArgName("output").hasArg().withDescription("Path to output file, if something is missing (required).").create("o");
+        Option server = OptionBuilder.withArgName("server").hasArg().withDescription("DB server to query against.").create("s");
         output.setRequired(true);
 
         cmd_opts.addOption(help);
@@ -58,6 +59,7 @@ public class CheckDBDataForSite {
         cmd_opts.addOption(typeIDs);
         cmd_opts.addOption(component);
         cmd_opts.addOption(output);
+        cmd_opts.addOption(server);
         
         CommandLineParser parser = new GnuParser();
         if (args.length<1) {
