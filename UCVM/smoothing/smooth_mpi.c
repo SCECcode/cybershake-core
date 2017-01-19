@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
 	MPI_Init(&argc, &argv);
 
 	if (argc<8) {
-		printf("Usage: %s <AWP-format mesh in> <list of smoothing pts> <nx> <ny> <nz> <smoothing range in pts> <velocity mesh out>", argv[0]);
+		printf("Usage: %s <AWP-format mesh in> <list of smoothing pts> <RWG nx> <RWG ny> <nz> <smoothing range in pts> <velocity mesh out>", argv[0]);
 		exit(1);
 	}
 

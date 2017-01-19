@@ -12,16 +12,16 @@ if len(sys.argv)<2:
 
 smoothing_file = sys.argv[1]
 
-x = []
-y = []
+lon = []
+lat = []
 with open(smoothing_file, "r") as fp_in:
 	for line in fp_in:
 		pieces = line.split()
-		x.append(float(pieces[0]))
-		y.append(float(pieces[1]))
+		lon.append(float(pieces[2]))
+		lat.append(float(pieces[3]))
 
 clf()
-plot(x, y, '.')
+plot(lon, lat, '.')
 xlim(-130, -110)
 ylim(30, 42)
 xlabel("Latitude")

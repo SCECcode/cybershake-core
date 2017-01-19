@@ -12,10 +12,11 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from mpl_toolkits import basemap
+from mpl_toolkits.basemap import cm
 from operator import itemgetter
 
 if len(sys.argv)<8:
-	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <z-depth> <decimation> <output file>" % sys.argv[0]
+	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <z-depth> <decimation> <output file> [vp|vs|rho]" % sys.argv[0]
 	sys.exit(1)
 
 
@@ -27,6 +28,10 @@ nz = int(sys.argv[5])
 zslice = int(sys.argv[6])
 decimation = int(sys.argv[7])
 output_file = sys.argv[8]
+
+comp = "vs"
+if len(sys.argv)==10:
+	comp = sys.argv[9]
 
 x_dim = math.ceil(float(nx)/float(decimation))
 y_dim = math.ceil(float(ny)/float(decimation))
@@ -44,7 +49,7 @@ with open(model_coords_file, "r") as fp_in:
 			coords.append([float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])])
 
 slice_floats = []
-vs = []
+vel_data = []
 
 print "Reading velocity file."
 with open(velocity_file, "rb") as fp_in:
@@ -57,23 +62,32 @@ with open(velocity_file, "rb") as fp_in:
 		print "%d of %d x-slices" % (i, nx)
 		offset = i*ny*3*4
 		slice_floats = (struct.unpack("%df" % 3*ny, slice_data[offset:offset+ny*3*4]))
-		vs.extend(slice_floats[1::3*decimation])
+		if comp=="vp":
+	                vel_data.extend(slice_floats[0::3*decimation])
+		elif comp=="vs":
+	                vel_data.extend(slice_floats[1::3*decimation])
+		elif comp=="rho":
+			vel_data.extend(slice_floats[2::3*decimation])
 	
 ordered_coords = sorted(coords, key=itemgetter(2,3))
 
 #Plotting code taken from UCVM horizontal slice
 BOUNDS = [0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
+#BOUNDS = [0, 3000.0]
 TICKS = [0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
+#TICKS = [0, 300.0, 600.0, 900.0, 1200.0, 1500.0, 1800.0, 2100.0, 2400.0, 2700.0, 3000.0]
 
-colormap = cm.RdBu
+#colormap = cm.RdBu
+#Use new color map from SRL paper
+colormap = basemap.cm.GMT_seis
 norm = mcolors.Normalize(vmin=BOUNDS[0],vmax=BOUNDS[len(BOUNDS) - 1])
 
-m = basemap.Basemap(projection='cyl', llcrnrlat=30, urcrnrlat=42, llcrnrlon=-128, urcrnrlon=-112, resolution='f', anchor='C')
+m = basemap.Basemap(projection='cyl', llcrnrlat=30, urcrnrlat=42, llcrnrlon=-130, urcrnrlon=-113, resolution='f', anchor='C')
 #m = basemap.Basemap(projection='cyl', llcrnrlat=34, urcrnrlat=36, llcrnrlon=-123, urcrnrlon=-121, resolution='f', anchor='C')
 
 lat_ticks = np.arange(30, 42, 2)
 #lat_ticks = np.arange(34, 36, 1)
-lon_ticks = np.arange(-128, -112, 5)
+lon_ticks = np.arange(-130, -113, 5)
 #lon_ticks = np.arange(-123, -121, 1)
 
 m.drawparallels(lat_ticks, linewidth=1.0, labels=[1,0,0,0])
@@ -89,11 +103,11 @@ y_coords = np.array([a[1] for a in ordered_coords])
 #y_2d = y_coords.reshape((nx, ny))
 y_2d = y_coords.reshape((x_dim, y_dim))
 #vs_2d = np.array(vs).reshape((nx, ny))
-vs_2d = np.array(vs).reshape((x_dim, y_dim))
+vel_2d = np.array(vel_data).reshape((x_dim, y_dim))
 
 fp_out = open("surface_vel.txt", "w")
-for i in range(0, len(vs)):
-	fp_out.write("%f %f %f\n" %(y_coords[i], x_coords[i], vs[i]))
+for i in range(0, len(vel_data)):
+	fp_out.write("%f %f %f\n" %(y_coords[i], x_coords[i], vel_data[i]))
 fp_out.flush()
 fp_out.close()
 
@@ -101,7 +115,7 @@ fp_out.close()
 #plt.pcolormesh([a[0] for a in ordered_coords], [a[1] for a in ordered_coords], vs, cmap=colormap, norm=norm)
 #t = m.transform_scalar(vs_2d, x_coords, y_coords, len(x_coords), len(y_coords))
 #img = m.imshow(vs_2d, cmap=colormap, norm=norm, interpolation='nearest')
-m.scatter(x_coords, y_coords, c=vs, cmap=colormap, norm=norm, s=1, edgecolor='', marker='.')
+m.scatter(x_coords, y_coords, c=vel_data, cmap=colormap, norm=norm, s=1, edgecolor='', marker='o')
 
 #Adding lines to show where the cross-sections are
 #5 cross-sections, at X=183, 367, 550, 733, 917

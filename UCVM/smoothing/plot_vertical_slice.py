@@ -11,6 +11,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from mpl_toolkits import basemap
+from mpl_toolkits.basemap import cm
 from operator import itemgetter
 
 if len(sys.argv)<9:
@@ -50,7 +51,7 @@ vs = []
 x_values = []
 y_values = []
 
-GRID_SPACING = 0.4
+GRID_SPACING = 0.175
 
 print "Reading velocity file."
 with open(velocity_file, "rb") as fp_in:
@@ -71,7 +72,8 @@ with open(velocity_file, "rb") as fp_in:
 BOUNDS = [0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
 TICKS = [0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
 
-colormap = cm.RdBu
+#colormap = cm.RdBu
+colormap = basemap.cm.GMT_seis
 norm = mcolors.Normalize(vmin=BOUNDS[0],vmax=BOUNDS[len(BOUNDS) - 1])
 
 #plt.pcolormesh([a[0] for a in ordered_coords], [a[1] for a in ordered_coords], vs, cmap=colormap, norm=norm)
@@ -83,7 +85,7 @@ plt.scatter(x_values, y_values, c=vs, cmap=colormap, norm=norm, marker='s', s=2,
 plt.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.15)
 plt.xlabel("Distance (km) along %s=%d slice" % (not_comp, column))
 plt.ylabel("Depth (km)")
-plt.ylim(-80, 0)
+plt.ylim(-50.4, 0)
 if comp=='x':
 	plt.xlim(0, nx*GRID_SPACING)
 elif comp=='y':
