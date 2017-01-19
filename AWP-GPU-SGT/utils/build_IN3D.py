@@ -9,7 +9,7 @@ import sys
 import os
 import math
 
-def build_IN3D(site, gridout, awp_comp, frequency, proc, spacing=None):
+def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, spacing=None):
 	fp_in = open("%s/data/IN3D.ref" % (sys.path[0]), "r")
 	data = fp_in.readlines()
 	fp_in.close()
@@ -110,7 +110,7 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, spacing=None):
 	
 	#paths to INSRC, INVEL, INSGT, SGTGR0
 	param["INSRC"] = "comp_%s/input/%s_f%s_src" % (awp_comp, site, awp_comp)
-	param["INVEL"] = "comp_%s/input/awp.%s.media" % (awp_comp, site)
+	param["INVEL"] = "comp_%s/input/%s" % (awp_comp, mesh_filename)
 	param["INSGT"] = "comp_%s/input/awp.%s.cordfile" % (awp_comp, site)
 	param["SGTGRO"] = "comp_%s/output_sgt/awp-strain-%s-f%s" % (awp_comp, site, awp_comp)
 

@@ -11,7 +11,7 @@ import sys
 import os
 import errno
 
-LFS_PATH = "/sw/user/scripts/lfs"
+LFS_PATH = "/opt/cray/lustre-cray_gem_s/2.5_3.0.101_0.46.1_1.0502.8871.20.1-1.0502.21481.23.1/bin/lfs"
 
 print "Adding config to path."
 sys.stdout.flush()
@@ -50,6 +50,7 @@ parser.add_option("--py", dest="py", type=int, action="store", help="Number of p
 parser.add_option("--pz", dest="pz", type=int, action="store", help="Number of processors in Z-direction.")
 parser.add_option("--source-frequency", type=float, dest="source_freq", action="store", help="Low-pass filter frequency to use on the source, default is same frequency as the frequency of the run.")
 parser.add_option("--spacing", type=float, dest="spacing", action="store", default=None, help="Override default spacing, derived from frequency.")
+parser.add_option("--velocity-mesh", dest="vel_mesh", action="store", default=None, help="Provide path to velocity mesh.  If omitted, will assume mesh is named awp.<site>.media.")
 
 (option, args) = parser.parse_args()
 
@@ -72,6 +73,12 @@ if (procs[0]==None or procs[1]==None or procs[2]==None):
 
 rwg_vel_prefix = option.vel_prefix
 frequency = option.frequency
+vel_mesh = option.vel_mesh
+
+if vel_mesh==None:
+        awp_media = "awp.%s.media" % (site)
+else:
+        awp_media = vel_mesh
 
 source_frequency = frequency
 if option.source_freq!=None:
@@ -93,7 +100,7 @@ for c in awp_comps:
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
-	rc = build_IN3D(site, gridout, c, frequency, procs, spacing=option.spacing)
+	rc = build_IN3D(site, gridout, c, frequency, procs, awp_media, spacing=option.spacing)
 	if not rc==0:
 		print "Error in build_IN3D, aborting."
 		sys.exit(2)
@@ -121,7 +128,6 @@ for c in awp_comps:
 		os.remove("comp_%s/input/%s" % (c, awp_cordfile))
 	os.symlink("../../%s" % awp_cordfile, "comp_%s/input/%s" % (c, awp_cordfile))
 
-awp_media = "awp.%s.media" % (site)
 if rwg_vel_prefix is not None:
 	print "Building media file."
 	sys.stdout.flush()
