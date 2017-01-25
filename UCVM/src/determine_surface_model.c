@@ -20,7 +20,7 @@ void create_surface(ucvm_point_t* points, char* model_coords, int num_points) {
 }
 
 void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models, int num_points) {
-	if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to setup ucvm.\n");
                 exit(-1);
         }
@@ -51,10 +51,69 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
                                         fflush(stderr);
                                         exit(-2);
                                 }
+			} else if (strcmp(tok, "cca")==0) {
+                                printf("Adding CCA.\n");
+                                if (ucvm_add_model("cca")!=UCVM_CODE_SUCCESS) {
+                                        fprintf(stderr, "Error retrieving CCA model.\n");
+                                        fflush(stderr);
+                                        exit(-2);
+                                }
+                        } else if (strcmp(tok, "cvmsi")==0) {
+                                printf("Adding CVM-SI.\n");
+                                if (ucvm_add_model(UCVM_MODEL_CVMSI)!=UCVM_CODE_SUCCESS) {
+                                        fprintf(stderr, "Error retrieving CVMSI model.\n");
+                                        fflush(stderr);
+                                        exit(-2);
+                                }
 			}
 			tok = strtok_r(NULL, ",", &save);
 		}
-	}
+	} else {
+		//We just have 1 model
+		if (strcmp(velocity_model, "cvms5")==0) {
+                       printf("Adding cvms5.\n");
+                       if (ucvm_add_model("cvms5")!=UCVM_CODE_SUCCESS) {
+                       		fprintf(stderr, "Error retrieving CVM-S5.\n");
+                        	fflush(stderr);
+                        	exit(-2);
+                	}
+                } else if (strcmp(tok, "usgs")==0) {
+                        printf("Adding cencal.\n");
+                        if (ucvm_add_model(UCVM_MODEL_CENCAL)!=UCVM_CODE_SUCCESS) {
+                	        fprintf(stderr, "Error retrieving USGS Bay Area.\n");
+                                fflush(stderr);
+                                exit(-2);
+                        }
+                } else if (strcmp(tok, "1d")==0) {
+                	printf("Adding 1D.\n");
+                        if (ucvm_add_model(UCVM_MODEL_1D)!=UCVM_CODE_SUCCESS) {
+                        	fprintf(stderr, "Error retrieving 1D model.\n");
+                                fflush(stderr);
+                                exit(-2);
+                        }
+                } else if (strcmp(tok, "cca")==0) {
+                        printf("Adding CCA.\n");
+                        if (ucvm_add_model("cca")!=UCVM_CODE_SUCCESS) {
+                	        fprintf(stderr, "Error retrieving CCA model.\n");
+                                fflush(stderr);
+                                exit(-2);
+                        }
+                } else if (strcmp(tok, "cvmsi")==0) {
+                        printf("Adding CVM-SI.\n");
+                        if (ucvm_add_model(UCVM_MODEL_CVMSI)!=UCVM_CODE_SUCCESS) {
+                 	       fprintf(stderr, "Error retrieving CVMSI model.\n");
+                               fflush(stderr);
+                               exit(-2);
+                        }
+                }
+        /*char label_test[64];
+        ucvm_model_label(1, label_test, 64);
+        printf("ID 1 goes with label %s.\n", label_test);
+        ucvm_model_label(-1, label_test, 64);
+        printf("ID -1 goes with label %s.\n", label_test);
+        ucvm_model_label(-2, label_test, 64);
+        printf("ID -2 goes with label %s.\n", label_test);*/
+
 	printf("Querying %d points.\n", num_points);
 	if (ucvm_query(num_points, points, *data)!=UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Query UCVM failed.\n");
@@ -79,7 +138,7 @@ void write_models(ucvm_data_t* data, char* output_filename, int nx, int ny) {
 				}
 				fprintf(fp_out, "%s ", id_to_model[id]);
 			} else {
-				fprintf(fp_out, "%s ", id);
+				fprintf(fp_out, "%d ", id);
 			}
 		}
 		fprintf(fp_out, "\n");
@@ -124,21 +183,21 @@ int main(int argc, char** argv) {
 
 	create_surface(points, model_coords, nx*ny);
 	query_model(points, &data, velocity_models, nx*ny);
-        int j;
+        /*int j;
         for (i=1500; i<1510; i++) {
                 for (j=500; j<510; j++) {
                         int index = i*nx + j;
                         printf("Queried point (%lf, %lf, 10km), ", points[index].coord[0], points[index].coord[1]);
                         printf("Returned vp=%lf, vs=%lf, rho=%lf from model ids %d, %d, %d\n", data[index].cmb.vp, data[index].cmb.vs, data[index].cmb.rho, data[index].crust.source, data[index].gtl.source, data[index].cmb.source);
                 }
-        }
+        }*/
 	/*char label_test[64];
+	ucvm_model_label(1, label_test, 64);
+	printf("ID 1 goes with label %s.\n", label_test);
 	ucvm_model_label(-1, label_test, 64);
 	printf("ID -1 goes with label %s.\n", label_test);
-	ucvm_model_label(-2, label_test, 64);
-	printf("ID -2 goes with label %s.\n", label_test);
-        ucvm_model_label(-3, label_test, 64);
-        printf("ID -3 goes with label %s.\n", label_test);*/
+        ucvm_model_label(-2, label_test, 64);
+        printf("ID -2 goes with label %s.\n", label_test);*/
 
 	write_models(data, output_filename, nx, ny);
 
