@@ -94,6 +94,9 @@ with open(gridout, "r") as fp_in:
 	ny = int((data[1+nx+2].split("="))[1])
 	nz = int((data[1+nx+2+ny+2].split("="))[1])
 
+#Set LD_LIBRARY_PATH to pick up UCVM libraries
+os.environ["LD_LIBRARY_PATH"] = "/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/lib/euclid3/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/lib/proj-4/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cvms426/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cencal/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cvms5/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cca/lib:%s" % (os.environ["LD_LIBRARY_PATH"])
+
 surf_model_file = run_det_surf_model(gridout, coords, models)
 smooth_pts_file = run_det_smooth_pts(surf_model_file, coords, nx, ny, smoothing_dist)
 run_smooth(mesh_in, smooth_pts_file, nx, ny, nz, smoothing_dist, mesh_out)
