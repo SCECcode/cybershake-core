@@ -3,6 +3,7 @@
 //#define BLOCK_SIZE_Z 256
 //#define BLOCK_SIZE_Z 200
 #define BLOCK_SIZE_Z 288
+//#define BLOCK_SIZE_Z 252
 #define align 32
 #define loop  1 
 
