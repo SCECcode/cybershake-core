@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
 	while (floats_read>0) {
 		for (i=0; i<floats_read; i++) {
 			if (isnan(buffer[i])) {
-				printf("NaN in %s at byte offset %ld.\n", sgt_filename, (tot_read-floats_read+i)*sizeof(float));
+				printf("NaN in %s at byte offset %ld: printed value is %f\n", sgt_filename, (tot_read-floats_read+i)*sizeof(float), buffer[i]);
 				return 2;
 			}
 			if (fabs(buffer[i])<1e-20) {
