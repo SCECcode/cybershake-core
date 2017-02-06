@@ -20,13 +20,20 @@ set FORMAT = $12
 
 if ($# == 13) then
 	set VSMIN = $13
-	set VPMIN = `bc <<< 3.4 * $VSMIN`
-	set DENMIN = $VPMIN
+	if ($VSMIN == 900.0) then
+		set VPMIN = 1800.0
+		set DENMIN = 2000.0
+	else
+		set VPMIN = `echo "3.4 * $VSMIN" | bc`
+		set DENMIN = $VPMIN
+	endif
 else
 	set VSMIN = 500.0
 	set VPMIN = 1700.0
 	set DENMIN = 1700.0
 endif
+
+echo "VSMIN=$VSMIN, VPMIN=$VPMIN, DENMIN=$DENMIN"
 
 #set BPATH = `pwd`
 set BPATH = ${CS_PATH}/UCVM
@@ -83,7 +90,9 @@ endif
 #set DENMIN = 1700.0
 
 #Add to LD_LIBRARY_PATH
-setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
+#setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
+setenv LD_LIBRARY_PATH /projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/lib/euclid3/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/lib/proj-4/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cvms426/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cencal/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cvms5/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cca/lib
+#setenv LD_LIBRARY_PATH /u/sciteam/gill/ucvm-15.10.0-2/model/cca/lib:/u/sciteam/gill/ucvm-15.10.0-2/model/cvms5/lib:/u/sciteam/gill/ucvm-15.10.0-2/model/cencal/lib:/u/sciteam/gill/ucvm-15.10.0-2/model/cvms426/lib:/u/sciteam/gill/ucvm-15.10.0-2/lib/proj-4/lib:/u/sciteam/gill/ucvm-15.10.0-2/lib/euclid3/lib
 
 echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR}"
 
