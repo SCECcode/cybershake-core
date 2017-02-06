@@ -1,4 +1,4 @@
-TARGETS = write_head compare_head strip_head reformat_awp strip_head_unrelaxed_mu reformat_velocity
+TARGETS = write_head compare_head strip_head reformat_awp reformat_velocity reformat_awp_mpi
 HEADS = defs.h include.h structure.h function.h
 #OBJS =  absorb.o diff.o fft1d.o  interface.o iofunc.o \
         memory_slices.o  misc.o tstep.o \
@@ -40,8 +40,8 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 ##### C options
 
 # optimized
-CFLAGS = -O3 -Wall ${LF_FLAGS}
-FFLAGS = -Wall ${UFLAGS}
+CFLAGS = -O3  -h msglevel_3 ${LF_FLAGS}
+FFLAGS = -h msglevel_3 ${UFLAGS}
 
 ##### make options
 
@@ -59,6 +59,9 @@ compare_head : ${CMP_OBJS}
 
 reformat_awp : ${REF_OBJS}
 	${CC} ${CLFAGS} -o reformat_awp ${REF_OBJS}
+
+reformat_awp_mpi : reformat_awp_mpi.o
+	${CC} ${CLFAGS} -o reformat_awp_mpi reformat_awp_mpi.o ${LDLIBS}
 
 reformat_velocity : ${VEL_OBJS}
 	${CC} ${CFLAGS} -o reformat_velocity ${VEL_OBJS}
