@@ -70,35 +70,35 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
 		}
 	} else {
 		//We just have 1 model
-		if (strcmp(velocity_model, "cvms5")==0) {
+		if (strcmp(velocity_models, "cvms5")==0) {
                        printf("Adding cvms5.\n");
                        if (ucvm_add_model("cvms5")!=UCVM_CODE_SUCCESS) {
                        		fprintf(stderr, "Error retrieving CVM-S5.\n");
                         	fflush(stderr);
                         	exit(-2);
                 	}
-                } else if (strcmp(tok, "usgs")==0) {
+                } else if (strcmp(velocity_models, "usgs")==0) {
                         printf("Adding cencal.\n");
                         if (ucvm_add_model(UCVM_MODEL_CENCAL)!=UCVM_CODE_SUCCESS) {
                 	        fprintf(stderr, "Error retrieving USGS Bay Area.\n");
                                 fflush(stderr);
                                 exit(-2);
                         }
-                } else if (strcmp(tok, "1d")==0) {
+                } else if (strcmp(velocity_models, "1d")==0) {
                 	printf("Adding 1D.\n");
                         if (ucvm_add_model(UCVM_MODEL_1D)!=UCVM_CODE_SUCCESS) {
                         	fprintf(stderr, "Error retrieving 1D model.\n");
                                 fflush(stderr);
                                 exit(-2);
                         }
-                } else if (strcmp(tok, "cca")==0) {
+                } else if (strcmp(velocity_models, "cca")==0) {
                         printf("Adding CCA.\n");
                         if (ucvm_add_model("cca")!=UCVM_CODE_SUCCESS) {
                 	        fprintf(stderr, "Error retrieving CCA model.\n");
                                 fflush(stderr);
                                 exit(-2);
                         }
-                } else if (strcmp(tok, "cvmsi")==0) {
+                } else if (strcmp(velocity_models, "cvmsi")==0) {
                         printf("Adding CVM-SI.\n");
                         if (ucvm_add_model(UCVM_MODEL_CVMSI)!=UCVM_CODE_SUCCESS) {
                  	       fprintf(stderr, "Error retrieving CVMSI model.\n");
@@ -106,6 +106,7 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
                                exit(-2);
                         }
                 }
+	}
         /*char label_test[64];
         ucvm_model_label(1, label_test, 64);
         printf("ID 1 goes with label %s.\n", label_test);
