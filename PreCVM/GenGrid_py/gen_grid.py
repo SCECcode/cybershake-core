@@ -41,8 +41,10 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
     #Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance, requires GPU or CPU counts get all off
     if gpu:
 	ZLEN = 50.4
+	#ZLEN = 40.0
     else:
-	ZLEN = 50.0
+	#ZLEN = 50.0
+	ZLEN = 40.0
     #if gpu:
     #	#Change ZLEN to 51.2 so it's a multiple of 256 pts
     #	ZLEN = 51.2
