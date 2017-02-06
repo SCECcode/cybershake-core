@@ -106,7 +106,7 @@ void process_mesh(char* mesh_in, char* pts_file, int nx, int ny, int nz, int smo
 
 int main(int argc, char** argv) {
 	if (argc<8) {
-		printf("Usage: %s <AWP-format mesh in> <list of smoothing pts> <nx> <ny> <nz> <smoothing range in pts> <velocity mesh out>", argv[0]);
+		printf("Usage: %s <AWP-format mesh in> <list of smoothing pts> <RWG nx> <RWG ny> <nz> <smoothing range in pts> <velocity mesh out>", argv[0]);
 		exit(1);
 	}
 
