@@ -18,7 +18,7 @@ parser.add_option("--coordfile", dest="coordsfile", action="store", help="Path t
 parser.add_option("--models", dest="models", action="store", help="Comma-separated string on velocity models to use.")
 parser.add_option("--format", dest="format", action="store", help="Specify awp or rwg format for output.")
 parser.add_option("--frequency", dest="frequency", type="float", action="store", help="Frequency")
-parser.add_option("--spacing", dest="spacing", type="float", action="store", help="Override default spacing with this value")
+parser.add_option("--spacing", dest="spacing", type="float", action="store", help="Override default spacing with this value (km)")
 parser.add_option("--min_vs", dest="min_vs", type="float", action="store", help="Override minimum Vs value.  Minimum Vp and minimum density will be 3.4 times this value.")
 
 (option, args) = parser.parse_args()
