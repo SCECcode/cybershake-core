@@ -12,7 +12,7 @@ import config
 num_nodes = int(os.environ['PBS_NUM_NODES'])
 ppn = int(os.environ['PBS_NUM_PPN'])
 #Start memcached on each node
-memcached_path = "/projects/sciteam/jmz/CyberShake/utils/pegasus_wrappers/invoke_memcached.sh"
+memcached_path = "/projects/sciteam/bahm/CyberShake/utils/pegasus_wrappers/invoke_memcached.sh"
 cmd = "aprun -N 1 -n %d %s" % (num_nodes, memcached_path)
 print cmd
 rc = os.system(cmd)
