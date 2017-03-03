@@ -58,6 +58,9 @@ int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long
 
 	manager_listen(num_workers, task_list, num_tasks, my_id);
 
+	//Sleep for 5 seconds to allow any final files going to the master to get accepted and written
+	sleep(5);
+
 	broadcast_completion(num_sgt_handlers, num_workers, num_procs, my_id);
 
 	if (debug) write_log("Shutting down.");
@@ -240,11 +243,12 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 	(*task_list) = check_malloc(sizeof(worker_task)*task_list_length);
 	char rupture_file[256], string[256];
 	int num_slips, num_hypos, num_points, num_tasks;
+	float mag;
 	//num ruptures to process is different, because some might have already completed
 	int num_ruptures_to_process = 0;
 	num_tasks = 0;
 	for (i=0; i<num_ruptures; i++) {
-		fscanf(rup_list_in, "%s %d %d %d", rupture_file, &num_slips, &num_hypos, &num_points);
+		fscanf(rup_list_in, "%s %d %d %d %f", rupture_file, &num_slips, &num_hypos, &num_points, &mag);
 
 		//Determine source and rupture ID
 		//Files in format e<ERF_ID>_rv<RV_ID>_<source>_<rupture>.txt
@@ -295,7 +299,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		//printf("sgt_size = %ld\n", sgt_size);
 		//printf("num_points = %d\n", num_points);
 		//printf("dtout = %f\n", dtout);
-		#ifdef V_3_3_1
+		#ifdef _V3_3_1
                 //Each rupture variation adds roughly
                 //14.8 * log10(rupture_points) * rupture_points^1.14 MB worth of storage * 1.1(tolerance) * 0.1/dtout
 		long long single_rv_size = (long long)(14.8 * (long long)log10(num_points) * pow(num_points, 1.14) * 1.1);
