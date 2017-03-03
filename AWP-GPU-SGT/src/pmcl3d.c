@@ -302,6 +302,12 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
         NBGX,NSKPX,NEDX,NBGY,NSKPY,NEDY,NBGZ,NSKPZ,NEDZ,
         rec_nbgx,rec_nedx,rec_nbgy,rec_nedy,rec_nbgz,rec_nedz,(long int)displacement);
 
+    //Check NZ against BLOCK_SIZE_Z
+    if (NZ % BLOCK_SIZE_Z !=0) {
+	fprintf(stderr, "Error in configuration: BLOCK_SIZE_Z (%d) must be a factor of NZ (%d), aborting.\n", BLOCK_SIZE_Z, NZ);
+	exit(1);
+    }
+    
     int maxNX_NY_NZ_WS = (rec_NX>rec_NY?rec_NX:rec_NY);
     maxNX_NY_NZ_WS = (maxNX_NY_NZ_WS>rec_NZ?maxNX_NY_NZ_WS:rec_NZ);
     maxNX_NY_NZ_WS = (maxNX_NY_NZ_WS>WRITE_STEP?maxNX_NY_NZ_WS:WRITE_STEP);
