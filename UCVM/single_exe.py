@@ -71,7 +71,7 @@ if format=="awp":
 	os.system("/opt/cray/lustre-cray_gem_s/2.5_3.0.101_0.46.1_1.0502.8871.20.1-1.0502.21481.23.1/bin/lfs setstripe -c 100 -s 5m awp.%s.media" % site)
 
 if option.min_vs is not None:
-        command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, option.min_vs)
+        command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, option.min_vs)
 else:
 	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format)
 print command
