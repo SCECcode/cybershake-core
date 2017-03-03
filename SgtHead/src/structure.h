@@ -173,7 +173,8 @@ struct sgtmaster
    int localnp;     /* local number of SGT locations (this file only) */
    int nt;          /* number of time points                                */
    };
- 
+
+/* NOTE: Scott revised on 6/7/16 to allot more digits per dimension */
 struct sgtindex   /* indices for all 'globnp' SGT locations */
    {
    long long indx; /* indx= xsgt*1000000000000 + ysgt*1000000 + zsgt */
