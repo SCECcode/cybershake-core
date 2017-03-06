@@ -1,0 +1,19 @@
+#!/bin/bash
+
+#PBS -q small
+#PBS -l size=12
+#PBS -l walltime=8:00:00
+#PBS -o /lustre/scratch/${USER}/cybershake/RuptureCodes/utils/compare.out
+#PBS -e /lustre/scratch/${USER}/cybershake/RuptureCodes/utils/compare.err
+#PBS -V
+#PBS -A TG-MCA03S012
+
+echo "Job start"
+date
+
+cd /lustre/scratch/${USER}/cybershake/RuptureCodes/utils
+aprun -n 1 -d 12 -cc none -a xt /lustre/scratch/proj/sw/pythoncnl/bin/python ./compare_ruptures.py /lustre/scratch/patricks/tmp/rupture_vars_1 /lustre/scratch/patricks/tmp/rupture_vars_2 0
+
+echo "Jobs done"
+date
+exit 0
