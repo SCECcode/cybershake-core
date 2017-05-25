@@ -20,7 +20,7 @@ void create_surface(ucvm_point_t* points, char* model_coords, int num_points) {
 }
 
 void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models, int num_points) {
-	if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to setup ucvm.\n");
                 exit(-1);
         }
@@ -105,7 +105,15 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
                                fflush(stderr);
                                exit(-2);
                         }
-                }
+                } else if (strcmp(velocity_models, "cca1d")==0) {
+			printf("Adding CCA 1D.\n");
+                        if (ucvm_add_model(UCVM_MODEL_BBP1D) != UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving CCA 1D model.\n");
+                           fflush(stderr);
+			   exit(-2);
+                         }
+		}
+
 	}
         /*char label_test[64];
         ucvm_model_label(1, label_test, 64);
