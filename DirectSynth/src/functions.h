@@ -26,6 +26,7 @@ void create_fp_cache();
 FILE* find_and_use_fp(char* filename);
 int find_fp(char* filename);
 void remove_fp_cache();
+void fsync_and_close(char* filename);
 
 //iofunc.c
 void *check_malloc(size_t len);
