@@ -35,7 +35,7 @@ public class CyberLoadamps {
 
 		Option sgt = OptionBuilder.withArgName("RunID").hasArg().withDescription("Run ID - this option is required").create("run");
 		Option path = OptionBuilder.withArgName("directory").hasArg().withDescription("file path with spectral acceleration files, either top-level directory or zip file - this option is required").create("p");
-		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (focal, surface or intensity) - this option is required").create("server");
+		Option server = OptionBuilder.withArgName("name").hasArg().withDescription("server name (focal, surface, intensity, moment, or csep-x) - this option is required").create("server");
         Option zip = new Option("z", "Read zip files instead of bsa.");
         Option header = new Option("d", "Assume one BSA file per rupture, with embedded header information.");
         Option valuesToInsert = OptionBuilder.withArgName("insertion_values").hasArg().withDescription("Which values to insert -\ngm:\tgeometric mean PSA data (default)\nxy:\tX and Y component PSA data\ngmxy:  Geometric mean and X and Y components").create("i");
@@ -105,7 +105,7 @@ public class CyberLoadamps {
                 }
                 
 				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " with Run ID: " + cmd.getOptionValue("run"));
-				RunID rid = new RunID(Integer.parseInt(cmd.getOptionValue("run")));
+				RunID rid = new RunID(Integer.parseInt(cmd.getOptionValue("run")), cmd.getOptionValue("server"));
 //				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid.getSiteName(), rid.getSgtVarID(), cmd.getOptionValue("server"), rid.getRuptVarScenID(), rid.getErfID(), cmd.hasOption("z"));
 				String insertValues;
 				if (!cmd.hasOption("i")) {

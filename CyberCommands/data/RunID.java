@@ -16,11 +16,20 @@ public class RunID {
 	private double cutoffDist;
 	private Connection connection = null;
 	
-	private final String HOSTNAME = "focal.usc.edu";
+	private String HOSTNAME = "focal.usc.edu";
 	private final int PORT = 3306;
 	private final String DB_NAME = "CyberShake";
 	private final String USER = "cybershk_ro";
 	private final String PASS = "CyberShake2007";
+	
+	public RunID(int runID, String server) {
+		HOSTNAME = server;
+		this.runID = runID;
+		createConnection();
+		populateRunIDInfo();
+		populateSiteInfo();
+		closeConnection();
+	}
 	
 	public RunID(int runID) {
 		this.runID = runID;

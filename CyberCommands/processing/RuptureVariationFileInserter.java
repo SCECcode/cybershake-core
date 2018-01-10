@@ -106,8 +106,12 @@ public class RuptureVariationFileInserter {
 			hibernate_cfg_filename = "surface.cfg.xml";
 		} else if (serverName.equals("focal")) {
 			hibernate_cfg_filename = "focal.cfg.xml";
+		} else if (serverName.equals("csep-x")) {
+			hibernate_cfg_filename = "csep-x.cfg.xml";
+		} else if (serverName.equals("moment")) {
+			hibernate_cfg_filename = "moment.cfg.xml";
 		} else {
-			System.err.println("Server name was " + serverName + ", but it must be one of intensity, surface, or focal.  Exiting.");
+			System.err.println("Server name was " + serverName + ", but it must be one of intensity, surface, focal, or csep-x.  Exiting.");
 			System.exit(-2);
 		}
 		String[] pieces = periods.split(",");
@@ -358,14 +362,17 @@ public class RuptureVariationFileInserter {
 				 * ...
 				 */
 				//Can't use DataInputStream because we have to byte-swap
-				System.out.println("Processing file " + f.getName());
+//				System.out.println("Processing file " + f.getName());
+//				System.out.println("Prepping for loop.");
 				FileInputStream stream = new FileInputStream(f);
 				BSAHeader head = new BSAHeader();
 				
 				boolean isFileEmpty = true;
+				
 				try {
 					while (true) { //Will exit when we reach the end of the file
 						//Read the header
+//						System.out.println("Reading header.");
 						int ret = head.parse(stream);
 						if (ret==-1) break;
 						//Unset if we read something from the file
@@ -378,6 +385,7 @@ public class RuptureVariationFileInserter {
 						}
 						//Get the data
 						//*4 since they're floats
+//						System.out.println("Reading " + SAPeriods.num_head_periods * head.num_comps * 4 +  " bytes.");
 						byte[] data = new byte[SAPeriods.num_head_periods * head.num_comps * 4];
 						ret = stream.read(data);
 						if (ret==-1) { //we didn't read anything and this is a weird place to have stopped
@@ -556,8 +564,9 @@ public class RuptureVariationFileInserter {
 				try {
 					sess.save(pa);
 				} catch (NonUniqueObjectException nuoe) {
-					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
-					System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
+					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  Because of the Study 15.4 issues, abort.
+					System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Aborting.");
+					System.exit(2);
 				}
 			}
 		}
@@ -722,8 +731,9 @@ public class RuptureVariationFileInserter {
 					sess.save(pa);
 //					sess.insert(pa);
 				} catch (NonUniqueObjectException nuoe) {
-					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
-					System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
+					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  Because of the Study 15.4 issues, abort if this happens.
+					System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Aborting.");
+					System.exit(2);
 				}
 			}
 			if (rd50periodValueToIDMap.containsKey(e.period)) {
@@ -746,8 +756,9 @@ public class RuptureVariationFileInserter {
 					sess.save(pa);
 //					sess.insert(pa);
 				} catch (NonUniqueObjectException nuoe) {
-					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
-					System.err.println("ERROR:  found duplicate entry for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
+					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  Because of the Study 15.4 issues, abort if this happens.
+					System.err.println("ERROR:  found duplicate entry for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Aborting.");
+					System.exit(2);
 				}
 			}
 		}
@@ -755,6 +766,7 @@ public class RuptureVariationFileInserter {
 
 	private void insertRupture(SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar, Session sess, boolean headers) {
 		//open session
+//		System.out.println("Determining type IDs.");
 		Session imTypeIDSess = sessFactory.openSession();
 		
 		double[] ourPeriods = SAPeriods.values;
@@ -816,6 +828,8 @@ public class RuptureVariationFileInserter {
 
 		imTypeIDSess.close();
 
+//		System.out.println("Looping over rupture variations.");
+		
 		int outerLoopMax = saRuptureWithSingleRupVar.rupVars.size();
 		/*System.out.println("number of rupture variations: " + saRupture.rupVars.size());*/
 		for (int rupVarIter=0;rupVarIter<outerLoopMax;rupVarIter++) {
@@ -847,6 +861,7 @@ public class RuptureVariationFileInserter {
 			//sess.getTransaction().commit();
 			
 //			int innerLoopMax = currRupVar.geomAvgComp.periods.length;
+//			System.out.println("Looping over periods for RV " + currRupVar.variationNumber);
 			for (int periodIter: desiredPeriodsIndices) {
 //			for (int periodIter=0;periodIter<innerLoopMax;periodIter++) {
 				/*System.out.println("SA for Rupture Variation " + currRupVar.variationNumber 
@@ -868,7 +883,7 @@ public class RuptureVariationFileInserter {
 					paPK.setIM_Type_ID(periodIndexToIDMap.get(periodIter));
 					pa.setPaPK(paPK);
 					double psaValue = currRupVar.geomAvgComp.periods[periodIter];
-					if (psaValue>8400 || psaValue<0.01) {
+					if (psaValue>8400 || psaValue<0.008) {
 						//If force insert is on, we don't care
 						if (forceInsert) {
 							System.out.println("Found psaValue " + psaValue + " for source " + currentSource_ID + " rupture " + currentRupture_ID + " rup var " + currRupVar.variationNumber);
@@ -898,7 +913,10 @@ public class RuptureVariationFileInserter {
 								}
 								checkMagSession.close();
 							}
-							if (mag>6.8 || rupture_dist<300.0 || psaValue<0.003) {
+							//We feel OK with values < 0.008 for M6.85 @ 300 km, and M6.05 @ 200 km
+							//Based on that, we made a line with some tweaks
+							double okDist = 125.0*mag - 576.25;
+							if (rupture_dist<okDist || psaValue<0.003) {
 								System.err.println("Found value " + psaValue + " for source " + currentSource_ID + ", " + currentRupture_ID + ", " + currRupVar.variationNumber + ", period index " + periodIter + ", period value " + ourPeriods[periodIter]);
 								System.err.println("Mag=" + mag + " rupture_dist=" + rupture_dist);
 								throw new IllegalArgumentException();
@@ -928,8 +946,9 @@ public class RuptureVariationFileInserter {
 					try {
 						sess.save(pa);
 					} catch (NonUniqueObjectException nuoe) {
-						//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  REport and keep going.
-						System.err.println("ERROR:  found duplicate entry for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Skipping.");
+						//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  Because of the issue in Study 15.4, abort.
+						System.err.println("ERROR:  found duplicate entry for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Aborting.");
+						System.exit(2);
 					}
 				}
 				
