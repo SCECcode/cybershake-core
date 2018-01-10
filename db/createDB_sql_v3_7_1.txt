@@ -5,6 +5,10 @@
 #
 # Description of Changes:
 #
+# 3.7.1 - 6 April 2017
+#   Changed length of Atten_Rels.AR_Short_Name to 30 characters and
+#   Atten_Rel_Metadata.AR_Attr_Value to 100.
+#
 # 3.7 - 11 May 2016
 #   Added Studies table, and columns to CyberShake_Runs and Hazard_Datasets
 #   so we can track which runs and datasets are members of a Study, and which
@@ -674,7 +678,7 @@ CREATE TABLE Atten_Rels
 (
 AR_ID int unsigned not null auto_increment,
 AR_Name varchar(50) not null,
-AR_Short_Name varchar(10) not null,
+AR_Short_Name varchar(30) not null,
 primary key (AR_ID)
 ) ENGINE=InnoDB;
 
@@ -687,7 +691,7 @@ CREATE TABLE Atten_Rel_Metadata
 (
 AR_ID int unsigned not null,
 AR_Attr_Name varchar(50) not null,
-AR_Attr_Value varchar(50) not null,
+AR_Attr_Value varchar(100) not null,
 AR_Attr_Type varchar(20),
 AR_Attr_Units varchar(20),
 primary key (AR_ID, AR_Attr_Name, AR_Attr_Value),
