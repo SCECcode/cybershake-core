@@ -1,0 +1,18 @@
+#!/bin/bash
+
+for args in $@
+do
+  arglist=$arglist' '$args
+done
+
+#echo 'echo '$arglist
+
+# assemble classpath
+CP="."
+for i in `ls $CYBERCOMMANDS_JARS`; do
+	CP="$CP:$CYBERCOMMANDS_JARS/$i"
+done
+
+which java
+java -version
+java -classpath $CP -jar $CYBERCOMMANDS_JARS/cybercommands_SC.jar CyberLoadamps $arglist
