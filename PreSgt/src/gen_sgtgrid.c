@@ -159,7 +159,7 @@ np = 0;
 
 //hash table
 cfuhash_table_t *hash = cfuhash_new_with_initial_size(10000000);
-char hashkey[16];
+char hashkey[20];
 //Need to allocate here because cfuhash doesn't make copies of the data, just the key
 //Use hashvals as the list of unique points
 struct entry* hashvals = check_malloc(sizeof(struct entry)*BLOCK_SIZE);
