@@ -35,7 +35,7 @@ int compare_entry(const void* o1, const void* o2) {
 void get_master_list_opt(struct sgtparams *sgtp, int np, long long* mindx, int* nm) {
 	//Use hashtable and qsort
 	cfuhash_table_t* hash_table = cfuhash_new_with_initial_size(1000000);
-	char hashkey[16];
+	char hashkey[20];
 
 	int ip, ig, im, ifnd, sflag, mcnt;
 	long long ll_int;
