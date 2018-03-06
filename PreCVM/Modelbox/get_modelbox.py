@@ -65,7 +65,8 @@ def closedb(conn):
 #
 pi= 3.14159
 kplat = 111.19
-model_rot = -55.0
+#model_rot = -55.0
+model_rot = -30.0
 bound_pad = 30.0
 xmin = 1.0e15
 xmax = -1.0e15
@@ -81,7 +82,7 @@ db="CyberShake"
 
 if len(sys.argv) < 6:
   print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name Spacing Server"
-  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 200.0 focal.usc.edu"
+  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 200.0 focal.usc.edu [gpu] [bbox]"
   sys.exit()
 
 site = sys.argv[1]
@@ -91,9 +92,14 @@ spacing = float(sys.argv[4])
 host = sys.argv[5]
 
 gpu = False
-if len(sys.argv) >= 7 and sys.argv[6]=="gpu":
+if len(sys.argv) >= 7 and "gpu" in sys.argv[6:]:
 	print "GPU mode."
 	gpu = True
+
+bbox = False
+if len(sys.argv) >= 7 and "bbox" in sys.argv[6:]:
+	print "Bounding box mode."
+	bbox = True
 
 f = open(outfile,"w")
 
@@ -185,6 +191,20 @@ for flts in faults:
   clon = clon+flts.mxlon
   clat = clat+flts.mxlat
   
+  if bbox:
+	#Add the other two corners of the box defined by (mnlat, mnlon) and (mxlat, mxlon)
+	np = np+1
+	lon.append(flts.mnlon)
+	lat.append(flts.mxlat)
+	clon = clon+flts.mnlon
+	clat = clat+flts.mxlat
+
+	np = np+1
+        lon.append(flts.mxlon)
+        lat.append(flts.mnlat)
+        clon = clon+flts.mxlon
+        clat = clat+flts.mnlat
+
 clon = clon/(1.0*np)
 clat = clat/(1.0*np)
 
