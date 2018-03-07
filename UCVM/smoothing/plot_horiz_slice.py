@@ -118,23 +118,37 @@ fp_out.close()
 m.scatter(x_coords, y_coords, c=vel_data, cmap=colormap, norm=norm, s=1, edgecolor='', marker='o')
 
 #Adding lines to show where the cross-sections are
-#5 cross-sections, at X=183, 367, 550, 733, 917
-'''
-cross_section_lats = []
-cross_section_lons = []
-for i in range(0, 5):
-	cross_section_lats.append([])
-	cross_section_lons.append([])
-x_vals = [183, 367, 550, 733, 917]
+x_cross_section_lats = []
+x_cross_section_lons = []
+y_cross_section_lats = []
+y_cross_section_lons = []
+x_vals = [1440, 2880]
+y_vals = [1144, 3432, 5720, 8008, 10296]
+for i in range(0, len(x_vals)):
+	x_cross_section_lats.append([])
+	x_cross_section_lons.append([])
+for i in range(0, len(y_vals)):
+	y_cross_section_lats.append([])
+	y_cross_section_lons.append([])
+
 for c in ordered_coords:
 	for i in range(0, len(x_vals)):
 		if c[2]==x_vals[i]:
-			cross_section_lons[i].append(c[0])
-			cross_section_lats[i].append(c[1])
+			x_cross_section_lons[i].append(c[0])
+			x_cross_section_lats[i].append(c[1])
+	for j in range(0, len(y_vals)):
+		if c[3]==y_vals[j]:
+			y_cross_section_lons[j].append(c[0])
+                        y_cross_section_lats[j].append(c[1])
 
 for i in range(0, len(x_vals)):
-	m.plot(cross_section_lons[i], cross_section_lats[i], latlon=True, label="X=%d" % x_vals[i])
-'''
+	print "%d: (%f, %f) to (%f, %f)" % (x_vals[i], x_cross_section_lats[i][0], x_cross_section_lons[i][0], x_cross_section_lats[i][-1], x_cross_section_lons[i][-1])
+	m.plot(x_cross_section_lons[i], x_cross_section_lats[i], latlon=True, label="X=%d" % x_vals[i])
+
+for i in range(0, len(y_vals)):
+        print "%d: (%f, %f) to (%f, %f)" % (y_vals[i], y_cross_section_lats[i][0], y_cross_section_lons[i][0], y_cross_section_lats[i][-1], y_cross_section_lons[i][-1])
+	m.plot(y_cross_section_lons[i], y_cross_section_lats[i], latlon=True, label="Y=%d" % y_vals[i])
+
 m.drawcoastlines()
 
 cax = plt.axes([0.125, 0.05, 0.775, 0.02])
