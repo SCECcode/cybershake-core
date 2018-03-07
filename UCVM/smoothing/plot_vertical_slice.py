@@ -14,8 +14,8 @@ from mpl_toolkits import basemap
 from mpl_toolkits.basemap import cm
 from operator import itemgetter
 
-if len(sys.argv)<9:
-	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <x or y> <row or column value> <output file>" % sys.argv[0]
+if len(sys.argv)<10:
+	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <grid spacing in km> <'x' or 'y' axis-parallel slice> <row or column value> <output file>" % sys.argv[0]
 	sys.exit(1)
 
 
@@ -24,9 +24,10 @@ model_coords_file = sys.argv[2]
 nx = int(sys.argv[3])
 ny = int(sys.argv[4])
 nz = int(sys.argv[5])
-comp = sys.argv[6]
-column = int(sys.argv[7])
-output_file = sys.argv[8]
+grid_spacing = float(sys.argv[6])
+comp = sys.argv[7]
+column = int(sys.argv[8])
+output_file = sys.argv[9]
 
 if comp!='x' and comp!='y':
 	print "Component must be x or y."
@@ -40,18 +41,16 @@ elif comp=='y':
 coords = []
 print "Reading model coods file."
 with open(model_coords_file, "r") as fp_in:
-        for line in fp_in:
+	for line in fp_in:
                 pieces = line.split()
 		if comp=='x' and int(pieces[3])==column:
 	                coords.append([float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])])
 		elif comp=='y' and int(pieces[2])==column:
 			coords.append([float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])])
-
+	fp_in.close()
 vs = []
 x_values = []
 y_values = []
-
-GRID_SPACING = 0.175
 
 print "Reading velocity file."
 with open(velocity_file, "rb") as fp_in:
@@ -63,10 +62,10 @@ with open(velocity_file, "rb") as fp_in:
 			data = struct.unpack("3f", data_str)
 			vs.append(data[1])
 			if comp=='x':
-				x_values.append(c[2]*GRID_SPACING)
+				x_values.append(c[2]*grid_spacing)
 			elif comp=='y':
-				x_values.append(c[3]*GRID_SPACING)
-			y_values.append(-1.0*z*GRID_SPACING)
+				x_values.append(c[3]*grid_spacing)
+			y_values.append(-1.0*z*grid_spacing)
 
 #Plotting code taken from UCVM horizontal slice
 BOUNDS = [0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
@@ -87,9 +86,9 @@ plt.xlabel("Distance (km) along %s=%d slice" % (not_comp, column))
 plt.ylabel("Depth (km)")
 plt.ylim(-50.4, 0)
 if comp=='x':
-	plt.xlim(0, nx*GRID_SPACING)
+	plt.xlim(0, nx*grid_spacing)
 elif comp=='y':
-	plt.xlim(0, ny*GRID_SPACING)
+	plt.xlim(0, ny*grid_spacing)
 cax = plt.axes([0.125, 0.05, 0.775, 0.02])
 cbar = plt.colorbar(cax=cax, orientation='horizontal', ticks=TICKS)
 
