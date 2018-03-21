@@ -6,20 +6,30 @@ HF_SYNTH_OBJS = srf2stoch.o ${HFSIM_OBJS} hfsim.o get_vs30.o
 SITEAMP_OBJS = iofunc.o misc.o fft1d.o
 
 GETPAR_DIR = ../../Getpar/getpar
-RUPGEN_DIR = /projects/sciteam/jmz/CyberShake/software/RuptureCodes/RupGen-api-3.3.1
-MEMCACHED_DIR = /projects/sciteam/jmz/CyberShake/utils/libmemcached_1.0.15
+RUPGEN_DIR = /projects/sciteam/baln/CyberShake/software/RuptureCodes/RupGen-api-3.3.1
+MEMCACHED_DIR = /projects/sciteam/baln/CyberShake/utils/libmemcached_1.0.18
 
-UCVM_HOME = /projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_14.3.0
+#UCVM_HOME = /projects/sciteam/baln/CyberShake/software/UCVM/ucvm_14.3.0
+#ETREE_HOME = ${UCVM_HOME}/lib/euclid3
+#PROJ4_HOME = ${UCVM_HOME}/lib/proj-4
+#VX_HOME = ${UCVM_HOME}/model/cvmh1191
+#CVMS_HOME = ${UCVM_HOME}/model/cvms4
+#CVMSI_HOME = ${UCVM_HOME}/model/cvms426
+UCVM_HOME = /projects/sciteam/baln/CyberShake/software/UCVM/ucvm-15.10.0
 ETREE_HOME = ${UCVM_HOME}/lib/euclid3
 PROJ4_HOME = ${UCVM_HOME}/lib/proj-4
-VX_HOME = ${UCVM_HOME}/model/cvmh1191
-CVMS_HOME = ${UCVM_HOME}/model/cvms4
+VX_HOME = ${UCVM_HOME}/model/cvmh1510
+CVMS_HOME = ${UCVM_HOME}/model/cvms
 CVMSI_HOME = ${UCVM_HOME}/model/cvms426
+CVMS5_HOME = ${UCVM_HOME}/model/cvms5
+CCA_HOME = ${UCVM_HOME}/model/cca
+CENCAL_HOME = ${UCVM_HOME}/model/cencal
 
-UCVMLIBS = -L${UCVM_HOME}/lib -lucvm -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi -L${PROJ4_HOME}/lib -lproj -L${ETREE_HOME}/lib -letree
+#UCVMLIBS = -L${UCVM_HOME}/lib -lucvm -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi -L${PROJ4_HOME}/lib -lproj -L${ETREE_HOME}/lib -letree -Wl,-R${CVMSI_HOME}/lib -Wl,-R${ETREE_HOME}/lib -Wl,-R${PROJ4_HOME}/lib
+UCVMLIBS = -L${UCVM_HOME}/lib -lucvm -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi  -L${CENCAL_HOME}/lib -lcencalvm -L${PROJ4_HOME}/lib -lproj -L${ETREE_HOME}/lib -letree -L${UCVM_HOME}/lib -lucvm -lstdc++ -ldl 
 UCVMINC = -I${UCVM_HOME}/include -I${GETPAR_HOME}/include
 
-LIBS = -lm ${GETPAR_DIR}/lib/libget.a
+LIBS = -lm ${GETPAR_DIR}/lib/libget.a -L${FFTW_DIR} -lfftw3f
 IFLAGS = -I${GETPAR_DIR}/include -I${RUPGEN_DIR}/include -I${MEMCACHED_DIR}/include
 LDLIBS = -L${RUPGEN_DIR}/lib -lrupgen -L${MEMCACHED_DIR}/lib -lmemcached ${LIBS} -lstdc++ 
 
@@ -28,21 +38,41 @@ LDLIBS = -L${RUPGEN_DIR}/lib -lrupgen -L${MEMCACHED_DIR}/lib -lmemcached ${LIBS}
 # use following for large file capability
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
-UFLAGS = -O3
+UFLAGS = -O3 -Wimplicit-function-declaration -Wl,-upthread_mutex_destroy
 
-FC = ftn
-CC = cc
+FC = gfortran
+CC = gcc
+#FC = ftn
+#CC = cc
 
 CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS}
 FFLAGS = ${UFLAGS} -ffixed-line-length-132 -finit-local-zero -Wuninitialized
 #FFLAGS = ${UFLAGS} -N 132 -e 0 
 ##### make options
 
-all: hf_synth
+all: hf_synth hf_synth_lite
 
 hf_synth : hf_synth.o ${HF_SYNTH_OBJS}
 	${FC} ${FFLAGS} -o hf_synth hf_synth.o ${HF_SYNTH_OBJS} ${LDLIBS} ${UCVMLIBS}
 	cp hf_synth ../bin/
+
+hf_synth_dy : hf_synth.o ${HF_SYNTH_OBJS}
+	${FC} ${FFLAGS} -o hf_synth_dy hf_synth.o ${HF_SYNTH_OBJS} ${LDLIBS} ${UCVMLIBS}
+	cp hf_synth_dy ../bin/
+
+hf_synth_lite : hf_synth.o srf2stoch_lite.o ${HFSIM_OBJS} hfsim.o get_vs30.o
+	${FC} ${FFLAGS} -o hf_synth_lite hf_synth.o srf2stoch_lite.o ${HFSIM_OBJS} hfsim.o get_vs30.o ${LDLIBS} ${UCVMLIBS}
+	cp hf_synth_lite ../bin/
+
+srf2stoch_standalone : srf2stoch_lite_standalone.c
+	${CC} ${CFLAGS} -o srf2stoch_standalone srf2stoch_lite_standalone.c ${SRF2STOCH_OBJS} ${LDLIBS}
+
+get_vs30_standalone : get_vs30_standalone.c
+	${CC} ${CFLAGS} -o get_vs30 get_vs30_standalone.c ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+
+retrieve_vs : retrieve_vs.c
+	${CC} ${CFLAGS} -o retrieve_vs retrieve_vs.c ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+	cp retrieve_vs ../bin/
 
 merge : merge.c ${MERGE_OBJS}
 	${CC} ${CFLAGS} -o merge merge.c ${MERGE_OBJS} ${LDLIBS}

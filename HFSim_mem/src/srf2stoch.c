@@ -21,6 +21,8 @@ char string[1024];
 
 struct standrupformat srf;
 
+//FILE* fpw = fopen("ref.stoch", "w");
+
 int revstk;
 
 if(avgstk > -1.0e+14)
@@ -80,6 +82,7 @@ for(i=0;i<srf.srf_prect.nseg;i++)
       nxdiv++;
 
    nxsum = (nstk*nxdiv)/nx;
+   fprintf(stderr, "nxsum=%d\n", nxsum);
 
    ny = (wid/dy + 0.5);
    if(ny > ndip)
@@ -93,6 +96,7 @@ for(i=0;i<srf.srf_prect.nseg;i++)
       nydiv++;
 
    nysum = (ndip*nydiv)/ny;
+   fprintf(stderr, "nysum=%d\n", nysum);
 
    if (debug) {
 	fprintf(stderr,"seg= %d\n",i);
@@ -169,6 +173,7 @@ for(i=0;i<srf.srf_prect.nseg;i++)
 
    ravg = ravg/savg;
    savg = savg/(nstk*ndip);
+   fprintf(stderr, "ravg=%f, savg=%f\n", ravg, savg);
 
    fac = 1.0/(float)(nxsum*nysum);
 
@@ -217,8 +222,8 @@ for(i=0;i<srf.srf_prect.nseg;i++)
    sfile->dtop[i] = dtop;
    sfile->shypo[i] = shypo;
    sfile->dhypo[i] = dhypo;
-//   fprintf(fpw,"%10.4f %10.4f %5d %5d %8.2f %8.2f\n",elon,elat,nx,ny,dx,dy);
-//   fprintf(fpw,"%4.0f %4.0f %4.0f %8.2f %8.2f %8.2f\n",strike,dip,ravg,dtop,shypo,dhypo);
+   //fprintf(fpw,"%10.4f %10.4f %5d %5d %8.2f %8.2f\n",elon,elat,nx,ny,dx,dy);
+   //fprintf(fpw,"%4.0f %4.0f %4.0f %8.2f %8.2f %8.2f\n",strike,dip,ravg,dtop,shypo,dhypo);
 
    revstk = 0;
    if(avgstk > -1.0e+14 && (strike > avgstk + 90.0 || strike < avgstk - 90.0))
@@ -232,63 +237,69 @@ for(i=0;i<srf.srf_prect.nseg;i++)
       {
       if(revstk)
          {
-         for(ix=nx-1;ix>=0;ix--)
+         for(ix=nx-1;ix>=0;ix--) {
 	      sfile->sp[iy*NQ*LV + (nx-1-ix)*LV + i] = sp[ix + iy*nx];
 //	      sfile->sp[iy][nx-1-ix][i] = sp[ix + iy*nx];
 //	      sfile->sp[i][nx-1-ix + iy*nx] = sp[ix + iy*nx];
-//            fprintf(fpw," %5.0f",sp[ix + iy*nx]);
+            //fprintf(fpw," %5.0f",sp[ix + iy*nx]);
+         }
 	 }
       else
         {
-         for(ix=0;ix<nx;ix++)
+         for(ix=0;ix<nx;ix++) {
 	      sfile->sp[iy*NQ*LV + ix*LV + i] = sp[ix + iy*nx];
 //	      sfile->sp[iy][ix][i] = sp[ix + iy*nx];
-//            fprintf(fpw," %5.0f",sp[ix + iy*nx]);
+            //fprintf(fpw," %5.0f",sp[ix + iy*nx]);
+	 }
 	 }
 
-//      fprintf(fpw,"\n");
+      //fprintf(fpw,"\n");
       }
 
    for(iy=0;iy<ny;iy++)
       {
       if(revstk)
          {
-         for(ix=nx-1;ix>=0;ix--)
+         for(ix=nx-1;ix>=0;ix--) {
 	      sfile->tr[iy*NQ*LV + (nx-1-ix)*LV + i] = tr[ix + iy*nx];
 //	      sfile->tr[iy][nx-1-ix][i] = tr[ix + iy*nx];
 //            sfile->tr[i][nx-1-ix + iy*nx] = tr[ix + iy*nx];
-//            fprintf(fpw," %5.2f",tr[ix + iy*nx]);
+            //fprintf(fpw," %5.2f",tr[ix + iy*nx]);
+	 }
 	 }
       else
          {
-         for(ix=0;ix<nx;ix++)
+         for(ix=0;ix<nx;ix++) {
 	      sfile->tr[iy*NQ*LV + ix*LV + i] = tr[ix + iy*nx];
 //	      sfile->tr[iy][ix][i] = tr[ix + iy*nx];
-//            fprintf(fpw," %5.2f",tr[ix + iy*nx]);
+            //fprintf(fpw," %5.2f",tr[ix + iy*nx]);
+	 }
 	 }
 
-//      fprintf(fpw,"\n");
+      //fprintf(fpw,"\n");
       }
 
    for(iy=0;iy<ny;iy++)
       {
       if(revstk)
          {
-         for(ix=nx-1;ix>=0;ix--)
+         for(ix=nx-1;ix>=0;ix--) {
 	      sfile->ti[iy*NQ*LV + (nx-1-ix)*LV + i] = ti[ix + iy*nx];
 //	      sfile->ti[iy][nx-1-ix][i] = ti[ix + iy*nx];
 //	      sfile->ti[i][nx-1-ix + iy*nx] = ti[ix + iy*nx];
- //           fprintf(fpw," %5.2f",ti[ix + iy*nx]);
+           //fprintf(fpw," %5.2f",ti[ix + iy*nx]);
+	 }
 	 }
       else
          {
-         for(ix=0;ix<nx;ix++)
+         for(ix=0;ix<nx;ix++) {
 	      sfile->ti[iy*NQ*LV + ix*LV + i] = ti[ix + iy*nx];
 //	      sfile->ti[iy][ix][i] = ti[ix + iy*nx];
-//            fprintf(fpw," %5.2f",ti[ix + iy*nx]);
+            //fprintf(fpw," %5.2f",ti[ix + iy*nx]);
+	 }
 	 }
 
-//      fprintf(fpw,"\n");
+      //fprintf(fpw,"\n");
       }
 
    free(slip);
@@ -301,5 +312,8 @@ for(i=0;i<srf.srf_prect.nseg;i++)
    free_srf_ptrs(&srf);
 
    noff = noff + nstk*ndip;
+
+   //fflush(fpw);
+   //fclose(fpw);
    }
 }
