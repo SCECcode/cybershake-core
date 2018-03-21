@@ -424,7 +424,7 @@ c      read(5,'(a256)') velname
         print*,'velname= ',velname
       endif
 
-      rvsig1 = -1.0
+      rvsig1 = 0.1
       rvfmax = 1.4
 
       fasig1 = -1.0

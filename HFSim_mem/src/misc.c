@@ -8,6 +8,8 @@ void *check_malloc(size_t len)
 void *ptr;
 
 ptr = (void *) malloc (len);
+//printf("malloc: allocating %ld bytes to %p.\n", len, ptr);
+fflush(stdout);
 
 if(ptr == NULL)
    {
@@ -22,6 +24,8 @@ void *check_realloc(void *ptr,size_t len)
 {
 ptr = (char *) realloc (ptr,len);
 
+//printf("realloc: allocating %ld bytes to %p.\n", len, ptr);
+fflush(stdout);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory reallocation error\n");
