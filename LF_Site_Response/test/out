@@ -1,0 +1,2 @@
+*** External PGA used: pga=   7.25855e-03
+./lf_test.sh: line 6: 33959 Segmentation fault      (core dumped) ../bin/lf_site_response seis_in=Seismogram_PAS_231_0_0_lf.grm seis_out=Seismogram_PAS_231_0_0_lf_site_response.grm slat=34.148426 slon=-118.17119 module=cb2014 vs30=821.3 vs30_model=cvmsi
