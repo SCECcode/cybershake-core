@@ -82,12 +82,21 @@ TICKS = [0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.
 colormap = basemap.cm.GMT_seis
 norm = mcolors.Normalize(vmin=BOUNDS[0],vmax=BOUNDS[len(BOUNDS) - 1])
 
-m = basemap.Basemap(projection='cyl', llcrnrlat=30, urcrnrlat=42, llcrnrlon=-130, urcrnrlon=-113, resolution='f', anchor='C')
+
+#statewide: 30, 42, -130, -113
+#so cal: 34, 36, -123, -121
+
+min_lat=30
+max_lat=42
+min_lon=-130
+max_lon=-113
+
+m = basemap.Basemap(projection='cyl', llcrnrlat=min_lat, urcrnrlat=max_lat, llcrnrlon=min_lon, urcrnrlon=max_lon, resolution='f', anchor='C')
 #m = basemap.Basemap(projection='cyl', llcrnrlat=34, urcrnrlat=36, llcrnrlon=-123, urcrnrlon=-121, resolution='f', anchor='C')
 
-lat_ticks = np.arange(30, 42, 2)
+lat_ticks = np.arange(min_lat, max_lat, 2)
 #lat_ticks = np.arange(34, 36, 1)
-lon_ticks = np.arange(-130, -113, 5)
+lon_ticks = np.arange(min_lon, max_lon, 5)
 #lon_ticks = np.arange(-123, -121, 1)
 
 m.drawparallels(lat_ticks, linewidth=1.0, labels=[1,0,0,0])
