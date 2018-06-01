@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 '''This performs a check of SGT size, then calls the nan check code.'''
 
@@ -13,46 +13,47 @@ sys.path.append(path_add)
 
 import config
 
-if len(sys.argv)<3:
-	print "Usage: %s <SGT file> <SGT header file>" % sys.argv[0]
+if len(sys.argv)<4:
+	print "Usage: %s <SGT file> <cordfile> <IN3D file>" % sys.argv[0]
 	sys.exit(1)
 
 sgt_filename = sys.argv[1]
-sgt_header = sys.argv[2]
+cordfile_name = sys.argv[2]
+in3d_filename = sys.argv[3]
 
 #Get actual file size
 sgt_filesize = os.path.getsize(sgt_filename)
 
 #Read out header information in header file to check for match
-'''
-struct sgtmaster
-   {
-   int geoproj;     /* =0: RWG local flat earth; =1: RWG great circle arcs; =2: UTM *
-/
-   float modellon;  /* longitude of geographic origin */
-   float modellat;  /* latitude of geographic origin */
-   float modelrot;  /* rotation of y-axis from south (clockwise positive)   */
-   float xshift;    /* xshift of cartesian origin from geographic origin */
-   float yshift;    /* yshift of cartesian origin from geographic origin */
-   int globnp;      /* total number of SGT locations (entire model) */
-   int localnp;     /* local number of SGT locations (this file only) */
-   int nt;          /* number of time points                                */
-   };
-'''
-with open(sgt_header) as fp_in:
-	sgtmaster_str = fp_in.read(36)
-	globnp = struct.unpack('i', sgtmaster_str[24:28])[0]
-	nt = struct.unpack('i', sgtmaster_str[32:36])[0]
+
+with open(cordfile_name, "r") as fp_in:
+	line = fp_in.readline()
+	while line[0]=="#":
+		line = fp_in.readline()
+	np = int(line.strip())
 	fp_in.close()
 
+#Determine number of timesteps and timeskip
+with open(in3d_filename, "r") as fp_in:
+	data = fp_in.readlines()
+	for line in data:
+		pieces = line.split()
+		if len(pieces)>1 and pieces[1].strip()=="NST":
+			nt = int(pieces[0].strip())
+			continue
+		if len(pieces)>1 and pieces[1].strip()=="NTISKP_SGT":
+			timeskip = int(pieces[0].strip())
+			continue
+	fp_in.close()
 
 FLOAT_SIZE = 4
 SGT_COMPONENTS = 6
 
-expected_size = globnp*nt*SGT_COMPONENTS*FLOAT_SIZE
+#Divide nt by timeskip, because we decimate in time
+expected_size = np*nt/timeskip*SGT_COMPONENTS*FLOAT_SIZE
 
 if expected_size!=sgt_filesize:
-	print "Error: sgtmaster header file %s leads us to expect %d points and nt=%d, for an SGT filesize of %d, but the SGT file actually has size %d.  Aborting." % (sgt_header, globnp, nt, expected_size, sgt_filesize)
+	print "Error: cordfile %s leads us to expect %d points and IN3D file %s has nt=%d, for an SGT filesize of %d, but the SGT file actually has size %d.  Aborting." % (cordfile_name, np, in3d_filename, nt, expected_size, sgt_filesize)
 	sys.exit(2)
 
 cs_path = config.getProperty("CS_PATH")
@@ -64,7 +65,7 @@ if mpi_cmd=="aprun":
 elif mpi_cmd=="mpirun":
 	mpi_cmd = "mpirun -np 1"
 
-cmd = "%s %s/SgtHead/bin/check_for_nans %s" % (mpi_cmd, cs_path, sgt_filename)
+cmd = "%s %s/SgtTest/bin/check_for_nans %s" % (mpi_cmd, cs_path, sgt_filename)
 exitcode = os.system(cmd)
 if exitcode!=0:
 	print "Error when checking for NaNs, zeros."
