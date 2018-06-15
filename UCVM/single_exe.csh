@@ -67,7 +67,7 @@ if ($MPI_CMD == "mpirun") then
 	set NP = `wc -l < ${PBS_NODEFILE}`
 	set MPI_CMD = "${MPI_CMD} -np ${NP} -machinefile ${PBS_NODEFILE}"
 else if ($MPI_CMD == "aprun") then
-	@ NP = $PBS_NUM_NODES * 16
+	@ NP = $PBS_NUM_NODES * 8
 	#if ($FORMAT == "rwg") then
 	#	while (`expr $NY \* $NZ % $NP` != 0)
 	#		@ NP = $NP - 1
@@ -91,8 +91,13 @@ endif
 
 #Add to LD_LIBRARY_PATH
 #setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
-setenv LD_LIBRARY_PATH /projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/lib/euclid3/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/lib/proj-4/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cvms426/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cencal/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cvms5/lib:/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/model/cca/lib
-#setenv LD_LIBRARY_PATH /u/sciteam/gill/ucvm-15.10.0-2/model/cca/lib:/u/sciteam/gill/ucvm-15.10.0-2/model/cvms5/lib:/u/sciteam/gill/ucvm-15.10.0-2/model/cencal/lib:/u/sciteam/gill/ucvm-15.10.0-2/model/cvms426/lib:/u/sciteam/gill/ucvm-15.10.0-2/lib/proj-4/lib:/u/sciteam/gill/ucvm-15.10.0-2/lib/euclid3/lib
+
+set UCVM_HOME = /lustre/atlas/proj-shared/geo112/ucvm_18_5/UCVMC/install
+setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-4/lib:${UCVM_HOME}/model/cvms426/lib:${UCVM_HOME}/model/cencal/lib:${UCVM_HOME}/model/cvms5/lib:${UCVM_HOME}/model/cca/lib:${UCVM_HOME}/model/cs173/lib:$LD_LIBRARY_PATH
+
+#source /lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/setup.csh
+echo $LD_LIBRARY_PATH
+ldd ${BPATH}/${BPROG}
 
 echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR}"
 
