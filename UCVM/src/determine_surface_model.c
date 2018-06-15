@@ -20,7 +20,7 @@ void create_surface(ucvm_point_t* points, char* model_coords, int num_points) {
 }
 
 void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models, int num_points) {
-	if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to setup ucvm.\n");
                 exit(-1);
         }
