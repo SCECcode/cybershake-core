@@ -81,8 +81,8 @@ port = 3306
 db="CyberShake"
 
 if len(sys.argv) < 6:
-  print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name Spacing Server"
-  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 200.0 focal.usc.edu [gpu] [bbox]"
+  print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name spacing(in km) Server"
+  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 0.2 focal.usc.edu [gpu] [bbox]"
   sys.exit()
 
 site = sys.argv[1]
@@ -268,7 +268,9 @@ if gpu:
                 ylrnd += spacing - (float(ylrnd)-ny*spacing)
                 ny += 1
 	#Want a rule so we use (in AWP coords) 10x10x1 for 0.5 Hz/200m meshes, 20x10x1 for 1Hz/175m meshes, 40x20x1 for 1 Hz/100m meshes; will use spacing for now
+	print "Spacing = %f" % spacing
 	if spacing==0.2:
+		print "Spacing = 0.2"
 		xlrnd += spacing*((-1*nx) % 20)
 		ylrnd += spacing*((-1*ny) % 20)
 	elif spacing==0.1:
