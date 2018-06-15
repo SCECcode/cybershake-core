@@ -1,7 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 import os
 import sys
+
+full_path = os.path.abspath(sys.argv[0])
+path_add = os.path.dirname(os.path.dirname(os.path.dirname(full_path)))
+
+sys.path.append(path_add)
+
+import config
  
 def genGridfile(site, outputFile, xlen, ylen, zlen, spacing):
     '''Takes a site, path to output directory, and data to produce gridfile_<site> with the X, Y, and Z lengths and spacing'''
@@ -40,7 +47,7 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
     '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
     #Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance, requires GPU or CPU counts get all off
     if gpu:
-	ZLEN = 50.4
+	ZLEN = 50.0
 	#ZLEN = 40.0
     else:
 	#ZLEN = 50.0
@@ -49,6 +56,11 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
     #	#Change ZLEN to 51.2 so it's a multiple of 256 pts
     #	ZLEN = 51.2
     #SPACING = .2
+
+
+    #FOR TESTING A DEEPER BOX
+    ZLEN = 80.0
+
     SPACING = 0.1/freq
     if sp>0:
 	SPACING = sp
@@ -69,10 +81,10 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
     model_rot = float(modelParamsData[5])
     xlen = float(modelParamsData[7])
     ylen = float(modelParamsData[9])
-    
+
     genGridfile(site, gridfile, xlen, ylen, ZLEN, SPACING)
     
-    executable = "bin/gen_model_cords"
+    executable = "%s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
     parameters = "geoproj=1 gridfile=%s gridout=%s center_origin=1 do_coords=1 nzout=1 name=%s gzip=0 latfirst=0 modellon=%f modellat=%f modelrot=%f" % (gridfile, gridout, coordfile, model_lon, model_lat, model_rot)
     pipe = "> " + paramfile
     command = executable + " " + parameters + " " + pipe
