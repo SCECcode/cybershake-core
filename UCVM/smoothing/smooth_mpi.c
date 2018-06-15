@@ -3,6 +3,7 @@
 
 #include "string.h"
 #include "mpi.h"
+#include <time.h>
 
 inline int min(int a, int b) {
 	if (a<b) 
@@ -28,7 +29,9 @@ void average_point(float* slice, int x, int y, int nx, int ny, int smooth_dist, 
 	int num_vals = 0;
 	//Calclate average using diamond
 	for (i=x_start; i<=x_stop; i++) {
-		for (j=max(y_start+abs(i-x), 0); j<=min(y_stop-abs(i-x), ny-1); j++) {
+		int j_start = max(y_start+abs(i-x), 0);
+		int j_end = min(y_stop-abs(i-x), ny-1);
+		for (j=j_start; j<=j_end; j++) {
 			int index = 3*(i*ny + j);
 			for (k=0; k<3; k++) {
 				tot[k] += slice[index+k];
@@ -102,8 +105,11 @@ void process_mesh(int my_id, char* mesh_in, char* pts_file, int nx, int ny, int 
 	//Iterate over horizontal slices
 	//Fast y, x
 	//for (i=0; i<nz; i++) {
+
 	for (i=starting_slice; i<ending_slice; i++) {
-		printf("%d) Horizontal slice %d of %d.\n", my_id, (i-starting_slice), (ending_slice-starting_slice));
+		time_t now = time(NULL);
+		char* time_str = ctime(&now);
+		printf("%d @ %s) Horizontal slice %d of %d.\n", my_id, time_str, (i-starting_slice), (ending_slice-starting_slice));
 		point_index = 0;
 		//fread(horizontal_slice_in, sizeof(float), 3*nx*ny, fp_in);
 		MPI_Offset offset = sizeof(float)*3*nx*ny*i;
@@ -126,6 +132,9 @@ void process_mesh(int my_id, char* mesh_in, char* pts_file, int nx, int ny, int 
 		}
 		//Write slice to file
 		//fwrite(horizontal_slice_out, sizeof(float), 3*nx*ny, fp_out);
+		now = time(NULL);
+                time_str = ctime(&now);
+		printf("%d @ %s) Writing slice %d to file.\n", my_id, time_str, i-starting_slice);
 		MPI_File_write_at(fp_out, offset, horizontal_slice_out, 3*nx*ny, MPI_FLOAT, &status);
 	}
 	//fflush(fp_out);
