@@ -458,6 +458,12 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                      fflush(stderr);
                      exit(-3);
              }
+	} else if (strcmp(models, "cvms5")==0) {
+             if (ucvm_add_model("cvms5") != UCVM_CODE_SUCCESS) {
+             	fprintf(stderr, "Error retrieving CVM-S5 model.\n");
+                fflush(stderr);
+                exit(-3);
+             }
 	} else if (strcmp(models, "scec1d")==0) {
              if (ucvm_add_model(UCVM_MODEL_1D)!=UCVM_CODE_SUCCESS) {
                      fprintf(stderr, "Error retrieving 1D model.\n");
