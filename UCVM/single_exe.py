@@ -66,9 +66,25 @@ log_root = config.getProperty("LOG_PATH")
 mpi_cmd = config.getProperty("MPI_CMD")
 job_id = config.getJobID()
 
+#if cca is one of the models, check to see if GTL is on
+with open('%s/UCVM/ucvm-18.5.0/model/cca/data/config' % cs_path, 'r') as fp_in:
+	data = fp_in.readlines()
+	for line in data:
+		if line.find('gtl')>-1:
+			pieces = line.split('=')
+			if pieces[1].strip()=='off':
+				print "CCA: GTL is off."
+			elif pieces[1].strip()=='on':
+				print "CCA: GTL is ON."
+			else:
+				print "CCA: GTL status unknown."
+			break
+	fp_in.close()
+
 #set up for striping if awp
+LFS_CMD = "/opt/cray/lustre-cray_gem_s/2.5_3.0.101_0.31.1_1.0502.8394.10.1-1.0502.17198.8.50/bin/lfs"
 if format=="awp":
-	os.system("/opt/cray/lustre-cray_gem_s/2.5_3.0.101_0.46.1_1.0502.8871.20.1-1.0502.21481.23.1/bin/lfs setstripe -c 100 -s 5m awp.%s.media" % site)
+	os.system("%s setstripe -c 100 -s 5m awp.%s.media" % (LFS_CMD, site))
 
 if option.min_vs is not None:
         command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, option.min_vs)
