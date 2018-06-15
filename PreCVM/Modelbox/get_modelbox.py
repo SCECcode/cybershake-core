@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/python
 
 """
 This program inputs the ruptures that are relevant to a particular 
@@ -272,8 +272,8 @@ if gpu:
 		xlrnd += spacing*((-1*nx) % 20)
 		ylrnd += spacing*((-1*ny) % 20)
 	elif spacing==0.1:
-                xlrnd += spacing*((-1*nx) % 20)
-                ylrnd += spacing*((-1*ny) % 40)
+                xlrnd += spacing*((-1*nx) % 40)
+                ylrnd += spacing*((-1*ny) % 80)
 	else:
                 xlrnd += spacing*((-1*nx) % 40)
                 ylrnd += spacing*((-1*ny) % 80)
