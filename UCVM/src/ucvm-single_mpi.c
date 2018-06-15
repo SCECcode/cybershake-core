@@ -24,6 +24,8 @@ float *mlon, *mlat, *mdep;
 float *vp_buf, *vs_buf, *rho_buf, *buf;
 vp_buf = vs_buf = rho_buf = buf = NULL;
 
+//char config_filename[] = "/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf";
+
 int fdw, i, j, k, nn, newn, s;
 int nx, ny, nz, ix, iz, icnt;
 int format;
@@ -219,7 +221,7 @@ if (error!=MPI_SUCCESS) {
 }
 
 fprintf(stderr,"%d)      Model slice=  %d points\n", my_id, local_np);
-fprintf(stderr,"%d)        Stripes: %d -> %d\n", my_id, starting_stripe, ending_stripe);
+fprintf(stderr,"%d)        Stripes: %d -> %d, %d points per stripe\n", my_id, starting_stripe, ending_stripe, pts_per_stripe);
 //input arrays, plus UCVM arrays and output array
 fprintf(stderr,"%d)      Approximate memory (RAM)= %.2f Mb\n\n",my_id,((2*nx*ny+nz)*sizeof(float) + (sizeof(ucvm_point_t)+3*sizeof(float))*local_np+pts_per_stripe*sizeof(ucvm_data_t))*1.0e-06);
 fflush(stderr);
@@ -255,7 +257,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 				exit(-2);
 			}
 			if (!ucvm_initialized) {
-		                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+		                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		                   fprintf(stderr, "Failed to setup ucvm.\n");
 		                   fflush(stderr);
 		                   exit(-1);
@@ -269,7 +271,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			}
 		} else if (strcmp(tok, "cvms")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm_15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/UCVMC/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -283,7 +285,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	                }
 		} else if (strcmp(tok, "1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -297,7 +299,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			}
 		} else if (strcmp(tok, "cvmsi")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -311,7 +313,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
                 } else if (strcmp(tok, "scec1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -325,7 +327,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
 		} else if (strcmp(tok, "usgs")==0) {
 			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -339,7 +341,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         } 
 		} else if (strcmp(tok, "cvms5")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -359,7 +361,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 				exit(-2);
 			}
                         if (!ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -373,7 +375,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
 		} else if (strcmp(tok, "bbp1d")==0) {
 			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -386,7 +388,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                          }
 		} else if (strcmp(tok, "cca1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -399,7 +401,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                          }
                 } else if (strcmp(tok, "cca")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -420,13 +422,13 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
  } else {
 	//If cvmh_nogtl, use the alternative config file
 	if (strcmp(models, "cvmh_nogtl")==0) {
-	     if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
+	     if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-15.10.0/conf/cvmh_no_gtl.conf") != UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to setup ucvm.\n");
 		fflush(stderr);
 		exit(-1);
 		}
 	} else {
-	     if (ucvm_init("/projects/sciteam/bahm/CyberShake/software/UCVM/ucvm-15.10.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	     if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Failed to setup ucvm.\n");
                 fflush(stderr);
                 exit(-1);
@@ -506,7 +508,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 
  // output order: x,z,y
  int num_pts = local_np;
- ucvm_point_t* pts = check_malloc(sizeof(ucvm_point_t)*num_pts);
+ ucvm_point_t* pts = check_malloc(sizeof(ucvm_point_t)*(size_t)num_pts);
  // To conserve memory, only allocate one stripe's worth of ucvm_data_t, but num_pts worth of velocity info
  ucvm_data_t* props = check_malloc(sizeof(ucvm_data_t)*pts_per_stripe);
 
@@ -554,11 +556,17 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
  
  for (s=0; s<(ending_stripe-starting_stripe); s++) {
 	//if (ucvm_query(local_np, pts, props)!=UCVM_CODE_SUCCESS) {
-	fprintf(stderr, "[%d] Querying stripe %d of %d.\n", my_id, s, (ending_stripe-starting_stripe));
-	fflush(stderr);
+	fprintf(stderr, "[%d] Stripe %d of %d\n", my_id, s+1, (ending_stripe-starting_stripe));
+	struct rusage my_rusage;
+	getrusage(RUSAGE_SELF, &my_rusage);
+	fprintf(stderr, "[%d] Using %ld kbytes.\n", my_id, my_rusage.ru_maxrss);
 	if (ucvm_query(pts_per_stripe, pts+s*pts_per_stripe, props)!=UCVM_CODE_SUCCESS) {
  		fprintf(stderr, "Query UCVM failed.\n");
         	exit(-2);
+	}
+	if (my_id==0) {
+		//Print the first point
+		printf("%d) Point 0 i(%f, %f, %f) has properties vp=%lf, vs=%lf, rho=%lf, crust vp=%lf, crust vs=%lf, crust rho=%lf\n", my_id, pts[0].coord[0], pts[0].coord[1], pts[0].coord[2], props[0].cmb.vp, props[0].cmb.vs, props[0].cmb.rho, props[0].crust.vp, props[0].crust.vs, props[0].crust.rho);
 	}
 
 	 /* perform sanity checks on the material properties */     
@@ -651,6 +659,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	MPI_File_open(MPI_COMM_WORLD, outfile, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp_out);
 	//output is fast y, x, z, all 3 values
 	offset = (long)starting_stripe * ny * 3 * sizeof(float);
+	printf("%d) Offset is %ld bytes.\n", my_id, offset);
 	int rc = MPI_File_write_at_all(fp_out, offset, buf, 3*local_np, MPI_FLOAT, &status);
         if (rc!=MPI_SUCCESS) {
         	char error_string[256];
