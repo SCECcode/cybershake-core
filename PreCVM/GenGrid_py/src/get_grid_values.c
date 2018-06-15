@@ -306,8 +306,8 @@ else if(geoproj == 2)
 	while (fscanf(fp_in, "%f,%f", &lat, &lon)!=EOF) {
 		xy2ll = 1;
 		gcproj(&x,&y,&lon,&lat,&erad,&g0,&b0,amat,ainv,xy2ll);
-		//Upper left is (0,0) here, but in AWP it's lower left, and X and Y are flipped
-		fprintf(fp_out, "0,%d,%d\n", (int)(y/grid_spacing), (int)(x/grid_spacing));
+		//Upper left is (0,0) here, but in AWP it's lower left, and X and Y are flipped and need to add 1
+		fprintf(fp_out, "0,%d,%d\n", (int)(y/grid_spacing+1), (int)(x/grid_spacing+1));
 		//printf("lat=%f, lon=%f, x=%f, y=%f\n", lat, lon, x, y);
 		//printf("Grid coordinates: (%f, %f)\n", (x/.4), (y/.4));
 	}
