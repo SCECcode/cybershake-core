@@ -2,6 +2,8 @@
 #include        "structure.h"
 #include        "function.h"
 
+extern int my_id;
+
 float *read_wccseis(char *ifile,struct statdata *shead,float *s,int bflag)
 {
 FILE *fpr;
@@ -249,7 +251,9 @@ return(temp);
 
 void *check_realloc(void *ptr,size_t len)
 {
-ptr = (char *) realloc (ptr,len);
+
+//printf("%d) Reallocing %ld bytes.\n", my_id, len);
+ptr = realloc (ptr,len);
 
 if(ptr == NULL)
    {
@@ -265,7 +269,8 @@ void *check_malloc(size_t len)
 {
 char *ptr;
 
-ptr = (char *) malloc (len);
+//printf("%d) Allocating %ld bytes.\n", my_id, len);
+ptr = malloc (len);
  
 if(ptr == NULL)
    {
