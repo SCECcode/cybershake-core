@@ -12,13 +12,19 @@ user = "cybershk_ro"
 passwd = "CyberShake2007"
 
 if len(sys.argv)<5:
-	print "Usage: %s <site> <erf_id> <path to rup vars> <output_file>" % sys.argv[0]
+	print "Usage: %s <site> <erf_id> <path to rup vars> <output_file> [-rsqsim]" % sys.argv[0]
 	sys.exit(1)
 
 site = sys.argv[1]
 erf_id = int(sys.argv[2])
 rv_path = sys.argv[3]
 output_file = sys.argv[4]
+#Using RSQSim-formatted rupture geometries (average area, only num points, so only 4 rows in header)
+header_rows = 6
+
+if len(sys.argv)==6:
+	if sys.argv[5]=="-rsqsim":
+		header_rows = 4
 
 conn = MySQLdb.connect(host=server, user=user, passwd=passwd, db=db)
 cur = conn.cursor()
@@ -34,7 +40,7 @@ count = 0
 for r in res:
 	sourceID = int(r[0])
 	ruptureID = int(r[1])
-	fp_out.write("%s/%d/%d/%d_%d.txt nheader=6 latfirst=1\n" % (rv_path, sourceID, ruptureID, sourceID, ruptureID))
+	fp_out.write("%s/%d/%d/%d_%d.txt nheader=%d latfirst=1\n" % (rv_path, sourceID, ruptureID, sourceID, ruptureID, header_rows))
 	count += 1
 	if (count%100==0):
 		print "Processed %d ruptures." % count
