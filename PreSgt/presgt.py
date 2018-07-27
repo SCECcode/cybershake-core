@@ -56,11 +56,14 @@ def genFdloc(outputName, site, mlon, mlat, cordfileName):
     return [int(minLoc[0]), int(minLoc[1])]
 
 
-def genFaultList(outputName, site, erf_id):
+def genFaultList(outputName, site, erf_id, rsqsim):
     '''Copies the functionality of gen_faultlist.csh:  it serves as a wrapper to CreateFaultList.java, which queries the database to generate a list of ruptures which are applicable for the given site.'''
     print "Generating fault list for %s.\n" % site
     #command = 'java -classpath .:%s:%s/faultlist/mysql-connector-java-5.0.5-bin.jar faultlist/CreateFaultList %s %s %s %s' % (sys.path[0], sys.path[0], site, erf_id, PATH_TO_RUPTURE_VARIATIONS, outputName)
-    command = '%s/faultlist_py/CreateFaultList.py %s %s %s %s' % (sys.path[0], site, erf_id, PATH_TO_RUPTURE_GEOMETRIES, outputName)
+    rsqsim_str = ""
+    if rsqsim:
+	rsqsim_str = "-rsqsim"
+    command = '%s/faultlist_py/CreateFaultList.py %s %s %s %s %s' % (sys.path[0], site, erf_id, PATH_TO_RUPTURE_GEOMETRIES, outputName, rsqsim_str)
     print command
     returnCode = os.system(command)
     if returnCode!=0:
@@ -132,7 +135,7 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 		np = int(os.environ["PBS_NUM_NODES"])*4
 		#No more than 32 cores)
 		np = min(np, 32)
-                MPI_CMD = "%s -n %d" % (MPI_CMD, np)
+                MPI_CMD = "%s -n %d -N 4" % (MPI_CMD, np)
 
 	command = '%s %s/bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (MPI_CMD, sys.path[0], ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outputFile, mlon, mlat, mrot, faultlist)
 	#cmdFile = open("command.txt", "w")
@@ -149,7 +152,7 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 RUPTURE_ROOT = config.getProperty('RUPTURE_ROOT')
 
 if len(sys.argv) < 11:
-    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords> <spacing> [frequency]'
+    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords> <spacing> [frequency] [rsqsim]'
     print 'Example: ./presgt.py USC 33 USC.modelbox gridout_USC model_coords_GC_USC USC.fdloc USC.faultlist USC.radiusfile USC.cordfile 200.0 0.1'
     sys.exit(1)
 
@@ -164,10 +167,16 @@ radiusFileName = sys.argv[8]
 sgtcordFileName = sys.argv[9]
 
 spacing = float(sys.argv[10])
+rsqsim = False
 
 frequency = 0.5
-if len(sys.argv)==12:
+if len(sys.argv)>=12:
 	frequency = float(sys.argv[11])
+
+if len(sys.argv)>=13:
+	if "rsqsim" in sys.argv[12:]:
+		rsqsim = True
+	
 
 erf_id = sys.argv[2]
 
@@ -189,7 +198,7 @@ mlat = (float)(modelTokens[3])
 mrot = (float)(modelTokens[5])
 
 src = genFdloc(fdlocFileName, site, siteLon, siteLat, cordfileName)
-genFaultList(faultlistFileName, site, erf_id)
+genFaultList(faultlistFileName, site, erf_id, rsqsim)
 
 genRadiusFile(radiusFileName)
 
