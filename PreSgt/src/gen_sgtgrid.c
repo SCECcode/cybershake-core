@@ -18,6 +18,8 @@
 
 void get_filepar(char *str,char *file,int *nh,int *latfirst);
 
+int my_id = -1;
+
 struct entry {
 	int x;
 	int y;
@@ -125,7 +127,6 @@ getpar("izmax","d",&izmax);
 
 endpar();
 
-int my_id = 0;
 int num_procs = 1;
 MPI_Comm_rank(MPI_COMM_WORLD, &my_id);
 MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
@@ -278,12 +279,14 @@ printf("%d creating fault files.\n", my_id);
 fflush(stdout);
 
 //Create fault files for each process
+int faultlist_chunk = 10000;
+int faultlist_size = faultlist_chunk;
 if (my_id==0) {
 	gettimeofday(&tv, NULL);
 	//char faultlist_data[10000][200];
-	char** faultlist_data = check_malloc(sizeof(char*) * 10000);
-	for (i0=0; i0<10000; i0++) {
-		faultlist_data[i0] = check_malloc(sizeof(char*) * 200);
+	char** faultlist_data = check_malloc(sizeof(char*) * faultlist_size);
+	for (i0=0; i0<faultlist_chunk; i0++) {
+		faultlist_data[i0] = check_malloc(sizeof(char) * 200);
 	}
 	fp = fopfile(faultlist,"r");
 	int counter = 0;
@@ -291,14 +294,17 @@ if (my_id==0) {
 	while(fgets(line, 200, fp)!=NULL) {
 		strcpy(faultlist_data[counter], line);
 		counter++;
+		if (counter==faultlist_size) {
+			faultlist_size += faultlist_chunk;
+			printf("Expanding faultlist size to %d lines.\n", faultlist_size);
+			faultlist_data = check_realloc(faultlist_data, sizeof(char*) * faultlist_size);
+			for (i0=faultlist_size-faultlist_chunk; i0<faultlist_size; i0++) {
+				faultlist_data[i0] = check_malloc(sizeof(char) * 200);
+			}
+		}
 	}
 	fclose(fp);
 	num_lines = counter;
-	if (num_lines > 10000) {
-		printf("# of lines is bigger than faultlist_data, exiting.\n");
-		fflush(stdout);
-		exit(1);
-	}
 	MPI_Bcast(&num_lines, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	avg_lines_per_proc = num_lines/num_procs;
 	char **data_to_send = check_malloc(sizeof(char*)*num_procs);
@@ -528,7 +534,7 @@ if (my_id==0) {
 	                hashvals[np].z = tmp_hashval.z;
 	                hashvals[np].index = tmp_hashval.index;
 	                cfuhash_put(hash, hashkey, &(hashvals[np]));
-			printf("adding to hashvals: (%d, %d, %d, %ld)\n", hashvals[np].x, hashvals[np].y, hashvals[np].z, hashvals[np].index);
+			//printf("adding to hashvals: (%d, %d, %d, %ld)\n", hashvals[np].x, hashvals[np].y, hashvals[np].z, hashvals[np].index);
 			np++;
 	        }
 	}
