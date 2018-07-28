@@ -211,6 +211,11 @@ void get_SGT_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, i
 	header_files[2] = sgtfilepar->zfile_header;
 
 	int num_my_points = proc_points[my_id+1] - proc_points[my_id];
+	if (debug) {
+		char buf[256];
+		sprintf(buf, "Responsible for %d points, from %d to %d.", num_my_points, proc_points[my_id], proc_points[my_id+1]);
+		write_log(buf);
+	}
 
 	if (debug) write_log("Receiving header info from master.");
 	int i;
