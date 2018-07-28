@@ -244,13 +244,33 @@ void assign_sgt_points(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_
 	proc_points[0] = -1;
 	proc_points[1] = 0;
 	proc_points[num_sgt_readers] = sgtmast->globnp;
-	float avg_points_per_proc = ((float)sgtmast->globnp)/((float)(num_sgt_readers-1));
-	int cur_point_loc = 0;
-	for (i=1; i<num_sgt_readers; i++) {
-		if (i==num_sgt_readers-1) {
-			proc_points[i+1] = sgtmast->globnp;
-		} else {
-			proc_points[i+1] = (int)(avg_points_per_proc * (i));
+	//We have the option to use an input file which specifies the # of points each handler is responsible for
+	char point_mapping_file[256];
+	point_mapping_file[0]='\0';
+	getpar("pt_mapping_file","s",point_mapping_file);
+	if (point_mapping_file[0]!='\0') {
+		if (debug) write_log("Using point mapping file.");
+		FILE* fp_in;
+		char line[256];
+		int id, num_pts, hits;
+		fopfile_ro(point_mapping_file, &fp_in);
+		//This file has a header, then
+		//Handler_ID #SGT_pts #Hits
+		fgets(line, 256, fp_in);
+		for(i=1; i<num_sgt_readers; i++) {
+			fscanf(fp_in, "%d %d %d\n", &id, &num_pts, &hits);
+			proc_points[i+1] = proc_points[i]+num_pts;
+		}
+		fclose(fp_in);
+	} else {
+		float avg_points_per_proc = ((float)sgtmast->globnp)/((float)(num_sgt_readers-1));
+		int cur_point_loc = 0;
+		for (i=1; i<num_sgt_readers; i++) {
+			if (i==num_sgt_readers-1) {
+				proc_points[i+1] = sgtmast->globnp;
+			} else {
+				proc_points[i+1] = (int)(avg_points_per_proc * (i));
+			}
 		}
 	}
 	//Just broadcast the points, since we want the workers to have the points-to-process mapping too
