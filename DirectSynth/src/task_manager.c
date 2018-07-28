@@ -247,6 +247,18 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 	//num ruptures to process is different, because some might have already completed
 	int num_ruptures_to_process = 0;
 	num_tasks = 0;
+
+	#ifdef _V3_3_1
+	//Define constants for estimating memory
+	//a = 32.63, b = -81.26, c = 104.3, d = 54.6      
+        //Apply scale factor of .6*dt^-.17
+	float CONST_A = 32.63;
+	float CONST_B = -81.26;
+	float CONST_C = 104.3;
+	float CONST_D = 54.6;
+	float DT_SCALE_FAC = 0.6*pow(dtout, -0.17);
+	#endif
+
 	for (i=0; i<num_ruptures; i++) {
 		fscanf(rup_list_in, "%s %d %d %d %f", rupture_file, &num_slips, &num_hypos, &num_points, &mag);
 
@@ -302,14 +314,28 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		#ifdef _V3_3_1
                 //Each rupture variation adds roughly
                 //14.8 * log10(rupture_points) * rupture_points^1.14 MB worth of storage * 1.1(tolerance) * 0.1/dtout
-		long long single_rv_size = (long long)(14.8 * (long long)log10(num_points) * pow(num_points, 1.14) * 1.1);
-		//Cap rupture size at 80 MB
-		if (single_rv_size > 80*1024*1024) {
-			single_rv_size = 80*1024*1024;
-		}
-		//Take dtout into consideration
-		single_rv_size = (long long)((float)single_rv_size * 0.1/dtout);
-		//printf("single_rv_size = %ld\n", single_rv_size);
+		/*long long single_rv_size = (long long)(14.8 * (long long)log10(num_points) * pow(num_points, 1.14) * 1.1);
+                //Cap rupture size at 80 MB
+                if (single_rv_size > 80*1024*1024) {
+                        single_rv_size = 80*1024*1024;
+                }
+                //Take dtout into consideration
+                single_rv_size = (long long)((float)single_rv_size * 0.1/dtout);
+		*/
+		
+		/*New formula, taking magnitude into account:
+		For dt = 0.1
+		shifted mag = mag - 5.35
+		mem per point = ax^3 + bx^2 + cx + d
+		x = shifted mag, a = 32.63, b = -81.26, c = 104.3, d = 54.6
+		
+		Apply scale factor of .6*dt^-.17
+		Multiply by # of points
+		*/
+		float shifted_mag = mag - 5.35;
+		float mem_per_pt = CONST_A*shifted_mag*shifted_mag*shifted_mag + CONST_B*shifted_mag*shifted_mag + CONST_C*shifted_mag + CONST_D;
+		long long single_rv_size = (long long)(mem_per_pt * num_points * DT_SCALE_FAC * 1.1);
+		printf("shifted_mag=%f, mem_per_pt=%f, single RV size for src %d rup %d is %ld.\n", shifted_mag, mem_per_pt, source_id, rupture_id, single_rv_size);
 		#else
 		//For v5.2.3; assumes dtout=0.05.  size = 6.491 * num_points ^ 1.314 * 1.1 (tolerance)
 		long long single_rv_size = (long long)(6.491*pow(num_points, 1.314)*1.1);
@@ -319,9 +345,14 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		}
 		#endif
 		//Do not permit more than this amount to be used
+		//Usage is rupture variations, SGTs, memcached (32 MB/core), and gfmech; everything else is tiny
 		long long MAX_ALLOWED = (long long)(1.7 * 1024.0 * 1024.0 * 1024.0);
+		int memcached = 32*1024*1024;
+		//gfmech uses 1st power of 2 larger than 4*nt
+		int power = ceil(log2(nt))+2;
+		int gfmech_size = (int)(3.0*12.0*sizeof(float)*pow(2, power));
 		//printf("MAX_ALLOWED = %ld\n", MAX_ALLOWED);
-		int num_vars_per_task = (MAX_ALLOWED - sgt_size)/single_rv_size;
+		int num_vars_per_task = (MAX_ALLOWED - sgt_size - memcached)/(single_rv_size + gfmech_size);
 		//Change for debugging
 		//num_vars_per_task = 2;
 		//printf("num_vars_per_task = %d\n", num_vars_per_task);
