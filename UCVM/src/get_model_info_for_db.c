@@ -97,7 +97,7 @@ float ucvm_vs30(float lon, float lat) {
         return vs;
 }
 
-//Determines last crossing of Z-values, with 10 m resolution, down to 50 km
+//Determines second crossing (if it exists) of Z-values, with 10 m resolution, down to 50 km
 float ucvm_zvalue(float lon, float lat, float vs_value) {
 	float resolution = 10.0;
 	float max_depth = 50000.0;
@@ -116,10 +116,16 @@ float ucvm_zvalue(float lon, float lat, float vs_value) {
         }
 	float depth = -1.0;
 	int flag = 0;
+	int crossing_num = 0;
 	for (i=0; i<num_pts; i++) {
+		if (crossing_num==2) {
+			//We have found the 2nd crossing, stop looking
+			break;
+		}
 		if (flag==0 && data_pts[i].cmb.vs>=vs_value) {
 			depth = query_pts[i].coord[2];
 			flag = 1;
+			crossing_num++;
 		} else if (data_pts[i].cmb.vs<vs_value) {
 			flag = 0;
 		}
