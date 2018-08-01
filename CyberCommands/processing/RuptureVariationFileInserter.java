@@ -524,8 +524,8 @@ public class RuptureVariationFileInserter {
 		if (durationToTypeID==null) {
 			durationToTypeID = new HashMap<String, Integer>();
 			//Determine mapping to IM_Type_IDs
-			//For now, we will insert for both X and Y components, for both acceleration and velocity, 5-75% and 5-95% cutoffs
-			String[] type = {"acceleration", "velocity"};
+			//We will insert for both X and Y components, for acceleration, 5-75% and 5-95% cutoffs
+			String[] type = {"acceleration"};
 			String[] measure = {"5% to 75%", "5% to 95%"};
 			String[] component = {"X", "Y"};
 			for (String c: component) {
