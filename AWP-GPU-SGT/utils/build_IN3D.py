@@ -8,8 +8,42 @@ Since this is the GPU version, we have to make sure NX/PX and NY/PY are both eve
 import sys
 import os
 import math
+import MySQLdb
+from pyproj import Proj
 
-def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, spacing=None):
+#If site to southernmost or easternmost hypocenter distance is greater than CUTOFF_DIST, use 300 sec as SGT length
+def calc_simulated_time(site, param):
+	#in KM
+	sgt_length = param['TMAX']
+	CUTOFF_DIST = 500
+	conn = MySQLdb.connect(host='moment.usc.edu', user='cybershk_ro', passwd='CyberShake2007', db='CyberShake')
+	cur = conn.cursor()
+	query = 'select CS_Site_Lat, CS_Site_Lon from CyberShake_Sites where CS_Short_Name="%s";' % (site)
+	cur.execute(query)
+	[site_lat, site_lon] = [float(l) for l in cur.fetchone()]
+	query_prefix = 'select V.Hypocenter_Lat, V.Hypocenter_Lon from CyberShake_Runs R, CyberShake_Site_Ruptures SR, Rupture_Variations V where R.Site_ID=SR.CS_Site_ID and R.ERF_ID=SR.ERF_ID and R.Rup_Var_Scenario_ID=V.Rup_Var_Scenario_ID and R.ERF_ID=V.ERF_ID and SR.Source_ID=V.Source_ID and SR.Rupture_ID=V.Rupture_ID"
+	query = "%s order by V.Hypocenter_Lat asc limit 1;" % (query_prefix)
+	cur.execute(query)
+	hypo = []
+	hypo.append([float(l) for l in cur.fetchone()]
+	query = "%s order by V.Hypocenter_Lon desc limit 1;" % (query_prefix)
+	cur.execute(query)
+	hypo.append([float(l) for l in cur.fetchone()]
+	max_dist = 0.0
+	proj = Proj(proj='utm', zone='11', ellps='WGS84')
+	(site_e, site_n) = proj(site_lon, site_lat)
+	for h in hypo:
+		(hypo_e, hypo_n) = proj(h[1], h[0])
+		dist = math.sqrt((site_e-hypo_e)*(site_e-hypo_e) + (site_n-hypo_n)*(site_n-hypo_n))/1000.0
+		if dist>max_dist:
+			max_dist = dist
+	if max_dist>CUTOFF_DIST:
+		sgt_length = 300.0
+	conn.close()
+	return sgt_length
+
+
+def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, spacing=None):
 	fp_in = open("%s/data/IN3D.ref" % (sys.path[0]), "r")
 	data = fp_in.readlines()
 	fp_in.close()
@@ -49,7 +83,8 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, spacing=
 	else:
 		param["DT"] = 0.005/frequency
 	
-	SIMULATED_TIME = float(param["TMAX"])
+	SIMULATED_TIME = calc_simulated_time(site, param)
+	#SIMULATED_TIME = float(param["TMAX"])
 	#Round up to nearest 1000
 	nst = int(SIMULATED_TIME/param["DT"])
 	if (nst % 1000)!=0:
