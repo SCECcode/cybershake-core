@@ -51,6 +51,7 @@ parser.add_option("--pz", dest="pz", type=int, action="store", help="Number of p
 parser.add_option("--source-frequency", type=float, dest="source_freq", action="store", help="Low-pass filter frequency to use on the source, default is same frequency as the frequency of the run.")
 parser.add_option("--spacing", type=float, dest="spacing", action="store", default=None, help="Override default spacing, derived from frequency.")
 parser.add_option("--velocity-mesh", dest="vel_mesh", action="store", default=None, help="Provide path to velocity mesh.  If omitted, will assume mesh is named awp.<site>.media.")
+parser.add_option("--run_id", dest="run_id", type=int, action="store", help="Run ID.")
 
 (option, args) = parser.parse_args()
 
@@ -59,8 +60,8 @@ gridout = option.gridout
 fdloc = option.fdloc
 cordfile = option.cordfile
 
-if site==None or gridout==None or fdloc==None or cordfile==None:
-	print "site, gridout, fdloc, and cordfile must be specified."
+if site==None or gridout==None or fdloc==None or cordfile==None or run_id==None:
+	print "site, gridout, fdloc, cordfile, and run_ID must be specified."
 	parser.print_help()
 	sys.exit(1)
 
@@ -84,6 +85,8 @@ source_frequency = frequency
 if option.source_freq!=None:
 	source_frequency = option.source_freq
 
+run_id = option.run_id
+
 awp_comps = ['x', 'y']
 
 for c in awp_comps:
@@ -100,7 +103,7 @@ for c in awp_comps:
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
-	rc = build_IN3D(site, gridout, c, frequency, procs, awp_media, spacing=option.spacing)
+	rc = build_IN3D(site, gridout, c, frequency, procs, awp_media, run_id, spacing=option.spacing)
 	if not rc==0:
 		print "Error in build_IN3D, aborting."
 		sys.exit(2)
