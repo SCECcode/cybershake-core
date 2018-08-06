@@ -68,7 +68,7 @@ float xlen, ylen, zlen;
 float xmax, ymax, zmax;
 float dep, *cc1, *cc2, conv;
 int ix, iy, iz, ip;
-char outfile[128], str[512], name[64];
+char outfile[256], str[512], name[256];
 
 #ifndef _NO_PROJ4
 projPJ pj_proj, pj_latlong;
