@@ -1,5 +1,9 @@
 #include "include.h"
 
+#ifndef _NO_PROJ4
+#include <proj_api.h>
+#endif
+
 #define         FLAT_CONST      298.256
 #define         ERAD            6378.139
 #define         RPERD           0.017453292
@@ -52,7 +56,7 @@ void setcoef(struct fdcf *,struct fdcf *,float *,int);
 void gelim_double(double *,int,double *);
 void getlens(FILE *,char *,float *,float *,float *,float *,int *);
 
-int main(int ac,char **av)
+main(int ac,char **av)
 {
 struct gridparam gp;
 char gridfile[256], gridout[256];
@@ -64,7 +68,11 @@ float xlen, ylen, zlen;
 float xmax, ymax, zmax;
 float dep, *cc1, *cc2, conv;
 int ix, iy, iz, ip;
-char outfile[256], str[512], name[256];
+char outfile[128], str[512], name[64];
+
+#ifndef _NO_PROJ4
+projPJ pj_proj, pj_latlong;
+#endif
 
 double rperd = RPERD;
 float erad = ERAD;
@@ -81,7 +89,7 @@ int do_coords = 0;
 int nzout = 1;
 
 int latfirst = 1;
-int feetout = 1;
+int feetout = 0;
 int gzip = 1;
 
 double xr0, yr0, dlon, dlat, dxr, dyr;
@@ -122,6 +130,7 @@ getpar("geoproj","d",&geoproj);
 getpar("center_origin","d",&center_origin);
 getpar("xshift","f",&xshift);
 getpar("yshift","f",&yshift);
+getpar("utm_zone","d",&utm_zone);
 endpar();
 
 set_gridparams(gridfile,&gp,gridout,0);  /* free surface = 0 */
@@ -152,6 +161,9 @@ else
    if(yshift < -1.0e+14)
       yshift = 0.0;
    }
+
+kmlon = 1.0;
+kmlat = 1.0;
 
 if(geoproj == 0)
    {
@@ -231,17 +243,70 @@ else if(geoproj == 2)
    kmlat = 1.0;
    }
 
+#ifndef _NO_PROJ4
+
+else if(geoproj >= 40)
+   {
+   if(geoproj == 41)
+      sprintf(str,"+proj=tmerc +lat_0=%f +lon_0=%f +ellps=sphere +a=6378139.0 +b=6378139.0 +units=m +no_defs",modellat,modellon);
+      /*
+      sprintf(str,"+proj=tmerc +lat_0=%f +lon_0=%f +ellps=sphere +units=m +no_defs",modellat,modellon);
+      */
+   else if(geoproj == 42)
+      sprintf(str,"+proj=utm +zone=%d +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0",utm_zone);
+   else if(geoproj == 43)
+      {
+      sprintf(str,"+proj=aea +lat_1=34 +lat_2=40.5 +lat_0=0 +lon_0=-120 +x_0=0 +y_0=-4000000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
+      sprintf(str,"+init=epsg:3311");
+      }
+
+   pj_proj = pj_init_plus(str);
+
+   sprintf(str,"+proj=latlong +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0");
+   pj_latlong = pj_init_plus(str);
+
+   xr0 = DEG_TO_RAD*modellon;
+   yr0 = DEG_TO_RAD*modellat;
+   pj_transform(pj_latlong,pj_proj,1,1,&xr0,&yr0,NULL);
+   
+   dxr = xr0 + 1000.0*((xshift)*cosR - (yshift)*sinR);
+   dyr = yr0 - 1000.0*((xshift)*sinR + (yshift)*cosR);
+   pj_transform(pj_proj,pj_latlong,1,1,&dxr,&dyr,NULL);
+   flon[0] = dxr/DEG_TO_RAD;
+   flat[0] = dyr/DEG_TO_RAD;
+
+   dxr = xr0 + 1000.0*((xmax+xshift)*cosR - (yshift)*sinR);
+   dyr = yr0 - 1000.0*((xmax+xshift)*sinR + (yshift)*cosR);
+   pj_transform(pj_proj,pj_latlong,1,1,&dxr,&dyr,NULL);
+   flon[1] = dxr/DEG_TO_RAD;
+   flat[1] = dyr/DEG_TO_RAD;
+
+   dxr = xr0 + 1000.0*((xmax+xshift)*cosR - (ymax+yshift)*sinR);
+   dyr = yr0 - 1000.0*((xmax+xshift)*sinR + (ymax+yshift)*cosR);
+   pj_transform(pj_proj,pj_latlong,1,1,&dxr,&dyr,NULL);
+   flon[2] = dxr/DEG_TO_RAD;
+   flat[2] = dyr/DEG_TO_RAD;
+
+   dxr = xr0 + 1000.0*((xshift)*cosR - (ymax+yshift)*sinR);
+   dyr = yr0 - 1000.0*((xshift)*sinR + (ymax+yshift)*cosR);
+   pj_transform(pj_proj,pj_latlong,1,1,&dxr,&dyr,NULL);
+   flon[3] = dxr/DEG_TO_RAD;
+   flat[3] = dyr/DEG_TO_RAD;
+   }
+
+#endif
+
 printf("Model origin coordinates:\n");
-printf(" lon= %10.5f lat= %10.5f rotate= %7.2f\n\n",modellon,modellat,modelrot);
+printf(" lon= %10.6f lat= %10.6f rotate= %7.2f\n\n",modellon,modellat,modelrot);
 
 printf("Model origin shift (cartesian vs. geographic):\n");
-printf(" xshift(km)= %12.5f yshift(km)= %12.5f\n\n",xshift,yshift);
+printf(" xshift(km)= %12.6f yshift(km)= %12.6f\n\n",xshift,yshift);
 
 printf("Model corners:\n");
-printf(" c1= %10.5f %10.5f\n",flon[0],flat[0]);
-printf(" c2= %10.5f %10.5f\n",flon[1],flat[1]);
-printf(" c3= %10.5f %10.5f\n",flon[2],flat[2]);
-printf(" c4= %10.5f %10.5f\n\n",flon[3],flat[3]);
+printf(" c1= %10.6f %10.6f\n",flon[0],flat[0]);
+printf(" c2= %10.6f %10.6f\n",flon[1],flat[1]);
+printf(" c3= %10.6f %10.6f\n",flon[2],flat[2]);
+printf(" c4= %10.6f %10.6f\n\n",flon[3],flat[3]);
 
 printf("Model Dimensions:\n");
 printf(" xlen= %10.4f km\n",xlen);
@@ -307,6 +372,26 @@ if(do_coords)
             flat[ip] = dlat;
             }
          }
+
+#ifndef _NO_PROJ4
+
+      else if(geoproj >= 40)
+         {
+         for(ix=0;ix<gp.nx;ix++)
+            {
+            ip = ix + iy*gp.nx;
+
+            dxr = xr0 + 1000.0*((gp.xp[ix]+xshift)*cosR - (gp.yp[iy]+yshift)*sinR);
+            dyr = yr0 - 1000.0*((gp.xp[ix]+xshift)*sinR + (gp.yp[iy]+yshift)*cosR);
+            pj_transform(pj_proj,pj_latlong,1,1,&dxr,&dyr,NULL);
+
+            flon[ip] = dxr/DEG_TO_RAD;
+            flat[ip] = dyr/DEG_TO_RAD;
+            }
+         }
+
+#endif
+
       }
 
    conv = 1.0;
@@ -324,10 +409,10 @@ if(do_coords)
       {
       cc1 = flat;
       cc2 = flon;
-      fprintf(stderr,"**** coordinate output format is LAT LON DEP\n");
+      fprintf(stderr,"**** coordinate output format is LAT LON\n");
       }
    else
-      fprintf(stderr,"**** coordinate output format is LON LAT DEP\n");
+      fprintf(stderr,"**** coordinate output format is LON LAT\n");
 
    if(gzip)
       fprintf(stderr,"**** output files are compressed with 'gzip' (.gz)\n");
@@ -350,7 +435,7 @@ if(do_coords)
             {
             ip = ix + iy*gp.nx;
 
-            fprintf(fpw,"%10.4f %10.4f %5d %5d\n",cc1[ip],cc2[ip],ix,iy);
+            fprintf(fpw,"%12.6f %12.6f %5d %5d\n",cc1[ip],cc2[ip],ix,iy);
             }
          }
       fclose(fpw);
@@ -362,7 +447,6 @@ if(do_coords)
          }
       }
    }
-   exit(0);
 }
 
 FILE *fopfile(name,mode)
@@ -386,7 +470,7 @@ r = atan((1.0 - (1.0/FLAT_CONST))*tan(x));
 return(r);
 }
 
-void set_g2X(g2,fc)
+set_g2X(g2,fc)
 float *g2, *fc;
 {
 float f;
@@ -395,7 +479,7 @@ f = (1.0)/(*fc);
 *g2 = ((2.0)*f - f*f)/(((1.0) - f)*((1.0) - f));
 }
 
-void latlon2kmX(arg,latkm,lonkm,rc,g2)
+latlon2kmX(arg,latkm,lonkm,rc,g2)
 float *arg, *latkm, *lonkm, *rc, *g2;
 {
 float cosA, sinA, g2s2, den;
@@ -737,9 +821,9 @@ int i = 0;
 
 fgets(s,512,fp);
 sscanf(s,"%f %f %f",&g0[0],&g1[0],&dg[0]);
-g0[0] = 0.0;  /* force to be origin */
+/*g0[0] = 0.0;*/  /* force to be origin */
 
-while(g1[i] < (*len))
+while(g1[i] < (*len)+g0[0])
    {
    i++;
    fgets(s,512,fp);
@@ -747,7 +831,7 @@ while(g1[i] < (*len))
    }
 
 *n = i+1;
-g1[i] = (*len);  /* force to be total length */
+g1[i] = (*len) + g0[0];  /* force to be total length */
 }
 
 /*
