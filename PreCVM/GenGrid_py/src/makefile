@@ -8,6 +8,17 @@ LIBS = -lm $(GETPAR)/libget.a
 
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
+# if Proj4 libraries ARE NOT available, use the following:
+#
+PROJ4_FLAGS = -D_NO_PROJ4
+PROJ4_LIB_PATHS = 
+
+# if Proj4 libraries ARE available, use the following:
+#
+#PROJ4_FLAGS = 
+#PROJ4_LIB_PATHS = -lproj -L${PROJ4_LIBDIR} -I ${PROJ4_INCDIR}
+
+
 include ../../../Compilers.mk
 CC = $(MY_CC)
 FC = $(MY_FC)
@@ -19,7 +30,7 @@ BIN_LIST = faultcords statgrid2latlon fd2close-dist latlon2distaz \
 
 ##### compile options
 
-CFLAGS = -O3 $(LF_FLAGS) $(MY_CFLAGS)
+CFLAGS = -O3 $(LF_FLAGS) $(MY_CFLAGS) ${PROJ4_FLAGS}
 FFLAGS = -O3 $(MY_FFLAGS)
 
 ##### make options
@@ -31,6 +42,9 @@ all: $(TARGETS)
 	done
 
 gen_model_cords: gen_model_cords.o $(COBJS) $(FOBJS)
+	$(CC) -o $@ $^ $(LIBS)
+
+get_grid_values: get_grid_values.o $(COBJS) $(FOBJS)
 	$(CC) -o $@ $^ $(LIBS)
 
 clean:
