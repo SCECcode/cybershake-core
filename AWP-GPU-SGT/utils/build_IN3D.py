@@ -12,23 +12,24 @@ import MySQLdb
 from pyproj import Proj
 
 #If site to southernmost or easternmost hypocenter distance is greater than CUTOFF_DIST, use 300 sec as SGT length
-def calc_simulated_time(site, param):
+def calc_simulated_time(run_id, param):
 	#in KM
-	sgt_length = param['TMAX']
-	CUTOFF_DIST = 500
+	sgt_length = float(param['TMAX'])
+	CUTOFF_DIST = 450
 	conn = MySQLdb.connect(host='moment.usc.edu', user='cybershk_ro', passwd='CyberShake2007', db='CyberShake')
 	cur = conn.cursor()
-	query = 'select CS_Site_Lat, CS_Site_Lon from CyberShake_Sites where CS_Short_Name="%s";' % (site)
+	query = 'select S.CS_Site_Lat, S.CS_Site_Lon from CyberShake_Sites S, CyberShake_Runs R where S.CS_Site_ID=R.Site_ID and R.Run_ID=%d;' % (run_id)
 	cur.execute(query)
 	[site_lat, site_lon] = [float(l) for l in cur.fetchone()]
-	query_prefix = 'select V.Hypocenter_Lat, V.Hypocenter_Lon from CyberShake_Runs R, CyberShake_Site_Ruptures SR, Rupture_Variations V where R.Site_ID=SR.CS_Site_ID and R.ERF_ID=SR.ERF_ID and R.Rup_Var_Scenario_ID=V.Rup_Var_Scenario_ID and R.ERF_ID=V.ERF_ID and SR.Source_ID=V.Source_ID and SR.Rupture_ID=V.Rupture_ID"
+	query_prefix = 'select V.Hypocenter_Lat, V.Hypocenter_Lon from CyberShake_Runs R, CyberShake_Site_Ruptures SR, Rupture_Variations V where R.Run_ID=%d and R.Site_ID=SR.CS_Site_ID and R.ERF_ID=SR.ERF_ID and R.Rup_Var_Scenario_ID=V.Rup_Var_Scenario_ID and R.ERF_ID=V.ERF_ID and SR.Source_ID=V.Source_ID and SR.Rupture_ID=V.Rupture_ID' % (run_id)
 	query = "%s order by V.Hypocenter_Lat asc limit 1;" % (query_prefix)
+	print query
 	cur.execute(query)
 	hypo = []
-	hypo.append([float(l) for l in cur.fetchone()]
+	hypo.append([float(l) for l in cur.fetchone()])
 	query = "%s order by V.Hypocenter_Lon desc limit 1;" % (query_prefix)
 	cur.execute(query)
-	hypo.append([float(l) for l in cur.fetchone()]
+	hypo.append([float(l) for l in cur.fetchone()])
 	max_dist = 0.0
 	proj = Proj(proj='utm', zone='11', ellps='WGS84')
 	(site_e, site_n) = proj(site_lon, site_lat)
@@ -37,6 +38,7 @@ def calc_simulated_time(site, param):
 		dist = math.sqrt((site_e-hypo_e)*(site_e-hypo_e) + (site_n-hypo_n)*(site_n-hypo_n))/1000.0
 		if dist>max_dist:
 			max_dist = dist
+	print "Maximum distance = %f km" % max_dist
 	if max_dist>CUTOFF_DIST:
 		sgt_length = 300.0
 	conn.close()
@@ -83,7 +85,7 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 	else:
 		param["DT"] = 0.005/frequency
 	
-	SIMULATED_TIME = calc_simulated_time(site, param)
+	SIMULATED_TIME = calc_simulated_time(run_id, param)
 	#SIMULATED_TIME = float(param["TMAX"])
 	#Round up to nearest 1000
 	nst = int(SIMULATED_TIME/param["DT"])
@@ -229,4 +231,4 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 	fp_out.flush()
 	fp_out.close()
 
-	return 0
+	return [0, param["NST"]]
