@@ -274,7 +274,8 @@ if gpu:
 		xlrnd += spacing*((-1*nx) % 20)
 		ylrnd += spacing*((-1*ny) % 20)
 	elif spacing==0.1:
-                xlrnd += spacing*((-1*nx) % 40)
+		#Changed to 40x30x1 for Study 18.8, since some volumes are large and 300 sec
+                xlrnd += spacing*((-1*nx) % 60)
                 ylrnd += spacing*((-1*ny) % 80)
 	else:
                 xlrnd += spacing*((-1*nx) % 40)
