@@ -57,10 +57,6 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
     #	ZLEN = 51.2
     #SPACING = .2
 
-
-    #FOR TESTING A DEEPER BOX
-    ZLEN = 80.0
-
     SPACING = 0.1/freq
     if sp>0:
 	SPACING = sp
@@ -84,7 +80,7 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 
     genGridfile(site, gridfile, xlen, ylen, ZLEN, SPACING)
     
-    executable = "%s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
+    executable = "aprun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
     parameters = "geoproj=1 gridfile=%s gridout=%s center_origin=1 do_coords=1 nzout=1 name=%s gzip=0 latfirst=0 modellon=%f modellat=%f modelrot=%f" % (gridfile, gridout, coordfile, model_lon, model_lat, model_rot)
     pipe = "> " + paramfile
     command = executable + " " + parameters + " " + pipe
