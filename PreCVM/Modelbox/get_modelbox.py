@@ -82,7 +82,7 @@ db="CyberShake"
 
 if len(sys.argv) < 6:
   print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name spacing(in km) Server"
-  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 0.2 focal.usc.edu [gpu] [bbox]"
+  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 0.2 focal.usc.edu [gpu] [bbox] [tight]"
   sys.exit()
 
 site = sys.argv[1]
@@ -100,6 +100,15 @@ bbox = False
 if len(sys.argv) >= 7 and "bbox" in sys.argv[6:]:
 	print "Bounding box mode."
 	bbox = True
+
+tight = False
+if len(sys.argv) >= 7 and "tight" in sys.argv[6:]:
+	print "Tight (20 km spacing) mode."
+	tight = True
+
+if tight:
+	bound_pad = 20.0
+
 
 f = open(outfile,"w")
 
@@ -247,6 +256,8 @@ e = (y0*cosR) + (x0*sinR)
 
 mlon=clon + (e/kplon)
 mlat=clat + (n/kplat)
+
+print "First lengths: %f, %f" % (xlen, ylen)
 
 #Round up to nearest 10km
 xlrnd=10.0*int((xlen/10.0) + 0.5)
