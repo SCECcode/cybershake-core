@@ -1,0 +1,51 @@
+if my_id==0:
+	Read in SGT header info
+	Broadcast sgtmast to processes less than N
+	Broadcast sgtindx to processes less than N
+	Determine which processes are responsible for which points
+	Broadcast process/point mapping to all processes
+	Send sgtheader data to appropriate process < N
+	Listen for messages:
+		if output:
+			write to disk
+		if work complete from process N:
+			exit
+
+if my_id>0 and my_id<N:
+	Obtain sgtmast
+	Obtain sgtindx
+	Obtain process/point mapping
+	Obtain appropriate sgtheader data
+	Read SGT data with MPI I/O
+	Listen for messages:
+		if request for data:
+			service request for SGT data
+		if work complete from process N:
+			exit
+
+if my_id==N:
+	Obtain process/point mapping
+	Read in list of ruptures
+	Construct lists of tasks from ruptures (might not send all rupture variations to a core due to memory limitations)
+	Service requests for next task
+	When no more tasks, send messages to processors that request
+	When sent no more task messages to all processors, send message to processors 0 to N-1
+	exit
+
+if my_id>N:
+	Obtain process/point mapping
+	while true:
+		Request next available task
+		if no more tasks:
+			break
+		For each rupture variation in task
+			generate genslip
+		Get list of SGTs needed
+		Construct requests of (process, SGTs) (if request is too big, split it into pieces)
+		for each request:
+			Request data from process (<N)
+			Perform convolution on data and SRF
+		Calculate PSA, RotD
+		Send output data to process N to aggregate and write
+	exit
+

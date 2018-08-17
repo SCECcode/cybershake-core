@@ -1,0 +1,6 @@
+This directory contains the source for the following executables used in preparing AWP SGTs for JBSim3d_header.
+
+1) write_head:  Generates separate header files for AWP SGTs, using inputs from PreCVM, PreSgt, and the AWP velocity mesh.
+2) reformat_awp:  Post-processes the AWP SGTs by swapping XX/YY, XZ/YZ, multiplying XY and YZ by -1, and multipling everything by -2 if it's the Z SGT.
+3) compare_head:  Useful in testing.  Will compare the header of an RWG SGT file to a stand-alone header, or two stand-alone headers.
+

@@ -1,0 +1,77 @@
+
+OFLAGS = mpif90 -O4 -fastsse -f90=pgf90 -Mflushz -Mdaz -Mnontemporal -Mextend -Mfixed -tp barcelona-64 -c -o
+PFLAGS = mpif90 -O4 -fastsse -f90=pgf90 -Mflushz -Mdaz -Mnontemporal -Mextend -Mfixed -tp barcelona-64 -o
+
+#LIB = -L/usr/local/packages/iobuf -Liobuf 
+##-L/usr/local/apps/mpitrace -lmpiprof 
+BIN = ../bin
+
+OBJECTS = memory.o bound.o relax.o swap.o io.o source.o \
+          custompi.o station.o structure.o operator.o \
+          viscoop.o pml.o cerjan.o pmcl3d.o set_names.o \
+          sgsndyna.o sgsnswap.o
+
+# By default, 32bit mpiio version is used
+pmcl3d: $(OBJECTS)
+	$(PFLAGS) pmcl3d.swap    $(OBJECTS)  $(LIB) 
+
+pmcl3d.o: pmcl3d.f
+	$(OFLAGS) pmcl3d.o	pmcl3d.f
+
+sgsndyna.o: sgsndyna.f
+	$(OFLAGS) sgsndyna.o    sgsndyna.f
+
+sgsnswap.o: sgsnswap.f
+	$(OFLAGS) sgsnswap.o    sgsnswap.f
+
+memory.o: memory.f
+	$(OFLAGS) memory.o	memory.f
+
+relax.o: relax.f
+	$(OFLAGS) relax.o 	relax.f
+
+bound.o: bound.f
+	$(OFLAGS) bound.o 	bound.f
+
+swap.o: swap.f
+	$(OFLAGS) swap.o        swap.f
+
+io.o: io.f
+	$(OFLAGS) io.o		io.f
+
+structure.o: structure.f
+	$(OFLAGS) structure.o	structure.f
+
+operator.o: operator.f
+	$(OFLAGS) operator.o    operator.f
+
+viscoop.o: viscoop.f
+	$(OFLAGS) viscoop.o 	viscoop.f
+
+pml.o: pml.f
+	$(OFLAGS) pml.o         pml.f
+
+cerjan.o: cerjan.f
+	$(OFLAGS) cerjan.o	cerjan.f
+
+source.o: source.f
+	$(OFLAGS) source.o      source.f
+
+station.o: station.f
+	$(OFLAGS) station.o     station.f
+
+custompi.o: custompi.f	
+	$(OFLAGS) custompi.o	custompi.f
+
+set_names.o: set_names.f
+	$(OFLAGS) set_names.o   set_names.f
+
+
+
+clean:
+	rm pmcl3d pmcl3d.swap $(BIN)/pmcl3d *.o parstat*
+
+cleanmore:
+	rm fort.* core.* CHK* SS* V* SRCT*
+
+
