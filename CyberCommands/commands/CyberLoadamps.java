@@ -82,22 +82,22 @@ public class CyberLoadamps {
 			else {
 				if (!cmd.hasOption("p")) {
 					System.out.println(NO_P_OPTION_MESSAGE);
-					return;
+					System.exit(-1);
 				}
 
 				if (!cmd.hasOption("server")) {
 					System.out.println(NO_SERVER_OPTION_MESSAGE);
-					return;
+					System.exit(-1);
 				}
 				
                 if (!cmd.hasOption("run")) {
                     System.out.println(NO_RUNID_OPTION_MESSAGE);
-                    return;
+                    System.exit(-1);
                 }
                 
                 if (!cmd.hasOption("periods")) {
                 	System.out.println(NO_PERIODS_OPTION_MESSAGE);
-                	return;
+                	System.exit(-1);
                 }
 
                 if (cmd.hasOption("f")) {
