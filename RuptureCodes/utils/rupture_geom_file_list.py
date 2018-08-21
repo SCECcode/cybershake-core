@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 import sys
 import os
@@ -31,7 +31,7 @@ for source_dir in os.listdir(top_dir):
 		for entry in os.listdir(os.path.join(top_dir, source_dir, rup_dir)):
 			if p.match(entry):
 				#print entry
-				fp_out.write("e%d_rv%d_%s, %s%s, %s\n" % (erf_id, rv_id, entry, prefix, os.path.join(top_dir, source_dir, rup_dir, entry), pool))
+				fp_out.write("e%d_rv%d_%s %s%s pool=%s\n" % (erf_id, rv_id, entry, prefix, os.path.join(top_dir, source_dir, rup_dir, entry), pool))
 				break
 
 fp_out.flush()
