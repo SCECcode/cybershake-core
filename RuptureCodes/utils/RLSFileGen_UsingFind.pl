@@ -26,7 +26,8 @@ my ($startdir) = &cwd; # keep track of the beginning
 find(\&printRLSFile, $rupture_variation_directory);
 
 sub printRLSFile{
-    if(/.rvm/ || /.txt.variation-/){
+    #if(/.rvm/ || /.txt.variation-/){
+    if(/.rvm/ || /_event/){
 	my ($sec,$min,$hour,$mday,$mon,$year,
           $wday,$yday,$isdst) = localtime time;
 	unless(open(MAPFILE,">>" . $startdir . "/" . $pool . "-" .$mon . "_" . $mday . "_" . $year . ".rls")){#open the file handler
@@ -34,7 +35,7 @@ sub printRLSFile{
 	}
 	@dirParts = split ("\\.",$File::Find::dir);
 	$currentdir = $dirParts[$#dirParts];
-	print MAPFILE "e". $erf_id . "_rv" . $rup_var_id . "_" . $_ . ", " . $gridURL . $currentdir . "/" . $_ . ", " . $pool . "\n"; #write data
+	print MAPFILE "e". $erf_id . "_rv" . $rup_var_id . "_" . $_ . " " . $gridURL . $currentdir . "/" . $_ . " pool=" . $pool . "\n"; #write data
 	close(MAPFILE); #close the file handler
 	$flag=1;
     }
