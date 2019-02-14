@@ -134,7 +134,7 @@ site_lon = float(res[0][0])
 site_lat = float(res[0][1])
 site_id = int(res[0][2])
 
-sql_string = "select distinct Ruptures.Source_ID,Ruptures.Rupture_ID,Source_Name,Mag,Prob,Start_Lat,Start_Lon,End_Lat,End_Lon from CyberShake_Sites,Ruptures,CyberShake_Site_Ruptures where Ruptures.ERF_ID=%s and Ruptures.ERF_ID=CyberShake_Site_Ruptures.ERF_ID and CyberShake_Site_Ruptures.CS_Site_ID=%s and CyberShake_Site_Ruptures.Source_ID=Ruptures.Source_ID and CyberShake_Site_Ruptures.Rupture_ID=Ruptures.Rupture_ID order by Mag desc"%(erf,site_id)
+sql_string = "select distinct Ruptures.Source_ID,Ruptures.Rupture_ID,Source_Name,Mag,Prob,Start_Lat,Start_Lon,End_Lat,End_Lon from Ruptures,CyberShake_Site_Ruptures where Ruptures.ERF_ID=%s and Ruptures.ERF_ID=CyberShake_Site_Ruptures.ERF_ID and CyberShake_Site_Ruptures.CS_Site_ID=%s and CyberShake_Site_Ruptures.Source_ID=Ruptures.Source_ID and CyberShake_Site_Ruptures.Rupture_ID=Ruptures.Rupture_ID order by Mag desc"%(erf,site_id)
 try:
   cur.execute(sql_string)
 except MySQLdb.DatabaseError,e:
