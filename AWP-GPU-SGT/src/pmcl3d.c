@@ -250,6 +250,7 @@ int main(int argc,char **argv)
     //if(local_rank==0) printf("after cudaSetDevice\n");
   
     MPI_Init(&argc,&argv);
+     MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&size);
     MPI_Comm_dup(MPI_COMM_WORLD, &MCW );
@@ -268,6 +269,23 @@ int main(int argc,char **argv)
     err       = MPI_Cart_shift(MC1, 1,  1,  &y_rank_F, &y_rank_B ); 
     err       = MPI_Cart_coords(MC1, rank, 2, coord);
     err       = MPI_Barrier(MCW);
+    
+    // If any neighboring rank is out of bounds, then MPI_Cart_shift sets the
+    // destination argument to a negative number. We use the convention that -1 
+    // denotes ranks out of bounds.
+    if (x_rank_L < 0) {
+            x_rank_L = -1;
+    }    
+    if (x_rank_R < 0 ) {
+            x_rank_R = -1;
+    }    
+    if (y_rank_F < 0) {
+            y_rank_F = -1;
+    }    
+    if (y_rank_B < 0) {
+            y_rank_B = -1;
+    }    
+
     // Below 2 lines are only for HPGPU4 machine!
 //    rank_gpu = rank%4;
     rank_gpu = 0;
@@ -420,9 +438,11 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
         sgt_filetypes = (MPI_Datatype*)malloc(sizeof(MPI_Datatype)*sgt_nfiletypes);
         num_bytes = sizeof(int)*3*sgt_numsta;
         cudaMalloc((void**)&d_sgt_sta, num_bytes);
+        cudaMemset(d_sgt_sta, 0, num_bytes);
         cudaMemcpy(d_sgt_sta, sgt_sta, num_bytes, cudaMemcpyHostToDevice);
         num_bytes = sizeof(float)*6*sgt_numsta;
         cudaMalloc((void**)&d_sgtBuf,  num_bytes);
+        cudaMemset(d_sgtBuf, 0, num_bytes);
         if(sgt_numsta < BLOCK_SIZE_Z){
           SGT_NUMBLOCKS = 1;
           SGT_BLOCK_SIZE = sgt_numsta;
@@ -499,11 +519,17 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
        printf("rank=%d, source rank, npsrc=%d\n", rank, npsrc);
        num_bytes = sizeof(float)*npsrc*READ_STEP_GPU;
        cudaMalloc((void**)&d_taxx, num_bytes);
+       cudaMemset(d_taxx, 0, num_bytes);
        cudaMalloc((void**)&d_tayy, num_bytes);
+       cudaMemset(d_tayy, 0, num_bytes);
        cudaMalloc((void**)&d_tazz, num_bytes);
+       cudaMemset(d_tazz, 0, num_bytes);
        cudaMalloc((void**)&d_taxz, num_bytes);
+       cudaMemset(d_taxz, 0, num_bytes);
        cudaMalloc((void**)&d_tayz, num_bytes);
+       cudaMemset(d_tayz, 0, num_bytes);
        cudaMalloc((void**)&d_taxy, num_bytes);
+       cudaMemset(d_taxy, 0, num_bytes);
        cudaMemcpy(d_taxx,taxx,num_bytes,cudaMemcpyHostToDevice);
        cudaMemcpy(d_tayy,tayy,num_bytes,cudaMemcpyHostToDevice);
        cudaMemcpy(d_tazz,tazz,num_bytes,cudaMemcpyHostToDevice);
@@ -512,6 +538,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
        cudaMemcpy(d_taxy,taxy,num_bytes,cudaMemcpyHostToDevice);
        num_bytes = sizeof(int)*npsrc*maxdim;
        cudaMalloc((void**)&d_tpsrc, num_bytes);
+       cudaMemset(d_tpsrc, 0, num_bytes);
        cudaMemcpy(d_tpsrc,tpsrc,num_bytes,cudaMemcpyHostToDevice);
     }
 
@@ -550,6 +577,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
 
     num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop);
     cudaMalloc((void**)&d_lam_mu, num_bytes);
+    cudaMemset(d_lam_mu, 0, num_bytes);
     cudaMemcpy(d_lam_mu,&lam_mu[0][0][0],num_bytes,cudaMemcpyHostToDevice);
 
     vx1  = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*align);
@@ -596,30 +624,40 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     if(rank==0) printf("Allocate device media pointers and copy.\n");
     num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*align);
     cudaMalloc((void**)&d_d1, num_bytes);
+    cudaMemset(d_d1, 0, num_bytes);
     cudaMemcpy(d_d1,&d1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_lam, num_bytes);
+    cudaMemset(d_lam, 0, num_bytes);
     cudaMemcpy(d_lam,&lam[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_mu, num_bytes);
+    cudaMemset(d_mu, 0, num_bytes);
     cudaMemcpy(d_mu,&mu[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_qp, num_bytes);
+    cudaMemset(d_qp, 0, num_bytes);
     cudaMemcpy(d_qp,&qp[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_qs, num_bytes);
+    cudaMemset(d_qs, 0, num_bytes);
     cudaMemcpy(d_qs,&qs[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_vx1, num_bytes);
+    cudaMemset(d_vx1, 0, num_bytes);
     cudaMemcpy(d_vx1,&vx1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_vx2, num_bytes);
+    cudaMemset(d_vx2, 0, num_bytes);
     cudaMemcpy(d_vx2,&vx2[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     BindArrayToTexture(d_vx1, d_vx2, num_bytes);
     if(NPC==0)
     {
     	num_bytes = sizeof(float)*(nxt+4+8*loop);
     	cudaMalloc((void**)&d_dcrjx, num_bytes);
+    	cudaMemset(d_dcrjx, 0, num_bytes);
     	cudaMemcpy(d_dcrjx,dcrjx,num_bytes,cudaMemcpyHostToDevice);
         num_bytes = sizeof(float)*(nyt+4+8*loop);
         cudaMalloc((void**)&d_dcrjy, num_bytes);
+        cudaMemset(d_dcrjy, 0, num_bytes);
         cudaMemcpy(d_dcrjy,dcrjy,num_bytes,cudaMemcpyHostToDevice);
         num_bytes = sizeof(float)*(nzt+2*align);
         cudaMalloc((void**)&d_dcrjz, num_bytes);
+        cudaMemset(d_dcrjz, 0, num_bytes);
         cudaMemcpy(d_dcrjz,dcrjz,num_bytes,cudaMemcpyHostToDevice);
     }
 
@@ -657,8 +695,10 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
 
         num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*align);
         cudaMalloc((void**)&d_sg1, num_bytes);
+        cudaMemset(d_sg1, 0, num_bytes);
         cudaMemcpy(d_sg1,&sg1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
         cudaMalloc((void**)&d_sg2, num_bytes);
+        cudaMemset(d_sg2, 0, num_bytes);
         cudaMemcpy(d_sg2,&sg2[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     }
 
@@ -675,37 +715,52 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     if(rank==0) printf("Allocate device velocity and stress pointers and copy.\n");
     num_bytes = sizeof(float)*(nxt+4+8*loop)*(nyt+4+8*loop)*(nzt+2*align);
     cudaMalloc((void**)&d_u1, num_bytes);
+    cudaMemset(d_u1, 0, num_bytes);
     cudaMemcpy(d_u1,&u1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_v1, num_bytes);
+    cudaMemset(d_v1, 0, num_bytes);
     cudaMemcpy(d_v1,&v1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_w1, num_bytes);
+    cudaMemset(d_w1, 0, num_bytes);
     cudaMemcpy(d_w1,&w1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_xx, num_bytes);
+    cudaMemset(d_xx, 0, num_bytes);
     cudaMemcpy(d_xx,&xx[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_yy, num_bytes);
+    cudaMemset(d_yy, 0, num_bytes);
     cudaMemcpy(d_yy,&yy[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_zz, num_bytes);
+    cudaMemset(d_zz, 0, num_bytes);
     cudaMemcpy(d_zz,&zz[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_xy, num_bytes);
+    cudaMemset(d_xy, 0, num_bytes);
     cudaMemcpy(d_xy,&xy[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_xz, num_bytes);
+    cudaMemset(d_xz, 0, num_bytes);
     cudaMemcpy(d_xz,&xz[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     cudaMalloc((void**)&d_yz, num_bytes);
+    cudaMemset(d_yz, 0, num_bytes);
     cudaMemcpy(d_yz,&yz[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     if(NVE==1)
     {
       if(rank==0) printf("Allocate additional device pointers (r) and copy.\n");
     	cudaMalloc((void**)&d_r1, num_bytes);
+    	cudaMemset(d_r1, 0, num_bytes);
     	cudaMemcpy(d_r1,&r1[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     	cudaMalloc((void**)&d_r2, num_bytes);
+    	cudaMemset(d_r2, 0, num_bytes);
     	cudaMemcpy(d_r2,&r2[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     	cudaMalloc((void**)&d_r3, num_bytes);
+    	cudaMemset(d_r3, 0, num_bytes);
     	cudaMemcpy(d_r3,&r3[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     	cudaMalloc((void**)&d_r4, num_bytes);
+    	cudaMemset(d_r4, 0, num_bytes);
     	cudaMemcpy(d_r4,&r4[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     	cudaMalloc((void**)&d_r5, num_bytes);
+    	cudaMemset(d_r5, 0, num_bytes);
     	cudaMemcpy(d_r5,&r5[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     	cudaMalloc((void**)&d_r6, num_bytes);
+    	cudaMemset(d_r6, 0, num_bytes);
     	cudaMemcpy(d_r6,&r6[0][0][0],num_bytes,cudaMemcpyHostToDevice);
     }
 //  variable initialization ends
@@ -717,23 +772,39 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
       cudaMallocHost((void**)&tmp_sgtBuf,sgt_numsta*6*sizeof(float));
       cudaMallocHost((void**)&sgtBuf,sgt_numsta*6*sizeof(float)*WRITE_STEP);
     }
+    float *var;
+    cudaMalloc((void**)&var, -1);
     num_bytes = sizeof(float)*3*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
     cudaMallocHost((void**)&SL_vel, num_bytes);
+    cudaMemset(SL_vel, 0, num_bytes);
     cudaMallocHost((void**)&SR_vel, num_bytes);
+    cudaMemset(SR_vel, 0, num_bytes);
     cudaMallocHost((void**)&RL_vel, num_bytes);
+    cudaMemset(RL_vel, 0, num_bytes);
     cudaMallocHost((void**)&RR_vel, num_bytes);
+    cudaMemset(RR_vel, 0, num_bytes);
     num_bytes = sizeof(float)*3*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
     cudaMallocHost((void**)&SF_vel, num_bytes);
+    cudaMemset(SF_vel, 0, num_bytes);
     cudaMallocHost((void**)&SB_vel, num_bytes);
+    cudaMemset(SB_vel, 0, num_bytes);
     cudaMallocHost((void**)&RF_vel, num_bytes);
+    cudaMemset(RF_vel, 0, num_bytes);
     cudaMallocHost((void**)&RB_vel, num_bytes);
+    cudaMemset(RB_vel, 0, num_bytes);
     num_bytes = sizeof(float)*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
     cudaMalloc((void**)&d_f_u1, num_bytes);
+    cudaMemset(d_f_u1, 0, num_bytes);
     cudaMalloc((void**)&d_f_v1, num_bytes);
+    cudaMemset(d_f_v1, 0, num_bytes);
     cudaMalloc((void**)&d_f_w1, num_bytes);
+    cudaMemset(d_f_w1, 0, num_bytes);
     cudaMalloc((void**)&d_b_u1, num_bytes);
+    cudaMemset(d_b_u1, 0, num_bytes);
     cudaMalloc((void**)&d_b_v1, num_bytes);
+    cudaMemset(d_b_v1, 0, num_bytes);
     cudaMalloc((void**)&d_b_w1, num_bytes);
+    cudaMemset(d_b_w1, 0, num_bytes);
     msg_v_size_x = 3*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
     msg_v_size_y = 3*(4*loop)*(nxt+4+8*loop)*(nzt+2*align);
     SetDeviceConstValue(DH, DT, nxt, nyt, nzt);
