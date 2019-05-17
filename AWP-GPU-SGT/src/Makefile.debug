@@ -1,0 +1,44 @@
+define add_mpi_init_error_handler
+	sed -i 's/^\(\s*\)\(MPI_Init(.*);\)/\1\2\n \
+	       \1MPI_Comm_set_errhandler(MPI_COMM_WORLD, \
+	                                 MPI_ERRORS_RETURN);/' $(1)
+
+endef
+
+define remove_mpi_init_error_handler
+	sed -i '/MPI_Comm_set_errhandler(MPI_COMM_WORLD, \
+	                                 MPI_ERRORS_RETURN);/d' $(1)
+
+endef
+
+define add_mpichk
+	sed -i 's/^\(\s*\)\(MPI_\w*(.*)\)/\1MPICHK(\2)/g' $(1)
+
+endef
+
+define remove_mpichk
+	sed -i 's/^\(\s*\)MPICHK(\(.*\))/\1\2/g' $(1)
+
+endef
+
+define add_cuchk
+	sed -i 's/^\(\s*\)\(cuda\w*(.*)\)/\1CUCHK(\2)/g' $(1)
+
+endef
+
+define remove_cuchk
+	sed -i 's/^\(\s*\)CUCHK(\(.*\))/\1\2/g' $(1)
+
+endef
+
+files=$(wildcard *.c) $(wildcard *.cu)
+
+enable: 
+	$(call add_mpi_init_error_handler,pmcl3d.c)
+	$(foreach file,$(files),$(call add_cuchk,$(file)))
+	$(foreach file,$(files),$(call add_mpichk,$(file)))
+
+disable:
+	$(call remove_mpi_init_error_handler,pmcl3d.c)
+	$(foreach file,$(files),$(call remove_cuchk,$(file)))
+	$(foreach file,$(files),$(call remove_mpichk,$(file)))
