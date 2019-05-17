@@ -772,8 +772,6 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
       cudaMallocHost((void**)&tmp_sgtBuf,sgt_numsta*6*sizeof(float));
       cudaMallocHost((void**)&sgtBuf,sgt_numsta*6*sizeof(float)*WRITE_STEP);
     }
-    float *var;
-    cudaMalloc((void**)&var, -1);
     num_bytes = sizeof(float)*3*(4*loop)*(nyt+4+8*loop)*(nzt+2*align);
     cudaMallocHost((void**)&SL_vel, num_bytes);
     cudaMemset(SL_vel, 0, num_bytes);
