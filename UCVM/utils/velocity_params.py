@@ -73,7 +73,7 @@ with open(mesh_output_file, "r") as fp_in:
 
 conn = MySQLdb.connect(host=server, db="CyberShake", user="cybershk", passwd='re@lStil1')
 cur = conn.cursor()
-update = "update CyberShake_Runs set Model_Vs30=%f, Mesh_Vs30=%f, Z1_0=%f, Z2_5=%f where Run_ID=%d" % (model_vs30, mesh_vs, model_z10, model_z25, int(args.run_id))
+update = "update CyberShake_Runs set Model_Vs30=%f, Mesh_Vs_Surface=%f, Z1_0=%f, Z2_5=%f where Run_ID=%d" % (model_vs30, mesh_vs, model_z10, model_z25, int(args.run_id))
 print update
 cur.execute(update)
 conn.commit()
