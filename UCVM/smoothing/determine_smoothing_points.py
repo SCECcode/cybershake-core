@@ -68,18 +68,21 @@ for i in range(0, ny):
 
 print "Reading model coords file."
 with open(model_coords, "r") as fp_in:
+	data = fp_in.readlines()
         for i in range(0, ny):
 		for j in range(0, nx):
-			line = fp_in.readline()
+			line = data[j+i*nx]
 			pieces = line.split()
 			coords[i].append((float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])))
+	fp_in.close()
 
 print "Reading surface file."
 with open(surf_file, "r") as fp_in:
-	line_before = fp_in.readline()
+	data = fp_in.readlines()
+	line_before = data[0]
 	pieces_before = line_before.split()
 	for i in range(1, ny):
-		line = fp_in.readline()
+		line = data[i]
 		pieces = line.split()
 		#Check for boundaries
 		for j in range(1, nx):
@@ -100,6 +103,7 @@ with open(surf_file, "r") as fp_in:
                                 add_points(i, j, ABOVE)
 			'''
 		pieces_before = pieces
+	fp_in.close()
 
 print len(smoothing_points)
 
