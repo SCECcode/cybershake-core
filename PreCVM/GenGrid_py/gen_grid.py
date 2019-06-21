@@ -2,6 +2,7 @@
 
 import os
 import sys
+import math
 
 full_path = os.path.abspath(sys.argv[0])
 path_add = os.path.dirname(os.path.dirname(os.path.dirname(full_path)))
@@ -45,13 +46,25 @@ def genBoundfile(gridout, coordfile, boundfile):
 
 def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, freq, sp, gpu=False):
     '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
+    SPACING = 0.1/freq
+    if sp>0:
+        SPACING = sp
+
     #Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance, requires GPU or CPU counts get all off
     if gpu:
-	ZLEN = 50.0
+	ZLEN = 50.4
 	#ZLEN = 40.0
     else:
 	#ZLEN = 50.0
 	ZLEN = 40.0
+	#Make sure it is evenly divisible, and nz is even
+	#Use ceil because we want the depth to be at least ZLEN
+	nz = int(math.ceil(ZLEN/SPACING))
+	if nz*SPACING!=ZLEN:
+		ZLEN = nz*SPACING
+	if nz%2!=0:
+		nz += 1
+		ZLEN = nz*SPACING
     #if gpu:
     #	#Change ZLEN to 51.2 so it's a multiple of 256 pts
     #	ZLEN = 51.2
