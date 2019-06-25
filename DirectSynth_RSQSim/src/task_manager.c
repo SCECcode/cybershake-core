@@ -249,21 +249,21 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 	for (i=0; i<num_ruptures; i++) {
 		fscanf(rup_list_in, "%s", rupture_file);
 
-		//Determine source ID - for RSQSim ruptures, assume rupture ID = rv ID = 0
-		//e42_rv8_1000_0_event1090675.srf
-		//Need third to last, next to last
-		char* tok, *last, *ntl, *ttl;
-		tok = last = ntl = ttl = 0;
+		//Determine source ID - for RSQSim ruptures, assume rv ID = 0
+		//<src id>/e42_rv8_1000_0_event1090675.srf
+		//Need 3rd, 4th
+		char* tok;
 		strcpy(string, rupture_file);
-		tok = strtok(string, "/_");
-		while (tok!=NULL) {
-			ttl = ntl;
-			ntl = last;
-			last = tok;
-			tok = strtok(NULL, "/_");
-		}
-		int source_id = atoi(ttl);
-		int rupture_id = atoi(ntl);
+		tok = strtok(string, "_.");
+		//tok has erf id
+		tok = strtok(NULL, "_.");
+		//now tok has rup var
+		tok = strtok(NULL, "_.");
+		//now tok has source id
+		int source_id = atoi(tok);
+		tok = strtok(NULL, "_.");
+		//now tok has rupture id
+		int rupture_id = atoi(tok);
 
 		//If we have a checkpoint file, see if we've done this one already
 		if (num_completed>0) {
