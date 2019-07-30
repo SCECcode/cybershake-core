@@ -89,6 +89,10 @@ int main(int argc, char** argv) {
 		open_log(my_id);
 	}
 
+	//Directory hierarchy at the source level
+        int src_dir_hierarchy = 0;
+        getpar("dir_hierarchy","d",&src_dir_hierarchy);
+
 	//Determine core, hostname
 	int core = sched_getcpu();
 	char hostname[256];
@@ -108,7 +112,7 @@ int main(int argc, char** argv) {
 	if (my_id<num_sgt_handlers) {
 		if (my_id==0) {
 			if (debug) write_log("Entering master.");
-			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers, stat, run_id, run_PSA, run_rotd, run_duration);
+			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers, stat, run_id, run_PSA, run_rotd, run_duration, src_dir_hierarchy);
 		} else if (my_id<num_sgt_handlers) {
 			if (debug) write_log("Entering sgt handler.");
 			sgt_handler(&sgtfilepar, num_comps, &sgt_handler_comm, num_sgt_handlers, &sgt_readers_comm, my_id);
