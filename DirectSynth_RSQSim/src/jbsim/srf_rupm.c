@@ -139,6 +139,16 @@ for(im=0;im<mp.nmech;im++)
          resamp = -1;
 
       //fprintf(stderr, "Resampling with nstf=%d, ntpad=%d, ntrsmp=%d, dt=%f\n", nstf, ntpad, ntrsmp, *dt);
+      //Moved resample checks here, since resample() doesn't have access to nt
+      if (nt<2*ntpad) {
+	fprintf(stderr, "Error in resample: nt=%d, but ntpad=%d, so resample would overflow stf array.  Aborting.", nt, ntpad);
+	exit(2);
+      }
+      if (nt<2*ntrsmp) {
+	fprintf(stderr, "Error in resample: nt=%d, but ntrsmp=%d, so resample would overflow stf array.  Aborting.", nt, ntrsmp);
+	exit(2);
+      }
+
       resample(stf,nstf,&apval_ptr[ip].dt,resamp,ntpad,ntrsmp,dt,space);
 
       nstf = ntrsmp;

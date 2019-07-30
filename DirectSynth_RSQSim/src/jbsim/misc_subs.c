@@ -214,16 +214,6 @@ float one = 1.0;
 int minus = -1;
 int plus = 1;
 
-if (2*ntrsmp-1>=nt) {
-	fprintf(stderr, "Error in resample: nstf=%d, but ntrsmp=%d, so resample would overflow stf array.  Aborting.", nt, ntrsmp);
-	exit(2);
-}
-//Check ntpad, also
-if (2*ntpad-1>=nt) {
-	fprintf(stderr, "Error in resample: nstf=%d, but ntpad=%d, so resample would overflow stf array.  Aborting.", nt, ntpad);
-	exit(3);
-}
-
 taper_norm(s,dt,nt);
 zapit(s+nt,(ntpad)-(nt));
 
