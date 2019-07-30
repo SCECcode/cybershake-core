@@ -23,14 +23,14 @@
 		if work complete from process N:
 			exit
  */
-void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration);
-void write_to_file(int data_size, data_file_metadata* df, char* data);
+void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration, int src_dir_hierarchy);
+void write_to_file(int data_size, data_file_metadata* df, char* data, int src_dir_hierarchy);
 void distribute_sgt_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers);
 void send_header_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
 void assign_sgt_points(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
 
 
-int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd, int run_duration) {
+int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd, int run_duration, int src_dir_hierarchy) {
 	//Read in SGT header info
 	struct sgtmaster sgtmast;
 	struct sgtindex* sgtindx;
@@ -58,14 +58,14 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 	check_recv(task_tuples, num_ruptures*3, MPI_INT, num_sgt_readers, VARIATION_INFO_TAG, MPI_COMM_WORLD, "Error receiving variation info tuples from task manager, aborting.", 0);
 
 	//Listen for messages and respond accordingly
-	master_listen(task_tuples, num_ruptures, stat, run_id, run_PSA, run_rotd, run_duration);
+	master_listen(task_tuples, num_ruptures, stat, run_id, run_PSA, run_rotd, run_duration, src_dir_hierarchy);
 
 	free(task_tuples);
 	//Everything is done; at least, it better be...
 	return 0;
 }
 
-void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration) {
+void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration, int src_dir_hierarchy) {
 	//Construct easy-access task tuples for monitoring status for restart
 	short src_rup_table[MAX_SOURCE_ID][MAX_RUPTURE_ID];
 	int i;
@@ -84,28 +84,70 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 			write_log(buf);
 		}
 		if (src>=MAX_SOURCE_ID || rup>=MAX_RUPTURE_ID) {
+			//Put it in the debug file also
+			if (debug) {
+				char buf[512];
+				sprintf(buf, "Source ID %d, rupture ID %d is in the input file, but MAX_SOURCE_ID=%d and MAX_RUPTURE_ID=%d.  Change these values in defs.h.\n", src, rup, MAX_SOURCE_ID, MAX_RUPTURE_ID);
+				write_log(buf);
+			}
 			fprintf(stderr, "Source ID %d, rupture ID %d is in the input file, but MAX_SOURCE_ID=%d and MAX_RUPTURE_ID=%d.  Change these values in defs.h.\n", src, rup, MAX_SOURCE_ID, MAX_RUPTURE_ID);
                         if (debug) close_log();
+			MPI_Abort(MPI_COMM_WORLD, 5);
                         MPI_Finalize();
                         exit(5);
+		}
+
+		char directory[256];
+		directory[0] = '\0';
+		if (src_dir_hierarchy==1) {
+			sprintf(directory, "%d/", src);
 		}
 
 		src_rup_table[src][rup] = (short)(num_files);
 		//If the output files already exist, clear them
 		char filename[256];
-		sprintf(filename, "Seismogram_%s_%d_%d_%d.grm", site, run_id, src, rup);
-		unlink(filename);
-		if (run_PSA) {
-			sprintf(filename, "PeakVals_%s_%d_%d_%d.bsa", site, run_id, src, rup);
+		sprintf(filename, "%sSeismogram_%s_%d_%d_%d.grm", directory, site, run_id, src, rup);
+		if (access(filename, F_OK)==0) {
+			fprintf(stderr, "Filename %s exists.\n", filename);
+			if (debug) {
+				char buf[256];
+				sprintf(buf, "Deleting file %s.", filename);
+				write_log(buf);
+			}
 			unlink(filename);
+		}
+		if (run_PSA) {
+			sprintf(filename, "%sPeakVals_%s_%d_%d_%d.bsa", directory, site, run_id, src, rup);
+			if (access(filename, F_OK)==0) {
+	                        if (debug) {
+	                                char buf[256];
+	                                sprintf(buf, "Deleting file %s.", filename);
+	                                write_log(buf);
+	                        }
+				unlink(filename);
+			}
 		}
 		if (run_rotd) {
-			sprintf(filename, "RotD_%s_%d_%d_%d.rotd", site, run_id, src, rup);
-			unlink(filename);
+			sprintf(filename, "%sRotD_%s_%d_%d_%d.rotd", directory, site, run_id, src, rup);
+                        if (access(filename, F_OK)==0) {
+	                        if (debug) {
+	                                char buf[256];
+	                                sprintf(buf, "Deleting file %s.", filename);
+	                                write_log(buf);
+        	                }
+				unlink(filename);
+			}
 		}
 		if (run_duration) {
-			sprintf(filename, "Duration_%s_%d_%d_%d.dur", site, run_id, src, rup);
-			unlink(filename);
+			sprintf(filename, "%sDuration_%s_%d_%d_%d.dur", directory, site, run_id, src, rup);
+			if (access(filename, F_OK)==0) {
+	                        if (debug) {
+	                                char buf[256];
+	                                sprintf(buf, "Deleting file %s.", filename);
+	                                write_log(buf);
+	                        }
+				unlink(filename);
+			}
 		}
 	}
 	//Open checkpoint file
@@ -134,7 +176,7 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 			if (debug) write_log("Receiving data contents.");
 			check_recv(data, data_size, MPI_BYTE, data_src, DATA_TAG, MPI_COMM_WORLD, "Error receiving data contents, aborting.", 0);
 			//Write data to file
-			write_to_file(data_size, &df, data);
+			write_to_file(data_size, &df, data, src_dir_hierarchy);
 			free(data);
 			//Update src_rup_table
 			src_rup_table[df.src_id][df.rup_id] -= df.ending_rv - df.starting_rv;
@@ -178,10 +220,18 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 
 }
 
-void write_to_file(int data_size, data_file_metadata* df, char* data) {
+void write_to_file(int data_size, data_file_metadata* df, char* data, int src_dir_hierarchy) {
 	//Use file pointer cache to avoid opening and closing files as much
 	//This will put our item in position 0
-	FILE* out_fp = find_and_use_fp(df->filename);
+	char new_filename[256];
+	if (src_dir_hierarchy==1) {
+		//We add the source ID as a directory
+		sprintf(new_filename, "%d/%s", df->src_id, df->filename);
+	} else {
+		//Just use filename as-is
+		strcpy(new_filename, df->filename);
+	}
+	FILE* out_fp = find_and_use_fp(new_filename);
 	if (debug) {
 		char buf[256];
 		sprintf(buf, "Writing %d bytes to data file %s.", data_size, df->filename);
