@@ -99,7 +99,7 @@ float ucvm_vs30(float lon, float lat) {
 
 //Determines second crossing (if it exists) of Z-values, with 10 m resolution, down to 50 km
 float ucvm_zvalue(float lon, float lat, float vs_value) {
-	float resolution = 10.0;
+	float resolution = 100.0;
 	float max_depth = 50000.0;
 	int num_pts = (int)(max_depth/resolution)+1;
 	ucvm_point_t* query_pts = malloc(sizeof(ucvm_point_t)*num_pts);
