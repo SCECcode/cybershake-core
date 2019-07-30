@@ -3,23 +3,24 @@
 import sys
 import os
 
-if len(sys.argv)<3:
-	print "Usage: %s <source file> <comp>" % sys.argv[0]
+if len(sys.argv)<4:
+	print "Usage: %s <source file> <comp> <output file>" % sys.argv[0]
 	sys.exit(1)
 
 fp_in = open(sys.argv[1], "r")
-fp_out = open("f%s_src" % sys.argv[2], "w")
+comp = sys.argv[2]
+fp_out = open(sys.argv[3], "w")
 
 data = fp_in.readlines()
 fp_in.close()
 
 pos = -1
 
-if sys.argv[2]=="x":
+if comp=="x":
 	pos = 0
-elif sys.argv[2]=="y":
+elif comp=="y":
 	pos = 1
-elif sys.argv[2]=="z":
+elif comp=="z":
 	pos = 2
 
 for i in range(2, len(data)):
