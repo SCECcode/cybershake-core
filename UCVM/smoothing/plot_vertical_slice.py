@@ -84,7 +84,8 @@ plt.scatter(x_values, y_values, c=vs, cmap=colormap, norm=norm, marker='s', s=2,
 plt.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.15)
 plt.xlabel("Distance (km) along %s=%d slice" % (not_comp, column))
 plt.ylabel("Depth (km)")
-plt.ylim(-50.4, 0)
+plt.ylim(-1*nz*grid_spacing, 0)
+#plt.ylim(-5, 0)
 if comp=='x':
 	plt.xlim(0, nx*grid_spacing)
 elif comp=='y':
