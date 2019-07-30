@@ -25,7 +25,7 @@ void average_point(float* slice, int x, int y, int nx, int ny, int smooth_dist, 
 	x_stop = min(x+smooth_dist, nx-1);
         y_start = max(y-smooth_dist, 0);
         y_stop = min(y+smooth_dist, ny-1);
-	float tot[3] = {0, 0, 0};
+	double tot[3] = {0.0, 0.0, 0.0};
 	int num_vals = 0;
 	//Calclate average using diamond
 	for (i=x_start; i<=x_stop; i++) {
