@@ -131,6 +131,11 @@ if (debug) {
 for (i=0; i<num_rup_vars; i++) {
 	//printf("Generating rupture from file %s, slip %d, hypo %d, spacing %d, dtout %f\n", rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, rupture_spacing, dtout);
 	rupgen_genslip(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout);
+	/*if (i==1) {
+		char srf_out[512];
+		sprintf(srf_out, "%s.%d.srf", rup_geom_file, rup_vars[i].rup_var_id);
+		write_srf(&(srf[i]), srf_out, 0);
+	}*/
 }
 if (debug) {
 	gettimeofday(&tv_end, NULL);
@@ -236,6 +241,13 @@ while (1) {
 	memset(srf_indices_to_process, 0, srf[0].srf_apnts.np);
 
 	request_sgt(sgthead, sgtbuf, num_comps, request_from_handler_id, sgts_by_handler, starting_index, ending_index, sgtmast.nt, my_id);
+
+	//Check sgthead to make sure that dt matches dtout
+	if (fabs(sgthead[0].dt-dtout)>0.00001) {
+		fprintf(stderr, "dt as reported in SGT header, %f, does not match the 'dtout' argument, %f.  These must match, aborting.\n", sgthead[0].dt, dtout);
+		MPI_Abort(MPI_COMM_WORLD, 2);
+		exit(2);
+	}	
 
 	if (debug) {
 		struct mallinfo m_info;
@@ -391,31 +403,44 @@ while (1) {
 
 	for(ip=0; ip<num_srf_pts_found; ip++) {
 		int srf_index = srf_indices_to_process[ip];
+		//printf("Processing SRF index %d\n", srf_index);
 		/*if (sgtparms[srf_index].indx[0]!=52705670033) {
 			continue;
 		}*/
 		int j;
 		for (i=0; i<num_rup_vars; i++) {
+		//int test_rv = 18;
+		//for (i=test_rv; i<test_rv+1; i++) { 
+			//if (num_rup_vars<i) break;
+			//if (rup_vars[i].rup_var_id!=test_rv) break;
+			//fprintf(stderr, "Processing RV %d.\n", rup_vars[i].rup_var_id);
+			//if (i==1) printf("Location (%f, %f)\n", apval_ptr[i][srf_index].lat, apval_ptr[i][srf_index].lon);
 			zapit(subseis[i],maxmech*3*ntout);
 
 			get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
 			scale = slip_conv*apval_ptr[i][srf_index].area;
-	                //fprintf(stderr, "Scale = %e, vslip = %e\n", scale, vslip);
+	                //if (i==test_rv) fprintf(stderr, "Scale = %e, vslip = %e\n", scale, vslip);
 			mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
 			tmom[i] = tmom[i] + vslip*scale;
-                   	//fprintf(stderr, "tmom = %e, scale = %e\n", tmom[i], scale);
-                   	/*for (j=0; j<ntout; j++) {
-                   	     printf("gfmech[%d] = %e\n", j, gfmech[i][j]);
+                   	//if (i==test_rv) fprintf(stderr, "tmom = %e, scale = %e\n", tmom[i], scale);
+                   	/*if (i==test_rv) {
+				for (j=ntsum+1240; j<ntsum+1250; j++) {
+                   	     		printf("gfmech[%d] = %e\n", j, gfmech[i][j]);
+				}
                    	}*/
-			sum_sgt(subseis[i],ntout,gfmech[i],&sgtparms[srf_index],ntsum,&rt,&tstart,mechpar);
-                        /*for (j=0; j<ntout; j++) {
-                                printf("subseis[%d] = %e\n", j, subseis[i][j]);
-                        }*/
+			sum_sgt(subseis[i],ntout,gfmech[i],&sgtparms[srf_index],ntsum,&rt,&tstart,mechpar, srf_index);
+			/*if (i==test_rv) {
+	                        for (j=ntout+1240; j<ntout+1250; j++) {
+	                                printf("subseis[%d] = %e\n", j, subseis[i][j]);
+	                        }
+			}*/
 
 			srf_stf(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
-			/*int j;
-			for (j=0; j<ntout; j++) {
-				printf("subseis[%d] = %e\n", j, subseis[i][j]);
+			//int j;
+			/*if (i==test_rv) {
+				for (j=ntout+1240; j<ntout+1250; j++) {
+					printf("seis[%d] = %e\n", j, seis[i][j]);
+				}
 			}*/
 		}
 	}
@@ -454,12 +479,19 @@ for (ip=0; ip<num_srfs_split; ip++) {
 
 		get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
 		scale = slip_conv*apval_ptr[i][srf_index].area;
+		//if (i==0) fprintf(stderr, "Scale = %e, vslip = %e\n", scale, vslip);
 
 		mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
 		tmom[i] = tmom[i] + vslip*scale;
+		//if (i==0) fprintf(stderr, "tmom = %e, scale = %e\n", tmom[i], scale);
 
 		sum_sgt(subseis[i],ntout,gfmech[i],&sgtparms[srf_index],ntsum,&rt,&tstart,mechpar);
 		srf_stf(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
+		/*if (i==0) {
+                        for (j=ntout+1000; j<ntout+1100; j++) {
+                                printf("seis[%d] = %e\n", j, seis[i][j]);
+                        }
+                }*/
 	}
 }
 int all_points_processed = 1;

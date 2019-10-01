@@ -217,6 +217,13 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 	mstpar("surfseis_rspectra_apply_filter_highHZ","f",&filter_high_hz);
 	mstpar("surfseis_rspectra_apply_byteswap","s",byteswap);
 
+	//Make sure dt and dtout (from the header) are the same
+	if (fabs(dt-header.dt)>0.00001) {
+		fprintf(stderr, "%d) dt from 'simulation_out_timeskip' argument is %f, but dt from 'dtout' argument and used in seismogram header is %f.  These must match, aborting.\n", my_id, dt, header.dt);
+		MPI_Abort(MPI_COMM_WORLD, 7);
+		exit(7);
+	}
+
 //	mstpar("out","s",&output_file);
 	///Construct output filename
 	output_file_len = sprintf(output_file, "PeakVals_%s_%d_%d_%d.bsa", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
