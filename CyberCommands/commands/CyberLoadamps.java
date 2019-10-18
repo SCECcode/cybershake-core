@@ -44,6 +44,7 @@ public class CyberLoadamps {
         Option duration = new Option("u", "Read duration files (instead of bsa.)");
         Option convert = new Option("c", "Convert values from g to cm/sec^2");
         Option force = new Option("f", "Don't apply value checks to insertion values; use with care!.");
+        Option verboseOption = new Option("v", "Print more messages about what is going on.");
         Option help = new Option("help", "print this message");
 
         OptionGroup fileGroup = new OptionGroup();
@@ -60,11 +61,13 @@ public class CyberLoadamps {
         options.addOption(periods);
         options.addOption(convert);
         options.addOption(force);
+        options.addOption(verboseOption);
         options.addOptionGroup(fileGroup);
         
 		CommandLineParser parser = new GnuParser();
 
 		boolean forceInsert = false;
+		boolean verbose = false;
 		
 		try {
 			if (args.length==0) {
@@ -104,6 +107,10 @@ public class CyberLoadamps {
                 	forceInsert = true;
                 }
                 
+                if (cmd.hasOption("v")) {
+                	verbose = true;
+                }
+                
 				System.out.println("Running loadamps using directory: " + cmd.getOptionValue("p") + " with Run ID: " + cmd.getOptionValue("run"));
 				RunID rid = new RunID(Integer.parseInt(cmd.getOptionValue("run")), cmd.getOptionValue("server"));
 //				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid.getSiteName(), rid.getSgtVarID(), cmd.getOptionValue("server"), rid.getRuptVarScenID(), rid.getErfID(), cmd.hasOption("z"));
@@ -132,7 +139,7 @@ public class CyberLoadamps {
 					convertGtoCM = true;
 				}
 				
-				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), m, cmd.getOptionValue("periods"), insertValues, convertGtoCM, forceInsert);
+				RuptureVariationFileInserter rvfi = new RuptureVariationFileInserter(cmd.getOptionValue("p"), rid, cmd.getOptionValue("server"), m, cmd.getOptionValue("periods"), insertValues, convertGtoCM, forceInsert, verbose);
 				rvfi.performInsertions();
 			}
 
