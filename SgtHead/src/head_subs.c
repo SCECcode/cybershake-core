@@ -419,13 +419,35 @@ size_t chunk_reed(int fd, void* pntr, size_t length) {
 
 size_t rite(int fd, void *pntr, size_t length)
 {
-size_t temp;
+size_t temp, total_written, write_size;
+const int TWO_GB = 2000000000;
+//Divide writes into 2 billion byte chunks
+if (length>TWO_GB) {
+	//Cast to a char* so we can do pointer arithmetic
+	char* cast_ptr = (char*)pntr;
+	total_written = 0L;
+	while (total_written < length) {
+		write_size = length - total_written;
+		if (write_size>TWO_GB) {
+			write_size = TWO_GB;
+		}
+		if ((temp = write(fd, cast_ptr+total_written, write_size)) < write_size) {
+			fprintf (stderr, "WRITE ERROR\n");
+			fprintf (stderr, "%u attempted  %u written\n", length, temp);
+			exit(-1);
+		}
+		total_written += write_size;
+	}
+} else {
+
 if ((temp = write(fd, pntr, length)) < length)
    {
    fprintf (stderr, "WRITE ERROR\n");
    fprintf (stderr, "%u attempted  %u written\n", length, temp);
    exit(-1);
    }
+
+}
 return(temp);
 }
 
