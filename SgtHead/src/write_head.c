@@ -451,7 +451,7 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 	//printf("Size of sgtheader: %ld\n", sizeof(struct sgtheader));
 	rite(fd_out,&sgtmast, sizeof(struct sgtmaster));
 	rite(fd_out,sgtindx, sgtmast.globnp*sizeof(struct sgtindex));
-	rite(fd_out,sgthead, sgtmast.globnp*sizeof(struct sgtheader));
+	rite(fd_out,sgthead, ((long long)sgtmast.globnp)*sizeof(struct sgtheader));
 	close(fd_out);
 
 	//free(vp);
