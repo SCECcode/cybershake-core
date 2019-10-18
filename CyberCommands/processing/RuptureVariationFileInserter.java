@@ -82,13 +82,16 @@ public class RuptureVariationFileInserter {
     
     private boolean forceInsert = false;
     
+    private boolean verbose = false;
+    
     private Connection conn = null;
 
-	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, Mode m, String periods, String insertValues, boolean convert, boolean forceInsert) throws IOException {
+	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, Mode m, String periods, String insertValues, boolean convert, boolean forceInsert, boolean verbose) throws IOException {
 		pathName = newPathName;
 		fileMode = m;
 		run_ID = rid;
 		this.forceInsert = forceInsert;
+		this.verbose = verbose;
 		if (insertValues.indexOf("gm")!=-1) {
 			insertGeoMean = true;
 		}
@@ -150,7 +153,13 @@ public class RuptureVariationFileInserter {
 
 	public void performInsertions() {
 //		retrieveSiteIDFromDB();
+		if (verbose) {
+			System.out.println("Constructing file list.");
+		}
 		initFileList(fileMode);
+		if (verbose) {
+			System.out.println("Identified " + totalFilesList.size() + " files to insert.");
+		}
 		Session sess = sessFactory.openSession();
 		
 		if (fileMode==Mode.ZIP) {
@@ -362,7 +371,9 @@ public class RuptureVariationFileInserter {
 				 * ...
 				 */
 				//Can't use DataInputStream because we have to byte-swap
-//				System.out.println("Processing file " + f.getName());
+				if (verbose) {
+					System.out.println("Processing file " + f.getName());
+				}
 //				System.out.println("Prepping for loop.");
 				FileInputStream stream = new FileInputStream(f);
 				BSAHeader head = new BSAHeader();
@@ -392,6 +403,9 @@ public class RuptureVariationFileInserter {
 							System.err.println("Found header but not data for " + f.getName() + " at offset " + stream.getChannel().position());
 							System.exit(-2);
 						}
+						if (verbose) {
+							System.out.println("Inserting data for src " + head.source_id + ", rup " + head.rupture_id + ", rv " + head.rup_var_id);
+						}
 						SARuptureFromRuptureVariationFile saRuptureWithSingleRupVar = new SARuptureFromRuptureVariationFile(data, run_ID.getSiteName(), head);
 						insertRupture(saRuptureWithSingleRupVar, sess, true);
 					}
@@ -418,6 +432,7 @@ public class RuptureVariationFileInserter {
 				counter++;
 			} catch (IOException ex) {
 				System.err.println("Error reading from file " + pathName);
+				ex.printStackTrace();
 			} catch (ConstraintViolationException ex) {
 				ex.printStackTrace();
 				System.err.println("Offending SQL statement was: " + ex.getSQL());
