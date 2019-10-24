@@ -33,9 +33,10 @@ import org.apache.commons.cli.ParseException;
  * Window - Preferences - Java - Code Style - Code Templates
  */
 public class CheckDBDataForSite {
-    private static final String DB_SERVER = "moment.usc.edu";
+    private static String DB_SERVER = "moment.usc.edu";
     private static final String DB = "CyberShake";
-    private static DBConnect dbc = new DBConnect(DB_SERVER, DB);
+    private static DBConnect dbc;
+    private static boolean isSQLite = false;
     
 //    private static final int NUM_PERIODS_INSERTED = 3;  //3, 5, and 10s
     
@@ -50,7 +51,7 @@ public class CheckDBDataForSite {
         Option typeIDs = OptionBuilder.withArgName("type_ids").hasArg().withDescription("Comma-separated list of type IDs to check, for duration.").create("t");
         Option component = OptionBuilder.withArgName("component").hasArg().withDescription("Component type (geometric, rotd, duration) to check.").create("c");
         Option output = OptionBuilder.withArgName("output").hasArg().withDescription("Path to output file, if something is missing (required).").create("o");
-        Option server = OptionBuilder.withArgName("server").hasArg().withDescription("DB server to query against.").create("s");
+        Option serverOpt = OptionBuilder.withArgName("server").hasArg().withDescription("DB server to query against.").create("s");
         output.setRequired(true);
 
         cmd_opts.addOption(help);
@@ -59,7 +60,7 @@ public class CheckDBDataForSite {
         cmd_opts.addOption(typeIDs);
         cmd_opts.addOption(component);
         cmd_opts.addOption(output);
-        cmd_opts.addOption(server);
+        cmd_opts.addOption(serverOpt);
         
         CommandLineParser parser = new GnuParser();
         if (args.length<1) {
@@ -86,6 +87,13 @@ public class CheckDBDataForSite {
         
         String runID = line.getOptionValue(run_id.getOpt());
         String outputFile = line.getOptionValue(output.getOpt());
+        if (line.hasOption(serverOpt.getOpt())) {
+        	DB_SERVER = line.getOptionValue(serverOpt.getOpt());
+        	if (DB_SERVER.indexOf("sqlite:")==0) {
+        		isSQLite = true;
+        	}
+        }
+    	dbc = new DBConnect(DB_SERVER, DB, isSQLite);        
         
         //Default is geometric mean
         String componentString = "geometric";
@@ -110,15 +118,15 @@ public class CheckDBDataForSite {
         			}
     				ResultSet imTypeSet = dbc.selectData(query);
     				try {
-        				imTypeSet.first();
-        				if (imTypeSet.getRow()==0) {
+        				boolean nextRow = imTypeSet.next();
+        				if (imTypeSet.getRow()==0 || imTypeSet.isClosed()) {
         	                System.err.println("Query '" + query + "' did not return any results, aborting.");
         	                System.exit(2);
         				}
-        				while (!imTypeSet.isAfterLast()) {
+        	    		while ((isSQLite && nextRow) || (!isSQLite && !imTypeSet.isAfterLast())) {
         					int imTypeID = imTypeSet.getInt("IM_Type_ID");
         					imTypesToCheck.add(imTypeID);
-        					imTypeSet.next();
+        					nextRow = imTypeSet.next();
         				}
         				imTypeSet.close();
     				} catch (SQLException sqe) {
@@ -159,8 +167,8 @@ public class CheckDBDataForSite {
         ResultSet rupVarSet = dbc.selectData(query);
         
         try {
-            rupVarSet.first();
-            if (rupVarSet.getRow()==0) {
+            rupVarSet.next();
+            if (rupVarSet.getRow()==0 || rupVarSet.isClosed()) {
                 System.err.println("No rup vars in DB.");
                 System.exit(2);
             }
@@ -176,8 +184,8 @@ public class CheckDBDataForSite {
             		
         		System.out.println(query);
         		ResultSet ampSet = dbc.selectData(query);
-                ampSet.first();
-                if (ampSet.getRow()==0) {
+        		ampSet.next();
+                if (ampSet.getRow()==0 || ampSet.isClosed()) {
                     System.err.println("No rup vars in DB.");
                     System.exit(2);
                 }
@@ -276,23 +284,22 @@ public class CheckDBDataForSite {
     	TreeSet<SourceRuptureVar> rupVarTreeSet = null;
     	
     	try {
-    		rupVarSet.first();
-    		if (rupVarSet.getRow()==0) {
+    		boolean nextRow = rupVarSet.next();
+    		if (rupVarSet.getRow()==0 || rupVarSet.isClosed()) {
     			System.err.println("No rup var entries in DB.");
     			System.exit(3);
     		}
     	   	rupVarTreeSet = new TreeSet<SourceRuptureVar>();
-        	while (!rupVarSet.isAfterLast()) {
+        	while ((isSQLite && nextRow) || (!isSQLite && !rupVarSet.isAfterLast())) {
         		SourceRuptureVar sr = new SourceRuptureVar(rupVarSet.getInt("V.Source_ID"), rupVarSet.getInt("V.Rupture_ID"), rupVarSet.getInt("V.Rup_Var_ID"));
         		rupVarTreeSet.add(sr);
-        		rupVarSet.next();
+        		nextRow = rupVarSet.next();
         	}
         	rupVarSet.close();
     	} catch (SQLException ex) {
     		ex.printStackTrace();
     		System.exit(-3);
     	}
-    	
 
     	
     	System.out.println(System.currentTimeMillis());
@@ -309,16 +316,16 @@ public class CheckDBDataForSite {
     	System.out.println(System.currentTimeMillis());
     	
     	try {
-    		peakAmpsSet.first();
-    		if (peakAmpsSet.getRow()==0) {
+    		boolean nextRow = peakAmpsSet.next();
+    		if (peakAmpsSet.getRow()==0 || peakAmpsSet.isClosed()) {
     			System.err.println("No peak amps entries in DB.");
     			System.exit(3);
     		}
     		peakAmpsTreeSet = new TreeSet<SourceRuptureVar>();
-        	while (!peakAmpsSet.isAfterLast()) {
+        	while ((isSQLite && nextRow) || (!isSQLite && !peakAmpsSet.isAfterLast())) {
         		SourceRuptureVar sr = new SourceRuptureVar(peakAmpsSet.getInt("Source_ID"), peakAmpsSet.getInt("Rupture_ID"), peakAmpsSet.getInt("Rup_Var_ID"));
         		peakAmpsTreeSet.add(sr);
-        		peakAmpsSet.next();
+        		nextRow = peakAmpsSet.next();
         	}
         	peakAmpsSet.close();
     	} catch (SQLException ex) {
@@ -395,8 +402,8 @@ public class CheckDBDataForSite {
         
         ResultSet rupVarSet = dbc.selectData(query);
         try {
-            rupVarSet.first();
-            if (rupVarSet.getRow()==0) {
+            boolean nextRow = rupVarSet.next();
+            if (rupVarSet.getRow()==0 || rupVarSet.isClosed()) {
                 System.err.println("No entries in DB.");
                 System.exit(3);
             }
@@ -412,7 +419,7 @@ public class CheckDBDataForSite {
                 int lastSource = -1;
                 int lastRupt = -1;
                 ArrayList<String> listForRupture = new ArrayList<String>();
-                while (!rupVarSet.isAfterLast()) {
+                while ((isSQLite && nextRow) || (!isSQLite && !rupVarSet.isAfterLast())) {
                     count++;
                     int source = rupVarSet.getInt("Source_ID");
                     int rupture = rupVarSet.getInt("Rupture_ID");
@@ -426,8 +433,8 @@ public class CheckDBDataForSite {
                     "and A.Rup_Var_ID=" + rupVarSet.getInt("Rup_Var_ID");
 //                    System.out.println(query);
                     ResultSet psaSet = dbc.selectData(query);
-                    psaSet.first();
-                    if (psaSet.getRow()==0) { //no entries, missing
+                    psaSet.next();
+                    if (psaSet.getRow()==0 || psaSet.isClosed()) { //no entries, missing
                         if (lastSource!=source || lastRupt!=rupture) {
                             if (lastSource!=-1) {
                                 bw.write(listForRupture.get(0) + " " + (listForRupture.size()-1) + "\n");
@@ -447,7 +454,7 @@ public class CheckDBDataForSite {
                     }
                     
                     psaSet.close();
-                    rupVarSet.next();
+                    nextRow = rupVarSet.next();
                 }
 
                 bw.write(listForRupture.get(0) + " " + (listForRupture.size()-1) + "\n");

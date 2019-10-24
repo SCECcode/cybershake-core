@@ -16,6 +16,7 @@ public class DBConnect
   private Connection conn = null;
   private String hostName;
   private String dbName;
+  private boolean isSQLite = false;
   private int port = 3306;
 
   /**
@@ -32,6 +33,20 @@ public class DBConnect
       ex.printStackTrace();
     }
   }
+  
+  public DBConnect(String hostname, String dbName, boolean isSQLite)
+  {
+    this.hostName = hostname;
+    this.dbName = dbName;
+    this.isSQLite = isSQLite;
+    try {
+      getConnection();
+    }
+    catch (Exception ex) {
+      ex.printStackTrace();
+    }
+  }
+  
 
   /**
    * Runs the select query on the database
@@ -187,6 +202,9 @@ public class DBConnect
     String url = "jdbc:mysql://"+hostName+":"+port+"/"+dbName;
     String username = "scottcal";
     String password = "CyberShake2007";
+    if (isSQLite) {
+    	url = "jdbc:" + hostName;
+    }
 //    String password = "";
 
     //Try to load the driver, if this fails then print an error
@@ -203,8 +221,11 @@ public class DBConnect
 
      try
      {
-       conn = DriverManager.getConnection(url,username,password);
-//     	conn = DriverManager.getConnection(url);
+    	 if (isSQLite) {
+    	     	conn = DriverManager.getConnection(url);    		 
+    	 } else {
+    		 conn = DriverManager.getConnection(url,username,password);
+    	 }
      }
      //Catch the exception, throw a new DBException
      catch (SQLException E)
