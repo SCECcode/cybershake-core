@@ -35,6 +35,8 @@ import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.exception.ConstraintViolationException;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 import commands.CyberLoadamps.Mode;
 import util.BSAFileUtil;
@@ -113,6 +115,8 @@ public class RuptureVariationFileInserter {
 			hibernate_cfg_filename = "csep-x.cfg.xml";
 		} else if (serverName.equals("moment")) {
 			hibernate_cfg_filename = "moment.cfg.xml";
+		} else if (serverName.indexOf("sqlite:")==0) {
+			hibernate_cfg_filename = "sqlite.cfg.xml";
 		} else {
 			System.err.println("Server name was " + serverName + ", but it must be one of intensity, surface, focal, or csep-x.  Exiting.");
 			System.exit(-2);
@@ -122,7 +126,7 @@ public class RuptureVariationFileInserter {
 			desiredPeriods.add(Double.parseDouble(p));
 		}
 		convertGtoCM = convert;
-		initSessionFactory();
+		initSessionFactory(serverName);
 	}
 
 	private void initFileList(Mode m) {
@@ -147,8 +151,15 @@ public class RuptureVariationFileInserter {
 //		retrieveSiteIDSess.close();
 //	}
 
-	private void initSessionFactory() {
-		sessFactory = new Configuration().configure(hibernate_cfg_filename).buildSessionFactory();
+	private void initSessionFactory(String serverName) {
+		Configuration config = new Configuration();
+		config.configure(hibernate_cfg_filename);
+		//If sqlite, change to point to correct file location
+		if (serverName.indexOf("sqlite:")==0) {		
+			config.setProperty("hibernate.connection.url", "jdbc:" + serverName);
+		}
+		sessFactory = config.buildSessionFactory();
+//		sessFactory = new Configuration().configure(hibernate_cfg_filename).buildSessionFactory();
 	}
 
 	public void performInsertions() {
@@ -704,7 +715,7 @@ public class RuptureVariationFileInserter {
 		if (rd100periodValueToIDMap==null) {
 			rd100periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
-				SQLQuery query = rotdSession.createSQLQuery(rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", Hibernate.INTEGER);
+				SQLQuery query = rotdSession.createSQLQuery(rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
 				System.out.println(query.getQueryString());
 				int typeID = (Integer)(query.list().get(0));
 				rd100periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
@@ -714,7 +725,7 @@ public class RuptureVariationFileInserter {
 		if (rd50periodValueToIDMap==null) {
 			rd50periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
-				SQLQuery query = rotdSession.createSQLQuery(rd50Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", Hibernate.INTEGER);
+				SQLQuery query = rotdSession.createSQLQuery(rd50Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
 				int typeID = (Integer)(query.list().get(0));
 				rd50periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
 				System.out.println("Adding IM_Type_ID " + typeID + " to list.");
@@ -790,7 +801,7 @@ public class RuptureVariationFileInserter {
 		}
 		
 		String imTypeIDqueryPrefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND IM_Type_Component='geometric mean' AND "; 
-		
+				
 		//going to only insert 2.0s, 3.0s, 5.0s, 10s periods to save space
 		//Going to skip 2.0s since we don't really trust it
 		if (insertGeoMean) {
@@ -801,7 +812,9 @@ public class RuptureVariationFileInserter {
 					for (int j=0; j<desiredPeriods.size(); j++) {
 						if (Math.abs(ourPeriods[i]-desiredPeriods.get(j))<0.0001) {
 							desiredPeriodsIndices.add(i);
-							SQLQuery query = imTypeIDSess.createSQLQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", Hibernate.INTEGER);
+							System.out.println(imTypeIDqueryPrefix + "IM_Type_Value = " + ourPeriods[i]);
+							NativeQuery query = imTypeIDSess.createNativeQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
+//							NativeQuery query = sess.createNativeQuery(imTypeIDqueryPrefix + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
 							int typeID = (Integer)query.list().get(0);
 							periodIndexToIDMap.put(i, typeID);
 						}
@@ -822,9 +835,11 @@ public class RuptureVariationFileInserter {
 					for (int j=0; j<desiredPeriods.size(); j++) {
 						if (Math.abs(ourPeriods[i]-desiredPeriods.get(j))<0.0001) {
 							desiredPeriodsIndices.add(i);
-							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER).list().get(0);
+//							int typeID = (Integer)sess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER).list().get(0);
 							periodIndexToIDMapX.put(i, typeID);
-							typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+							typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER).list().get(0);
+//							typeID = (Integer)sess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + ourPeriods[i]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER).list().get(0);
 							periodIndexToIDMapY.put(i, typeID);
 						}
 					}
@@ -833,9 +848,11 @@ public class RuptureVariationFileInserter {
 				periodIndexToIDMapX = new HashMap<Integer, Integer>();
 				periodIndexToIDMapY = new HashMap<Integer, Integer>();
 				for (int period: desiredPeriodsIndices) {
-					int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + ourPeriods[period]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+					int typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + ourPeriods[period]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER).list().get(0);
+//					int typeID = (Integer)sess.createSQLQuery(imTypeIDqueryPrefixX + "IM_Type_Value = " + ourPeriods[period]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER).list().get(0);
 					periodIndexToIDMapX.put(period, typeID);
-					typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + ourPeriods[period]).addScalar("IM_Type_ID", Hibernate.INTEGER).list().get(0);
+					typeID = (Integer)imTypeIDSess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + ourPeriods[period]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER).list().get(0);
+//					typeID = (Integer)sess.createSQLQuery(imTypeIDqueryPrefixY + "IM_Type_Value = " + ourPeriods[period]).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER).list().get(0);
 					periodIndexToIDMapY.put(period, typeID);
 				}
 			}
@@ -843,6 +860,10 @@ public class RuptureVariationFileInserter {
 
 		imTypeIDSess.close();
 
+		if (!sess.getTransaction().isActive()) {
+			sess.beginTransaction();
+		}
+		
 //		System.out.println("Looping over rupture variations.");
 		
 		int outerLoopMax = saRuptureWithSingleRupVar.rupVars.size();
@@ -868,8 +889,6 @@ public class RuptureVariationFileInserter {
 			rupVarPK.setRup_Var_Scenario_ID(currentRup_Var_Scenario_ID);
 			rv.setRupVarPK(rupVarPK);
 			rv.setRup_Var_LFN("LFN.file");*/
-
-			sess.beginTransaction();
 
 			/*sess.save(rv);*/
 
@@ -916,8 +935,8 @@ public class RuptureVariationFileInserter {
 								System.out.println(query);
 								System.out.flush();
 								SQLQuery sq = checkMagSession.createSQLQuery(query);
-								sq.addScalar("R.Mag", Hibernate.FLOAT);
-								sq.addScalar("SR.Site_Rupture_Dist", Hibernate.FLOAT);
+								sq.addScalar("R.Mag", StandardBasicTypes.FLOAT);
+								sq.addScalar("SR.Site_Rupture_Dist", StandardBasicTypes.FLOAT);
 								List<Object[]> results = sq.list();
 								mag = (Float)(results.get(0)[0]);
 								//Rupture distances aren't available for all ruptures

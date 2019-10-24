@@ -17,6 +17,7 @@ public class RunID {
 	private Connection connection = null;
 	
 	private String HOSTNAME = "focal.usc.edu";
+	private boolean isSQLite = false;
 	private final int PORT = 3306;
 	private final String DB_NAME = "CyberShake";
 	private final String USER = "cybershk_ro";
@@ -24,6 +25,9 @@ public class RunID {
 	
 	public RunID(int runID, String server) {
 		HOSTNAME = server;
+		if (HOSTNAME.indexOf("sqlite:")==0) {
+			isSQLite = true;
+		}
 		this.runID = runID;
 		createConnection();
 		populateRunIDInfo();
@@ -54,6 +58,10 @@ public class RunID {
 		if (connection==null) {
 			String drivers = "com.mysql.jdbc.Driver";
 			String url = "jdbc:mysql://"+HOSTNAME+":"+PORT+"/"+DB_NAME;
+			if (isSQLite) {
+				//Use SQLite drivers
+				url = "jdbc:" + HOSTNAME;
+			}
 	    
 			try {
 				Class.forName(drivers).newInstance();
@@ -62,7 +70,11 @@ public class RunID {
 				System.exit(-1);
 			}
 			try {
-				connection = DriverManager.getConnection(url,USER,PASS);
+				if (isSQLite) {
+					connection = DriverManager.getConnection(url);
+				} else {
+					connection = DriverManager.getConnection(url,USER,PASS);
+				}
 			} catch (SQLException ex) {
 				ex.printStackTrace();
 				System.exit(-2);
@@ -78,16 +90,27 @@ public class RunID {
 				populateRunIDInfo();
 			}
 			query = "SELECT S.CS_Short_Name, R.Cutoff_Dist FROM CyberShake_Sites S, CyberShake_Site_Regions R WHERE R.ERF_ID=" + erfID + " and R.CS_Site_ID=S.CS_Site_ID and S.CS_Site_ID=" + siteID;
+			System.out.println(query);
 			ResultSet res = stat.executeQuery(query);
-			res.first();
-			if (res.getRow()==0) {
+			if (!isSQLite) {
+				res.first();
+			} else {
+				res.next();
+			}
+			if (res.getRow()==0 || res.isClosed()) {
 				System.err.println("Couldn't find a site name for site ID " + siteID);
 				System.exit(3);
 			}
-			siteName = res.getString("S.CS_Short_Name");
-			cutoffDist = res.getDouble("R.Cutoff_Dist");
-    		res.next();
-    		if (!res.isAfterLast()) {
+			String shortNameField = "S.CS_Short_Name";
+			String cutoffDistField = "R.Cutoff_Dist";
+			if (isSQLite) {
+				shortNameField = "CS_Short_Name";
+				cutoffDistField = "Cutoff_Dist";
+			}
+			siteName = res.getString(shortNameField);
+			cutoffDist = res.getDouble(cutoffDistField);
+    		boolean nextRow = res.next();
+    		if ((isSQLite && nextRow) || (!isSQLite && !res.isAfterLast())) {
     			System.err.println("More than one Run_ID matched Run_ID "  + runID + ", aborting.");
     			System.exit(3);
     		}
@@ -104,8 +127,13 @@ public class RunID {
 			Statement stat = connection.createStatement();
 			String query = "SELECT Site_ID, ERF_ID, SGT_Variation_ID, Rup_Var_Scenario_ID FROM CyberShake_Runs WHERE Run_ID=" + runID;
 			ResultSet res = stat.executeQuery(query);
-			res.first();
-    		if (res.getRow()==0) {
+			if (!isSQLite) {
+				res.first();
+			} else {
+				res.next();
+			}
+			
+    		if (res.getRow()==0 || res.isClosed()) {
     			System.err.println("Couldn't find run " + runID + ".");
     			System.exit(1);
     		}
@@ -113,8 +141,8 @@ public class RunID {
     		erfID = res.getInt("ERF_ID");
     		sgtVarID = res.getInt("SGT_Variation_ID");
     		ruptVarScenID = res.getInt("Rup_Var_Scenario_ID");
-    		res.next();
-    		if (!res.isAfterLast()) {
+    		boolean nextRow = res.next();
+    		if ((isSQLite && nextRow) || (!isSQLite && !res.isAfterLast())) {
     			System.err.println("More than one Run_ID matched Run_ID "  + runID + ", aborting.");
     			System.exit(3);
     		}
