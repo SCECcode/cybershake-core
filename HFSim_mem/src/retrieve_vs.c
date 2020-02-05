@@ -8,7 +8,7 @@ const float MIN_VS = 500.0;
 
 void initialize_ucvm(char* model) {
 	printf("Initializing UCVM.\n");
-	if (ucvm_init("/projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_14.3.0/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0_01302019/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
                         fprintf(stderr, "Failed to init UCVM, aborting.");
                         exit(3);
                 }
@@ -133,7 +133,7 @@ float vs_at_site(float lon, float lat, char* model) {
 //So VsD500 = 5/(0.5/Vs(Z=0) + 1/Vs(Z=100) + ... + 1/Vs(Z=400) + 0.5/Vs(Z=500))
 int main(int argc, char** argv) {
 	if (argc<6) {
-		printf("Usage: %s <lon> <lat> <model> <gridspacing> <out filename>", argv[0]);
+		printf("Usage: %s <lon> <lat> <model> <gridspacing (m)> <out filename>\n", argv[0]);
 		return 1;
 	}
 	float lon = atof(argv[1]);
