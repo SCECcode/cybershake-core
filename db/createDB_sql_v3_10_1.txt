@@ -1,0 +1,807 @@
+#
+#
+# OpenSHA-CyberShake Interface Definition
+# 
+#
+# Description of Changes:
+#
+# 3.10.1 - 24 October 2019
+#  Added Max_Frequency, Low_Frequency_Cutoff to Hazard_Datasets table.
+#
+# 3.10 - 17 April 2019
+#	In CyberShake_Runs table:
+#	   Renamed "Mesh_Vs30" to "Mesh_Vs_Surface" to more accurately reflect how
+#			it's calculated.
+#		Add column "Wills_Vs30" to capture Vs30 value
+#		Add column "Minimum_Vs" to capture Vs floor used 
+#
+# 3.9 - 15 January 2019
+#   Added Velocity_Model_Metadata table, to track GTLs, smoothing, and other
+#   kinds of key velocity parameters.  Needed for Study 18.8.
+#
+# 3.8 - 6 August 2018
+#   Renamed Vs30 column in CyberShake_Runs table to Model_Vs30.  Also added
+#   Mesh_Vs30, Z1_0, and Z2_5.
+#
+# 3.7.1 - 6 April 2017
+#   Changed length of Atten_Rels.AR_Short_Name to 30 characters and
+#   Atten_Rel_Metadata.AR_Attr_Value to 100.
+#
+# 3.7 - 11 May 2016
+#   Added Studies table, and columns to CyberShake_Runs and Hazard_Datasets
+#   so we can track which runs and datasets are members of a Study, and which
+#   are not.  That way we can separate out test runs and not worry about having
+#   them included when we generate hazard maps.  Also it will be easier for DB
+#   migration if we can join to figure out which runs are part of a study.
+#
+# 3.6.1 - 25 February 2016
+#   Fixed the following small issues:
+#   1) Fixed typo in foreign key for CyberShake Runs
+#   2) Added missing comma in PeakAmplitudes table
+#
+# 3.6.0 - 20 August 2015
+#   Needed to change engine of live DB to InnoDB; used the opportunity to
+#   verify that the focal DB is in sync with this schema.  Found a missing
+#   primary key in PeakAmplitudes.  Added the schema for CyberShake_Site_Types,
+#   the CS_Site_Type_ID column to CyberShake_Sites, and the foreign key.
+#
+# 3.5.0 - 20 May 2015
+#	Added Rupture_Variation_Probability_Modifier table to enable other
+#	distributions (other than uniform) of probability to rupture variations.
+#	Also added Rup_Var_Prob_Mod_ID column to the Hazard_Datasets table to
+#	track what, if any, probability modification was applied to a hazard curve.
+#
+# 3.4.0 - 23 March 2015
+#  Added SGT_Source_Filter_Frequency column to CyberShake_Runs table.
+#  This way we can track runs which were performed with a filtering
+#  frequency which is different from the simulation frequency.  
+#
+# 3.3.0 - 23 May 2011
+#  Added Max_Frequency, Low_Frequency_Cutoff to CyberShake_Runs
+#  to track what frequency and combo of LF and HF was used
+#  in the run.  Added Vs30 and Vs30_Source to track Vs30 values
+#  for high-frequency runs and the source of the values.
+#
+# 3.2.2 - 10 March 2011
+#  Added Min_Lat, Min_Lon, Max_Lat, Max_Lon, Grid_Spacing fields
+#  to AR_Hazard_Curves to track the size and spacing of the region
+#
+# 3.2.1 - 4 March 2011
+#  Added Lat and Lon fields to AR_Hazard_Curves to geolocate curves,
+#  and IM_Type_ID to AR_Hazard_Curves
+#
+# 3.2.0 - 3 March 2011
+#  Added 5 tables (Atten_Rels, Atten_Rel_Metadata, AR_Hazard_Datasets,
+#  AR_Hazard_Curves, AR_Hazard_Curve_Points) to support storing 
+#  attenuation relationship curves in the database for quick retrieval
+#
+# 3.1.0 - 3 Sept 2010
+#  Added a procedure to make sure that when a Hazard_Curve is linked
+#  to a Hazard_Dataset, they have the same ERF_ID, SGT_Variation_ID,
+#  Rup_Var_Scenario_ID, and Velocity_Model_ID.
+#
+#
+# 3.0.1 - 2 Sept 2010
+#  Changed table name from 'Velocity_Model_IDs' to
+#  'Velocity_Models'
+#
+# 3.0.0 - 1 Sept 2010
+#  Added new tables:
+#     ERF_Probability_Models to track the specific probability model
+#     Time_Spans to track the length of time in the prob model
+#     Hazard_Datasets to introduce the concept of hazard curves
+#       computed using a common methodology
+#  ERF_IDs modified to track a default probability model and
+#  default time span.  Hazard_Curves modified to associate with
+#  Hazard_Dataset.
+#
+#
+# 2.4.0 - 12 Aug 2010
+#  Added new table "Velocity Models" to track different velocity
+#  models.  Modified Run_ID table to track velocity model also.
+#  Redefined purpose of SGT_Variation_IDs to track algorithm used
+#  to generate SGTs.
+#
+# 2.3.0 - 23 Sept 2009
+#  Added new column "IM_Type_Component" to track different components
+#  for IM Types, such as X, Y, and geometric mean.
+#
+# 2.2.0 - 15 July 2009
+#  Added fields to Rupture_Variations to include hypocenter location.
+#
+# 2.1.2 - 20 March 2009
+#  Added fields to CyberShake_Runs: Status, Status_Time, Last_User,
+#  SGT_Time, PP_Time, Comment, Job_ID, Submit_Dir, Notify_User for 
+#  better status tracking 
+#
+# 2.1.1 - 04 March 2009
+#  Removed non-null requirements on SGT_host, PP_host, Time in CyberShake_Runs
+#
+# 2.1.0 - 03 March 2009
+#  Revised PeakAmplitudes to remove duplicate tables.
+#
+# 2.0.0 - 02 March 2009
+#  Proposed modifications to support the "run" concept.  Added "CyberShake_Runs" table,
+#  renormalized PeakAmplitudes, HazardCurves.
+#
+# 1.6.0 - 10 Sept 2008
+#  Added table to store hazard curves after generation.
+#  Used for storing curves and computing maps.
+#
+# 1.5.2 - 23 June 2008
+#  Permit IM_Type_Value to be null in cases where IM_Type_Measure is sufficient.
+#  For example, SA has an IM_Type_Value (the period), but peak acceleration would not.
+#
+# 1.5.1 - 23 June 2008
+#  Renamed fields in IM_Types for more clarity.
+#
+# 1.5.0 - 22 June 2008
+#  Restructured to create new IM_Types table to track the IM Types used.
+#  Normalizes things and makes it easier for OpenSHA to figure out
+#  all the available IM types.
+#
+# 1.4.0 - 30 July 2007
+#   Add table to describe SGT variations, to support studies with
+#     same rupture variations, but different SGT's. This table is
+#     analogous to Rupture Variation Scenario table, but for SGT's instead.
+#   Added table to describe SGT variations with attr_name, attr_value pairs
+#   Add SGT Variation ID as part of primary key in Peak Amplitudes Table
+#
+# 1.3.3 - 21 May 2007
+#   Changed the Points_ID field in the Points table to auto_increment
+#     and changed Points_ID to primary key
+#
+# 1.3.2 - 18 May 2007
+#   Added the redundant foreign keys for additional integrity
+#
+# 1.3.1 - 17 May 2007
+#   Changed syntax from "unsigned int" to "int unsigned".
+#   Commented out redundant foreign keys
+#   Foreign keys now all refer to primary keys in another table
+#   Renamed Rupture_Type to Source_Type
+#   Updated names
+#
+# 1.3.0 - 17 May 2007
+#   Renamed Site to CyberShake_Sites
+#   Renamed Site_* to CS_Site_*
+#   Changed Rupture table rupture_name to source_name
+#   Allowed Rupture_Type in Rupture table to be null
+#   Allowed ERF_Metadata_Type in ERF_Metadata table to be null
+#   Used a few abbreviations (CS for Cybershake, Rup_Var for Rupture_Variation)
+#     in column names. Table names use full spellings.
+#   
+# 1.2.0 - 16 May 2007
+#   Changed Rupture_Variation_IDs table to
+# Rupture_Variation_Scenario_IDs table for
+# clarity
+#
+# 1.1.0 - 14 May 2007
+#   Add OpenSHA_CyberShake Interface Version Table
+#   Add Site_Regions Table
+#   Add Site_Ruptures Table
+#   Add Rupture_Variation_IDs Table
+#   Add Rupture_Variations Table
+#   Renamed tables and standardized naming conventions
+#   Added autoincrement statements to sequence number fields
+#      
+#
+# 1.0.0 - 2 May 2007
+#   Initial Definition
+#
+#   Table Naming Conventions:
+#   1) First Letter of Each Table Name Capitilized
+#   2) mysql types not capitalized
+#   3) Use Underscores to connect words
+#   4) Tables should have plural names
+#   5) Use unsigned int for auto increment primary key except for
+#       very large datasets
+#   6) Table names spell out words. Columns names may use appreviations
+#
+
+CREATE DATABASE CyberShake;
+USE CyberShake;
+
+#
+# Create a table to track versions of CyberShake Interface. A smart client
+# could query for the version and exit if it can't work with the interface.
+# Use Major.Minor.Bugfix convention as a string in this table (e.g. 1.0.0)
+# 
+create table OpenSHA_CyberShake_Interfaces
+(
+Interface_ID int unsigned not null auto_increment,
+Interface_Major_Version int unsigned not null,
+Interface_Minor_Version int unsigned not null,
+Interface_Bugfix_Version int unsigned not null,
+primary key (Interface_ID,Interface_Major_Version, Interface_Minor_Version, Interface_Bugfix_Version)
+) engine=InnoDB;
+
+#
+# Create table to track different probability models.
+# The description should contain enough metadata to 
+# be able to reconstruct the model.
+#
+
+CREATE TABLE ERF_Probability_Models
+(
+Prob_Model_ID int unsigned not null auto_increment,
+Prob_Model_Name varchar(50) not null,
+Prob_Model_Description varchar(200) not null,
+primary key (Prob_Model_ID)
+) ENGINE=InnoDB;
+
+#
+# Create table to track the time span for a probability
+# model.  Via this table, we can easily query for hazard
+# datasets for the same time span. 
+#
+
+CREATE TABLE Time_Spans
+(
+Time_Span_ID int unsigned not null auto_increment,
+Time_Span_Units enum('days', 'years') not null,
+Time_Span_Duration int unsigned not null,
+primary key (Time_Span_ID)
+) ENGINE=InnoDB;
+
+
+#
+# Create table to save information about the ERF which produced the ruptures
+# we are using for a CyberShake study. An ERF is identified by its type (e.g.
+# (e.g. WGCEP (2002)) together with the adjustable parameters used in this instance
+# of the ERF. Use of the same ERF, with difference adjustable parameters, will
+# result in two entries in this table with different ERF Identifiers.
+#
+
+CREATE TABLE ERF_IDs
+(
+ERF_ID int unsigned not null auto_increment,
+ERF_Name varchar(50) not null,
+ERF_Description varchar(150),
+Default_Prob_Model_ID int unsigned not null, 
+Default_Time_Span_ID int unsigned not null,
+primary key (ERF_ID),
+foreign key (Default_Prob_Model_ID) references ERF_Probability_Models(Prob_Model_ID),
+foreign key (Default_Time_Span_ID) references Time_Spans(Time_Span_ID)
+) ENGINE=InnoDB;
+
+#
+# For a given ERF, the adjustable parameters are stored for that ERF instance are 
+# stored in this ERF_Metadata table as attribute_name, attribute_value, attribute_type
+# tuples. Attribute_type should be a data type identifier (string,integer,float,double)
+# Units can be added optionally
+#
+
+CREATE TABLE ERF_Metadata
+(
+ERF_ID int unsigned not null,
+ERF_Attr_Name varchar(50) not null,
+ERF_Attr_Value varchar(50) not null,
+ERF_Attr_Type varchar(20),
+ERF_Attr_Units varchar(20),
+primary key (ERF_ID, ERF_Attr_Name,ERF_Attr_Value),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a table to store a list of ruptures produced by a particular ERF. This 
+# represents the "master list" of all Ruptures in the ERF. If the ERF has been
+# bounded geographically, the bounds will be specified in the metadata for this
+# ERF.
+#
+
+CREATE TABLE Ruptures
+(
+ERF_ID int unsigned not null,
+Source_ID int unsigned not null,
+Rupture_ID int unsigned not null,
+Source_Name varchar(100) not null,
+Source_Type varchar(20),
+Mag double not null,
+Prob double not null,
+Grid_Spacing double not null,
+Num_Rows int not null,
+Num_Columns int not null,
+Num_Points int not null,
+Start_Lat double not null,
+Start_Lon double not null,
+Start_Depth double not null,
+End_Lat double not null,
+End_Lon double not null,
+End_Depth double not null,
+primary key (ERF_ID, Source_ID, Rupture_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID)
+) ENGINE=InnoDB;
+
+# Create a table to track the kind of site (point of interest, 20/10/5 km mesh,
+# broadband station, etc.) that a CyberShake_Site is.  
+
+CREATE TABLE CyberShake_Site_Types
+(
+CS_Site_Type_ID int unsigned not null auto_increment,
+CS_Site_Type_Name varchar(50) not null,
+CS_Site_Type_Short_Name varchar(10) not null,
+primary key (CS_Site_Type_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a table that contains list of sites at which we calculating hazard curves.
+# Each site has a lat,lon and a unique short (5 char or less) name.
+#
+
+CREATE TABLE CyberShake_Sites
+(
+CS_Site_ID int unsigned not null auto_increment,
+CS_Site_Name varchar(50) not null,
+CS_Short_Name varchar(5) not null unique,
+CS_Site_Lat double not null,
+CS_Site_Lon double not null,
+CS_Site_Type_ID int unsigned,
+primary key (CS_Site_ID),
+unique key (CS_Short_Name),
+foreign key (CS_Site_Type_ID) references CyberShake_Site_Types(CS_Site_Type_ID)
+) ENGINE=InnoDB;
+
+#
+# Create table to store the maximum dimensions for a Site_Rupture List. 
+# The list of all ruptures are searched and the max and min lat and lon are
+# saved in this table. For each max or min value, a reference to the rupture
+# that caused that particulat max or min is saved. The ERF_ID is listed only
+# once, and the Source_ID and Rupture_IDs are valid only for that ERF.
+#
+
+Create Table CyberShake_Site_Regions
+(
+CS_Site_ID int unsigned not null,
+ERF_ID int unsigned not null,
+Cutoff_Dist double not null,
+
+Max_Lat double not null,
+Max_Lat_Source_ID int unsigned not null,
+Max_Lat_Rupture_ID int unsigned not null,
+
+Max_Lon double not null,
+Max_Lon_Source_ID int unsigned not null,
+Max_Lon_Rupture_ID int unsigned not null,
+
+Min_Lat double not null,
+Min_Lat_Source_ID int unsigned not null,
+Min_Lat_Rupture_ID int unsigned not null,
+
+Min_Lon double not null,
+Min_Lon_Source_ID int unsigned not null,
+Min_Lon_Rupture_ID int unsigned not null,
+
+primary key (CS_Site_ID,ERF_ID,Cutoff_Dist),
+foreign key (CS_Site_ID) references CyberShake_Sites(CS_Site_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID)
+) ENGINE=InnoDB;
+
+
+
+#
+# Create a table to identify which ruptures go with a particular site.
+# For each site, put in a list of ruptures that are within a specific 
+# cutoff distance.
+# Rupture lists for a site may be different for different ERFs.
+#
+
+CREATE TABLE CyberShake_Site_Ruptures
+(
+CS_Site_ID int unsigned not null,
+ERF_ID int unsigned not null,
+Source_ID int unsigned not null,
+Rupture_ID int unsigned not null,
+Cutoff_Dist double not null,
+primary key (CS_Site_ID, ERF_ID, Source_ID, Rupture_ID, Cutoff_Dist),
+foreign key (CS_Site_ID) references CyberShake_Sites(CS_Site_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (ERF_ID, Source_ID, Rupture_ID) references Ruptures(ERF_ID, Source_ID, Rupture_ID),
+foreign key (CS_Site_ID, ERF_ID, Cutoff_Dist) references CyberShake_Site_Regions(CS_Site_ID, ERF_ID, Cutoff_Dist)
+) ENGINE=InnoDB;
+
+
+#
+# Create a points table. Each rupture in the "master list" will have a set of
+# points and data values for rake,dip,strike at that point. This table will have
+# the most entries because it can have hunderds of points for each rupture. The
+# primary key is a bigint to handle the expected very large number of entries.
+#
+CREATE TABLE Points
+(
+Point_ID bigint unsigned not null auto_increment,
+ERF_ID int unsigned not null,
+Source_ID int unsigned not null,
+Rupture_ID int unsigned not null,
+Lat double not null,
+Lon double not null,
+Depth double not null,
+Rake double not null,
+Dip double not null,
+Strike double not null,
+primary key (Point_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (ERF_ID, Source_ID, Rupture_ID) references Ruptures(ERF_ID, Source_ID,Rupture_ID)
+) ENGINE=InnoDB;
+
+#
+# Create table that defines a rupture variation instance. For each ERF, we may
+# want to generate multiple list of variations, one with many variations, 
+# another with fewer variations. We will create a master set of variations for each
+# Rupture List and identifiy that set of variations with a Rupture_Varation_ID.
+# In this table, the primary key is the Rupture_Variation_ID and the ERF_ID. 
+# However since Rupture_Variation_ID is an alternate key, we will use that as
+# the unique identifier in other tables we we are trying to identify which rupture
+# variation is being used.
+#
+
+CREATE TABLE Rupture_Variation_Scenario_IDs
+(
+Rup_Var_Scenario_ID int unsigned not null auto_increment,
+ERF_ID int unsigned not null,
+Rup_Var_Scenario_Name varchar(50) not null,
+Rup_Var_Scenario_Description varchar(150),
+primary key (Rup_Var_Scenario_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID)
+) ENGINE=InnoDB;
+
+#
+# For a given ERF, the adjustable parameters are stored for that ERF instance are 
+# stored in this ERF_Metadata table as attribute_name, attribute_value, attribute_type
+# tuples. Attribute_type should be a data type identifier (string,integer,float,double)
+# Units can be added optionally.
+#
+
+CREATE TABLE Rupture_Variation_Scenario_Metadata
+(
+Rup_Var_Scenario_ID int unsigned not null,
+Rup_Var_Scenario_Attr_Name varchar(50) not null,
+Rup_Var_Scenario_Attr_Value varchar(50) not null,
+Rup_Var_Scenario_Attr_Type varchar(20) not null,
+Rup_Var_Scenario_Attr_Units varchar(20),
+primary key (Rup_Var_Scenario_ID,
+  Rup_Var_Scenario_Attr_Name,
+  Rup_Var_Scenario_Attr_Value),
+foreign key (Rup_Var_Scenario_ID) references 
+  Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a Rupture Variation table that identifies every variation for every rupture
+# for a given ERF and a given Rupture Variation. 
+# The table also stores an entry for the Logical File Name (LFN)
+# associated with the Variation file. 
+# To find the rupture variations associated with a site, you must select the site and
+# find all the ruptures associated with that site. Then, for each rupture, find all
+# rupture variations associated with that rupture.
+# We are asking the user of the table to insure that the rup_var_id is unique. This
+# will allow us to assign Rup_var numbers that match those generated by the Rupture
+# variation generator.
+#
+
+CREATE TABLE Rupture_Variations
+(
+Rup_Var_ID bigint unsigned not null,
+Rup_Var_Scenario_ID int unsigned not null,
+ERF_ID int unsigned not null,
+Source_ID int unsigned not null,
+Rupture_ID int unsigned not null,
+Rup_Var_LFN varchar (50) not null,
+Hypocenter_Lat double,
+Hypocenter_Lon double,
+Hypocenter_Depth double, 
+primary key (ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (ERF_ID, Source_ID, Rupture_ID) references 
+  Ruptures(ERF_ID, Source_ID, Rupture_ID),
+foreign key (Rup_Var_Scenario_ID) references 
+  Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID)
+) ENGINE=InnoDB;
+
+#
+# Create table that defines a velocity model, to track runs with different models.
+# Model name is separate from model version.
+#
+
+CREATE TABLE Velocity_Models
+(
+Velocity_Model_ID int unsigned not null auto_increment,
+Velocity_Model_Name varchar(50) not null,
+Velocity_Model_Version varchar(50) not null,
+primary key (Velocity_Model_ID)
+) ENGINE=InnoDB;
+
+#
+# Create table that defines a SGT instance. We may
+# want to generate multiple SGT's with different characteristics, parameters,
+# or code bases.  Because the SGT's currently contain
+# data only at the rupture surfaces we will associate an ERF with each SGT_Variation.
+#
+
+CREATE TABLE SGT_Variation_IDs
+(
+SGT_Variation_ID int unsigned not null auto_increment,
+SGT_Variation_Name varchar(50) not null,
+SGT_Variation_Description varchar(150),
+primary key (SGT_Variation_ID)
+) ENGINE=InnoDB;
+
+#
+# For a given SGT_Variation, the adjustable parameters are stored for that SGT_Variation
+# in this SGT_Variation_Metadata table as attribute_name, attribute_value, attribute_type
+# tuples. Attribute_type should be a data type identifier (string,integer,float,double)
+# Units can be added optionally.
+#
+
+CREATE TABLE SGT_Variation_Metadata
+(
+SGT_Variation_ID int unsigned not null,
+SGT_Variation_Attr_Name varchar(50) not null,
+SGT_Variation_Attr_Value varchar(50) not null,
+SGT_Variation_Attr_Type varchar(20) not null,
+SGT_Variation_Attr_Units varchar(20),
+primary key (SGT_Variation_ID, SGT_Variation_Attr_Name, SGT_Variation_Attr_Value),
+foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID)
+) ENGINE=InnoDB;
+
+#
+# Concept of a Study, so we caN track runs and hazard datasets as belonging to a study
+#
+CREATE TABLE Studies
+(
+Study_ID int unsigned not null auto_increment,
+Study_Name varchar(50) not null,
+primary key (Study_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a table to represent a "run" -- a workflow execution with a certain
+# set of params at a certain time.  Time is timestamp of workflow.
+#
+
+CREATE TABLE CyberShake_Runs
+(
+Run_ID int unsigned not null auto_increment,
+Site_ID int unsigned not null,
+ERF_ID int unsigned not null,
+SGT_Variation_ID int unsigned not null,
+Velocity_Model_ID int unsigned not null,
+Rup_Var_Scenario_ID int unsigned not null,
+Status varchar(32) not null,
+Status_Time datetime not null,
+Last_User varchar(32) not null,
+SGT_Host varchar(100),
+SGT_Time datetime,
+PP_Host varchar(100),
+PP_Time datetime,
+Comment varchar(128),
+Job_ID varchar(64),
+Submit_Dir varchar(256),
+Notify_User varchar(128),
+Max_Frequency double,
+Low_Frequency_Cutoff double,
+Model_Vs30 double,
+Mesh_Vs_Surface double,
+Vs30_Source varchar(100),
+Wills_Vs30 double,
+Z2_5 double,
+Z1_0 double,
+Minimum_Vs double,
+SGT_Source_Filter_Frequency double,
+Study_ID int unsigned,
+primary key (Run_ID),
+foreign key (Site_ID) references CyberShake_Sites(CS_Site_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID),
+foreign key (Rup_Var_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID),
+foreign key (Velocity_Model_ID) references Velocity_Models(Velocity_Model_ID),
+foreign key (Study_ID) references Studies(Study_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a table for storing the different types of IMs 
+# stored in the PeakAmplitudes table.
+#
+
+CREATE TABLE IM_Types
+(
+IM_Type_ID int unsigned not null auto_increment,
+IM_Type_Measure varchar(50) not null,
+IM_Type_Value double,
+Units varchar(50) not null,
+IM_Type_Component varchar(50) not null,
+primary key (IM_Type_ID)
+) ENGINE=InnoDB;
+
+#
+# Create an Intensity Measure (IM) table for storing the results of 
+# the CyberShake workflow.
+#
+
+CREATE TABLE PeakAmplitudes
+(
+Source_ID int unsigned not null,
+Rupture_ID int unsigned not null,
+Rup_Var_ID bigint unsigned not null,
+Run_ID int unsigned not null,
+IM_Type_ID int unsigned not null,
+IM_Value double not null,
+primary key (Run_ID, Source_ID, Rupture_ID, Rup_Var_ID, IM_Type_ID),
+foreign key (IM_Type_ID) references IM_Types(IM_Type_ID),
+foreign key (Run_ID) references CyberShake_Runs(Run_ID)
+) ENGINE=InnoDB;
+
+
+#
+# A Hazard dataset is a unit of multiple hazard curves
+# computed using the same parameters, so they can logically
+# be considered a single unit.
+#
+
+CREATE TABLE Hazard_Datasets
+(
+Hazard_Dataset_ID int unsigned not null auto_increment,
+ERF_ID int unsigned not null,
+Rup_Var_Scenario_ID int unsigned not null,
+SGT_Variation_ID int unsigned not null,
+Velocity_Model_ID int unsigned not null,
+Prob_Model_ID int unsigned not null,
+Time_Span_ID int unsigned not null,
+Time_Span_Start_Date date,
+Max_Frequency double,
+Low_Frequency_Cutoff double,
+Rup_Var_Prob_Mod_ID int unsigned,
+Study_ID int unsigned,
+primary key (Hazard_Dataset_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (Rup_Var_Scenario_ID) references Rupture_Variation_Scenario_IDs(Rup_Var_Scenario_ID),
+foreign key (SGT_Variation_ID) references SGT_Variation_IDs(SGT_Variation_ID),
+foreign key (Velocity_Model_ID) references Velocity_Models(Velocity_Model_ID),
+foreign key (Prob_Model_ID) references ERF_Probability_Models(Prob_Model_ID),
+foreign key (Time_Span_ID) references Time_Spans(Time_Span_ID),
+foreign key (Rup_Var_Prob_Mod_ID) references Rupture_Variation_Probability_Modifier(Rup_Var_Prob_Mod_ID),
+foreign key (Study_ID) references Studies(Study_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a hazard curve table.
+#
+
+CREATE TABLE Hazard_Curves
+(
+Hazard_Curve_ID int unsigned not null auto_increment,
+Run_ID int unsigned not null,
+Curve_Date date,
+IM_Type_ID int unsigned not null,
+Hazard_Dataset_ID int unsigned,
+primary key (Hazard_Curve_ID),
+foreign key (Run_ID) references CyberShake_Runs(Run_ID),
+foreign key (IM_Type_ID) references IM_Types(IM_Type_ID),
+foreign key (Hazard_Dataset_ID) references Hazard_Datasets(Hazard_Dataset_ID)
+) ENGINE=InnoDB;
+
+#
+# Create a hazard curve points table.
+# It contains (x,y) values for a certain hazard curve.
+#
+
+CREATE TABLE Hazard_Curve_Points
+(
+Hazard_Curve_Point_ID int unsigned not null auto_increment,
+Hazard_Curve_ID int unsigned not null,
+X_Value float not null,
+Y_Value float not null,
+primary key (Hazard_Curve_Point_ID),
+foreign key (Hazard_Curve_ID) references Hazard_Curves(Hazard_Curve_ID)
+) ENGINE=InnoDB;
+
+#
+# Create Attenuation Relationships table
+# Tracks various ARs
+#
+
+CREATE TABLE Atten_Rels
+(
+AR_ID int unsigned not null auto_increment,
+AR_Name varchar(50) not null,
+AR_Short_Name varchar(30) not null,
+primary key (AR_ID)
+) ENGINE=InnoDB;
+
+#
+# Create AR metadata table
+# Keeps track of metadata associated with a given AR_ID
+#
+
+CREATE TABLE Atten_Rel_Metadata
+(
+AR_ID int unsigned not null,
+AR_Attr_Name varchar(50) not null,
+AR_Attr_Value varchar(100) not null,
+AR_Attr_Type varchar(20),
+AR_Attr_Units varchar(20),
+primary key (AR_ID, AR_Attr_Name, AR_Attr_Value),
+foreign key (AR_ID) references Atten_Rels(AR_ID)
+) ENGINE=InnoDB;
+
+#
+# Create AR Datasets
+# Similar to CS Datasets, group together curves generated with the same parameters
+#
+
+CREATE TABLE AR_Hazard_Datasets
+(
+AR_Hazard_Dataset_ID int unsigned not null auto_increment,
+AR_ID int unsigned not null,
+ERF_ID int unsigned not null,
+Prob_Model_ID int unsigned not null,
+Time_Span_ID int unsigned not null,
+Time_Span_Start_Date date,
+Min_Lat double,
+Max_Lat double,
+Min_Lon double,
+Max_Lon double,
+Grid_Spacing double,
+primary key (AR_Hazard_Dataset_ID),
+foreign key (AR_ID) references Atten_Rels(AR_ID),
+foreign key (ERF_ID) references ERF_IDs(ERF_ID),
+foreign key (Prob_Model_ID) references ERF_Probability_Models(Prob_Model_ID),
+foreign key (Time_Span_ID) references Time_Spans(Time_Span_ID)
+) ENGINE=InnoDB;
+
+#
+# Create AR Hazard Curves
+# Similar to CS Hazard Curves, but from OpenSHA
+#
+
+CREATE TABLE AR_Hazard_Curves
+(
+AR_Hazard_Curve_ID int unsigned not null auto_increment,
+Lat double not null,
+Lon double not null, 
+Curve_Date date,
+AR_Hazard_Dataset_ID int unsigned not null,
+IM_Type_ID int unsigned not null,
+primary key (AR_Hazard_Curve_ID),
+foreign key (IM_Type_ID) references IM_Types(IM_Type_ID),
+foreign key (AR_Hazard_Dataset_ID) references AR_Hazard_Datasets(AR_Hazard_Dataset_ID)
+) ENGINE=InnoDB;
+
+#
+# List of points on an AR hazard curve
+#
+
+CREATE TABLE AR_Hazard_Curve_Points
+(
+AR_Hazard_Curve_Point_ID int unsigned not null auto_increment,
+AR_Hazard_Curve_ID int unsigned not null,
+X_Value float not null,
+Y_Value float not null,
+primary key (AR_Hazard_Curve_Point_ID),
+foreign key (AR_Hazard_Curve_ID) references AR_Hazard_Curves(AR_Hazard_Curve_ID)
+) ENGINE=InnoDB;
+
+#
+# Probability modification applied to the calculation of a hazard curve.
+#
+CREATE TABLE Rupture_Variation_Probability_Modifier
+(
+Rup_Var_Prob_Mod_ID int unsigned not null auto_increment,
+Rup_Var_Prob_Mod_Name varchar(50) not null,
+Rup_Var_Prob_Mod_Description varchar(500) not null,
+primary key (Rup_Var_Prob_Mod_ID)
+) ENGINE=InnoDB;
+
+#
+# Table to track velocity model metadata
+#
+CREATE TABLE Velocity_Model_Metadata
+(
+Velocity_Model_ID int unsigned not null,
+Velocity_Model_Attr_Name varchar(50) not null,
+Velocity_Model_Attr_Value varchar(50) not null,
+Velocity_Model_Attr_Type varchar(20) not null,
+Velocity_Model_Attr_Units varchar(20),
+primary key (Velocity_Model_ID, Velocity_Model_Attr_Name),
+foreign key (Velocity_Model_ID) references Velocity_Models (Velocity_Model_ID)
+) ENGINE=InnoDB;
+
