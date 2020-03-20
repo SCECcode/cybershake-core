@@ -346,16 +346,19 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		#endif
 		//Do not permit more than this amount to be used
 		//Usage is rupture variations, SGTs, memcached (32 MB/core), and gfmech; everything else is tiny
+		//Summit has 3.04 GB per hardware thread.
 		long long MAX_ALLOWED = (long long)(1.7 * 1024.0 * 1024.0 * 1024.0);
-		int memcached = 32*1024*1024;
+		//int memcached = 32*1024*1024;
 		//gfmech uses 1st power of 2 larger than 4*nt
-		int power = ceil(log2(nt))+2;
-		int gfmech_size = (int)(3.0*12.0*sizeof(float)*pow(2, power));
+		//int power = ceil(log2(nt))+2;
+		//int gfmech_size = (int)(3.0*12.0*sizeof(float)*pow(2, power));
 		//printf("MAX_ALLOWED = %ld\n", MAX_ALLOWED);
-		int num_vars_per_task = (MAX_ALLOWED - sgt_size - memcached)/(single_rv_size + gfmech_size);
+		//int num_vars_per_task = (MAX_ALLOWED - sgt_size - memcached)/(single_rv_size + gfmech_size);
+		int num_vars_per_task = (MAX_ALLOWED - sgt_size)/single_rv_size;
 		//Change for debugging
 		//num_vars_per_task = 2;
-		//printf("num_vars_per_task = %d\n", num_vars_per_task);
+		printf("MAX_ALLOWED=%ld, sgt_size=%ld, single_rv_size=%ld\n", MAX_ALLOWED, sgt_size, single_rv_size);
+		printf("num_vars_per_task = %d\n", num_vars_per_task);
 		int num_vars = num_slips * num_hypos;
 		int tasks_for_rupture = ceil(((float)num_vars)/((float)num_vars_per_task));
 		if (debug) {

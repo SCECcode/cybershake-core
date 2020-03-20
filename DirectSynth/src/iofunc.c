@@ -114,7 +114,18 @@ ptr = realloc(ptr,len);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory reallocation error\n");
+   fprintf(stderr,"*****  memory error in process %d\n", my_global_id);
    fprintf(stderr,"Tried to realloc %ld bytes.\n", len);
+   void* array[20];
+   size_t size;
+   char** strings;
+   backtrace(array, 20);
+   strings = backtrace_symbols(array, size);
+   int i;
+   for (i=0; i<size; i++) {
+        fprintf(stderr, "stacktrace %d) %s\n", i, strings[i]);
+   }
+   fflush(stderr);
    exit(-1);
    }
 

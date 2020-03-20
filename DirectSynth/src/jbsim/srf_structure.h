@@ -117,12 +117,6 @@ struct srf_planerectangle
    struct srf_prectsegments *prectseg;
    };
 
-struct srf_headercomment
-   {
-   int nline;
-   char *cbuf;
-   };
-
 #ifdef _V3_3_1
 struct standrupformat
    {
@@ -132,6 +126,12 @@ struct standrupformat
    struct srf_allpoints srf_apnts;
    };
 #else
+struct srf_headercomment
+   {
+   int nline;
+   char *cbuf;
+   };
+
 struct standrupformat
    {
    char version[32];

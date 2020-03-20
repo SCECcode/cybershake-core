@@ -6,7 +6,7 @@
 #include <libmemcached/memcached.h>
 
 //void timeshift_sgt(float *seis,int ntout,float *gf,struct sgtheader *gfh,int ntsum,float *t0,float *bt0,int nsgt);
-void timeshift_sgt(float* seis, int ntout, float* gf, int ntsum, float* t0, float* bt0, struct sgtparams* sgtpar);
+void timeshift_sgt(float* seis, int ntout, float* gf, int ntsum, float* t0, float* bt0, struct sgtparams* sgtpar, int srf_index);
 
 void sgt_subset(struct sgtfileparams *sgtfpar,struct sgtfileparams *sgtextract,struct sgtmaster *sgtmast,struct sgtindex *sgtindx,int nm,long long *mindx,char *dir)
 {
@@ -1118,7 +1118,7 @@ if(sgtfpar->zfile[0] != '\0')
    free(rawdata);
 }
 
-void sum_sgt(float *seis,int ntout,float *gfmech,struct sgtparams *sgtpar,int ntsum,float *rupt,float *tstart,struct mechparam mp)
+void sum_sgt(float *seis,int ntout,float *gfmech,struct sgtparams *sgtpar,int ntsum,float *rupt,float *tstart,struct mechparam mp, int srf_index)
 {
 int ig, ip, it, im;
 float pbar, maxgft, backt0, t0[4], gft[4];
@@ -1146,6 +1146,7 @@ for(ig=0;ig<sgtpar->nsgt;ig++)
       maxgft = gft[ig];
    }
 
+//if (srf_index==12012) printf("maxgft=%f\n", maxgft);
 backt0 = 0.0;
 for(ig=0;ig<sgtpar->nsgt;ig++)
    {
@@ -1157,18 +1158,19 @@ for(ig=0;ig<sgtpar->nsgt;ig++)
    t0[ig] = t0[ig] + sgtheadptr->tst;
    }
 backt0 = backt0 + *rupt - *tstart;
+//if (srf_index==12012) printf("backt0=%f, *rupt=%f, *tstart=%f\n", backt0, *rupt, *tstart);
 
 for(im=0;im<mp.nmech;im++)
    {
    sptr = seis + 3*im*ntout;
    gfptr = gfmech + 12*im*ntsum;
    //timeshift_sgt(sptr,ntout,gfptr,sgthead,ntsum,t0,&backt0,sgtpar->nsgt);
-   timeshift_sgt(sptr,ntout,gfptr,ntsum,t0,&backt0,sgtpar);
+   timeshift_sgt(sptr,ntout,gfptr,ntsum,t0,&backt0,sgtpar,srf_index);
    }
 }
 
 //void timeshift_sgt(float *seis,int ntout,float *gf,struct sgtheader *gfh,int ntsum,float *t0,float *bt0,int nsgt)
-void timeshift_sgt(float* seis, int ntout, float* gf, int ntsum, float* t0, float* bt0, struct sgtparams* sgtpar)
+void timeshift_sgt(float* seis, int ntout, float* gf, int ntsum, float* t0, float* bt0, struct sgtparams* sgtpar,int srf_index)
 {
 struct complex *gc0, *gc1, *gc2;
 float *gf0, *gf1, *gf2, *sv, *sn, *se, *gfv, *gfn, *gfe;
@@ -1205,7 +1207,7 @@ for(ig=0;ig<nsgt;ig++)
    for(it=tapst+1;it<sgtheadptr->nt;it++)
       {
       fac = half*(one + cos(arg*(it-tapst)));
-      //fprintf(stderr, "gf0[%d] = %e, gf1[%d] = %e, gf2[%d] = %e\n", it, gf0[it], it, gf1[it], it, gf2[it]);
+      //if (srf_index==12012) printf("gf0[%d] = %e, gf1[%d] = %e, gf2[%d] = %e\n", it, gf0[it], it, gf1[it], it, gf2[it]);
       gf0[it] = fac*gf0[it];
       gf1[it] = fac*gf1[it];
       gf2[it] = fac*gf2[it];
@@ -1214,6 +1216,7 @@ for(ig=0;ig<nsgt;ig++)
 /* apply time shift */
 
    tsh = t0[ig] + *bt0;
+   //if (srf_index==12012) printf("tsh=%f, t0[%d] = %f, *bt0 = %f\n", tsh, ig, t0[ig], *bt0);
    if(tsh >= 0.0) {
       //itshift = (int)(tsh/gfh[ig].dt + 0.5);
       itshift = (int)(tsh/sgtheadptr->dt + 0.5);
@@ -1222,6 +1225,7 @@ for(ig=0;ig<nsgt;ig++)
       itshift = (int)(tsh/sgtheadptr->dt - 0.5);
    }
 
+   //if (srf_index==12012) printf("itshift=%d\n", itshift);
    //it0 = gfh[ig].nt + itshift;
    it0 = sgtheadptr->nt + itshift;
 
@@ -1244,7 +1248,7 @@ for(ig=0;ig<nsgt;ig++)
       {
       for(i=it0-1;i>=itshift;i--)
          {
-	 //fprintf(stderr, "gf0[%d] = %e, gf1[%d] = %e, gf2[%d] = %e\n", i-itshift, gf0[i-itshift], i-itshift, gf1[i-itshift], i-itshift, gf2[i-itshift]);
+	 //if (srf_index==12012) printf("gf0[%d] = %e, gf1[%d] = %e, gf2[%d] = %e\n", i-itshift, gf0[i-itshift], i-itshift, gf1[i-itshift], i-itshift, gf2[i-itshift]);
 	 sv[i] = sv[i] + gf0[i-itshift];
 	 sn[i] = sn[i] + gf1[i-itshift];
 	 se[i] = se[i] + gf2[i-itshift];
@@ -1305,6 +1309,7 @@ for(im=0;im<mp.nmech;im++)
    sum = 0.0;
    for(ig=0;ig<(sgtpar->nsgt);ig++)
       {
+      //fprintf(stderr, "Processing SGT point ID %ld\n", sgtpar->indx[ig]);
       //sgtheadptr = sgthead + sgtpar->master_ip[ig];
       sgtheadptr = sgtpar->sgt_head_ptrs[ig];
       //fprintf(stderr, "mech_sgt: head_ptr is at %ld, xmom is %f.\n", sgtheadptr, sgtheadptr->xmom);
@@ -1395,15 +1400,19 @@ for(im=0;im<mp.nmech;im++)
          sz = zamp*(cxx[it]*mxx + cyy[it]*myy + czz[it]*mzz
                + cxy[it]*mxy + cxz[it]*mxz + cyz[it]*myz);
 
-	 /*if (it<10) {
-		 fprintf(stderr, "it=%d, sx=%f, sy=%f, sz=%f\n", it, sx, sy, sz);
-		 fprintf(stderr, "axx=%f, mxx=%f, ayy=%f, myy=%f, azz=%f, mzz=%f, axy=%f, mxy=%f, axz=%f, mxz=%f, ayx=%f, myz=%f\n", axx[it], mxx, ayy[it], myy, azz[it], mzz, axy[it], mxy, axz[it], mxz, ayz[it], myz);
+	 /*if (it>=100 && it<200) {
+		 fprintf(stderr, "it=%d, sx=%e, sy=%e, sz=%e\n", it, sx, sy, sz);
+		 fprintf(stderr, "axx=%e, mxx=%f, ayy=%e, myy=%f, azz=%e, mzz=%f, axy=%e, mxy=%f, axz=%e, mxz=%f, ayx=%e, myz=%f\n", axx[it], mxx, ayy[it], myy, azz[it], mzz, axy[it], mxy, axz[it], mxz, ayz[it], myz);
 		 fprintf(stderr, "xamp=%f\n", xamp);
 	 }*/
 	
          gfe[it] = sx*sinA + sy*cosA;
          gfn[it] = sx*cosA - sy*sinA;
          gfv[it] = -sz;
+	 /*if (it>=100 & it<200) {
+                fprintf(stderr, "gfe=%e, gfn=%e, gfv=%e\n", gfe[it], gfn[it], gfv[it]);
+        }*/
+
          }
       }
    }

@@ -44,6 +44,7 @@ if(apval_ptr[ip].nt3 > 0)
 *dip = apval_ptr[ip].dip;
 *rak = apval_ptr[ip].rake;
 *rt = apval_ptr[ip].tinit;
+//if (ip==10825) printf("*rt in get_srfpars: %f\n", *rt);
 }
 
 void srf_stf(struct standrupformat *srf,int off,int ip,float *s,float *u,float *stf,int nt,float *dt,struct mechparam mp,float *space)

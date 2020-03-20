@@ -81,6 +81,8 @@ extern const int Z_COMP_FLAG;
 #define   U2FLAG   2
 #define   U3FLAG   3
 
+#define	MAXLINE	2048
+
 #if _FILE_OFFSET_BITS == 64
 
 #define RDONLY_FLAGS    O_RDONLY | O_LARGEFILE
