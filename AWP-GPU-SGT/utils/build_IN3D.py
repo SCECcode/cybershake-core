@@ -8,7 +8,7 @@ Since this is the GPU version, we have to make sure NX/PX and NY/PY are both eve
 import sys
 import os
 import math
-import MySQLdb
+import pymysql
 from pyproj import Proj
 
 #If site to southernmost or easternmost hypocenter distance is greater than CUTOFF_DIST, use 300 sec as SGT length
@@ -16,11 +16,16 @@ def calc_simulated_time(run_id, param):
 	#in KM
 	sgt_length = float(param['TMAX'])
 	CUTOFF_DIST = 450
-	conn = MySQLdb.connect(host='moment.usc.edu', user='cybershk_ro', passwd='CyberShake2007', db='CyberShake')
+	conn = pymysql.connect(host='moment.usc.edu', user='cybershk_ro', passwd='CyberShake2007', db='CyberShake')
 	cur = conn.cursor()
 	query = 'select S.CS_Site_Lat, S.CS_Site_Lon from CyberShake_Sites S, CyberShake_Runs R where S.CS_Site_ID=R.Site_ID and R.Run_ID=%d;' % (run_id)
+	print query
 	cur.execute(query)
-	[site_lat, site_lon] = [float(l) for l in cur.fetchone()]
+	#if for some reason this site isn't in the DB, assume we're doing something by hand and use the standard SGT length
+	hits = cur.fetchone()
+	if hits==None:
+		return sgt_length
+	[site_lat, site_lon] = [float(l) for l in hits]
 	query_prefix = 'select V.Hypocenter_Lat, V.Hypocenter_Lon from CyberShake_Runs R, CyberShake_Site_Ruptures SR, Rupture_Variations V where R.Run_ID=%d and R.Site_ID=SR.CS_Site_ID and R.ERF_ID=SR.ERF_ID and R.Rup_Var_Scenario_ID=V.Rup_Var_Scenario_ID and R.ERF_ID=V.ERF_ID and SR.Source_ID=V.Source_ID and SR.Rupture_ID=V.Rupture_ID' % (run_id)
 	query = "%s order by V.Hypocenter_Lat asc limit 1;" % (query_prefix)
 	print query
@@ -40,6 +45,7 @@ def calc_simulated_time(run_id, param):
 			max_dist = dist
 	print "Maximum distance = %f km" % max_dist
 	if max_dist>CUTOFF_DIST:
+		#pass
 		sgt_length = 300.0
 	conn.close()
 	return sgt_length
