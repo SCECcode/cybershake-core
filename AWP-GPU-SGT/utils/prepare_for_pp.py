@@ -15,15 +15,22 @@ sys.path.append(path_add)
 import config
 
 CS_PATH = config.getProperty("CS_PATH")
+MPI_CMD = config.getProperty("MPI_CMD")
 
-LFS_PATH = "/opt/cray/lustre-cray_gem_s/2.8.0_3.0.101_0.46.1_1.0502.8871.21.1-1.0502.0.6.1/bin/lfs"
+#LFS_PATH = "/opt/cray/lustre-cray_gem_s/2.8.0_3.0.101_0.46.1_1.0502.8871.21.1-1.0502.0.6.1/bin/lfs"
 
 def reformat(input_filename, timesteps, num_pts, output_filename, comp):
 	#First, set up striping on the output file
-	command = "%s setstripe -c 160 -S 5m %s" % (LFS_PATH, output_filename)
-	exitcode = os.system(command)
+	#command = "%s setstripe -c 160 -S 5m %s" % (LFS_PATH, output_filename)
+	#exitcode = os.system(command)
 	#On Titan, need aprun to execute this on a compute node, not the aprun node
-	command = "aprun -n 4 -N 2 -S 1 %s/SgtHead/bin/reformat_awp_mpi %s %d %d %s" % (CS_PATH, input_filename, timesteps, num_pts, output_filename)
+	if MPI_CMD=="aprun":
+		command = "aprun -n 4 -N 2 -S 1 %s/SgtHead/bin/reformat_awp_mpi %s %d %d %s" % (CS_PATH, input_filename, timesteps, num_pts, output_filename)
+	elif MPI_CMD=="jsrun":
+		command = "jsrun -n 8 -c 1 -a 1 %s/SgtHead/bin/reformat_awp_mpi %s %d %d %s" % (CS_PATH, input_filename, timesteps, num_pts, output_filename)
+	else:
+		print("Not sure what to do with MPI_CMD=%s, aborting." % MPI_CMD)
+		sys.exit(2)
 	if comp=="z":
 		#Add z flag to apply additional factor of two
 		command = "%s -z" % command
@@ -34,7 +41,13 @@ def reformat(input_filename, timesteps, num_pts, output_filename, comp):
 
 def write_head(modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, comp, moment, source_freq, media, header_name):
 	#On Titan, need aprun to execute this on a compute node, not the aprun node
-	command = "aprun -n 1 %s/SgtHead/bin/write_head %s %s %s %s %f %d %f %d %s %s %f %s %s" % (CS_PATH, modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, comp, moment, source_freq, media, header_name)
+	if MPI_CMD=="aprun":
+		command = "aprun -n 1 %s/SgtHead/bin/write_head %s %s %s %s %f %d %f %d %s %s %f %s %s" % (CS_PATH, modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, comp, moment, source_freq, media, header_name)
+	elif MPI_CMD=="jsrun":
+		command = "jsrun -n 1 %s/SgtHead/bin/write_head %s %s %s %s %f %d %f %d %s %s %f %s %s" % (CS_PATH, modelbox, cordfile, fdloc, gridout, spacing, nt, dt, decimation, comp, moment, source_freq, media, header_name)
+	else:
+		print("Not sure what to do with MPI_CMD=%s, aborting." % MPI_CMD)
+                sys.exit(2)
 	if not comp=="z":
 		#Add c flag to use corrected mu
 		command = "%s -c " % command
