@@ -56,6 +56,7 @@ double sfrand(int *seed);
 void set_ne(float *elon,float *elat,float *slon,float *slat,float *sn,float *se);
 void get_master_list_opt(struct sgtparams *sgtp, int np, long long* mindx, int* nm);
 void get_indx(float *lon,float *lat,float *dep,struct sgtindex *indx,struct geoprojection *gp);
+void cfft_r(struct complex* x,int n,int isign);
 
 //sgt3d_subs.c
 void get_sgtpars(struct sgtfileparams *sgtfpar,struct sgtmaster *sgtmast,struct sgtindex **sgtindx);
