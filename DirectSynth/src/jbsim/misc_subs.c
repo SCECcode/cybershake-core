@@ -462,7 +462,7 @@ int n, isign;
 	cfft_r(x,n/2,isign);
    }
 
-cfft_r(x,n,isign)
+void cfft_r(x,n,isign)
 struct complex *x;
 int n,isign;
    {

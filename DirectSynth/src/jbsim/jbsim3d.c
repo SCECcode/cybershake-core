@@ -107,6 +107,10 @@ mstpar("dtout","f",&dtout);
 getpar("tstart","f",&tstart);
 getpar("sname","s",sname);
 
+//If we specify target_hypo_spacing, then pass it through to rupgen_genslip
+float target_hypo_spacing = -1.0;
+getpar("target_hypo_spacing", "f", &target_hypo_spacing);
+
 rg_stats_t stats;
 set_memcached_server("127.0.0.1");
 
@@ -130,12 +134,16 @@ if (debug) {
 //Generate all ruptures
 for (i=0; i<num_rup_vars; i++) {
 	//printf("Generating rupture from file %s, slip %d, hypo %d, spacing %d, dtout %f\n", rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, rupture_spacing, dtout);
-	rupgen_genslip(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout);
-	/*if (i==1) {
-		char srf_out[512];
-		sprintf(srf_out, "%s.%d.srf", rup_geom_file, rup_vars[i].rup_var_id);
-		write_srf(&(srf[i]), srf_out, 0);
-	}*/
+	if (target_hypo_spacing>0.0) {
+		char params[256];
+		sprintf(params, "target_hypo_spacing=%f seed=6000011", target_hypo_spacing);
+		rupgen_genslip_with_params(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout, params);
+	} else {
+		rupgen_genslip(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout);
+	}
+	/*char srf_out[512];
+	sprintf(srf_out, "%s.%d.srf", rup_geom_file, rup_vars[i].rup_var_id);
+	write_srf(&(srf[i]), srf_out, 0);*/
 }
 if (debug) {
 	gettimeofday(&tv_end, NULL);

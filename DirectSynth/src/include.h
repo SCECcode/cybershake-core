@@ -22,6 +22,7 @@
 #include <limits.h>
 #include <execinfo.h>
 #include <malloc.h>
+#include <sched.h>
 
 #include <sys/file.h>
 #include <sys/resource.h>
@@ -31,5 +32,6 @@
 #include <sys/types.h>
 
 #include "cfuhash.h"
+#include "getpar.h"
 
 #endif /* INCLUDE_H_ */

@@ -115,7 +115,7 @@ for(ip=0;ip<apnts_ptr->np;ip++)
    apval_ptr[ip].tinit = ps[ip].rupt;
 }
 
-void write_srf(struct standrupformat *srf,char *file,int bflag)
+void write_srf1(struct standrupformat *srf,char *file,int bflag)
 {
 FILE *fpw, *fopfile();
 struct srf_planerectangle *prect_ptr;
@@ -289,6 +289,210 @@ else
       }
    fclose(fpw);
    }
+}
+
+void write_srf2(struct standrupformat *srf,char *file,int bflag)
+{
+FILE *fpw, *_f_opfile();
+struct srf_planerectangle *prect_ptr;
+struct srf_prectsegments *prseg_ptr;
+struct srf_allpoints *apnts_ptr;
+struct srf_apointvalues *apval_ptr;
+
+float area;
+float *stf;
+int i, j, k, nt6, it, ig;
+
+char *sptr, pword[32];
+int fdw;
+
+int ip, np_rite;
+
+prect_ptr = &(srf->srf_prect);
+prseg_ptr = prect_ptr->prectseg;
+apnts_ptr = &(srf->srf_apnts);
+apval_ptr = apnts_ptr->apntvals;
+
+if(bflag)
+   {
+   if(strcmp(file,"stdout") == 0)
+      fdw = STDOUT_FILENO;
+   else
+      fdw = _croptrfile(file);
+
+   _rite(fdw,srf->version,sizeof(srf->version));
+
+   if(strcmp(srf->type,"PLANE") == 0)
+      {
+      _rite(fdw,srf->type,sizeof(srf->type));
+      _rite(fdw,&(prect_ptr->nseg),sizeof(prect_ptr->nseg));
+      _rite(fdw,prseg_ptr,(prect_ptr->nseg)*sizeof(struct srf_prectsegments));
+      }
+
+   sprintf(pword,"POINTS");
+   _rite(fdw,pword,sizeof(pword));
+   _rite(fdw,&(apnts_ptr->np),sizeof(apnts_ptr->np));
+   for(i=0;i<apnts_ptr->np;i++)
+      {
+      _rite(fdw,&(apval_ptr[i].lon),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].lat),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dep),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].stk),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dip),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].area),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].tinit),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dt),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].rake),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].slip1),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt1),sizeof(int));
+      _rite(fdw,&(apval_ptr[i].slip2),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt2),sizeof(int));
+      _rite(fdw,&(apval_ptr[i].slip3),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt3),sizeof(int));
+
+      _rite(fdw,apval_ptr[i].stf1,(apval_ptr[i].nt1)*sizeof(float));
+      _rite(fdw,apval_ptr[i].stf2,(apval_ptr[i].nt2)*sizeof(float));
+      _rite(fdw,apval_ptr[i].stf3,(apval_ptr[i].nt3)*sizeof(float));
+      }
+   close(fdw);
+   }
+else
+   {
+   if(strcmp(file,"stdout") == 0)
+      fpw = stdout;
+   else
+      fpw = _f_opfile(file,"w");
+
+   fprintf(fpw,"%s\n",srf->version);
+
+   for(i=0;i<srf->srf_hcmnt.nline;i++)
+      {
+      sptr = (srf->srf_hcmnt.cbuf) + i*MAXLINE;
+      fprintf(fpw,"%s",sptr);
+      }
+
+   if(strcmp(srf->type,"PLANE") == 0)
+      {
+      fprintf(fpw,"%s %d\n",srf->type,prect_ptr->nseg);
+      for(ig=0;ig<prect_ptr->nseg;ig++)
+         {
+         fprintf(fpw,"%12.6f %11.6f %5d %5d %10.4f %10.4f\n",prseg_ptr[ig].elon,
+                                                        prseg_ptr[ig].elat,
+                                                        prseg_ptr[ig].nstk,
+                                                        prseg_ptr[ig].ndip,
+                                                        prseg_ptr[ig].flen,
+                                                        prseg_ptr[ig].fwid);
+         fprintf(fpw,"%4.0f %4.0f %10.4f %10.4f %10.4f\n",prseg_ptr[ig].stk,
+                                                    prseg_ptr[ig].dip,
+                                                    prseg_ptr[ig].dtop,
+                                                    prseg_ptr[ig].shyp,
+                                                    prseg_ptr[ig].dhyp);
+         }
+      }
+
+   np_rite = 0;
+   for(ig=0;ig<srf->nseg;ig++)
+      {
+      fprintf(fpw,"POINTS %d\n",srf->np_seg[ig]);
+      for(ip=0;ip<srf->np_seg[ig];ip++)
+         {
+         i = ip + np_rite;
+
+         fprintf(fpw,"%12.6f %11.6f %12.5e %4.0f %4.0f %12.5e %13.6e %12.5e %13.5e %13.5e\n",
+                                              apval_ptr[i].lon,
+                                              apval_ptr[i].lat,
+                                              apval_ptr[i].dep,
+                                              apval_ptr[i].stk,
+                                              apval_ptr[i].dip,
+                                              apval_ptr[i].area,
+                                              apval_ptr[i].tinit,
+                                              apval_ptr[i].dt,
+                                              apval_ptr[i].vs,
+                                              apval_ptr[i].den);
+
+         fprintf(fpw,"%4.0f %10.4f %6d %10.4f %6d %10.4f %6d\n",
+                                              apval_ptr[i].rake,
+                                              apval_ptr[i].slip1,
+                                             apval_ptr[i].nt1,
+                                              apval_ptr[i].slip2,
+                                              apval_ptr[i].nt2,
+                                              apval_ptr[i].slip3,
+                                              apval_ptr[i].nt3);
+
+         stf = apval_ptr[i].stf1;
+         nt6 = (apval_ptr[i].nt1)/6;
+         for(k=0;k<nt6;k++)
+            {
+            for(j=0;j<6;j++)
+               {
+               it = 6*k + j;
+               fprintf(fpw,"%13.5e",stf[it]);
+               }
+            fprintf(fpw,"\n");
+            }
+
+         if(6*nt6 != (apval_ptr[i].nt1))
+            {
+            for(j=6*nt6;j<(apval_ptr[i].nt1);j++)
+               fprintf(fpw,"%13.5e",stf[j]);
+
+            fprintf(fpw,"\n");
+            }
+
+         stf = apval_ptr[i].stf2;
+         nt6 = (apval_ptr[i].nt2)/6;
+         for(k=0;k<nt6;k++)
+            {
+            for(j=0;j<6;j++)
+               {
+               it = 6*k + j;
+               fprintf(fpw,"%13.5e",stf[it]);
+               }
+            fprintf(fpw,"\n");
+            }
+
+         if(6*nt6 != (apval_ptr[i].nt2))
+            {
+            for(j=6*nt6;j<(apval_ptr[i].nt2);j++)
+               fprintf(fpw,"%13.5e",stf[j]);
+
+            fprintf(fpw,"\n");
+            }
+
+         stf = apval_ptr[i].stf3;
+         nt6 = (apval_ptr[i].nt3)/6;
+         for(k=0;k<nt6;k++)
+            {
+            for(j=0;j<6;j++)
+               {
+               it = 6*k + j;
+               fprintf(fpw,"%13.5e",stf[it]);
+               }
+            fprintf(fpw,"\n");
+            }
+
+         if(6*nt6 != (apval_ptr[i].nt3))
+            {
+            for(j=6*nt6;j<(apval_ptr[i].nt3);j++)
+               fprintf(fpw,"%13.5e",stf[j]);
+
+            fprintf(fpw,"\n");
+            }
+         }
+      np_rite = np_rite + srf->np_seg[ig];
+      }
+
+   fclose(fpw);
+   }
+}
+
+
+void write_srf(struct standrupformat *srf,char *file,int bflag) {
+	if (strcmp(srf->version, "1.0")==0) {
+		write_srf1(srf, file, bflag);
+	} else if (strcmp(srf->version, "2.0")==0) {
+		write_srf2(srf, file, bflag);
+	}
 }
 
 /*void free_srf_stf(struct standrupformat *srf)
