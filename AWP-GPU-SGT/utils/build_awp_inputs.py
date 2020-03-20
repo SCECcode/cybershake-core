@@ -13,7 +13,7 @@ import errno
 
 #LFS_PATH = "/opt/cray/lustre-cray_gem_s/1.8.6_2.6.32.59_0.7.1_1.0402.7496.5.2-1.0402.47176.8.11.gem/bin/lfs"
 #LFS_PATH = "/opt/cray/lustre-cray_gem_s/2.8.0_3.0.101_0.46.1_1.0502.8871.21.1-1.0502.0.6.1/bin/lfs"
-LFS_PATH = "/opt/cray/lustre-cray_gem_s/2.8.0_3.0.101_0.46.1_1.0502.8871-1.0502.0.6.1/bin/lfs"
+#LFS_PATH = "/opt/cray/lustre-cray_gem_s/2.8.0_3.0.101_0.46.1_1.0502.8871-1.0502.0.6.1/bin/lfs"
 #LFS_PATH = "/usr/bin/lfs" 
 #LFS_PATH = "/opt/cray/lustre-cray_gem_s/2.5_3.0.101_0.31.1_1.0502.8394.10.1-1.0502.17198.8.50/bin/lfs"
 
@@ -101,10 +101,10 @@ for c in awp_comps:
 	mkdir_p("comp_%s/output_vlm" % c)
 	mkdir_p("comp_%s/output_sgt" % c)
 	#Set striping for output directory
-	exitcode = os.system("%s setstripe -c 160 -S 5m comp_%s/output_sgt" % (LFS_PATH, c))
-	if exitcode!=0:
-		print "Error striping with command %s setstripe -c 160 -s 5m comp_%s/output_sgt, exiting." % (LFS_PATH, c)
-		sys.exit(exitcode)
+	#exitcode = os.system("%s setstripe -c 160 -S 5m comp_%s/output_sgt" % (LFS_PATH, c))
+	#if exitcode!=0:
+	#	print "Error striping with command %s setstripe -c 160 -s 5m comp_%s/output_sgt, exiting." % (LFS_PATH, c)
+	#	sys.exit(exitcode)
 
 	print "Building IN3D file for comp %s." % c
 	sys.stdout.flush()
