@@ -1824,8 +1824,8 @@ if(iflag == NORMAL_STRESS_CENTERED)  /* do forward averaging */
    when there is an extreme lateral velocity contrast right at the
    surface.  ESG2006, Grenoble.
 */
+
 	    /*
-	       */
 	 if(iz == 1 && ix > 0)
 	    {
 	    if(l2m2[i] > fxp*l2m2[m1] || l2m2[i] < fxi*l2m2[m1] ||
@@ -1841,6 +1841,27 @@ if(iflag == NORMAL_STRESS_CENTERED)  /* do forward averaging */
 	       invmu2[i] > fxp*invmu1[ i] || invmu2[i] < fxi*invmu1[ i] ||
 	       invmu2[i] > fxp*invmu3[ i] || invmu2[i] < fxi*invmu3[ i])
 	       {
+	       */
+
+/*
+fprintf(stderr,"VP %8.5f %8.5f %8.5f %8.5f %8.5f\n",sqrt(l2m2[i]/rho2[i]),
+                                                 sqrt(l2m2[m1]/rho2[m1]),
+						 sqrt(l2m2[i1]/rho2[i1]),
+						 sqrt(l2m1[i]/rho1[i]),
+						 sqrt(l2m3[i]/rho3[i]));
+fprintf(stderr,"VS %8.5f %8.5f %8.5f %8.5f %8.5f\n",sqrt(one/(invmu2[i]*rho2[i])),
+                                                 sqrt(one/(invmu2[m1]*rho2[m1])),
+						 sqrt(one/(invmu2[i1]*rho2[i1])),
+						 sqrt(one/(invmu1[i]*rho1[i])),
+						 sqrt(one/(invmu3[i]*rho3[i])));
+fprintf(stderr,"LAM %13.5e %13.5e %13.5e %13.5e %13.5e\n",lam2[i],
+                                                 lam2[m1],
+						 lam2[i1],
+						 lam1[i],
+						 lam3[i]);
+fflush(stderr);
+exit(-1);
+
                l2m0[i] = inwgt/l2m2[i] + outwgt*(one/l2m2[m1] + one/l2m2[i1]
                             + one/l2m1[i] + one/l2m3[i]);
                l2m0[i] = one/l2m0[i];
@@ -1848,15 +1869,16 @@ if(iflag == NORMAL_STRESS_CENTERED)  /* do forward averaging */
                lam0[i] = inwgt/lam2[i] + outwgt*(one/lam2[m1] + one/lam2[i1]
                             + one/lam1[i] + one/lam3[i]);
                lam0[i] = one/lam0[i];
+*/
 
 	       /* flag for 2nd order operators in tstepp() */
+/*
 	       l2m0[nx] = -1.0;
 
-/*
 	       l2m0[nx] = 1.0;
-*/
 	       }
 	    }
+*/
 
          mxy0[i] = four/(invmu2[i] + invmu2[i1] + invmu3[i] + invmu3[i1]);
          mxz0[i] = four/(invmu2[i] + invmu2[i1] + invmu2[inx] + invmu2[inx+1]);
@@ -2504,6 +2526,14 @@ float *lraw1, *lraw2;
 float *mraw1, *mraw2;
 int ix, iz;
 
+off_t ip, np;
+
+np = (off_t)(N_MED_VARS)*(off_t)(nx*nz);
+
+for(ip=0;ip<np;ip++)
+   mdf2[ip] = mdf1[ip];
+
+/*
 l2m1  = mdf1;
 lam1  = mdf1 +   nx*nz;
 mu1x  = mdf1 + 2*nx*nz;
@@ -2551,6 +2581,7 @@ for(iz=0;iz<nz;iz++)
       mraw2[iz*nx + ix]   = mraw1[iz*nx + ix];
       }
    }
+*/
 }
 
 xzpad_medslice(mdf,nx,nz,npad,fs)
@@ -3117,7 +3148,7 @@ struct medprof *mp;
 float *medf;
 int i, iy, iymin, iymax, print_tol, ptol;
 int ix, iz;
-int fdp, fds, fdd;
+int fdp, fds, fdd, fd_pertb;
 int nbpad = NBND_PAD;
 off_t boff;
 
@@ -3147,7 +3178,8 @@ if(mi->model_style == 0)  /* generate model from stencil */
 
    genmod3dP3(&mi->nprof,mi->modfile,rpars,ms,mp,mi->media_boundary);
    }
-else if(mi->model_style == 1) /* read in binary velocity model from disk */
+
+if(mi->model_style == 1 || mi->model_style == 3) /* read in binary velocity model */
    {
    fdp = opfile_ro(mi->pmodfile);
    fds = opfile_ro(mi->smodfile);
@@ -3162,6 +3194,25 @@ else if(mi->model_style == 1) /* read in binary velocity model from disk */
    lseek(fdd,boff,SEEK_SET);
    }
 
+if(mi->model_style == 2 || mi->model_style == 3) /* read in binary perturbation model and combine with 1D or 3D model */
+   {
+   fd_pertb = opfile_ro(mi->pertb_med.pertbfile);
+
+   if(mi->model_style == 2) /* read in 1D model */
+      {
+      mi->pertb_med.vp1d = (float *) check_malloc (ni->globnz*sizeof(float));
+      mi->pertb_med.vs1d = (float *) check_malloc (ni->globnz*sizeof(float));
+      mi->pertb_med.dn1d = (float *) check_malloc (ni->globnz*sizeof(float));
+      mi->pertb_med.qp1d = (float *) check_malloc (ni->globnz*sizeof(float));
+      mi->pertb_med.qs1d = (float *) check_malloc (ni->globnz*sizeof(float));
+
+      get_1dprofile(mi,&h,ni->globnz);
+      }
+
+   boff = (off_t)(ni->ny1)*(off_t)(mi->pertb_med.nx_pertb)*(off_t)(mi->pertb_med.nz_pertb*sizeof(float));
+   lseek(fd_pertb,boff,SEEK_SET);
+   }
+
 for(iy=0;iy<ny;iy++)
    {
    medf = mfield + iy*N_MED_VARS*nx*nz;
@@ -3169,7 +3220,15 @@ for(iy=0;iy<ny;iy++)
    if(mi->model_style == 0)
       getmedsliceP3(ms+iy*nx,mp,mi->nprof,medf,rpars,iy,mi->dampwidth,&mi->qbndmax,&mi->qbndmin);
    else if(mi->model_style == 1)
-      reedmedsliceP3(fdp,fds,fdd,medf,fs,qv,mi->dampwidth,&mi->qbndmax,&mi->qbndmin,swapb,(ni->ny1)+iy,ni);
+      reedmedsliceP3_ms1(fdp,fds,fdd,medf,fs,qv,mi->dampwidth,&mi->qbndmax,&mi->qbndmin,swapb,(ni->ny1)+iy,ni);
+   else if(mi->model_style == 2)
+      reedmedsliceP3_ms2(mi,fd_pertb,medf,fs,swapb,(ni->ny1)+iy,ni);
+   else if(mi->model_style == 3)
+      reedmedsliceP3_ms3(fdp,fds,fdd,medf,fs,qv,mi,fd_pertb,swapb,(ni->ny1)+iy,ni);
+
+/* XXX 
+fprintf(stderr," iym= %5d\n",(ni->ny1)+iy);
+*/
 
    if((float)(100.0*(iy+1))/(float)(ny) >= (float)(ptol))
       {
@@ -3178,25 +3237,49 @@ for(iy=0;iy<ny;iy++)
       }
    }
 
-if(mi->model_style == 1)
+if(mi->model_style == 1 || mi->model_style == 3)
    {
    close(fdp);
    close(fds);
    close(fdd);
    }
+else if(mi->model_style == 2 || mi->model_style == 3)
+   {
+   close(fd_pertb);
+
+   if(mi->model_style == 2)
+      {
+      free(mi->pertb_med.vp1d);
+      free(mi->pertb_med.vs1d);
+      free(mi->pertb_med.dn1d);
+      free(mi->pertb_med.qp1d);
+      free(mi->pertb_med.qs1d);
+      }
+   }
 
 /*
-   Add padding to iy=0,ny-1 ends of model to ensure stability of absorbing
+   Add padding along edges of model to ensure stability of absorbing
    boundaries.  There should be no media variations in the direction
-   perpendicular to the absorbing boundary.  See also, xzpad_medslice()
-   for padding of x and z boundaries.
+   perpendicular to the absorbing boundary.
 */
 
-pad_medslice(mfield,ni,fs);
+/* 2016-11-07 OLD WAY
+if(mi->vpvs_max < 0.0)
+   pad_medslice(mfield,ni,fs);
+else
+   pad_medslice_ckvpvs(mfield,ni,fs,&mi->vpvs_max);
+*/
+
+/* NEW WAY 2016-11-07 */
+/*
+pad_medslice_ckvpvsP3_smooth2(mfield,ni,fs,mi);
+pad_medslice_ckvpvsP3_smooth1(mfield,ni,fs,mi);
+*/
+pad_medslice_ckvpvsP3_OLD(mfield,ni,fs,mi);
 }
 
 /*
-   reedmedsliceP3() reads the media parameters into an xz slice of the model.
+   reedmedsliceP3_ms1() reads the media parameters into an xz slice of the model.
 
    These values are loaded into the array medf as follows:
 
@@ -3208,6 +3291,7 @@ pad_medslice(mfield,ni,fs);
       medf +10*nx*nz -> qs  (later turned into sk coefs.)
       medf +11 nx*nz -> lambda (raw, never modified by avg. or atten. )
       medf +12*nx*nz -> mu     (raw, never modified by avg. or atten. )
+      medf +13*nx*nz -> rho    (raw, never modified by avg. or atten. )
 
    After reedmedslice() returns to main(), a call to avgmedslice() computes the
    smoothed values of rigidity (mu) and bouyancy (1/rho) which are then
@@ -3216,12 +3300,12 @@ pad_medslice(mfield,ni,fs);
 
 */
 
-void reedmedsliceP3(int fdp,int fds,int fdd,float *medf,int fs,struct qvalues *qv,int dw,float *qbmax,float *qbmin,int swapb,int glob_iy,struct nodeinfo *ni)
+void reedmedsliceP3_ms1(int fdp,int fds,int fdd,float *medf,int fs,struct qvalues *qv,int dw,float *qbmax,float *qbmin,int swapb,int glob_iy,struct nodeinfo *ni)
 {
 float *a, *b;
 float *lam2mu, *mu, *lam, *rho, *qp, *qs;
-float *lamraw, *muraw;
-int i, ip, k, ix, iz, nn, shft;
+float *lamraw, *muraw, *rhoraw;
+int i, ip, k, ix, iz, nx, nz, nn, shft;
 int powr, xpowr, ypowr, zpowr;
 float rfac, qbndf, qfac0, qp0, qs0, qfac;
 off_t boff;
@@ -3234,10 +3318,17 @@ int glob_ix, glob_iz;
 float one = 1.0;
 float two = 2.0;
 
-rfac = one/(dw - NBND_PAD - 1);
+float vp = 2.0;
+float vs = 1.0;
+float dn = 2.5;
+int zshift = 10;
+
+rfac = one/(dw - 1);
 qbndf = (*qbmin)/(*qbmax);
 qfac0 = exp(rfac*log(qbndf));
 
+nx = (ni->loc_nx);
+nz = (ni->loc_nz);
 nn = (ni->loc_nx)*(ni->loc_nz);
 
 a = medf + 5*nn;  /* temporary, not used until avgmedslice */
@@ -3258,6 +3349,7 @@ qs     = medf + 10*nn;
 
 lamraw = medf + 11*nn;
 muraw  = medf + 12*nn;
+rhoraw = medf + 13*nn;
 
 boff = (off_t)(ni->globnx)*(off_t)((ni->nz1)*sizeof(float));
 lseek(fdp,boff,SEEK_CUR);
@@ -3335,6 +3427,26 @@ if(swapb == 1) /* need to swap bytes */
    swap_in_place(nn,((char *)(rho)));
    }
 
+/* XXXXYYYY
+vp = 2.0;
+vs = 1.0;
+dn = 2.5;
+zshift = 10;
+for(ip=zshift*nx;ip<nx*nz;ip++)
+   {
+   k = ip - zshift*nx;
+   a[ip] = a[k];
+   b[ip] = b[k];
+   rho[ip] = rho[k];
+   }
+for(ip=0;ip<zshift*nx;ip++)
+   {
+   a[ip] = vp;
+   b[ip] = vs;
+   rho[ip] = dn;
+   }
+ */
+
 for(ix=0;ix<(ni->loc_nx);ix++)
    {
    lam2mu[ix] = a[ix]*a[ix]*rho[ix];
@@ -3344,6 +3456,7 @@ for(ix=0;ix<(ni->loc_nx);ix++)
    mu[ix] = one/mu[ix];
    lamraw[ix] = lam[ix];
    muraw[ix] = one/mu[ix];
+   rhoraw[ix] = rho[ix];
 
    get_qvals(&qp[ix],&qs[ix],&a[ix],&b[ix],qv);
 
@@ -3373,9 +3486,10 @@ for(iz=(ni->loc_nz)-1;iz>=1;iz--)
 
       lam[i] = lam2mu[i] - two*mu[i];
       mu[i] = one/mu[i];
+      rho[i] = rho[ip];
       lamraw[i] = lam[i];
       muraw[i] = one/mu[i];
-      rho[i] = rho[ip];
+      rhoraw[i] = rho[i];
 
       get_qvals(&qp[i],&qs[i],&a[ip],&b[ip],qv);
 
@@ -3417,8 +3531,8 @@ for(iz=(ni->loc_nz)-1;iz>=1;iz--)
          qp[i] = qfac*qp0;
          qs[i] = qfac*qs0;
 
-         if(qp[i] < 5.0)
-            qp[i] = 5.0;
+         if(qp[i] < 10.0)
+            qp[i] = 10.0;
          if(qs[i] < 5.0)
             qs[i] = 5.0;
 
@@ -3438,6 +3552,9 @@ int ix, iy, iz, ip, off1;
 int nx, ny, nz;
 
 int npad = NBND_PAD;
+/*
+npad = 10;
+*/
 
 nx = ni->loc_nx;
 ny = ni->loc_ny;
@@ -3668,6 +3785,7 @@ set_max_depths(medsten,medprofs,ip,nx,ny);
       medf +10*nx*nz -> qs  (later turned into sk coefs.)
       medf +11 nx*nz -> lambda (raw, never modified by avg. or atten. )
       medf +12*nx*nz -> mu     (raw, never modified by avg. or atten. )
+      medf +13*nx*nz -> rho    (raw, never modified by avg. or atten. )
 
    After getmedsliceP3() returns to main(), a call to avgmedslice() computes the
    smoothed values of rigidity (mu) and bouyancy (1/rho) which are then
@@ -3679,7 +3797,7 @@ set_max_depths(medsten,medprofs,ip,nx,ny);
 void getmedsliceP3(struct medstencil *ms,struct medprof *mdp,int nprof,float *medf,struct runparamsP3 *rpars,int iy,int dw,float *qbmax,float *qbmin)
 {
 float *mptr, *m2ptr;
-float *mptr1, *mptr2, *mptr3, *mptr4;
+float *mptr1, *mptr2, *mptr3, *mptr4, *rho, *rhoraw;
 int iprof, ix, izst, izend;
 
 float *lam2mu, *mu, *lam;
@@ -3737,7 +3855,7 @@ for(ix=0;ix<nx;ix++)
 qp = medf + 9*nx*nz;
 qs = medf + 10*nx*nz;
 
-rfac = one/(dw - NBND_PAD - 1);
+rfac = one/(dw - 1);
 qbndf = (*qbmin)/(*qbmax);
 qfac0 = exp(rfac*log(qbndf));
 
@@ -3783,8 +3901,8 @@ for(iz=0;iz<nz;iz++)
 	 qp[ip] = qfac*qp0;
 	 qs[ip] = qfac*qs0;
 
-	 if(qp[ip] < 5.0)
-	    qp[ip] = 5.0;
+	 if(qp[ip] < 10.0)
+	    qp[ip] = 10.0;
 	 if(qs[ip] < 5.0)
 	    qs[ip] = 5.0;
 
@@ -3804,6 +3922,8 @@ mptr1 = medf +    nx*nz;     /* lambda */
 mptr2 = medf + 11*nx*nz;     /* lambda raw */
 mptr3 = medf +  4*nx*nz;     /* 1/mu */
 mptr4 = medf + 12*nx*nz;     /* mu raw */
+rho   = medf +  7*nx*nz;     /* rho */
+rhoraw = medf + 13*nx*nz;     /* rho raw */
 
 for(iz=0;iz<nz;iz++)
    {
@@ -3812,6 +3932,3857 @@ for(iz=0;iz<nz;iz++)
       ip = ix+iz*nx;
       mptr2[ip] = mptr1[ip];
       mptr4[ip] = one/mptr3[ip];
+      rhoraw[ip] = rho[ip];
+      }
+   }
+}
+
+/*
+   reedmedsliceP3_ms2() reads the media parameters into an xz slice of the model.
+
+   These values are loaded into the array medf as follows:
+
+      medf           -> lambda + 2*mu
+      medf +   nx*nz -> lambda
+      medf + 4*nx*nz -> 1/mu
+      medf + 7*nx*nz -> rho
+      medf + 9*nx*nz -> qp  (later turned into pk coefs.)
+      medf +10*nx*nz -> qs  (later turned into sk coefs.)
+      medf +11 nx*nz -> lambda (raw, never modified by avg. or atten. )
+      medf +12*nx*nz -> mu     (raw, never modified by avg. or atten. )
+      medf +13*nx*nz -> rho    (raw, never modified by avg. or atten. )
+
+   After reedmedslice() returns to main(), a call to avgmedslice() computes the
+   smoothed values of rigidity (mu) and bouyancy (1/rho) which are then
+   stored in the array medf and are ready to be used in the differencing
+   operations.
+
+*/
+
+void reedmedsliceP3_ms2(struct media_input *mi,int fd_pertb,float *medf,int fs,int swapb,int glob_iy,struct nodeinfo *ni)
+{
+float *a, *b;
+float *lam2mu, *mu, *lam, *rho, *qp, *qs;
+float *lamraw, *muraw, *rhoraw;
+int i, ip, k, ix, iz, nn, shft;
+int powr, xpowr, ypowr, zpowr;
+float rfac, qbndf, qfac0, qp0, qs0, qfac;
+off_t boff;
+
+float qbmax, qbmin;
+int dw, nx_pertb, nz_pertb;
+
+struct perturb_media *pertb_mptr;
+float *pertb;
+int jp, kp;
+
+int glob_ix, glob_iz;
+
+float one = 1.0;
+float two = 2.0;
+
+dw = mi->dampwidth;
+qbmax = mi->qbndmax;
+qbmin = mi->qbndmin;
+
+pertb_mptr = &(mi->pertb_med);
+nx_pertb = pertb_mptr->nx_pertb;
+nz_pertb = pertb_mptr->nz_pertb;
+
+rfac = one/(dw - 1);
+qbndf = (qbmin)/(qbmax);
+qfac0 = exp(rfac*log(qbndf));
+
+nn = (ni->loc_nx)*(ni->loc_nz);
+
+a = medf + 5*nn;  /* temporary, not used until avgmedslice */
+b = medf + 6*nn;  /* temporary, not used until avgmedslice */
+pertb = medf + 8*nn;  /* temporary, not used until mem_var */
+
+lam2mu = medf;
+lam    = medf + nn;
+mu     = medf + 4*nn;
+rho    = medf + 7*nn;
+qp     = medf + 9*nn;
+qs     = medf + 10*nn;
+
+/*
+   Store raw values of lambda and mu into medf array (11*nx*nz and
+   12*nx*nz offsets).  These values will never be modified by averaging
+   or attenuation (phase velocity adjustments).
+*/
+
+lamraw = medf + 11*nn;
+muraw  = medf + 12*nn;
+rhoraw = medf + 13*nn;
+
+boff = (off_t)(nx_pertb)*(off_t)((ni->nz1)*sizeof(float));
+lseek(fd_pertb,boff,SEEK_CUR);
+
+for(iz=0;iz<(ni->loc_nz);iz++)
+   {
+   kp = iz + ni->nz1;
+
+   boff = (off_t)((ni->nx1)*sizeof(float));
+   lseek(fd_pertb,boff,SEEK_CUR);
+
+   reed(fd_pertb,pertb,(ni->loc_nx)*sizeof(float));
+   if(swapb == 1)
+      swap_in_place((ni->loc_nx),((char *)(pertb)));
+
+   for(ix=0;ix<ni->loc_nx;ix++)
+      {
+      ip = ix + iz*ni->loc_nx;
+
+      a[ip]   = pertb_mptr->vp1d[kp];
+      b[ip]   = pertb_mptr->vs1d[kp];
+      rho[ip] = pertb_mptr->dn1d[kp];
+      qp[ip] = pertb_mptr->qp1d[kp];
+      qs[ip] = pertb_mptr->qs1d[kp];
+
+      if(b[ip] > pertb_mptr->vs_minlimit_pertb && b[ip] < pertb_mptr->vs_maxlimit_pertb)
+         {
+         a[ip]   = (one + pertb_mptr->vp_scale_factor*(pertb[ix] - one))*pertb_mptr->vp1d[kp];
+         b[ip]   = (one + pertb_mptr->vs_scale_factor*(pertb[ix] - one))*pertb_mptr->vs1d[kp];
+         rho[ip] = (one + pertb_mptr->den_scale_factor*(pertb[ix] - one))*pertb_mptr->dn1d[kp];
+
+         if(a[ip] > pertb_mptr->vpmax_pertb)
+            a[ip] = pertb_mptr->vpmax_pertb;
+         if(a[ip] < pertb_mptr->vpmin_pertb)
+            a[ip] = pertb_mptr->vpmin_pertb;
+
+         if(b[ip] > pertb_mptr->vsmax_pertb)
+            b[ip] = pertb_mptr->vsmax_pertb;
+         if(b[ip] < pertb_mptr->vsmin_pertb)
+            b[ip] = pertb_mptr->vsmin_pertb;
+	 }
+      }
+
+   boff = (off_t)((nx_pertb - ni->nx2)*sizeof(float));
+   lseek(fd_pertb,boff,SEEK_CUR);
+   }
+
+/* seek to next global iy plane */
+boff = (off_t)(nx_pertb)*(off_t)((nz_pertb - ni->nz2)*sizeof(float));
+lseek(fd_pertb,boff,SEEK_CUR);
+
+for(ix=0;ix<(ni->loc_nx);ix++)
+   {
+   lam2mu[ix] = a[ix]*a[ix]*rho[ix];
+   mu[ix] = b[ix]*b[ix]*rho[ix];
+
+   lam[ix] = lam2mu[ix] - two*mu[ix];
+   mu[ix] = one/mu[ix];
+   lamraw[ix] = lam[ix];
+   muraw[ix] = one/mu[ix];
+   rhoraw[ix] = rho[ix];
+   }
+
+shft = 0;
+if(fs)      /* shift model down one grid point for free surface */
+   shft = 1;
+
+for(iz=(ni->loc_nz)-1;iz>=1;iz--)
+   {
+   glob_iz = iz + (ni->nz1);
+   for(ix=0;ix<(ni->loc_nx);ix++)
+      {
+      glob_ix = ix + (ni->nx1);
+
+      i = iz*(ni->loc_nx) + ix;
+      ip = (iz-shft)*(ni->loc_nx) + ix;
+
+      lam2mu[i] = a[ip]*a[ip]*rho[ip];
+      mu[i] = b[ip]*b[ip]*rho[ip];
+
+      lam[i] = lam2mu[i] - two*mu[i];
+      mu[i] = one/mu[i];
+      rho[i] = rho[ip];
+      lamraw[i] = lam[i];
+      muraw[i] = one/mu[i];
+      rhoraw[i] = rho[i];
+
+/* damping region for absorbing boundary */
+
+      xpowr = 0;
+      if(glob_ix < dw)
+	 xpowr = dw - glob_ix;
+      else if(glob_ix >= (ni->globnx)-dw)
+	 xpowr = glob_ix - ((ni->globnx) - 1 - dw);
+
+      ypowr = 0;
+      if(glob_iy < dw)
+	 ypowr = dw - glob_iy;
+      else if(glob_iy >= (ni->globny)-dw)
+	 ypowr = glob_iy - ((ni->globny) - 1 - dw);
+
+      zpowr = 0;
+      if(glob_iz < dw && fs == 0)
+	 zpowr = dw - glob_iz;
+      else if(glob_iz >= (ni->globnz)-dw)
+	 zpowr = glob_iz - ((ni->globnz) - 1 - dw);
+
+      if(xpowr || ypowr || zpowr)
+         {
+         powr = xpowr + ypowr + zpowr - 1;
+	 qfac = one;
+         while(powr--)
+            qfac = qfac*qfac0;
+
+         qp0 = qp[i];
+         if(qp0 > 2*(qbmax))
+            qp0 = 2*(qbmax);
+
+         qs0 = qs[i];
+         if(qs0 > (qbmax))
+            qs0 = (qbmax);
+
+         qp[i] = qfac*qp0;
+         qs[i] = qfac*qs0;
+
+         if(qp[i] < 10.0)
+            qp[i] = 10.0;
+         if(qs[i] < 5.0)
+            qs[i] = 5.0;
+
+         qp[i] = -qp[i];
+         qs[i] = -qs[i];
+         }
+      }
+   }
+}
+
+void get_1dprofile(struct media_input *mi,float *h,int nz)
+{
+FILE *fpr, *fopfile();
+float alpha, beta, rho, qp0, qs0, dep;
+int i, ist, iend;
+char str[1024];
+struct perturb_media *pertb_mptr;
+
+pertb_mptr = &(mi->pertb_med);
+ist = 0;
+
+fpr = fopfile(mi->modfile,"r");
+
+fgets(str,1024,fpr);  /* first line is skipped */
+while(fgets(str,1024,fpr) != NULL)
+   {
+   sscanf(str,"%f %f %f %f %f %f",&alpha,&beta,&rho,&qp0,&qs0,&dep);
+
+   if(mi->media_boundary == 0)
+      dep = dep/(*h) + 1.0;
+   else
+      dep = dep/(*h) + 0.5;
+
+   iend = (int)(dep);
+   if(iend > nz)
+      iend = nz;
+
+   if(qp0 <= 0.0)
+      qp0 = 1.0e+10;
+   if(qs0 <= 0.0)
+      qs0 = 1.0e+10;
+
+   for(i=ist;i<iend;i++)
+      {
+      pertb_mptr->vp1d[i] = alpha;
+      pertb_mptr->vs1d[i] = beta;
+      pertb_mptr->dn1d[i] = rho;
+      pertb_mptr->qp1d[i] = qp0;
+      pertb_mptr->qs1d[i] = qs0;
+      }
+   ist = iend;
+   }
+fclose(fpr);
+}
+
+void pad_medslice_ckvpvs(float *mfield,struct nodeinfo *ni,int fs,float *vpvs_max)
+{
+float *mdf1;
+float *l2m, *lam, *invmu, *rho, *qp, *qs;
+float *lraw, *mraw;
+int ix, iy, iz, ip, off1, off2;
+int nx, ny, nz;
+
+float r2, xlam, xmu;
+
+int npad = NBND_PAD;
+/*
+npad = 10;
+*/
+
+/*
+   tolerance for maximum vp/vs ratio: vp/vs <= vpvs_max
+
+   (vp/vs)^2 <= vpvs_max^2
+   (lam + 2*mu)/mu <= vpvs_max^2
+   (lam + 2*mu) <= mu*(vpvs_max)^2
+   lam <= mu*(vpvs_max)^2 - 2*mu
+   lam <= mu*(vpvs_max^2 - 2)
+   lam <= mu*r2
+
+   where r2 = vpvs_max^2 - 2
+*/
+
+r2 = (*vpvs_max)*(*vpvs_max) - 2.0;
+
+nx = ni->loc_nx;
+ny = ni->loc_ny;
+nz = ni->loc_nz;
+
+if(ni->minusId_x < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      invmu  = mdf1 + 4*nx*nz;
+      rho = mdf1 + 7*nx*nz;
+      qp  = mdf1 + 9*nx*nz;
+      qs  = mdf1 + 10*nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+	 off2 = iz*nx + npad;
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+/* XXXX */
+fprintf(stderr,"vp/vs reset: vp_orig= %f vp_new= %f vs= %f\n",sqrt(l2m[off2]/rho[off2]),sqrt((2.0+r2)*mraw[off2]/rho[off2]),sqrt(mraw[off2]/rho[off2]));
+
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         for(ix=0;ix<npad;ix++)
+            {
+	    off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+	 }
+      }
+   }
+
+if(ni->plusId_x < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      invmu  = mdf1 + 4*nx*nz;
+      rho = mdf1 + 7*nx*nz;
+      qp  = mdf1 + 9*nx*nz;
+      qs  = mdf1 + 10*nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         off2 = iz*nx + (nx-npad-1);
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+/* XXXX */
+fprintf(stderr,"vp/vs reset: vp_orig= %f vp_new= %f vs= %f\n",sqrt(l2m[off2]/rho[off2]),sqrt((2.0+r2)*mraw[off2]/rho[off2]),sqrt(mraw[off2]/rho[off2]));
+
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         for(ix=nx-npad;ix<nx;ix++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+   }
+
+if(!fs && ni->minusId_z < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      invmu  = mdf1 + 4*nx*nz;
+      rho = mdf1 + 7*nx*nz;
+      qp  = mdf1 + 9*nx*nz;
+      qs  = mdf1 + 10*nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off2 = npad*nx + ix;
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+/* XXXX */
+fprintf(stderr,"vp/vs reset: vp_orig= %f vp_new= %f vs= %f\n",sqrt(l2m[off2]/rho[off2]),sqrt((2.0+r2)*mraw[off2]/rho[off2]),sqrt(mraw[off2]/rho[off2]));
+
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         for(iz=0;iz<npad;iz++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+   }
+
+if(ni->plusId_z < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      invmu  = mdf1 + 4*nx*nz;
+      rho = mdf1 + 7*nx*nz;
+      qp  = mdf1 + 9*nx*nz;
+      qs  = mdf1 + 10*nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off2 = (nz-npad-1)*nx + ix;
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+/* XXXX */
+fprintf(stderr,"vp/vs reset: vp_orig= %f vp_new= %f vs= %f\n",sqrt(l2m[off2]/rho[off2]),sqrt((2.0+r2)*mraw[off2]/rho[off2]),sqrt(mraw[off2]/rho[off2]));
+
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         for(iz=nz-npad;iz<nz;iz++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+   }
+
+if(ni->minusId_y < 0)
+   {
+   mdf1 = mfield + N_MED_VARS*npad*nx*nz;
+
+   l2m = mdf1;
+   lam = mdf1 +   nx*nz;
+   invmu  = mdf1 + 4*nx*nz;
+   rho = mdf1 + 7*nx*nz;
+   qp  = mdf1 + 9*nx*nz;
+   qs  = mdf1 + 10*nx*nz;
+   lraw = mdf1 + 11*nx*nz;
+   mraw = mdf1 + 12*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+      if(lraw[ip] > r2*mraw[ip])    /* check vp/vps ratio */
+         {
+/* XXXX */
+fprintf(stderr,"vp/vs reset: vp_orig= %f vp_new= %f vs= %f\n",sqrt(l2m[ip]/rho[ip]),sqrt((2.0+r2)*mraw[ip]/rho[ip]),sqrt(mraw[ip]/rho[ip]));
+
+         lraw[ip] = r2*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      for(iy=0;iy<npad;iy++)
+         {
+         off1 = ip - N_MED_VARS*(iy+1)*nx*nz;
+
+         l2m[off1] = l2m[ip];
+         lam[off1] = lam[ip];
+         invmu[off1]  = invmu[ip];
+         rho[off1] = rho[ip];
+         qp[off1]  = qp[ip];
+         qs[off1]  = qs[ip];
+         lraw[off1]  = lraw[ip];
+         mraw[off1]  = mraw[ip];
+         }
+      }
+   }
+
+if(ni->plusId_y < 0)
+   {
+   mdf1 = mfield + N_MED_VARS*(ny-npad-1)*nx*nz;
+
+   l2m = mdf1;
+   lam = mdf1 +   nx*nz;
+   invmu  = mdf1 + 4*nx*nz;
+   rho = mdf1 + 7*nx*nz;
+   qp  = mdf1 + 9*nx*nz;
+   qs  = mdf1 + 10*nx*nz;
+   lraw = mdf1 + 11*nx*nz;
+   mraw = mdf1 + 12*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+      if(lraw[ip] > r2*mraw[ip])    /* check vp/vps ratio */
+         {
+/* XXXX */
+fprintf(stderr,"vp/vs reset: vp_orig= %f vp_new= %f vs= %f\n",sqrt(l2m[ip]/rho[ip]),sqrt((2.0+r2)*mraw[ip]/rho[ip]),sqrt(mraw[ip]/rho[ip]));
+
+         lraw[ip] = r2*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      for(iy=0;iy<npad;iy++)
+         {
+         off1 = ip + N_MED_VARS*(iy+1)*nx*nz;
+
+         l2m[off1] = l2m[ip];
+         lam[off1] = lam[ip];
+         invmu[off1]  = invmu[ip];
+         rho[off1] = rho[ip];
+         qp[off1]  = qp[ip];
+         qs[off1]  = qs[ip];
+         lraw[off1]  = lraw[ip];
+         mraw[off1]  = mraw[ip];
+         }
+      }
+   }
+}
+
+/*
+   reedmedsliceP3_ms3() reads the media parameters into an xz slice of the model.
+
+   These values are loaded into the array medf as follows:
+
+      medf           -> lambda + 2*mu
+      medf +   nx*nz -> lambda
+      medf + 4*nx*nz -> 1/mu
+      medf + 7*nx*nz -> rho
+      medf + 9*nx*nz -> qp  (later turned into pk coefs.)
+      medf +10*nx*nz -> qs  (later turned into sk coefs.)
+      medf +11 nx*nz -> lambda (raw, never modified by avg. or atten. )
+      medf +12*nx*nz -> mu     (raw, never modified by avg. or atten. )
+      medf +13*nx*nz -> rho    (raw, never modified by avg. or atten. )
+
+   After reedmedslice() returns to main(), a call to avgmedslice() computes the
+   smoothed values of rigidity (mu) and bouyancy (1/rho) which are then
+   stored in the array medf and are ready to be used in the differencing
+   operations.
+
+*/
+
+void reedmedsliceP3_ms3(int fdp,int fds,int fdd,float *medf,int fs,struct qvalues *qv,struct media_input *mi,int fd_pertb,int swapb,int glob_iy,struct nodeinfo *ni)
+{
+float *a, *b;
+float *lam2mu, *mu, *lam, *rho, *qp, *qs;
+float *lamraw, *muraw, *rhoraw;
+int i, ip, k, ix, iz, nn, shft;
+int powr, xpowr, ypowr, zpowr;
+float rfac, qbndf, qfac0, qp0, qs0, qfac;
+off_t boff;
+
+float qbmax, qbmin;
+int dw, nx_pertb, nz_pertb;
+
+struct perturb_media *pertb_mptr;
+float *pertb;
+
+float *fbuf, *fbuf1, *fbuf2, *fbuf3;
+int jp, kp;
+
+int glob_ix, glob_iz;
+
+float one = 1.0;
+float two = 2.0;
+
+dw = mi->dampwidth;
+qbmax = mi->qbndmax;
+qbmin = mi->qbndmin;
+
+pertb_mptr = &(mi->pertb_med);
+nx_pertb = pertb_mptr->nx_pertb;
+nz_pertb = pertb_mptr->nz_pertb;
+
+rfac = one/(dw - 1);
+qbndf = (qbmin)/(qbmax);
+qfac0 = exp(rfac*log(qbndf));
+
+nn = (ni->loc_nx)*(ni->loc_nz);
+
+a = medf + 5*nn;  /* temporary, not used until avgmedslice */
+b = medf + 6*nn;  /* temporary, not used until avgmedslice */
+
+lam2mu = medf;
+lam    = medf + nn;
+mu     = medf + 4*nn;
+rho    = medf + 7*nn;
+qp     = medf + 9*nn;
+qs     = medf + 10*nn;
+
+/*
+   Store raw values of lambda and mu into medf array (11*nx*nz and
+   12*nx*nz offsets).  These values will never be modified by averaging
+   or attenuation (phase velocity adjustments).
+*/
+
+lamraw = medf + 11*nn;
+muraw  = medf + 12*nn;
+rhoraw = medf + 13*nn;
+
+boff = (off_t)(ni->globnx)*(off_t)((ni->nz1)*sizeof(float));
+lseek(fdp,boff,SEEK_CUR);
+lseek(fds,boff,SEEK_CUR);
+lseek(fdd,boff,SEEK_CUR);
+
+boff = (off_t)(nx_pertb)*(off_t)((ni->nz1)*sizeof(float));
+lseek(fd_pertb,boff,SEEK_CUR);
+
+/*  new way: read large chunk and then copy out subset into arrays */
+
+fbuf = (float *) check_malloc (3*ni->globnx*ni->loc_nz*sizeof(float));
+fbuf1 = fbuf;
+fbuf2 = fbuf + ni->globnx*ni->loc_nz;
+fbuf3 = fbuf + 2*ni->globnx*ni->loc_nz;
+
+pertb = (float *) check_malloc (ni->globnx*ni->loc_nz*sizeof(float));
+reed(fd_pertb,pertb,ni->globnx*ni->loc_nz*sizeof(float));
+
+reed(fdp,fbuf1,ni->globnx*ni->loc_nz*sizeof(float));
+reed(fds,fbuf2,ni->globnx*ni->loc_nz*sizeof(float));
+reed(fdd,fbuf3,ni->globnx*ni->loc_nz*sizeof(float));
+
+for(iz=0;iz<(ni->loc_nz);iz++)
+   {
+   for(ix=0;ix<(ni->loc_nx);ix++)
+      {
+      jp = ix + iz*ni->loc_nx;
+      kp = (ni->nx1+ix) + iz*ni->globnx;
+
+      a[jp] = fbuf1[kp];
+      b[jp] = fbuf2[kp];
+      rho[jp] = fbuf3[kp];
+
+      if(b[jp] > pertb_mptr->vs_minlimit_pertb && b[jp] < pertb_mptr->vs_maxlimit_pertb)
+         {
+         a[jp] = (one + pertb_mptr->vp_scale_factor*(pertb[kp] - one))*a[jp];
+         b[jp] = (one + pertb_mptr->vs_scale_factor*(pertb[kp] - one))*b[jp];
+         rho[jp] = (one + pertb_mptr->den_scale_factor*(pertb[kp] - one))*rho[jp];
+
+         if(a[jp] > pertb_mptr->vpmax_pertb)
+            a[jp] = pertb_mptr->vpmax_pertb;
+         if(a[jp] < pertb_mptr->vpmin_pertb)
+            a[jp] = pertb_mptr->vpmin_pertb;
+
+         if(b[jp] > pertb_mptr->vsmax_pertb)
+            b[jp] = pertb_mptr->vsmax_pertb;
+         if(b[jp] < pertb_mptr->vsmin_pertb)
+            b[jp] = pertb_mptr->vsmin_pertb;
+         }
+      }
+   }
+
+/* XXXXXXXXXX
+fbuf = (float *) check_malloc (ni->globnx*ni->loc_nz*sizeof(float));
+pertb = (float *) check_malloc (ni->globnx*ni->loc_nz*sizeof(float));
+
+reed(fd_pertb,pertb,ni->globnx*ni->loc_nz*sizeof(float));
+
+reed(fdp,fbuf,ni->globnx*ni->loc_nz*sizeof(float));
+for(iz=0;iz<(ni->loc_nz);iz++)
+   {
+   for(ix=0;ix<(ni->loc_nx);ix++)
+      {
+      jp = ix + iz*ni->loc_nx;
+      kp = (ni->nx1+ix) + iz*ni->globnx;
+      a[jp] = (one + pertb_mptr->vp_scale_factor*(pertb[kp] - one))*fbuf[kp];
+
+      if(a[jp] > pertb_mptr->vpmax_pertb)
+         a[jp] = pertb_mptr->vpmax_pertb;
+      if(a[jp] < pertb_mptr->vpmin_pertb)
+         a[jp] = pertb_mptr->vpmin_pertb;
+      }
+   }
+
+reed(fds,fbuf,ni->globnx*ni->loc_nz*sizeof(float));
+for(iz=0;iz<(ni->loc_nz);iz++)
+   {
+   for(ix=0;ix<(ni->loc_nx);ix++)
+      {
+      jp = ix + iz*ni->loc_nx;
+      kp = (ni->nx1+ix) + iz*ni->globnx;
+      b[jp] = (one + pertb_mptr->vs_scale_factor*(pertb[kp] - one))*fbuf[kp];
+
+      if(b[jp] > pertb_mptr->vsmax_pertb)
+         b[jp] = pertb_mptr->vsmax_pertb;
+      if(b[jp] < pertb_mptr->vsmin_pertb)
+         b[jp] = pertb_mptr->vsmin_pertb;
+      }
+   }
+
+reed(fdd,fbuf,ni->globnx*ni->loc_nz*sizeof(float));
+for(iz=0;iz<(ni->loc_nz);iz++)
+   {
+   for(ix=0;ix<(ni->loc_nx);ix++)
+      {
+      jp = ix + iz*ni->loc_nx;
+      kp = (ni->nx1+ix) + iz*ni->globnx;
+      rho[jp] = (one + pertb_mptr->den_scale_factor*(pertb[kp] - one))*fbuf[kp];
+      }
+   }
+XXXXXXXXX */
+
+free(fbuf);
+free(pertb);
+/* end of new way */
+
+/* seek to next global iy plane */
+boff = (off_t)(ni->globnx)*(off_t)((ni->globnz - ni->nz2)*sizeof(float));
+lseek(fdp,boff,SEEK_CUR);
+lseek(fds,boff,SEEK_CUR);
+lseek(fdd,boff,SEEK_CUR);
+
+boff = (off_t)(nx_pertb)*(off_t)((nz_pertb - ni->nz2)*sizeof(float));
+lseek(fd_pertb,boff,SEEK_CUR);
+
+if(swapb == 1) /* need to swap bytes */
+   {
+   swap_in_place(nn,((char *)(a)));
+   swap_in_place(nn,((char *)(b)));
+   swap_in_place(nn,((char *)(rho)));
+   }
+
+for(ix=0;ix<(ni->loc_nx);ix++)
+   {
+   lam2mu[ix] = a[ix]*a[ix]*rho[ix];
+   mu[ix] = b[ix]*b[ix]*rho[ix];
+
+   lam[ix] = lam2mu[ix] - two*mu[ix];
+   mu[ix] = one/mu[ix];
+   lamraw[ix] = lam[ix];
+   muraw[ix] = one/mu[ix];
+   rhoraw[ix] = rho[ix];
+
+   get_qvals(&qp[ix],&qs[ix],&a[ix],&b[ix],qv);
+
+   if(qp[ix] <= 0.0 || qs[ix] <= 0.0)
+      {
+      fprintf(stderr,"Problem with zero/negative Q, exiting...\n");
+      exit(-99);
+      }
+   }
+
+shft = 0;
+if(fs)      /* shift model down one grid point for free surface */
+   shft = 1;
+
+for(iz=(ni->loc_nz)-1;iz>=1;iz--)
+   {
+   glob_iz = iz + (ni->nz1);
+   for(ix=0;ix<(ni->loc_nx);ix++)
+      {
+      glob_ix = ix + (ni->nx1);
+
+      i = iz*(ni->loc_nx) + ix;
+      ip = (iz-shft)*(ni->loc_nx) + ix;
+
+      lam2mu[i] = a[ip]*a[ip]*rho[ip];
+      mu[i] = b[ip]*b[ip]*rho[ip];
+
+      lam[i] = lam2mu[i] - two*mu[i];
+      mu[i] = one/mu[i];
+      rho[i] = rho[ip];
+      lamraw[i] = lam[i];
+      muraw[i] = one/mu[i];
+      rhoraw[i] = rho[i];
+
+      get_qvals(&qp[i],&qs[i],&a[ip],&b[ip],qv);
+
+/* damping region for absorbing boundary */
+
+      xpowr = 0;
+      if(glob_ix < dw)
+	 xpowr = dw - glob_ix;
+      else if(glob_ix >= (ni->globnx)-dw)
+	 xpowr = glob_ix - ((ni->globnx) - 1 - dw);
+
+      ypowr = 0;
+      if(glob_iy < dw)
+	 ypowr = dw - glob_iy;
+      else if(glob_iy >= (ni->globny)-dw)
+	 ypowr = glob_iy - ((ni->globny) - 1 - dw);
+
+      zpowr = 0;
+      if(glob_iz < dw && fs == 0)
+	 zpowr = dw - glob_iz;
+      else if(glob_iz >= (ni->globnz)-dw)
+	 zpowr = glob_iz - ((ni->globnz) - 1 - dw);
+
+      if(xpowr || ypowr || zpowr)
+         {
+         powr = xpowr + ypowr + zpowr - 1;
+	 qfac = one;
+         while(powr--)
+            qfac = qfac*qfac0;
+
+         qp0 = qp[i];
+         if(qp0 > 2*(qbmax))
+            qp0 = 2*(qbmax);
+
+         qs0 = qs[i];
+         if(qs0 > (qbmax))
+            qs0 = (qbmax);
+
+         qp[i] = qfac*qp0;
+         qs[i] = qfac*qs0;
+
+         if(qp[i] < 10.0)
+            qp[i] = 10.0;
+         if(qs[i] < 5.0)
+            qs[i] = 5.0;
+
+         qp[i] = -qp[i];
+         qs[i] = -qs[i];
+         }
+      }
+   }
+}
+
+void pad_medslice_ckvpvsP3_OLD(float *mfield,struct nodeinfo *ni,int fs,struct media_input *mi)
+{
+float *mdf1;
+float *l2m, *lam, *invmu, *rho, *qp, *qs;
+float *lraw, *mraw, *rraw;
+int ix, iy, iz, ip, off1, off2;
+int nx, ny, nz;
+
+float r2max, r2min, vp_min2, fac2;
+float fone = 1.0;
+
+int npad = NBND_PAD_COPY;
+/* XXXXX
+npad = 10;
+ */
+
+nx = ni->loc_nx;
+ny = ni->loc_ny;
+nz = ni->loc_nz;
+
+/*
+   tolerance for maximum vp/vs ratio: vp/vs <= vpvs_max
+
+   (vp/vs)^2 <= vpvs_max^2
+   (lam + 2*mu)/mu <= vpvs_max^2
+   (lam + 2*mu) <= mu*(vpvs_max)^2
+   lam <= mu*(vpvs_max)^2 - 2*mu
+   lam <= mu*(vpvs_max^2 - 2)
+   lam <= mu*r2
+
+   where r2 = vpvs_max^2 - 2
+*/
+
+/* first check global condition */
+
+if(mi->vpvs_max_global > 0.0)
+   r2max = (mi->vpvs_max_global)*(mi->vpvs_max_global) - 2.0;
+else
+   r2max = 1.0e+20;
+
+if(mi->vpvs_min_global > 0.0)
+   r2min = (mi->vpvs_min_global)*(mi->vpvs_min_global) - 2.0;
+else
+   r2min = 1.45*1.45 - 2.0;
+
+for(iy=0;iy<ny;iy++)
+   {
+   mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+   l2m = mdf1;
+   lam = mdf1 +   nx*nz;
+   lraw = mdf1 + 11*nx*nz;
+   mraw = mdf1 + 12*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+      if(lraw[ip] > r2max*mraw[ip])    /* check vp/vs ratio */
+         {
+         lraw[ip] = r2max*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(lraw[ip] < r2min*mraw[ip])    /* check vp/vs ratio */
+         {
+         lraw[ip] = r2min*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+      }
+   }
+
+/* now check boundary condition */
+
+if(mi->vpvs_max_boundary > 0.0)
+   r2max = (mi->vpvs_max_boundary)*(mi->vpvs_max_boundary) - 2.0;
+else
+   r2max = 1.0e+20;
+
+if(mi->vpvs_min_boundary > 0.0)
+   r2min = (mi->vpvs_min_boundary)*(mi->vpvs_min_boundary) - 2.0;
+else
+   r2min = 1.45*1.45 - 2.0;
+
+vp_min2 = (mi->vp_min_boundary)*(mi->vp_min_boundary);
+
+if(ni->minusId_x < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      invmu  = mdf1 + 4*nx*nz;
+      rho = mdf1 + 7*nx*nz;
+      qp  = mdf1 + 9*nx*nz;
+      qs  = mdf1 + 10*nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+      rraw = mdf1 + 13*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+	 off2 = iz*nx + npad;
+
+         if(lraw[off2] > r2max*mraw[off2])    /* check vp/vs ratio */
+            {
+            lraw[off2] = r2max*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(lraw[off2] < r2min*mraw[off2])    /* check vp/vs ratio */
+            {
+            lraw[off2] = r2min*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rraw[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+	    {
+	    fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rraw[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+	    }
+
+         for(ix=0;ix<npad;ix++)
+            {
+	    off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            rraw[off1]  = rraw[off2];
+            }
+	 }
+      }
+   }
+
+if(ni->plusId_x < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      invmu  = mdf1 + 4*nx*nz;
+      rho = mdf1 + 7*nx*nz;
+      qp  = mdf1 + 9*nx*nz;
+      qs  = mdf1 + 10*nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+      rraw = mdf1 + 13*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         off2 = iz*nx + (nx-npad-1);
+
+         if(lraw[off2] > r2max*mraw[off2])    /* check vp/vs ratio */
+            {
+            lraw[off2] = r2max*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(lraw[off2] < r2min*mraw[off2])    /* check vp/vs ratio */
+            {
+            lraw[off2] = r2min*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rraw[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+	    {
+	    fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rraw[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+	    }
+
+         for(ix=nx-npad;ix<nx;ix++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            rraw[off1]  = rraw[off2];
+            }
+         }
+      }
+   }
+
+if(!fs && ni->minusId_z < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      invmu  = mdf1 + 4*nx*nz;
+      rho = mdf1 + 7*nx*nz;
+      qp  = mdf1 + 9*nx*nz;
+      qs  = mdf1 + 10*nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+      rraw = mdf1 + 13*nx*nz;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off2 = npad*nx + ix;
+
+         if(lraw[off2] > r2max*mraw[off2])    /* check vp/vs ratio */
+            {
+            lraw[off2] = r2max*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(lraw[off2] < r2min*mraw[off2])    /* check vp/vs ratio */
+            {
+            lraw[off2] = r2min*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rraw[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+	    {
+	    fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rraw[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+	    }
+
+         for(iz=0;iz<npad;iz++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            rraw[off1]  = rraw[off2];
+            }
+         }
+      }
+   }
+
+if(ni->plusId_z < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      invmu  = mdf1 + 4*nx*nz;
+      rho = mdf1 + 7*nx*nz;
+      qp  = mdf1 + 9*nx*nz;
+      qs  = mdf1 + 10*nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+      rraw = mdf1 + 13*nx*nz;
+   
+      for(ix=0;ix<nx;ix++)
+         {
+         off2 = (nz-npad-1)*nx + ix;
+
+         if(lraw[off2] > r2max*mraw[off2])    /* check vp/vs ratio */
+            {
+            lraw[off2] = r2max*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(lraw[off2] < r2min*mraw[off2])    /* check vp/vs ratio */
+            {
+            lraw[off2] = r2min*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rraw[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+	    {
+	    fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rraw[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+	    }
+
+         for(iz=nz-npad;iz<nz;iz++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            rraw[off1]  = rraw[off2];
+            }
+         }
+      }
+   }
+
+if(ni->minusId_y < 0)
+   {
+   mdf1 = mfield + N_MED_VARS*npad*nx*nz;
+
+   l2m = mdf1;
+   lam = mdf1 +   nx*nz;
+   invmu  = mdf1 + 4*nx*nz;
+   rho = mdf1 + 7*nx*nz;
+   qp  = mdf1 + 9*nx*nz;
+   qs  = mdf1 + 10*nx*nz;
+   lraw = mdf1 + 11*nx*nz;
+   mraw = mdf1 + 12*nx*nz;
+   rraw = mdf1 + 13*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+      if(lraw[ip] > r2max*mraw[ip])    /* check vp/vs ratio */
+         {
+         lraw[ip] = r2max*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(lraw[ip] < r2min*mraw[ip])    /* check vp/vs ratio */
+         {
+         lraw[ip] = r2min*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(l2m[ip]/rraw[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+	 {
+	 fac2 = mraw[ip]/l2m[ip];
+
+         l2m[ip] = vp_min2*rraw[ip];
+         mraw[ip] = l2m[ip]*fac2;
+         lraw[ip] = l2m[ip] - 2.0*mraw[ip];
+         lam[ip] = lraw[ip];
+         invmu[ip] = fone/mraw[ip];
+	 }
+
+      for(iy=0;iy<npad;iy++)
+         {
+         off1 = ip - N_MED_VARS*(iy+1)*nx*nz;
+
+         l2m[off1] = l2m[ip];
+         lam[off1] = lam[ip];
+         invmu[off1]  = invmu[ip];
+         rho[off1] = rho[ip];
+         qp[off1]  = qp[ip];
+         qs[off1]  = qs[ip];
+         lraw[off1]  = lraw[ip];
+         mraw[off1]  = mraw[ip];
+         rraw[off1]  = rraw[ip];
+         }
+      }
+   }
+
+if(ni->plusId_y < 0)
+   {
+   mdf1 = mfield + N_MED_VARS*(ny-npad-1)*nx*nz;
+
+   l2m = mdf1;
+   lam = mdf1 +   nx*nz;
+   invmu  = mdf1 + 4*nx*nz;
+   rho = mdf1 + 7*nx*nz;
+   qp  = mdf1 + 9*nx*nz;
+   qs  = mdf1 + 10*nx*nz;
+   lraw = mdf1 + 11*nx*nz;
+   mraw = mdf1 + 12*nx*nz;
+   rraw = mdf1 + 13*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+      if(lraw[ip] > r2max*mraw[ip])    /* check vp/vs ratio */
+         {
+         lraw[ip] = r2max*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(lraw[ip] < r2min*mraw[ip])    /* check vp/vs ratio */
+         {
+         lraw[ip] = r2min*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(l2m[ip]/rraw[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+	 {
+	 fac2 = mraw[ip]/l2m[ip];
+
+         l2m[ip] = vp_min2*rho[ip];
+         mraw[ip] = l2m[ip]*fac2;
+         lraw[ip] = l2m[ip] - 2.0*mraw[ip];
+         lam[ip] = lraw[ip];
+         invmu[ip] = fone/mraw[ip];
+	 }
+
+      for(iy=0;iy<npad;iy++)
+         {
+         off1 = ip + N_MED_VARS*(iy+1)*nx*nz;
+
+         l2m[off1] = l2m[ip];
+         lam[off1] = lam[ip];
+         invmu[off1]  = invmu[ip];
+         rho[off1] = rho[ip];
+         qp[off1]  = qp[ip];
+         qs[off1]  = qs[ip];
+         lraw[off1]  = lraw[ip];
+         mraw[off1]  = mraw[ip];
+         rraw[off1]  = rraw[ip];
+         }
+      }
+   }
+}
+
+void pad_medslice_ckvpvsP3_smooth1(float *mfield,struct nodeinfo *ni,int fs,struct media_input *mi)
+{
+float *mdf1, *mdf2;
+float *l2m, *lam, *invmu, *rho, *qp, *qs;
+float *lraw, *mraw;
+int ix, iy, iz, ip, off0, off1, off2;
+int nx, ny, nz;
+
+float r2, vp_min2, fac2;
+
+float *ltmp, *mtmp, *rtmp, *qtmp;
+float *lptr1, *mptr1, *rptr1, *qptr1;
+float *lptr2, *mptr2, *rptr2, *qptr2;
+float sum, w0_main, w1_main, w2_main, w3_main, w4_main, w5_main, w6_main, w7_main, w8_main;
+float w0, w1, w2, w3, w4, w5, w6, w7, w8;
+float a1, a2;
+int i0, i1, i2, i3, i4, i5, i6, i7, i8;
+
+float vp, vs;
+
+int npad_smth = NBND_PAD_SMOOTH;
+int npad_copy = NBND_PAD_COPY;
+
+float fone = 1.0;
+
+/* XXXXXX
+ */
+npad_smth = npad_copy;
+
+nx = ni->loc_nx;
+ny = ni->loc_ny;
+nz = ni->loc_nz;
+
+/*
+   tolerance for maximum vp/vs ratio: vp/vs <= vpvs_max
+
+   (vp/vs)^2 <= vpvs_max^2
+   (lam + 2*mu)/mu <= vpvs_max^2
+   (lam + 2*mu) <= mu*(vpvs_max)^2
+   lam <= mu*(vpvs_max)^2 - 2*mu
+   lam <= mu*(vpvs_max^2 - 2)
+   lam <= mu*r2
+
+   where r2 = vpvs_max^2 - 2
+*/
+
+w0_main = 1.0;
+w1_main = 1.0;
+w2_main = 1.0;
+w3_main = 1.0;
+w4_main = 1.0;
+w5_main = 1.0;
+w6_main = 1.0;
+w7_main = 1.0;
+w8_main = 1.0;
+
+a1 = 0.0; /* weight on outside plane */
+a2 = 1.0; /* weight on inside plane */
+
+/* first check global condition */
+
+if(mi->vpvs_max_global > 0.0)
+   {
+   r2 = (mi->vpvs_max_global)*(mi->vpvs_max_global) - 2.0;
+
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+
+      for(ip=0;ip<nx*nz;ip++)
+         {
+         if(lraw[ip] > r2*mraw[ip])    /* check vp/vps ratio */
+            {
+            lraw[ip] = r2*mraw[ip];
+            lam[ip] = lraw[ip];
+            l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+            }
+         }
+      }
+   }
+
+fprintf(stderr,"now checking boundaries\n");
+fflush(stderr);
+
+/* next, smooth media near abosrbing boundaries */
+
+sum = w0_main + w1_main + w2_main + w3_main + w4_main + w5_main + w6_main + w7_main + w8_main;
+sum = 1.0/(sum*(a1+a2));
+
+w0 = w0_main*sum;
+w1 = w1_main*sum;
+w2 = w2_main*sum;
+w3 = w3_main*sum;
+w4 = w4_main*sum;
+w5 = w5_main*sum;
+w6 = w6_main*sum;
+w7 = w7_main*sum;
+w8 = w8_main*sum;
+
+if(mi->vpvs_max_boundary > 0.0)
+   r2 = (mi->vpvs_max_boundary)*(mi->vpvs_max_boundary) - 2.0;
+else
+   r2 = 1.0e+20;
+
+vp_min2 = (mi->vp_min_boundary)*(mi->vp_min_boundary);
+
+if(ni->minusId_x < 0)
+   {
+   ltmp = (float *) check_malloc (ny*nz*sizeof(float));
+   mtmp = (float *) check_malloc (ny*nz*sizeof(float));
+   rtmp = (float *) check_malloc (ny*nz*sizeof(float));
+   qtmp = (float *) check_malloc (ny*nz*sizeof(float));
+
+   i0 = -nx - N_MED_VARS*nx*nz;
+   i1 = -nx;
+   i2 = -nx + N_MED_VARS*nx*nz;
+   i3 =      -N_MED_VARS*nx*nz;
+   i4 =   0;
+   i5 =       N_MED_VARS*nx*nz;
+   i6 =  nx - N_MED_VARS*nx*nz;
+   i7 =  nx;
+   i8 =  nx + N_MED_VARS*nx*nz;
+
+   for(ix=npad_smth-1;ix>=npad_copy;ix--)
+      {
+      mdf1 = mfield + ix;
+      mdf2 = mfield + ix + 1;
+
+      for(iy=1;iy<ny-1;iy++)
+         {
+         rptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 7*nx*nz;    /* rho */
+         qptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 10*nx*nz;    /* qs */
+         lptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 11*nx*nz;    /* lamraw */
+         mptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 12*nx*nz;    /* muraw */
+
+         rptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+         qptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+         lptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+         mptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+         for(iz=1;iz<nz-1;iz++)
+            {
+	    ip = iz + iy*nz;
+	    off0 = iz*nx;
+
+	    ltmp[ip] = w0*(a1*lptr1[off0+i0] + a2*lptr2[off0+i0])
+	                + w1*(a1*lptr1[off0+i1] + a2*lptr2[off0+i1])
+			+ w2*(a1*lptr1[off0+i2] + a2*lptr2[off0+i2])
+			+ w3*(a1*lptr1[off0+i3] + a2*lptr2[off0+i3])
+			+ w4*(a1*lptr1[off0+i4] + a2*lptr2[off0+i4])
+			+ w5*(a1*lptr1[off0+i5] + a2*lptr2[off0+i5])
+			+ w6*(a1*lptr1[off0+i6] + a2*lptr2[off0+i6])
+			+ w7*(a1*lptr1[off0+i7] + a2*lptr2[off0+i7])
+			+ w8*(a1*lptr1[off0+i8] + a2*lptr2[off0+i8]);
+
+	    mtmp[ip] = w0*(a1*mptr1[off0+i0] + a2*mptr2[off0+i0])
+	                + w1*(a1*mptr1[off0+i1] + a2*mptr2[off0+i1])
+			+ w2*(a1*mptr1[off0+i2] + a2*mptr2[off0+i2])
+			+ w3*(a1*mptr1[off0+i3] + a2*mptr2[off0+i3])
+			+ w4*(a1*mptr1[off0+i4] + a2*mptr2[off0+i4])
+			+ w5*(a1*mptr1[off0+i5] + a2*mptr2[off0+i5])
+			+ w6*(a1*mptr1[off0+i6] + a2*mptr2[off0+i6])
+			+ w7*(a1*mptr1[off0+i7] + a2*mptr2[off0+i7])
+			+ w8*(a1*mptr1[off0+i8] + a2*mptr2[off0+i8]);
+
+	    rtmp[ip] = w0*(a1*rptr1[off0+i0] + a2*rptr2[off0+i0])
+	                + w1*(a1*rptr1[off0+i1] + a2*rptr2[off0+i1])
+			+ w2*(a1*rptr1[off0+i2] + a2*rptr2[off0+i2])
+			+ w3*(a1*rptr1[off0+i3] + a2*rptr2[off0+i3])
+			+ w4*(a1*rptr1[off0+i4] + a2*rptr2[off0+i4])
+			+ w5*(a1*rptr1[off0+i5] + a2*rptr2[off0+i5])
+			+ w6*(a1*rptr1[off0+i6] + a2*rptr2[off0+i6])
+			+ w7*(a1*rptr1[off0+i7] + a2*rptr2[off0+i7])
+			+ w8*(a1*rptr1[off0+i8] + a2*rptr2[off0+i8]);
+
+	    qtmp[ip] = w0*(a1*qptr1[off0+i0] + a2*qptr2[off0+i0])
+	                + w1*(a1*qptr1[off0+i1] + a2*qptr2[off0+i1])
+			+ w2*(a1*qptr1[off0+i2] + a2*qptr2[off0+i2])
+			+ w3*(a1*qptr1[off0+i3] + a2*qptr2[off0+i3])
+			+ w4*(a1*qptr1[off0+i4] + a2*qptr2[off0+i4])
+			+ w5*(a1*qptr1[off0+i5] + a2*qptr2[off0+i5])
+			+ w6*(a1*qptr1[off0+i6] + a2*qptr2[off0+i6])
+			+ w7*(a1*qptr1[off0+i7] + a2*qptr2[off0+i7])
+			+ w8*(a1*qptr1[off0+i8] + a2*qptr2[off0+i8]);
+	    }
+	 }
+
+/* copy values to outer ring of arrays */
+
+      for(iz=1;iz<nz-1;iz++) /* iy=0 */
+         {
+	 off0 = iz;
+	 off1 = iz + nz;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nz-1;
+      off1 = nz-2 + nz;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iy=1;iy<ny-1;iy++) /* iz=nz-1 */
+         {
+	 off0 = nz-1 + iy*nz;
+	 off1 = nz-2 + iy*nz;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nz-1 + (ny-1)*nz;
+      off1 = nz-2 + (ny-2)*nz;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iz=nz-2;iz>0;iz--) /* iy=ny-1 */
+         {
+	 off0 = iz + (ny-1)*nz;
+	 off1 = iz + (ny-2)*nz;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 =     (ny-1)*nz;
+      off1 = 1 + (ny-2)*nz;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iy=ny-2;iy>0;iy--) /* iz=0 */
+         {
+	 off0 =     iy*nz;
+	 off1 = 1 + iy*nz;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = 0;
+      off1 = nz + 1;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+/* now check vp/vs and vp_min in temp arrays */
+
+      for(ip=0;ip<nz*ny;ip++)
+         {
+         if(ltmp[ip] > r2*mtmp[ip])    /* check vp/vps ratio */
+            ltmp[ip] = r2*mtmp[ip];
+
+         if((ltmp[ip]+2.0*mtmp[ip])/rtmp[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+	    fac2 = (ltmp[ip]+2.0*mtmp[ip])/mtmp[ip];
+	    if(fac2 > (r2 + 2.0))
+	       fac2 = r2 + 2.0;
+
+            mtmp[ip] = vp_min2*rtmp[ip]/fac2;
+            ltmp[ip] = vp_min2*rtmp[ip] - 2.0*mtmp[ip];
+            }
+
+/* XXXXXXXX Vconst
+vp = 5.2;
+vs = 3.0;
+rtmp[ip] = 2.5;
+
+ltmp[ip] = rtmp[ip]*(vp*vp - 2.0*vs*vs);
+mtmp[ip] = vs*vs*rtmp[ip];
+qtmp[ip] = 50.0;
+*/
+         }
+
+/* copy back to main arrays */
+
+      for(iy=0;iy<ny;iy++)
+         {
+         l2m   = mdf1 + N_MED_VARS*iy*nx*nz;
+         lam   = mdf1 + N_MED_VARS*iy*nx*nz +   nx*nz;
+         invmu = mdf1 + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+         rho   = mdf1 + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+         qp    = mdf1 + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+         qs    = mdf1 + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+         lraw  = mdf1 + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+         mraw  = mdf1 + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+         for(iz=0;iz<nz;iz++)
+            {
+	    ip = iz + iy*nz;
+	    off0 = iz*nx;
+
+	    lraw[off0] = ltmp[ip];
+	    mraw[off0] = mtmp[ip];
+	    rho[off0] = rtmp[ip];
+	    qs[off0] = qtmp[ip];
+
+	    l2m[off0] = lraw[off0] + 2.0*mraw[off0];
+	    lam[off0] = lraw[off0];
+	    invmu[off0] = 1.0/mraw[off0];
+	    qp[off0] = 2.0*qs[off0];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         off2 = iz*nx + npad_copy;
+
+/* XXXXXX
+fprintf(stderr,"%10.5f %10.5f %10.5f\n",sqrt(l2m[off2]/rho[off2]),sqrt(mraw[off2]/rho[off2]),rho[off2]);
+fflush(stderr);
+*/
+
+/* XXXXXXXX Vconst
+vp = 5.2;
+vs = 3.0;
+rho[off2] = 2.5;
+
+lraw[off2] = rho[off2]*(vp*vp - 2.0*vs*vs);
+mraw[off2] = vs*vs*rho[off2];
+qs[off2] = 50.0;
+
+l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+lam[off2] = lraw[off2];
+invmu[off2] = 1.0/mraw[off2];
+qp[off2] = 2.0*qs[off2];
+*/
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rho[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+            fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rho[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+            }
+
+         for(ix=0;ix<npad_copy;ix++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+
+/* XXXXXX */
+
+   free(ltmp);
+   free(mtmp);
+   free(rtmp);
+   free(qtmp);
+   }
+
+if(ni->plusId_x < 0)
+   {
+   ltmp = (float *) check_malloc (ny*nz*sizeof(float));
+   mtmp = (float *) check_malloc (ny*nz*sizeof(float));
+   rtmp = (float *) check_malloc (ny*nz*sizeof(float));
+   qtmp = (float *) check_malloc (ny*nz*sizeof(float));
+
+   i0 = -nx - N_MED_VARS*nx*nz;
+   i1 = -nx;
+   i2 = -nx + N_MED_VARS*nx*nz;
+   i3 =      -N_MED_VARS*nx*nz;
+   i4 =   0;
+   i5 =       N_MED_VARS*nx*nz;
+   i6 =  nx - N_MED_VARS*nx*nz;
+   i7 =  nx;
+   i8 =  nx + N_MED_VARS*nx*nz;
+
+   for(ix=nx-npad_smth;ix<nx-npad_copy;ix++)
+      {
+      mdf1 = mfield + ix;
+      mdf2 = mfield + ix - 1;
+
+      for(iy=1;iy<ny-1;iy++)
+         {
+         rptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 7*nx*nz;    /* rho */
+         qptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 10*nx*nz;    /* qs */
+         lptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 11*nx*nz;    /* lamraw */
+         mptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 12*nx*nz;    /* muraw */
+
+         rptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+         qptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+         lptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+         mptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+         for(iz=1;iz<nz-1;iz++)
+            {
+	    ip = iz + iy*nz;
+	    off0 = iz*nx;
+
+	    ltmp[ip] = w0*(a1*lptr1[off0+i0] + a2*lptr2[off0+i0])
+	                + w1*(a1*lptr1[off0+i1] + a2*lptr2[off0+i1])
+			+ w2*(a1*lptr1[off0+i2] + a2*lptr2[off0+i2])
+			+ w3*(a1*lptr1[off0+i3] + a2*lptr2[off0+i3])
+			+ w4*(a1*lptr1[off0+i4] + a2*lptr2[off0+i4])
+			+ w5*(a1*lptr1[off0+i5] + a2*lptr2[off0+i5])
+			+ w6*(a1*lptr1[off0+i6] + a2*lptr2[off0+i6])
+			+ w7*(a1*lptr1[off0+i7] + a2*lptr2[off0+i7])
+			+ w8*(a1*lptr1[off0+i8] + a2*lptr2[off0+i8]);
+
+	    mtmp[ip] = w0*(a1*mptr1[off0+i0] + a2*mptr2[off0+i0])
+	                + w1*(a1*mptr1[off0+i1] + a2*mptr2[off0+i1])
+			+ w2*(a1*mptr1[off0+i2] + a2*mptr2[off0+i2])
+			+ w3*(a1*mptr1[off0+i3] + a2*mptr2[off0+i3])
+			+ w4*(a1*mptr1[off0+i4] + a2*mptr2[off0+i4])
+			+ w5*(a1*mptr1[off0+i5] + a2*mptr2[off0+i5])
+			+ w6*(a1*mptr1[off0+i6] + a2*mptr2[off0+i6])
+			+ w7*(a1*mptr1[off0+i7] + a2*mptr2[off0+i7])
+			+ w8*(a1*mptr1[off0+i8] + a2*mptr2[off0+i8]);
+
+	    rtmp[ip] = w0*(a1*rptr1[off0+i0] + a2*rptr2[off0+i0])
+	                + w1*(a1*rptr1[off0+i1] + a2*rptr2[off0+i1])
+			+ w2*(a1*rptr1[off0+i2] + a2*rptr2[off0+i2])
+			+ w3*(a1*rptr1[off0+i3] + a2*rptr2[off0+i3])
+			+ w4*(a1*rptr1[off0+i4] + a2*rptr2[off0+i4])
+			+ w5*(a1*rptr1[off0+i5] + a2*rptr2[off0+i5])
+			+ w6*(a1*rptr1[off0+i6] + a2*rptr2[off0+i6])
+			+ w7*(a1*rptr1[off0+i7] + a2*rptr2[off0+i7])
+			+ w8*(a1*rptr1[off0+i8] + a2*rptr2[off0+i8]);
+
+	    qtmp[ip] = w0*(a1*qptr1[off0+i0] + a2*qptr2[off0+i0])
+	                + w1*(a1*qptr1[off0+i1] + a2*qptr2[off0+i1])
+			+ w2*(a1*qptr1[off0+i2] + a2*qptr2[off0+i2])
+			+ w3*(a1*qptr1[off0+i3] + a2*qptr2[off0+i3])
+			+ w4*(a1*qptr1[off0+i4] + a2*qptr2[off0+i4])
+			+ w5*(a1*qptr1[off0+i5] + a2*qptr2[off0+i5])
+			+ w6*(a1*qptr1[off0+i6] + a2*qptr2[off0+i6])
+			+ w7*(a1*qptr1[off0+i7] + a2*qptr2[off0+i7])
+			+ w8*(a1*qptr1[off0+i8] + a2*qptr2[off0+i8]);
+	    }
+	 }
+
+/* copy values to outer ring of arrays */
+
+      for(iz=1;iz<nz-1;iz++) /* iy=0 */
+         {
+	 off0 = iz;
+	 off1 = iz + nz;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nz-1;
+      off1 = nz-2 + nz;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iy=1;iy<ny-1;iy++) /* iz=nz-1 */
+         {
+	 off0 = nz-1 + iy*nz;
+	 off1 = nz-2 + iy*nz;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nz-1 + (ny-1)*nz;
+      off1 = nz-2 + (ny-2)*nz;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iz=nz-2;iz>0;iz--) /* iy=ny-1 */
+         {
+	 off0 = iz + (ny-1)*nz;
+	 off1 = iz + (ny-2)*nz;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 =     (ny-1)*nz;
+      off1 = 1 + (ny-2)*nz;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iy=ny-2;iy>0;iy--) /* iz=0 */
+         {
+	 off0 =     iy*nz;
+	 off1 = 1 + iy*nz;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = 0;
+      off1 = nz + 1;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+/* now check vp/vs and vp_min in temp arrays */
+
+      for(ip=0;ip<nz*ny;ip++)
+         {
+         if(ltmp[ip] > r2*mtmp[ip])    /* check vp/vps ratio */
+            ltmp[ip] = r2*mtmp[ip];
+
+         if((ltmp[ip]+2.0*mtmp[ip])/rtmp[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+	    fac2 = (ltmp[ip]+2.0*mtmp[ip])/mtmp[ip];
+	    if(fac2 > (r2 + 2.0))
+	       fac2 = r2 + 2.0;
+
+            mtmp[ip] = vp_min2*rtmp[ip]/fac2;
+            ltmp[ip] = vp_min2*rtmp[ip] - 2.0*mtmp[ip];
+            }
+
+/* XXXXXXXX Vconst
+vp = 5.2;
+vs = 3.0;
+rtmp[ip] = 2.5;
+
+ltmp[ip] = rtmp[ip]*(vp*vp - 2.0*vs*vs);
+mtmp[ip] = vs*vs*rtmp[ip];
+qtmp[ip] = 50.0;
+*/
+         }
+
+/* copy back to main arrays */
+
+      for(iy=0;iy<ny;iy++)
+         {
+         l2m   = mdf1 + N_MED_VARS*iy*nx*nz;
+         lam   = mdf1 + N_MED_VARS*iy*nx*nz +   nx*nz;
+         invmu = mdf1 + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+         rho   = mdf1 + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+         qp    = mdf1 + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+         qs    = mdf1 + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+         lraw  = mdf1 + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+         mraw  = mdf1 + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+         for(iz=0;iz<nz;iz++)
+            {
+	    ip = iz + iy*nz;
+	    off0 = iz*nx;
+
+	    lraw[off0] = ltmp[ip];
+	    mraw[off0] = mtmp[ip];
+	    rho[off0] = rtmp[ip];
+	    qs[off0] = qtmp[ip];
+
+	    l2m[off0] = lraw[off0] + 2.0*mraw[off0];
+	    lam[off0] = lraw[off0];
+	    invmu[off0] = 1.0/mraw[off0];
+	    qp[off0] = 2.0*qs[off0];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         off2 = iz*nx + (nx-npad_copy-1);
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rho[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+            fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rho[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+            }
+
+         for(ix=nx-npad_copy;ix<nx;ix++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+/* XXXXXX */
+
+   free(ltmp);
+   free(mtmp);
+   free(rtmp);
+   free(qtmp);
+   }
+
+if(!fs && ni->minusId_z < 0)
+   {
+   ltmp = (float *) check_malloc (nx*ny*sizeof(float));
+   mtmp = (float *) check_malloc (nx*ny*sizeof(float));
+   rtmp = (float *) check_malloc (nx*ny*sizeof(float));
+   qtmp = (float *) check_malloc (nx*ny*sizeof(float));
+
+   i0 = -1 - N_MED_VARS*nx*nz;
+   i1 =     -N_MED_VARS*nx*nz;
+   i2 =  1 - N_MED_VARS*nx*nz;
+   i3 = -1;
+   i4 =  0;
+   i5 =  1;
+   i6 = -1 + N_MED_VARS*nx*nz;
+   i7 =      N_MED_VARS*nx*nz;
+   i8 =  1 + N_MED_VARS*nx*nz;
+
+   for(iz=npad_smth-1;iz>=npad_copy;iz--)
+      {
+      mdf1 = mfield + iz*nx;
+      mdf2 = mfield + (iz+1)*nx;
+
+      for(iy=1;iy<ny-1;iy++)
+         {
+         rptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 7*nx*nz;    /* rho */
+         qptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 10*nx*nz;    /* qs */
+         lptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 11*nx*nz;    /* lamraw */
+         mptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 12*nx*nz;    /* muraw */
+
+         rptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+         qptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+         lptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+         mptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+         for(ix=1;ix<nx-1;ix++)
+            {
+	    ip = ix + iy*nx;
+	    off0 = ix;
+
+	    ltmp[ip] = w0*(a1*lptr1[off0+i0] + a2*lptr2[off0+i0])
+	                + w1*(a1*lptr1[off0+i1] + a2*lptr2[off0+i1])
+			+ w2*(a1*lptr1[off0+i2] + a2*lptr2[off0+i2])
+			+ w3*(a1*lptr1[off0+i3] + a2*lptr2[off0+i3])
+			+ w4*(a1*lptr1[off0+i4] + a2*lptr2[off0+i4])
+			+ w5*(a1*lptr1[off0+i5] + a2*lptr2[off0+i5])
+			+ w6*(a1*lptr1[off0+i6] + a2*lptr2[off0+i6])
+			+ w7*(a1*lptr1[off0+i7] + a2*lptr2[off0+i7])
+			+ w8*(a1*lptr1[off0+i8] + a2*lptr2[off0+i8]);
+
+	    mtmp[ip] = w0*(a1*mptr1[off0+i0] + a2*mptr2[off0+i0])
+	                + w1*(a1*mptr1[off0+i1] + a2*mptr2[off0+i1])
+			+ w2*(a1*mptr1[off0+i2] + a2*mptr2[off0+i2])
+			+ w3*(a1*mptr1[off0+i3] + a2*mptr2[off0+i3])
+			+ w4*(a1*mptr1[off0+i4] + a2*mptr2[off0+i4])
+			+ w5*(a1*mptr1[off0+i5] + a2*mptr2[off0+i5])
+			+ w6*(a1*mptr1[off0+i6] + a2*mptr2[off0+i6])
+			+ w7*(a1*mptr1[off0+i7] + a2*mptr2[off0+i7])
+			+ w8*(a1*mptr1[off0+i8] + a2*mptr2[off0+i8]);
+
+	    rtmp[ip] = w0*(a1*rptr1[off0+i0] + a2*rptr2[off0+i0])
+	                + w1*(a1*rptr1[off0+i1] + a2*rptr2[off0+i1])
+			+ w2*(a1*rptr1[off0+i2] + a2*rptr2[off0+i2])
+			+ w3*(a1*rptr1[off0+i3] + a2*rptr2[off0+i3])
+			+ w4*(a1*rptr1[off0+i4] + a2*rptr2[off0+i4])
+			+ w5*(a1*rptr1[off0+i5] + a2*rptr2[off0+i5])
+			+ w6*(a1*rptr1[off0+i6] + a2*rptr2[off0+i6])
+			+ w7*(a1*rptr1[off0+i7] + a2*rptr2[off0+i7])
+			+ w8*(a1*rptr1[off0+i8] + a2*rptr2[off0+i8]);
+
+	    qtmp[ip] = w0*(a1*qptr1[off0+i0] + a2*qptr2[off0+i0])
+	                + w1*(a1*qptr1[off0+i1] + a2*qptr2[off0+i1])
+			+ w2*(a1*qptr1[off0+i2] + a2*qptr2[off0+i2])
+			+ w3*(a1*qptr1[off0+i3] + a2*qptr2[off0+i3])
+			+ w4*(a1*qptr1[off0+i4] + a2*qptr2[off0+i4])
+			+ w5*(a1*qptr1[off0+i5] + a2*qptr2[off0+i5])
+			+ w6*(a1*qptr1[off0+i6] + a2*qptr2[off0+i6])
+			+ w7*(a1*qptr1[off0+i7] + a2*qptr2[off0+i7])
+			+ w8*(a1*qptr1[off0+i8] + a2*qptr2[off0+i8]);
+	    }
+	 }
+
+/* copy values to outer ring of arrays */
+
+      for(ix=1;ix<nx-1;ix++) /* iy=0 */
+         {
+	 off0 = ix;
+	 off1 = ix + nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nx-1;
+      off1 = nx-2 + nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iy=1;iy<ny-1;iy++) /* ix=nx-1 */
+         {
+	 off0 = nx-1 + iy*nx;
+	 off1 = nx-2 + iy*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nx-1 + (ny-1)*nx;
+      off1 = nx-2 + (ny-2)*nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(ix=nx-2;ix>0;ix--) /* iy=ny-1 */
+         {
+	 off0 = ix + (ny-1)*nx;
+	 off1 = ix + (ny-2)*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 =     (ny-1)*nx;
+      off1 = 1 + (ny-2)*nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iy=ny-2;iy>0;iy--) /* ix=0 */
+         {
+	 off0 =     iy*nx;
+	 off1 = 1 + iy*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = 0;
+      off1 = nx + 1;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+/* now check vp/vs and vp_min in temp arrays */
+
+      for(ip=0;ip<nx*ny;ip++)
+         {
+         if(ltmp[ip] > r2*mtmp[ip])    /* check vp/vps ratio */
+            ltmp[ip] = r2*mtmp[ip];
+
+         if((ltmp[ip]+2.0*mtmp[ip])/rtmp[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+	    fac2 = (ltmp[ip]+2.0*mtmp[ip])/mtmp[ip];
+	    if(fac2 > (r2 + 2.0))
+	       fac2 = r2 + 2.0;
+
+            mtmp[ip] = vp_min2*rtmp[ip]/fac2;
+            ltmp[ip] = vp_min2*rtmp[ip] - 2.0*mtmp[ip];
+            }
+
+/* XXXXXXXX Vconst
+vp = 5.2;
+vs = 3.0;
+rtmp[ip] = 2.5;
+
+ltmp[ip] = rtmp[ip]*(vp*vp - 2.0*vs*vs);
+mtmp[ip] = vs*vs*rtmp[ip];
+qtmp[ip] = 50.0;
+*/
+         }
+
+/* copy back to main arrays */
+
+      for(iy=0;iy<ny;iy++)
+         {
+         l2m   = mdf1 + N_MED_VARS*iy*nx*nz;
+         lam   = mdf1 + N_MED_VARS*iy*nx*nz +   nx*nz;
+         invmu = mdf1 + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+         rho   = mdf1 + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+         qp    = mdf1 + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+         qs    = mdf1 + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+         lraw  = mdf1 + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+         mraw  = mdf1 + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+         for(ix=0;ix<nx;ix++)
+            {
+	    ip = ix + iy*nx;
+	    off0 = ix;
+
+	    lraw[off0] = ltmp[ip];
+	    mraw[off0] = mtmp[ip];
+	    rho[off0] = rtmp[ip];
+	    qs[off0] = qtmp[ip];
+
+	    l2m[off0] = lraw[off0] + 2.0*mraw[off0];
+	    lam[off0] = lraw[off0];
+	    invmu[off0] = 1.0/mraw[off0];
+	    qp[off0] = 2.0*qs[off0];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off2 = npad_copy*nx + ix;
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rho[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+            fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rho[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+            }
+
+         for(iz=0;iz<npad_copy;iz++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+/* XXXXXX */
+
+   free(ltmp);
+   free(mtmp);
+   free(rtmp);
+   free(qtmp);
+   }
+
+if(ni->plusId_z < 0)
+   {
+   ltmp = (float *) check_malloc (nx*ny*sizeof(float));
+   mtmp = (float *) check_malloc (nx*ny*sizeof(float));
+   rtmp = (float *) check_malloc (nx*ny*sizeof(float));
+   qtmp = (float *) check_malloc (nx*ny*sizeof(float));
+
+   i0 = -1 - N_MED_VARS*nx*nz;
+   i1 =     -N_MED_VARS*nx*nz;
+   i2 =  1 - N_MED_VARS*nx*nz;
+   i3 = -1;
+   i4 =  0;
+   i5 =  1;
+   i6 = -1 + N_MED_VARS*nx*nz;
+   i7 =      N_MED_VARS*nx*nz;
+   i8 =  1 + N_MED_VARS*nx*nz;
+
+   for(iz=nz-npad_smth;iz<nz-npad_copy;iz++)
+      {
+      mdf1 = mfield + iz*nx;
+      mdf2 = mfield + (iz-1)*nx;
+
+      for(iy=1;iy<ny-1;iy++)
+         {
+         rptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 7*nx*nz;    /* rho */
+         qptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 10*nx*nz;    /* qs */
+         lptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 11*nx*nz;    /* lamraw */
+         mptr1 = mdf1 + N_MED_VARS*iy*nx*nz + 12*nx*nz;    /* muraw */
+
+         rptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+         qptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+         lptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+         mptr2 = mdf2 + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+         for(ix=1;ix<nx-1;ix++)
+            {
+	    ip = ix + iy*nx;
+	    off0 = ix;
+
+	    ltmp[ip] = w0*(a1*lptr1[off0+i0] + a2*lptr2[off0+i0])
+	                + w1*(a1*lptr1[off0+i1] + a2*lptr2[off0+i1])
+			+ w2*(a1*lptr1[off0+i2] + a2*lptr2[off0+i2])
+			+ w3*(a1*lptr1[off0+i3] + a2*lptr2[off0+i3])
+			+ w4*(a1*lptr1[off0+i4] + a2*lptr2[off0+i4])
+			+ w5*(a1*lptr1[off0+i5] + a2*lptr2[off0+i5])
+			+ w6*(a1*lptr1[off0+i6] + a2*lptr2[off0+i6])
+			+ w7*(a1*lptr1[off0+i7] + a2*lptr2[off0+i7])
+			+ w8*(a1*lptr1[off0+i8] + a2*lptr2[off0+i8]);
+
+	    mtmp[ip] = w0*(a1*mptr1[off0+i0] + a2*mptr2[off0+i0])
+	                + w1*(a1*mptr1[off0+i1] + a2*mptr2[off0+i1])
+			+ w2*(a1*mptr1[off0+i2] + a2*mptr2[off0+i2])
+			+ w3*(a1*mptr1[off0+i3] + a2*mptr2[off0+i3])
+			+ w4*(a1*mptr1[off0+i4] + a2*mptr2[off0+i4])
+			+ w5*(a1*mptr1[off0+i5] + a2*mptr2[off0+i5])
+			+ w6*(a1*mptr1[off0+i6] + a2*mptr2[off0+i6])
+			+ w7*(a1*mptr1[off0+i7] + a2*mptr2[off0+i7])
+			+ w8*(a1*mptr1[off0+i8] + a2*mptr2[off0+i8]);
+
+	    rtmp[ip] = w0*(a1*rptr1[off0+i0] + a2*rptr2[off0+i0])
+	                + w1*(a1*rptr1[off0+i1] + a2*rptr2[off0+i1])
+			+ w2*(a1*rptr1[off0+i2] + a2*rptr2[off0+i2])
+			+ w3*(a1*rptr1[off0+i3] + a2*rptr2[off0+i3])
+			+ w4*(a1*rptr1[off0+i4] + a2*rptr2[off0+i4])
+			+ w5*(a1*rptr1[off0+i5] + a2*rptr2[off0+i5])
+			+ w6*(a1*rptr1[off0+i6] + a2*rptr2[off0+i6])
+			+ w7*(a1*rptr1[off0+i7] + a2*rptr2[off0+i7])
+			+ w8*(a1*rptr1[off0+i8] + a2*rptr2[off0+i8]);
+
+	    qtmp[ip] = w0*(a1*qptr1[off0+i0] + a2*qptr2[off0+i0])
+	                + w1*(a1*qptr1[off0+i1] + a2*qptr2[off0+i1])
+			+ w2*(a1*qptr1[off0+i2] + a2*qptr2[off0+i2])
+			+ w3*(a1*qptr1[off0+i3] + a2*qptr2[off0+i3])
+			+ w4*(a1*qptr1[off0+i4] + a2*qptr2[off0+i4])
+			+ w5*(a1*qptr1[off0+i5] + a2*qptr2[off0+i5])
+			+ w6*(a1*qptr1[off0+i6] + a2*qptr2[off0+i6])
+			+ w7*(a1*qptr1[off0+i7] + a2*qptr2[off0+i7])
+			+ w8*(a1*qptr1[off0+i8] + a2*qptr2[off0+i8]);
+	    }
+	 }
+
+/* copy values to outer ring of arrays */
+
+      for(ix=1;ix<nx-1;ix++) /* iy=0 */
+         {
+	 off0 = ix;
+	 off1 = ix + nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nx-1;
+      off1 = nx-2 + nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iy=1;iy<ny-1;iy++) /* ix=nx-1 */
+         {
+	 off0 = nx-1 + iy*nx;
+	 off1 = nx-2 + iy*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nx-1 + (ny-1)*nx;
+      off1 = nx-2 + (ny-2)*nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(ix=nx-2;ix>0;ix--) /* iy=ny-1 */
+         {
+	 off0 = ix + (ny-1)*nx;
+	 off1 = ix + (ny-2)*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 =     (ny-1)*nx;
+      off1 = 1 + (ny-2)*nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iy=ny-2;iy>0;iy--) /* ix=0 */
+         {
+	 off0 =     iy*nx;
+	 off1 = 1 + iy*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = 0;
+      off1 = nx + 1;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+/* now check vp/vs and vp_min in temp arrays */
+
+      for(ip=0;ip<nx*ny;ip++)
+         {
+         if(ltmp[ip] > r2*mtmp[ip])    /* check vp/vps ratio */
+            ltmp[ip] = r2*mtmp[ip];
+
+         if((ltmp[ip]+2.0*mtmp[ip])/rtmp[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+	    fac2 = (ltmp[ip]+2.0*mtmp[ip])/mtmp[ip];
+	    if(fac2 > (r2 + 2.0))
+	       fac2 = r2 + 2.0;
+
+            mtmp[ip] = vp_min2*rtmp[ip]/fac2;
+            ltmp[ip] = vp_min2*rtmp[ip] - 2.0*mtmp[ip];
+            }
+
+/* XXXXXXXX Vconst
+vp = 5.2;
+vs = 3.0;
+rtmp[ip] = 2.5;
+
+ltmp[ip] = rtmp[ip]*(vp*vp - 2.0*vs*vs);
+mtmp[ip] = vs*vs*rtmp[ip];
+qtmp[ip] = 50.0;
+*/
+         }
+
+/* copy back to main arrays */
+
+      for(iy=0;iy<ny;iy++)
+         {
+         l2m   = mdf1 + N_MED_VARS*iy*nx*nz;
+         lam   = mdf1 + N_MED_VARS*iy*nx*nz +   nx*nz;
+         invmu = mdf1 + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+         rho   = mdf1 + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+         qp    = mdf1 + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+         qs    = mdf1 + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+         lraw  = mdf1 + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+         mraw  = mdf1 + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+         for(ix=0;ix<nx;ix++)
+            {
+	    ip = ix + iy*nx;
+	    off0 = ix;
+
+	    lraw[off0] = ltmp[ip];
+	    mraw[off0] = mtmp[ip];
+	    rho[off0] = rtmp[ip];
+	    qs[off0] = qtmp[ip];
+
+	    l2m[off0] = lraw[off0] + 2.0*mraw[off0];
+	    lam[off0] = lraw[off0];
+	    invmu[off0] = 1.0/mraw[off0];
+	    qp[off0] = 2.0*qs[off0];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off2 = (nz-npad_copy-1)*nx + ix;
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rho[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+            fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rho[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+            }
+
+         for(iz=nz-npad_copy;iz<nz;iz++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+/* XXXXXX */
+
+   free(ltmp);
+   free(mtmp);
+   free(rtmp);
+   free(qtmp);
+   }
+
+if(ni->minusId_y < 0)
+   {
+   ltmp = (float *) check_malloc (nx*nz*sizeof(float));
+   mtmp = (float *) check_malloc (nx*nz*sizeof(float));
+   rtmp = (float *) check_malloc (nx*nz*sizeof(float));
+   qtmp = (float *) check_malloc (nx*nz*sizeof(float));
+
+   i0 = -1 - nx;
+   i1 =     -nx;
+   i2 =  1 - nx;
+   i3 = -1;
+   i4 =  0;
+   i5 =  1;
+   i6 = -1 + nx;
+   i7 =      nx;
+   i8 =  1 + nx;
+
+   for(iy=npad_smth-1;iy>=npad_copy;iy--)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+      mdf2 = mfield + N_MED_VARS*(iy+1)*nx*nz;
+
+      for(iz=1;iz<nz-1;iz++)
+         {
+         rptr1 = mdf1 + iz*nx + 7*nx*nz;    /* rho */
+         qptr1 = mdf1 + iz*nx + 10*nx*nz;    /* qs */
+         lptr1 = mdf1 + iz*nx + 11*nx*nz;    /* lamraw */
+         mptr1 = mdf1 + iz*nx + 12*nx*nz;    /* muraw */
+
+         rptr2 = mdf2 + iz*nx + 7*nx*nz;
+         qptr2 = mdf2 + iz*nx + 10*nx*nz;
+         lptr2 = mdf2 + iz*nx + 11*nx*nz;
+         mptr2 = mdf2 + iz*nx + 12*nx*nz;
+
+         for(ix=1;ix<nx-1;ix++)
+            {
+	    ip = ix + iz*nx;
+	    off0 = ix;
+
+	    ltmp[ip] = w0*(a1*lptr1[off0+i0] + a2*lptr2[off0+i0])
+	                + w1*(a1*lptr1[off0+i1] + a2*lptr2[off0+i1])
+			+ w2*(a1*lptr1[off0+i2] + a2*lptr2[off0+i2])
+			+ w3*(a1*lptr1[off0+i3] + a2*lptr2[off0+i3])
+			+ w4*(a1*lptr1[off0+i4] + a2*lptr2[off0+i4])
+			+ w5*(a1*lptr1[off0+i5] + a2*lptr2[off0+i5])
+			+ w6*(a1*lptr1[off0+i6] + a2*lptr2[off0+i6])
+			+ w7*(a1*lptr1[off0+i7] + a2*lptr2[off0+i7])
+			+ w8*(a1*lptr1[off0+i8] + a2*lptr2[off0+i8]);
+
+	    mtmp[ip] = w0*(a1*mptr1[off0+i0] + a2*mptr2[off0+i0])
+	                + w1*(a1*mptr1[off0+i1] + a2*mptr2[off0+i1])
+			+ w2*(a1*mptr1[off0+i2] + a2*mptr2[off0+i2])
+			+ w3*(a1*mptr1[off0+i3] + a2*mptr2[off0+i3])
+			+ w4*(a1*mptr1[off0+i4] + a2*mptr2[off0+i4])
+			+ w5*(a1*mptr1[off0+i5] + a2*mptr2[off0+i5])
+			+ w6*(a1*mptr1[off0+i6] + a2*mptr2[off0+i6])
+			+ w7*(a1*mptr1[off0+i7] + a2*mptr2[off0+i7])
+			+ w8*(a1*mptr1[off0+i8] + a2*mptr2[off0+i8]);
+
+	    rtmp[ip] = w0*(a1*rptr1[off0+i0] + a2*rptr2[off0+i0])
+	                + w1*(a1*rptr1[off0+i1] + a2*rptr2[off0+i1])
+			+ w2*(a1*rptr1[off0+i2] + a2*rptr2[off0+i2])
+			+ w3*(a1*rptr1[off0+i3] + a2*rptr2[off0+i3])
+			+ w4*(a1*rptr1[off0+i4] + a2*rptr2[off0+i4])
+			+ w5*(a1*rptr1[off0+i5] + a2*rptr2[off0+i5])
+			+ w6*(a1*rptr1[off0+i6] + a2*rptr2[off0+i6])
+			+ w7*(a1*rptr1[off0+i7] + a2*rptr2[off0+i7])
+			+ w8*(a1*rptr1[off0+i8] + a2*rptr2[off0+i8]);
+
+	    qtmp[ip] = w0*(a1*qptr1[off0+i0] + a2*qptr2[off0+i0])
+	                + w1*(a1*qptr1[off0+i1] + a2*qptr2[off0+i1])
+			+ w2*(a1*qptr1[off0+i2] + a2*qptr2[off0+i2])
+			+ w3*(a1*qptr1[off0+i3] + a2*qptr2[off0+i3])
+			+ w4*(a1*qptr1[off0+i4] + a2*qptr2[off0+i4])
+			+ w5*(a1*qptr1[off0+i5] + a2*qptr2[off0+i5])
+			+ w6*(a1*qptr1[off0+i6] + a2*qptr2[off0+i6])
+			+ w7*(a1*qptr1[off0+i7] + a2*qptr2[off0+i7])
+			+ w8*(a1*qptr1[off0+i8] + a2*qptr2[off0+i8]);
+	    }
+	 }
+
+/* copy values to outer ring of arrays */
+
+      for(ix=1;ix<nx-1;ix++) /* iz=0 */
+         {
+	 off0 = ix;
+	 off1 = ix + nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nx-1;
+      off1 = nx-2 + nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iz=1;iz<nz-1;iz++) /* ix=nx-1 */
+         {
+	 off0 = nx-1 + iz*nx;
+	 off1 = nx-2 + iz*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nx-1 + (nz-1)*nx;
+      off1 = nx-2 + (nz-2)*nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(ix=nx-2;ix>0;ix--) /* iz=nz-1 */
+         {
+	 off0 = ix + (nz-1)*nx;
+	 off1 = ix + (nz-2)*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 =     (nz-1)*nx;
+      off1 = 1 + (nz-2)*nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iz=nz-2;iz>0;iz--) /* ix=0 */
+         {
+	 off0 =     iz*nx;
+	 off1 = 1 + iz*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = 0;
+      off1 = nx + 1;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+/* now check vp/vs and vp_min in temp arrays */
+
+      for(ip=0;ip<nx*nz;ip++)
+         {
+         if(ltmp[ip] > r2*mtmp[ip])    /* check vp/vps ratio */
+            ltmp[ip] = r2*mtmp[ip];
+
+         if((ltmp[ip]+2.0*mtmp[ip])/rtmp[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+	    fac2 = (ltmp[ip]+2.0*mtmp[ip])/mtmp[ip];
+	    if(fac2 > (r2 + 2.0))
+	       fac2 = r2 + 2.0;
+
+            mtmp[ip] = vp_min2*rtmp[ip]/fac2;
+            ltmp[ip] = vp_min2*rtmp[ip] - 2.0*mtmp[ip];
+            }
+
+/* XXXXXXXX Vconst
+vp = 5.2;
+vs = 3.0;
+rtmp[ip] = 2.5;
+
+ltmp[ip] = rtmp[ip]*(vp*vp - 2.0*vs*vs);
+mtmp[ip] = vs*vs*rtmp[ip];
+qtmp[ip] = 50.0;
+*/
+         }
+
+/* copy back to main arrays */
+
+      l2m   = mdf1;
+      lam   = mdf1 + nx*nz;
+      invmu = mdf1 + 4*nx*nz;
+      rho   = mdf1 + 7*nx*nz;
+      qp    = mdf1 + 9*nx*nz;
+      qs    = mdf1 + 10*nx*nz;
+      lraw  = mdf1 + 11*nx*nz;
+      mraw  = mdf1 + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         for(ix=0;ix<nx;ix++)
+            {
+	    ip = ix + iz*nx;
+	    off0 = ip;
+
+	    lraw[off0] = ltmp[ip];
+	    mraw[off0] = mtmp[ip];
+	    rho[off0] = rtmp[ip];
+	    qs[off0] = qtmp[ip];
+
+	    l2m[off0] = lraw[off0] + 2.0*mraw[off0];
+	    lam[off0] = lraw[off0];
+	    invmu[off0] = 1.0/mraw[off0];
+	    qp[off0] = 2.0*qs[off0];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   l2m   = mfield + N_MED_VARS*npad_copy*nx*nz;
+   lam   = mfield + N_MED_VARS*npad_copy*nx*nz +   nx*nz;
+   invmu = mfield + N_MED_VARS*npad_copy*nx*nz + 4*nx*nz;
+   rho   = mfield + N_MED_VARS*npad_copy*nx*nz + 7*nx*nz;
+   qp    = mfield + N_MED_VARS*npad_copy*nx*nz + 9*nx*nz;
+   qs    = mfield + N_MED_VARS*npad_copy*nx*nz + 10*nx*nz;
+   lraw  = mfield + N_MED_VARS*npad_copy*nx*nz + 11*nx*nz;
+   mraw  = mfield + N_MED_VARS*npad_copy*nx*nz + 12*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+      if(lraw[ip] > r2*mraw[ip])    /* check vp/vps ratio */
+         {
+         lraw[ip] = r2*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(l2m[ip]/rho[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+         {
+         fac2 = mraw[ip]/l2m[ip];
+
+         l2m[ip] = vp_min2*rho[ip];
+         mraw[ip] = l2m[ip]*fac2;
+         lraw[ip] = l2m[ip] - 2.0*mraw[ip];
+         lam[ip] = lraw[ip];
+         invmu[ip] = fone/mraw[ip];
+         }
+
+      for(iy=0;iy<npad_copy;iy++)
+         {
+         off1 = ip - N_MED_VARS*(iy+1)*nx*nz;
+
+         l2m[off1] = l2m[ip];
+         lam[off1] = lam[ip];
+         invmu[off1]  = invmu[ip];
+         rho[off1] = rho[ip];
+         qp[off1]  = qp[ip];
+         qs[off1]  = qs[ip];
+         lraw[off1]  = lraw[ip];
+         mraw[off1]  = mraw[ip];
+         }
+      }
+/* XXXXXX */
+
+   free(ltmp);
+   free(mtmp);
+   free(rtmp);
+   free(qtmp);
+   }
+
+if(ni->plusId_y < 0)
+   {
+   ltmp = (float *) check_malloc (nx*nz*sizeof(float));
+   mtmp = (float *) check_malloc (nx*nz*sizeof(float));
+   rtmp = (float *) check_malloc (nx*nz*sizeof(float));
+   qtmp = (float *) check_malloc (nx*nz*sizeof(float));
+
+   i0 = -1 - nx;
+   i1 =     -nx;
+   i2 =  1 - nx;
+   i3 = -1;
+   i4 =  0;
+   i5 =  1;
+   i6 = -1 + nx;
+   i7 =      nx;
+   i8 =  1 + nx;
+
+   for(iy=ny-npad_smth;iy<ny-npad_copy;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+      mdf2 = mfield + N_MED_VARS*(iy-1)*nx*nz;
+
+      for(iz=1;iz<nz-1;iz++)
+         {
+         rptr1 = mdf1 + iz*nx + 7*nx*nz;    /* rho */
+         qptr1 = mdf1 + iz*nx + 10*nx*nz;    /* qs */
+         lptr1 = mdf1 + iz*nx + 11*nx*nz;    /* lamraw */
+         mptr1 = mdf1 + iz*nx + 12*nx*nz;    /* muraw */
+
+         rptr2 = mdf2 + iz*nx + 7*nx*nz;
+         qptr2 = mdf2 + iz*nx + 10*nx*nz;
+         lptr2 = mdf2 + iz*nx + 11*nx*nz;
+         mptr2 = mdf2 + iz*nx + 12*nx*nz;
+
+         for(ix=1;ix<nx-1;ix++)
+            {
+	    ip = ix + iz*nx;
+	    off0 = ix;
+
+	    ltmp[ip] = w0*(a1*lptr1[off0+i0] + a2*lptr2[off0+i0])
+	                + w1*(a1*lptr1[off0+i1] + a2*lptr2[off0+i1])
+			+ w2*(a1*lptr1[off0+i2] + a2*lptr2[off0+i2])
+			+ w3*(a1*lptr1[off0+i3] + a2*lptr2[off0+i3])
+			+ w4*(a1*lptr1[off0+i4] + a2*lptr2[off0+i4])
+			+ w5*(a1*lptr1[off0+i5] + a2*lptr2[off0+i5])
+			+ w6*(a1*lptr1[off0+i6] + a2*lptr2[off0+i6])
+			+ w7*(a1*lptr1[off0+i7] + a2*lptr2[off0+i7])
+			+ w8*(a1*lptr1[off0+i8] + a2*lptr2[off0+i8]);
+
+	    mtmp[ip] = w0*(a1*mptr1[off0+i0] + a2*mptr2[off0+i0])
+	                + w1*(a1*mptr1[off0+i1] + a2*mptr2[off0+i1])
+			+ w2*(a1*mptr1[off0+i2] + a2*mptr2[off0+i2])
+			+ w3*(a1*mptr1[off0+i3] + a2*mptr2[off0+i3])
+			+ w4*(a1*mptr1[off0+i4] + a2*mptr2[off0+i4])
+			+ w5*(a1*mptr1[off0+i5] + a2*mptr2[off0+i5])
+			+ w6*(a1*mptr1[off0+i6] + a2*mptr2[off0+i6])
+			+ w7*(a1*mptr1[off0+i7] + a2*mptr2[off0+i7])
+			+ w8*(a1*mptr1[off0+i8] + a2*mptr2[off0+i8]);
+
+	    rtmp[ip] = w0*(a1*rptr1[off0+i0] + a2*rptr2[off0+i0])
+	                + w1*(a1*rptr1[off0+i1] + a2*rptr2[off0+i1])
+			+ w2*(a1*rptr1[off0+i2] + a2*rptr2[off0+i2])
+			+ w3*(a1*rptr1[off0+i3] + a2*rptr2[off0+i3])
+			+ w4*(a1*rptr1[off0+i4] + a2*rptr2[off0+i4])
+			+ w5*(a1*rptr1[off0+i5] + a2*rptr2[off0+i5])
+			+ w6*(a1*rptr1[off0+i6] + a2*rptr2[off0+i6])
+			+ w7*(a1*rptr1[off0+i7] + a2*rptr2[off0+i7])
+			+ w8*(a1*rptr1[off0+i8] + a2*rptr2[off0+i8]);
+
+	    qtmp[ip] = w0*(a1*qptr1[off0+i0] + a2*qptr2[off0+i0])
+	                + w1*(a1*qptr1[off0+i1] + a2*qptr2[off0+i1])
+			+ w2*(a1*qptr1[off0+i2] + a2*qptr2[off0+i2])
+			+ w3*(a1*qptr1[off0+i3] + a2*qptr2[off0+i3])
+			+ w4*(a1*qptr1[off0+i4] + a2*qptr2[off0+i4])
+			+ w5*(a1*qptr1[off0+i5] + a2*qptr2[off0+i5])
+			+ w6*(a1*qptr1[off0+i6] + a2*qptr2[off0+i6])
+			+ w7*(a1*qptr1[off0+i7] + a2*qptr2[off0+i7])
+			+ w8*(a1*qptr1[off0+i8] + a2*qptr2[off0+i8]);
+	    }
+	 }
+
+/* copy values to outer ring of arrays */
+
+      for(ix=1;ix<nx-1;ix++) /* iz=0 */
+         {
+	 off0 = ix;
+	 off1 = ix + nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nx-1;
+      off1 = nx-2 + nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iz=1;iz<nz-1;iz++) /* ix=nx-1 */
+         {
+	 off0 = nx-1 + iz*nx;
+	 off1 = nx-2 + iz*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = nx-1 + (nz-1)*nx;
+      off1 = nx-2 + (nz-2)*nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(ix=nx-2;ix>0;ix--) /* iz=nz-1 */
+         {
+	 off0 = ix + (nz-1)*nx;
+	 off1 = ix + (nz-2)*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 =     (nz-1)*nx;
+      off1 = 1 + (nz-2)*nx;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+      for(iz=nz-2;iz>0;iz--) /* ix=0 */
+         {
+	 off0 =     iz*nx;
+	 off1 = 1 + iz*nx;
+
+	 ltmp[off0] = ltmp[off1];
+	 mtmp[off0] = mtmp[off1];
+	 rtmp[off0] = rtmp[off1];
+	 qtmp[off0] = qtmp[off1];
+	 }
+
+      off0 = 0;
+      off1 = nx + 1;
+
+      ltmp[off0] = ltmp[off1];
+      mtmp[off0] = mtmp[off1];
+      rtmp[off0] = rtmp[off1];
+      qtmp[off0] = qtmp[off1];
+
+/* now check vp/vs and vp_min in temp arrays */
+
+      for(ip=0;ip<nx*nz;ip++)
+         {
+         if(ltmp[ip] > r2*mtmp[ip])    /* check vp/vps ratio */
+            ltmp[ip] = r2*mtmp[ip];
+
+         if((ltmp[ip]+2.0*mtmp[ip])/rtmp[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+	    fac2 = (ltmp[ip]+2.0*mtmp[ip])/mtmp[ip];
+	    if(fac2 > (r2 + 2.0))
+	       fac2 = r2 + 2.0;
+
+            mtmp[ip] = vp_min2*rtmp[ip]/fac2;
+            ltmp[ip] = vp_min2*rtmp[ip] - 2.0*mtmp[ip];
+            }
+
+/* XXXXXXXX Vconst
+vp = 5.2;
+vs = 3.0;
+rtmp[ip] = 2.5;
+
+ltmp[ip] = rtmp[ip]*(vp*vp - 2.0*vs*vs);
+mtmp[ip] = vs*vs*rtmp[ip];
+qtmp[ip] = 50.0;
+*/
+         }
+
+/* copy back to main arrays */
+
+      l2m   = mdf1;
+      lam   = mdf1 + nx*nz;
+      invmu = mdf1 + 4*nx*nz;
+      rho   = mdf1 + 7*nx*nz;
+      qp    = mdf1 + 9*nx*nz;
+      qs    = mdf1 + 10*nx*nz;
+      lraw  = mdf1 + 11*nx*nz;
+      mraw  = mdf1 + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         for(ix=0;ix<nx;ix++)
+            {
+	    ip = ix + iz*nx;
+	    off0 = ip;
+
+	    lraw[off0] = ltmp[ip];
+	    mraw[off0] = mtmp[ip];
+	    rho[off0] = rtmp[ip];
+	    qs[off0] = qtmp[ip];
+
+	    l2m[off0] = lraw[off0] + 2.0*mraw[off0];
+	    lam[off0] = lraw[off0];
+	    invmu[off0] = 1.0/mraw[off0];
+	    qp[off0] = 2.0*qs[off0];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   l2m   = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz;
+   lam   = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz +   nx*nz;
+   invmu = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 4*nx*nz;
+   rho   = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 7*nx*nz;
+   qp    = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 9*nx*nz;
+   qs    = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 10*nx*nz;
+   lraw  = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 11*nx*nz;
+   mraw  = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 12*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+
+/* XXXXXXXX Vconst
+vp = 5.2;
+vs = 3.0;
+rho[ip] = 2.5;
+
+lraw[ip] = rho[ip]*(vp*vp - 2.0*vs*vs);
+mraw[ip] = vs*vs*rho[ip];
+qs[ip] = 50.0;
+
+l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+lam[ip] = lraw[ip];
+invmu[ip] = 1.0/mraw[ip];
+qp[ip] = 2.0*qs[ip];
+*/
+
+      if(lraw[ip] > r2*mraw[ip])    /* check vp/vps ratio */
+         {
+         lraw[ip] = r2*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(l2m[ip]/rho[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+         {
+         fac2 = mraw[ip]/l2m[ip];
+
+         l2m[ip] = vp_min2*rho[ip];
+         mraw[ip] = l2m[ip]*fac2;
+         lraw[ip] = l2m[ip] - 2.0*mraw[ip];
+         lam[ip] = lraw[ip];
+         invmu[ip] = fone/mraw[ip];
+         }
+
+      for(iy=0;iy<npad_copy;iy++)
+         {
+         off1 = ip + N_MED_VARS*(iy+1)*nx*nz;
+
+         l2m[off1] = l2m[ip];
+         lam[off1] = lam[ip];
+         invmu[off1]  = invmu[ip];
+         rho[off1] = rho[ip];
+         qp[off1]  = qp[ip];
+         qs[off1]  = qs[ip];
+         lraw[off1]  = lraw[ip];
+         mraw[off1]  = mraw[ip];
+         }
+      }
+/* XXXXXX */
+
+   free(ltmp);
+   free(mtmp);
+   free(rtmp);
+   free(qtmp);
+   }
+}
+
+void pad_medslice_ckvpvsP3_smooth2(float *mfield,struct nodeinfo *ni,int fs,struct media_input *mi)
+{
+float *mdf1, *mdf2;
+float *l2m, *lam, *invmu, *rho, *qp, *qs;
+float *lraw, *mraw;
+int ix, iy, iz, ip, off0, off1, off2;
+int nx, ny, nz;
+
+int na, ixs, ixe, iys, iye, izs, ize, izg;
+float afac;
+struct profile1d *p1d;
+
+float r2, vp_min2, fac2;
+
+int npad_tap;
+float vp, vs, dtap;
+float vp0, vp1, dvp;
+float vs0, vs1, dvs;
+float dn0, dn1, ddn;
+float qp0, qp1, dqp;
+float qs0, qs1, dqs;
+
+int npad_smth = NBND_PAD_SMOOTH;
+int npad_copy = NBND_PAD_COPY;
+
+float fone = 1.0;
+
+nx = ni->loc_nx;
+ny = ni->loc_ny;
+nz = ni->loc_nz;
+
+/*
+   tolerance for maximum vp/vs ratio: vp/vs <= vpvs_max
+
+   (vp/vs)^2 <= vpvs_max^2
+   (lam + 2*mu)/mu <= vpvs_max^2
+   (lam + 2*mu) <= mu*(vpvs_max)^2
+   lam <= mu*(vpvs_max)^2 - 2*mu
+   lam <= mu*(vpvs_max^2 - 2)
+   lam <= mu*r2
+
+   where r2 = vpvs_max^2 - 2
+*/
+
+/* first check global condition */
+
+if(mi->vpvs_max_global > 0.0)
+   {
+   r2 = (mi->vpvs_max_global)*(mi->vpvs_max_global) - 2.0;
+
+   for(iy=0;iy<ny;iy++)
+      {
+      mdf1 = mfield + N_MED_VARS*iy*nx*nz;
+
+      l2m = mdf1;
+      lam = mdf1 +   nx*nz;
+      lraw = mdf1 + 11*nx*nz;
+      mraw = mdf1 + 12*nx*nz;
+
+      for(ip=0;ip<nx*nz;ip++)
+         {
+         if(lraw[ip] > r2*mraw[ip])    /* check vp/vps ratio */
+            {
+            lraw[ip] = r2*mraw[ip];
+            lam[ip] = lraw[ip];
+            l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+            }
+         }
+      }
+   }
+
+fprintf(stderr,"now checking boundaries\n");
+fflush(stderr);
+
+mi->prof1d = (struct profile1d *) check_malloc (ni->globnz*sizeof(struct profile1d));
+p1d = mi->prof1d;
+
+for(iz=0;iz<ni->globnz;iz++)
+   {
+   p1d[iz].vp = -1.0;
+   p1d[iz].vs = -1.0;
+   p1d[iz].dn = -1.0;
+   p1d[iz].qp = -1.0;
+   p1d[iz].qs = -1.0;
+   }
+
+ixs = ni->ixminus - ni->nx1;
+ixe = ni->ixplus - ni->nx1;
+iys = ni->iyminus - ni->ny1;
+iye = ni->iyplus - ni->ny1;
+izs = ni->izminus - ni->nz1;
+ize = ni->izplus - ni->nz1;
+
+for(iz=izs;iz<=ize;iz++)
+   {
+   izg = iz + ni->nz1;
+
+   na = 0;
+   for(iy=iys;iy<=iye;iy++)
+      {
+      l2m  = mfield + N_MED_VARS*iy*nx*nz;
+      rho  = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp   = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs   = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      mraw = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(ix=ixs;ix<=ixe;ix++)
+         {
+	 na++;
+	 ip = ix + iz*nx;
+
+	 if(p1d[izg].vp < 0.0)   /* 1st time through */
+	    {
+	    p1d[izg].vp = sqrt(l2m[ip]/rho[ip]);
+	    p1d[izg].vs = sqrt(mraw[ip]/rho[ip]);
+	    p1d[izg].dn = rho[ip];
+	    p1d[izg].qp = qp[ip];
+	    p1d[izg].qs = qs[ip];
+	    }
+	 else
+	    {
+	    p1d[izg].vp = p1d[izg].vp + sqrt(l2m[ip]/rho[ip]);
+	    p1d[izg].vs = p1d[izg].vs + sqrt(mraw[ip]/rho[ip]);
+	    p1d[izg].dn = p1d[izg].dn + rho[ip];
+	    p1d[izg].qp = p1d[izg].qp + qp[ip];
+	    p1d[izg].qs = p1d[izg].qs + qs[ip];
+	    }
+         }
+      }
+
+   afac = 1.0/(1.0*na);
+   p1d[izg].vp = afac*p1d[izg].vp;
+   p1d[izg].vs = afac*p1d[izg].vs;
+   p1d[izg].dn = afac*p1d[izg].dn;
+   p1d[izg].qp = afac*p1d[izg].qp;
+   p1d[izg].qs = afac*p1d[izg].qs;
+   }
+
+mpi_global_prof1d(mi,ni);
+
+/* XXXXXXXXXXXX */
+if(ni->segmentId == 0)
+   {
+   for(iz=0;iz<ni->globnz;iz++)
+      fprintf(stderr,"%5d: %8.5f %8.5f %8.5f %10.3f %10.3f\n",iz,p1d[iz].vp,p1d[iz].vs,p1d[iz].dn,p1d[iz].qp,p1d[iz].qs);
+
+   fflush(stderr);
+   }
+
+/* next, smooth media near abosrbing boundaries */
+
+if(mi->vpvs_max_boundary > 0.0)
+   r2 = (mi->vpvs_max_boundary)*(mi->vpvs_max_boundary) - 2.0;
+else
+   r2 = 1.0e+20;
+
+vp_min2 = (mi->vp_min_boundary)*(mi->vp_min_boundary);
+
+if(npad_smth < npad_copy + 1)
+   npad_smth = npad_copy + 1;
+
+npad_tap = npad_smth - npad_copy;
+dtap = 1.0/(1.0*(npad_tap));
+
+if(ni->minusId_x < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+	 izg = iz + ni->nz1;
+	 off0 = npad_smth + iz*nx;
+
+	 vp0 = sqrt(l2m[off0]/rho[off0]);
+	 vp1 = p1d[izg].vp;
+	 dvp = (vp1-vp0)*dtap;
+
+	 vs0 = sqrt(mraw[off0]/rho[off0]);
+	 vs1 = p1d[izg].vs;
+	 dvs = (vs1-vs0)*dtap;
+
+	 dn0 = rho[off0];
+	 dn1 = p1d[izg].dn;
+	 ddn = (dn1-dn0)*dtap;
+
+	 qp0 = qp[off0];
+	 qp1 = p1d[izg].qp;
+	 dqp = (qp1-qp0)*dtap;
+
+	 qs0 = qs[off0];
+	 qs1 = p1d[izg].qs;
+	 dqs = (qs1-qs0)*dtap;
+
+         for(ix=npad_smth-1;ix>=npad_copy;ix--)
+            {
+	    ip = ix + iz*nx;
+
+	    vp = vp0 + (npad_smth - ix)*dvp;
+	    vs = vs0 + (npad_smth - ix)*dvs;
+
+	    rho[ip] = dn0 + (npad_smth - ix)*ddn;
+	    qp[ip] = qp0 + (npad_smth - ix)*dqp;
+	    qs[ip] = qs0 + (npad_smth - ix)*dqs;
+
+            lraw[ip] = rho[ip]*(vp*vp - 2.0*vs*vs);
+            mraw[ip] = vs*vs*rho[ip];
+            l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+            lam[ip] = lraw[ip];
+            invmu[ip] = 1.0/mraw[ip];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         off2 = iz*nx + npad_copy;
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rho[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+            fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rho[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+            }
+
+         for(ix=0;ix<npad_copy;ix++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+   }
+
+if(ni->plusId_x < 0)
+   {
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         izg = iz + ni->nz1;
+         off0 = (nx - npad_smth - 1) + iz*nx;
+
+         vp0 = sqrt(l2m[off0]/rho[off0]);
+         vp1 = p1d[izg].vp;
+         dvp = (vp1-vp0)*dtap;
+
+         vs0 = sqrt(mraw[off0]/rho[off0]);
+         vs1 = p1d[izg].vs;
+         dvs = (vs1-vs0)*dtap;
+
+         dn0 = rho[off0];
+         dn1 = p1d[izg].dn;
+         ddn = (dn1-dn0)*dtap;
+
+         qp0 = qp[off0];
+         qp1 = p1d[izg].qp;
+         dqp = (qp1-qp0)*dtap;
+
+         qs0 = qs[off0];
+         qs1 = p1d[izg].qs;
+         dqs = (qs1-qs0)*dtap;
+
+         for(ix=nx-npad_smth;ix<nx-npad_copy;ix++)
+            {
+            ip = ix + iz*nx;
+
+            vp = vp0 + (ix - (nx - npad_smth - 1))*dvp;
+            vs = vs0 + (ix - (nx - npad_smth - 1))*dvs;
+
+            rho[ip] = dn0 + (ix - (nx - npad_smth - 1))*ddn;
+            qp[ip] = qp0 + (ix - (nx - npad_smth - 1))*dqp;
+            qs[ip] = qs0 + (ix - (nx - npad_smth - 1))*dqs;
+
+            lraw[ip] = rho[ip]*(vp*vp - 2.0*vs*vs);
+            mraw[ip] = vs*vs*rho[ip];
+            l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+            lam[ip] = lraw[ip];
+            invmu[ip] = 1.0/mraw[ip];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      for(iz=0;iz<nz;iz++)
+         {
+         off2 = iz*nx + (nx-npad_copy-1);
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rho[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+            fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rho[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+            }
+
+         for(ix=nx-npad_copy;ix<nx;ix++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+   }
+
+if(!fs && ni->minusId_z < 0)
+   {
+/* now copy planes over npad_copy at boundary */
+
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      izg = npad_copy + ni->nz1;
+
+      vp1 = p1d[izg].vp;
+      vs1 = p1d[izg].vs;
+      dn1 = p1d[izg].dn;
+      qp1 = p1d[izg].qp;
+      qs1 = p1d[izg].qs;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off2 = npad_copy*nx + ix;
+
+         rho[off2] = dn1;
+         qp[off2] = qp1;
+         qs[off2] = qs1;
+
+         lraw[off2] = rho[off2]*(vp1*vp1 - 2.0*vs1*vs1);
+         mraw[off2] = vs1*vs1*rho[off2];
+         l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+         lam[off2] = lraw[off2];
+         invmu[off2] = 1.0/mraw[off2];
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rho[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+            fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rho[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+            }
+
+         for(iz=0;iz<npad_copy;iz++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+   }
+
+if(ni->plusId_z < 0)
+   {
+/* now copy planes over npad_copy at boundary */
+
+   for(iy=0;iy<ny;iy++)
+      {
+      l2m   = mfield + N_MED_VARS*iy*nx*nz;
+      lam   = mfield + N_MED_VARS*iy*nx*nz +   nx*nz;
+      invmu = mfield + N_MED_VARS*iy*nx*nz + 4*nx*nz;
+      rho   = mfield + N_MED_VARS*iy*nx*nz + 7*nx*nz;
+      qp    = mfield + N_MED_VARS*iy*nx*nz + 9*nx*nz;
+      qs    = mfield + N_MED_VARS*iy*nx*nz + 10*nx*nz;
+      lraw  = mfield + N_MED_VARS*iy*nx*nz + 11*nx*nz;
+      mraw  = mfield + N_MED_VARS*iy*nx*nz + 12*nx*nz;
+
+      izg = (nz-npad_copy-1) + ni->nz1;
+
+      vp1 = p1d[izg].vp;
+      vs1 = p1d[izg].vs;
+      dn1 = p1d[izg].dn;
+      qp1 = p1d[izg].qp;
+      qs1 = p1d[izg].qs;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off2 = (nz-npad_copy-1)*nx + ix;
+
+         rho[off2] = dn1;
+         qp[off2] = qp1;
+         qs[off2] = qs1;
+
+         lraw[off2] = rho[off2]*(vp1*vp1 - 2.0*vs1*vs1);
+         mraw[off2] = vs1*vs1*rho[off2];
+         l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+         lam[off2] = lraw[off2];
+         invmu[off2] = 1.0/mraw[off2];
+
+         if(lraw[off2] > r2*mraw[off2])    /* check vp/vps ratio */
+            {
+            lraw[off2] = r2*mraw[off2];
+            lam[off2] = lraw[off2];
+            l2m[off2] = lraw[off2] + 2.0*mraw[off2];
+            }
+
+         if(l2m[off2]/rho[off2] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+            {
+            fac2 = mraw[off2]/l2m[off2];
+
+            l2m[off2] = vp_min2*rho[off2];
+            mraw[off2] = l2m[off2]*fac2;
+            lraw[off2] = l2m[off2] - 2.0*mraw[off2];
+            lam[off2] = lraw[off2];
+            invmu[off2] = fone/mraw[off2];
+            }
+
+         for(iz=nz-npad_copy;iz<nz;iz++)
+            {
+            off1 = iz*nx + ix;
+
+            l2m[off1] = l2m[off2];
+            lam[off1] = lam[off2];
+            invmu[off1]  = invmu[off2];
+            rho[off1] = rho[off2];
+            qp[off1]  = qp[off2];
+            qs[off1]  = qs[off2];
+            lraw[off1]  = lraw[off2];
+            mraw[off1]  = mraw[off2];
+            }
+         }
+      }
+   }
+
+if(ni->minusId_y < 0)
+   {
+   l2m   = mfield;
+   lam   = mfield +   nx*nz;
+   invmu = mfield + 4*nx*nz;
+   rho   = mfield + 7*nx*nz;
+   qp    = mfield + 9*nx*nz;
+   qs    = mfield + 10*nx*nz;
+   lraw  = mfield + 11*nx*nz;
+   mraw  = mfield + 12*nx*nz;
+
+   for(iz=0;iz<nz;iz++)
+      {
+      izg = iz + ni->nz1;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off0 = ix + iz*nx + N_MED_VARS*npad_smth*nx*nz;
+
+         vp0 = sqrt(l2m[off0]/rho[off0]);
+         vp1 = p1d[izg].vp;
+         dvp = (vp1-vp0)*dtap;
+
+         vs0 = sqrt(mraw[off0]/rho[off0]);
+         vs1 = p1d[izg].vs;
+         dvs = (vs1-vs0)*dtap;
+
+         dn0 = rho[off0];
+         dn1 = p1d[izg].dn;
+         ddn = (dn1-dn0)*dtap;
+
+         qp0 = qp[off0];
+         qp1 = p1d[izg].qp;
+         dqp = (qp1-qp0)*dtap;
+
+         qs0 = qs[off0];
+         qs1 = p1d[izg].qs;
+         dqs = (qs1-qs0)*dtap;
+
+         for(iy=npad_smth-1;iy>=npad_copy;iy--)
+            {
+            ip = ix + iz*nx + N_MED_VARS*iy*nx*nz;
+
+            vp = vp0 + (npad_smth - iy)*dvp;
+            vs = vs0 + (npad_smth - iy)*dvs;
+
+            rho[ip] = dn0 + (npad_smth - iy)*ddn;
+            qp[ip] = qp0 + (npad_smth - iy)*dqp;
+            qs[ip] = qs0 + (npad_smth - iy)*dqs;
+
+            lraw[ip] = rho[ip]*(vp*vp - 2.0*vs*vs);
+            mraw[ip] = vs*vs*rho[ip];
+            l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+            lam[ip] = lraw[ip];
+            invmu[ip] = 1.0/mraw[ip];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   l2m   = mfield + N_MED_VARS*npad_copy*nx*nz;
+   lam   = mfield + N_MED_VARS*npad_copy*nx*nz +   nx*nz;
+   invmu = mfield + N_MED_VARS*npad_copy*nx*nz + 4*nx*nz;
+   rho   = mfield + N_MED_VARS*npad_copy*nx*nz + 7*nx*nz;
+   qp    = mfield + N_MED_VARS*npad_copy*nx*nz + 9*nx*nz;
+   qs    = mfield + N_MED_VARS*npad_copy*nx*nz + 10*nx*nz;
+   lraw  = mfield + N_MED_VARS*npad_copy*nx*nz + 11*nx*nz;
+   mraw  = mfield + N_MED_VARS*npad_copy*nx*nz + 12*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+      if(lraw[ip] > r2*mraw[ip])    /* check vp/vps ratio */
+         {
+         lraw[ip] = r2*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(l2m[ip]/rho[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+         {
+         fac2 = mraw[ip]/l2m[ip];
+
+         l2m[ip] = vp_min2*rho[ip];
+         mraw[ip] = l2m[ip]*fac2;
+         lraw[ip] = l2m[ip] - 2.0*mraw[ip];
+         lam[ip] = lraw[ip];
+         invmu[ip] = fone/mraw[ip];
+         }
+
+      for(iy=0;iy<npad_copy;iy++)
+         {
+         off1 = ip - N_MED_VARS*(iy+1)*nx*nz;
+
+         l2m[off1] = l2m[ip];
+         lam[off1] = lam[ip];
+         invmu[off1]  = invmu[ip];
+         rho[off1] = rho[ip];
+         qp[off1]  = qp[ip];
+         qs[off1]  = qs[ip];
+         lraw[off1]  = lraw[ip];
+         mraw[off1]  = mraw[ip];
+         }
+      }
+   }
+
+if(ni->plusId_y < 0)
+   {
+   l2m   = mfield;
+   lam   = mfield +   nx*nz;
+   invmu = mfield + 4*nx*nz;
+   rho   = mfield + 7*nx*nz;
+   qp    = mfield + 9*nx*nz;
+   qs    = mfield + 10*nx*nz;
+   lraw  = mfield + 11*nx*nz;
+   mraw  = mfield + 12*nx*nz;
+
+   for(iz=0;iz<nz;iz++)
+      {
+      izg = iz + ni->nz1;
+
+      for(ix=0;ix<nx;ix++)
+         {
+         off0 = ix + iz*nx + N_MED_VARS*(ny - npad_smth - 1)*nx*nz;
+
+         vp0 = sqrt(l2m[off0]/rho[off0]);
+         vp1 = p1d[izg].vp;
+         dvp = (vp1-vp0)*dtap;
+
+         vs0 = sqrt(mraw[off0]/rho[off0]);
+         vs1 = p1d[izg].vs;
+         dvs = (vs1-vs0)*dtap;
+
+         dn0 = rho[off0];
+         dn1 = p1d[izg].dn;
+         ddn = (dn1-dn0)*dtap;
+
+         qp0 = qp[off0];
+         qp1 = p1d[izg].qp;
+         dqp = (qp1-qp0)*dtap;
+
+         qs0 = qs[off0];
+         qs1 = p1d[izg].qs;
+         dqs = (qs1-qs0)*dtap;
+
+         for(iy=ny-npad_smth;iy<ny-npad_copy;iy++)
+            {
+            ip = ix + iz*nx + N_MED_VARS*iy*nx*nz;
+
+            vp = vp0 + (iy - (ny - npad_smth - 1))*dvp;
+            vs = vs0 + (iy - (ny - npad_smth - 1))*dvs;
+
+            rho[ip] = dn0 + (iy - (ny - npad_smth - 1))*ddn;
+            qp[ip] = qp0 + (iy - (ny - npad_smth - 1))*dqp;
+            qs[ip] = qs0 + (iy - (ny - npad_smth - 1))*dqs;
+
+            lraw[ip] = rho[ip]*(vp*vp - 2.0*vs*vs);
+            mraw[ip] = vs*vs*rho[ip];
+            l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+            lam[ip] = lraw[ip];
+            invmu[ip] = 1.0/mraw[ip];
+            }
+         }
+      }
+
+/* now copy planes over npad_copy at boundary */
+
+   l2m   = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz;
+   lam   = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz +   nx*nz;
+   invmu = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 4*nx*nz;
+   rho   = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 7*nx*nz;
+   qp    = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 9*nx*nz;
+   qs    = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 10*nx*nz;
+   lraw  = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 11*nx*nz;
+   mraw  = mfield + N_MED_VARS*(ny-npad_copy-1)*nx*nz + 12*nx*nz;
+
+   for(ip=0;ip<nx*nz;ip++)
+      {
+      if(lraw[ip] > r2*mraw[ip])    /* check vp/vps ratio */
+         {
+         lraw[ip] = r2*mraw[ip];
+         lam[ip] = lraw[ip];
+         l2m[ip] = lraw[ip] + 2.0*mraw[ip];
+         }
+
+      if(l2m[ip]/rho[ip] < vp_min2)   /* check vp_min, preserve vp/vs ratio */
+         {
+         fac2 = mraw[ip]/l2m[ip];
+
+         l2m[ip] = vp_min2*rho[ip];
+         mraw[ip] = l2m[ip]*fac2;
+         lraw[ip] = l2m[ip] - 2.0*mraw[ip];
+         lam[ip] = lraw[ip];
+         invmu[ip] = fone/mraw[ip];
+         }
+
+      for(iy=0;iy<npad_copy;iy++)
+         {
+         off1 = ip + N_MED_VARS*(iy+1)*nx*nz;
+
+         l2m[off1] = l2m[ip];
+         lam[off1] = lam[ip];
+         invmu[off1]  = invmu[ip];
+         rho[off1] = rho[ip];
+         qp[off1]  = qp[ip];
+         qs[off1]  = qs[ip];
+         lraw[off1]  = lraw[ip];
+         mraw[off1]  = mraw[ip];
+         }
       }
    }
 }

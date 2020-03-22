@@ -1,20 +1,3 @@
-/*modified by SNi: 2003
- uses a central server to get the source information
- 
-slip2mom(...)
-globalSource2Local(psrc,ny1)
-
-*/
-/*
-   source.c contains the following functions:
-      
-      add_src()
-      getsource()
-      int_src()
-      makesource()
-      init_plane_src()
-*/
-
 #include "include.h"
 
 add_src(stfp,nt,dt,pvptr,medptr,isrc,nx,nz,it,srcs,iflag)
@@ -36,7 +19,7 @@ float qrt = 0.25;
 if(!it)
    return;
 
-if(srcs->ffault != 2)
+if(srcs->ffault != 2 && srcs->adjoint != 1)
    st = stfp + nt*srcs->stfindx[isrc];
 
 ip = srcs->iz[isrc]*nx + srcs->ix[isrc];
@@ -83,9 +66,9 @@ if(iflag == FSRC)
 
       if(itx < adj->nt)
          {
-         vx[ip]  = vx[ip] + adj->sx[itx];
-         vy[ip]  = vy[ip] + adj->sy[itx];
-         vz[ip]  = vz[ip] + adj->sz[itx];
+         vx[ip]  = vx[ip] + adj->sx[itx]*medx[ip];
+         vy[ip]  = vy[ip] + adj->sy[itx]*medy[ip];
+         vz[ip]  = vz[ip] + adj->sz[itx]*medz[ip];
 	 }
       }
    }
@@ -187,6 +170,101 @@ This may cause problems in parallel code if source is right at a boundary betwee
          tyz1[ip-nx] = tyz1[ip-nx] - qrt*mt->myz[itx];
          tyz1[ip]    = tyz1[ip]    - qrt*mt->myz[itx];
 */
+	 }
+      }
+   }
+}
+
+void add_srcP3(float *stfp,int nt,float *dt,float *pvf,float *medf,int isrc,int nx,int nz,int it,struct pntsrcs *srcs,int iflag,struct nodeinfo *ni)
+{
+struct momenttensor *mt;
+struct adjointsource *adj;
+float *vx, *vy, *vz, *medx, *medy, *medz;
+float *vx0, *vy0, *vz0, *vx1, *vy1, *vz1, *vx2, *vy2, *vz2;
+float *txx, *tyy, *tzz, *txy0, *txy1, *txz, *tyz0, *tyz1;
+float f;
+int itx, ipminusy, ip, ipmed, nxp;
+float *st;
+
+if(!it)
+   return;
+
+if(srcs->ffault != 2 && srcs->adjoint != 1)
+   st = stfp + nt*srcs->stfindx[isrc];
+
+ip = srcs->iy[isrc]*N_WAVE_VARS*nx*nz + srcs->iz[isrc]*nx + srcs->ix[isrc];
+ipmed = srcs->iy[isrc]*N_MED_VARS*nx*nz + srcs->iz[isrc]*nx + srcs->ix[isrc];
+ipminusy = (srcs->iy[isrc]-1)*N_WAVE_VARS*nx*nz + srcs->iz[isrc]*nx + srcs->ix[isrc];
+
+nxp = nx + 1;
+
+if(iflag == FSRC)
+   {
+   vx  = pvf + ip;
+   vy  = pvf + ip  +   nx*nz;
+   vz  = pvf + ip  + 2*nx*nz;
+   medx = medf + ipmed + 5*nx*nz;  /* med = 1/rho */
+   medy = medf + ipmed + 6*nx*nz;  /* med = 1/rho */
+   medz = medf + ipmed + 7*nx*nz;  /* med = 1/rho */
+
+   if(srcs->bforce)
+      {
+      vx[0] = vx[0] + srcs->fxsrc[isrc]*st[it]*medx[0];
+      vy[0] = vy[0] + srcs->fysrc[isrc]*st[it]*medy[0];
+      vz[0] = vz[0] + srcs->fzsrc[isrc]*st[it]*medz[0];
+      }
+
+   if(srcs->adjoint == 1 && it - srcs->it[isrc] >= 0)
+      {
+      itx = it - srcs->it[isrc];
+      adj = &(srcs->adjsrc[isrc]);
+
+      if(itx < adj->nt)
+         {
+         vx[0]  = vx[0] + adj->sx[itx]*medx[0];
+         vy[0]  = vy[0] + adj->sy[itx]*medy[0];
+         vz[0]  = vz[0] + adj->sz[itx]*medz[0];
+	 }
+      }
+   }
+else if(iflag == PSRC)
+   {
+   if((srcs->ffault == 2 || srcs->dblcpl || srcs->pointmt) && it - srcs->it[isrc] >= 0)
+      {
+      txx = pvf + ip + 3*nx*nz;
+      tyy = pvf + ip + 4*nx*nz;
+      tzz = pvf + ip + 5*nx*nz;
+
+      txy1 = pvf + ip + 6*nx*nz;
+      txz  = pvf + ip + 7*nx*nz;
+      tyz1 = pvf + ip + 8*nx*nz;
+
+      txy0 = pvf + ipminusy + 6*nx*nz;
+      tyz0 = pvf + ipminusy + 8*nx*nz;
+
+      itx = it - srcs->it[isrc];
+      mt = &(srcs->momten[isrc]);
+
+      if(itx < mt->nt)
+         {
+         txx[0]    = txx[0]    - srcs->MTavg[isrc].wxx_x0y0z0*mt->mxx[itx];
+         tyy[0]    = tyy[0]    - srcs->MTavg[isrc].wyy_x0y0z0*mt->myy[itx];
+         tzz[0]    = tzz[0]    - srcs->MTavg[isrc].wzz_x0y0z0*mt->mzz[itx];
+
+         txy1[0]   = txy1[0]   - srcs->MTavg[isrc].wxy_x0y0z0*mt->mxy[itx];
+         txy1[-1]  = txy1[-1]  - srcs->MTavg[isrc].wxy_xmy0z0*mt->mxy[itx];
+         txy0[0]   = txy0[0]   - srcs->MTavg[isrc].wxy_x0ymz0*mt->mxy[itx];
+         txy0[-1]  = txy0[-1]  - srcs->MTavg[isrc].wxy_xmymz0*mt->mxy[itx];
+
+         txz[0]    = txz[0]    - srcs->MTavg[isrc].wxz_x0y0z0*mt->mxz[itx];
+         txz[-1]   = txz[-1]   - srcs->MTavg[isrc].wxz_xmy0z0*mt->mxz[itx];
+         txz[-nx]  = txz[-nx]  - srcs->MTavg[isrc].wxz_x0y0zm*mt->mxz[itx];
+         txz[-nxp] = txz[-nxp] - srcs->MTavg[isrc].wxz_xmy0zm*mt->mxz[itx]; 
+
+         tyz1[0]   = tyz1[0]   - srcs->MTavg[isrc].wyz_x0y0z0*mt->myz[itx];
+         tyz0[0]   = tyz0[0]   - srcs->MTavg[isrc].wyz_x0ymz0*mt->myz[itx];
+         tyz1[-nx] = tyz1[-nx] - srcs->MTavg[isrc].wyz_x0y0zm*mt->myz[itx];
+         tyz0[-nx] = tyz0[-nx] - srcs->MTavg[isrc].wyz_x0ymzm*mt->myz[itx]; 
 	 }
       }
    }
@@ -406,7 +484,7 @@ int nt;
 {
 int it, itsh;
 
-itsh = 1.0/((*dt)*(*flo));
+itsh = 3.0/((*dt)*(*flo));
 *tsh = itsh*(*dt);
 
 for(it=nt-1;it>=itsh;it--)
@@ -425,7 +503,7 @@ int nt;
 {
 int it, itsh;
 
-itsh = 1.0/((*dt)*(*flo));
+itsh = 3.0/((*dt)*(*flo));
 
 fprintf(stderr,"     A time delay of %10.5e sec has been applied to preserve causality\n\n",itsh*(*dt));
 
@@ -2347,7 +2425,7 @@ sinR = sin(rp->modelrot*rperd);
 itsh = 0;
 if(bfilt)
    {
-   itsh = 1.0/((rp->dt)*(*flo));
+   itsh = 3.0/((rp->dt)*(*flo));
    *tsh = itsh*(rp->dt);
    }
 
@@ -3229,7 +3307,7 @@ mpi_global_val(&psrc->iy[0],&it,"iy",1,MPI_INT,MPI_MAX);
 if(eflag != 0)
    {
    fflush(stderr);
-   mpi_exit(-1);
+   exit(-1);
    }
 }
 
@@ -3320,17 +3398,13 @@ free(st0);
 return(ierr);
 }
 
-void get_dc_parP3(struct pntsrcs *psrc,float *tz,struct runparamsP3 *rpars)
+void get_dc_parP3(struct pntsrcs *psrc,float *tz,float *dt)
 {
 struct doublecouple *dc;
-float sum, invdt, *tsrc, *rtime, dt, *rtime_uniq;
+float sum, invdt, *tsrc, *rtime, *rtime_uniq;
 int isrc, j, nstf, *rtflag;
-struct nodeinfo *ni;
 
-ni = &(rpars->ni);
 dc = &psrc->doublec;
-
-dt = rpars->dt;
 
 psrc->ix = (int *) check_malloc ((psrc->nsource)*sizeof(int));
 psrc->iy = (int *) check_malloc ((psrc->nsource)*sizeof(int));
@@ -3401,7 +3475,7 @@ if(psrc->nsource > 1)
    mstpar("tsrc","vf",tsrc);
    mstpar("momwgts","vf",dc->momwgts);
 
-   invdt = 1.0/dt;
+   invdt = 1.0/(*dt);
    sum = 0.0;
    for(isrc=0;isrc<psrc->nsource;isrc++)
       {
@@ -3425,11 +3499,11 @@ free(rtime_uniq);
 free(rtflag);
 }
 
-void get_pointmt_parP3(struct pntsrcs *psrc,float *tz,struct runparamsP3 *rpars)
+void get_pointmt_parP3(struct pntsrcs *psrc,float *tz,float *dt)
 {
 struct doublecouple *dc;
 struct momenttensor *mt;
-float sum, invdt, *tsrc, *rtime, dt, *rtime_uniq;
+float sum, invdt, *tsrc, *rtime, *rtime_uniq;
 int isrc, j, nstf, *rtflag;
 
 float *Mrr, *Mtt, *Mpp, *Mrt, *Mrp, *Mtp;
@@ -3437,11 +3511,8 @@ float *Mnn, *Mee, *Mdd, *Mne, *Mnd, *Med;
 float arg, cosA, sinA, cos2A, sin2A;
 
 float rperd = RPERD;
-struct nodeinfo *ni;
 
-ni = &(rpars->ni);
 dc = &psrc->doublec;
-dt = rpars->dt;
 
 psrc->ix = (int *) check_malloc ((psrc->nsource)*sizeof(int));
 psrc->iy = (int *) check_malloc ((psrc->nsource)*sizeof(int));
@@ -3499,7 +3570,7 @@ if(psrc->nsource > 1)
    {
    mstpar("tsrc","vf",tsrc);
 
-   invdt = 1.0/dt;
+   invdt = 1.0/(*dt);
    for(isrc=0;isrc<psrc->nsource;isrc++)
       dc->itsrc[isrc] = tsrc[isrc]*invdt;
    }
@@ -3690,9 +3761,12 @@ getpar("zmom","f",&rpars->zmom);
 
 if(rpars->xmom != 0.0 || rpars->ymom != 0.0 || rpars->zmom != 0.0)
    {
-   psrc->fxsrc[0] = rpars->xmom;
-   psrc->fysrc[0] = rpars->ymom;
-   psrc->fzsrc[0] = rpars->zmom;
+   for(isrc=0;isrc<psrc->nsource;isrc++)
+      {
+      psrc->fxsrc[isrc] = rpars->xmom;
+      psrc->fysrc[isrc] = rpars->ymom;
+      psrc->fzsrc[isrc] = rpars->zmom;
+      }
    }
 else
    {
@@ -3740,9 +3814,10 @@ fprintf(stderr,"            sources active in this node:\n");
 js = 0;
 for(i=0;i<psrc->nsource;i++)
    {
-   if(psrc->ix[i] >= ni->ixminus && psrc->ix[i] <= ni->ixplus
-         && psrc->iy[i] >= ni->iyminus && psrc->iy[i] <= ni->iyplus
-               && psrc->iz[i] >= ni->izminus && psrc->iz[i] <= ni->izplus)
+/* extend to +1 for averaging (nov 2018) */
+   if(psrc->ix[i] >= ni->ixminus && psrc->ix[i] <= (ni->ixplus + 1)
+         && psrc->iy[i] >= ni->iyminus && psrc->iy[i] <= (ni->iyplus + 1)
+               && psrc->iz[i] >= ni->izminus && psrc->iz[i] <= (ni->izplus + 1))
       {
 
          /*global to local conversion */
@@ -3835,7 +3910,7 @@ float dt, h;
 int i, js;
 
 float norm20 = 1.0e-20;
-float normf = 1.0e-05; /* convert dyne-cm to Nt-km */
+float normf = 1.0e-05; /* convert dyne-cm to dyne-km */
 struct nodeinfo *ni;
 
 ni = &(rpars->ni);
@@ -3852,9 +3927,10 @@ fprintf(stderr,"            sources active in this node:\n");
 js = 0;
 for(i=0;i<psrc->nsource;i++)
    {
-   if(psrc->ix[i] >= ni->ixminus && psrc->ix[i] <= ni->ixplus
-         && psrc->iy[i] >= ni->iyminus && psrc->iy[i] <= ni->iyplus
-	       && psrc->iz[i] >= ni->izminus && psrc->iz[i] <= ni->izplus)
+/* extend to +1 for averaging (nov 2018) */
+   if(psrc->ix[i] >= ni->ixminus && psrc->ix[i] <= (ni->ixplus + 1)
+         && psrc->iy[i] >= ni->iyminus && psrc->iy[i] <= (ni->iyplus + 1)
+               && psrc->iz[i] >= ni->izminus && psrc->iz[i] <= (ni->izplus + 1))
       {
 
          /*global to local conversion */
@@ -3931,6 +4007,10 @@ fprintf(stderr,"            sources active in this node:\n");
 js = 0;
 for(i=0;i<psrc->nsource;i++)
    {
+   psrc->fxsrc[i] = psrc->fxsrc[i]/((float)(1.0*psrc->nsource));
+   psrc->fysrc[i] = psrc->fysrc[i]/((float)(1.0*psrc->nsource));
+   psrc->fzsrc[i] = psrc->fzsrc[i]/((float)(1.0*psrc->nsource));
+
    if(psrc->ix[i] >= ni->ixminus && psrc->ix[i] <= ni->ixplus
          && psrc->iy[i] >= ni->iyminus && psrc->iy[i] <= ni->iyplus
 	       && psrc->iz[i] >= ni->izminus && psrc->iz[i] <= ni->izplus)
@@ -3946,7 +4026,7 @@ for(i=0;i<psrc->nsource;i++)
 
       js++;
 
-      fprintf(stderr,"            %d) Fx= %.5e dyne, Fy= %.5e dyne, Fz= %.5e dyne\n",js,psrc->fxsrc[i],psrc->fysrc[i],psrc->fzsrc[i]);
+      fprintf(stderr,"            %d) (%d,%d,%d) Fx= %.5e dyne, Fy= %.5e dyne, Fz= %.5e dyne\n",js,psrc->ix[i]+ni->nx1,psrc->iy[i]+ni->ny1,psrc->iz[i]+ni->nz1,psrc->fxsrc[i],psrc->fysrc[i],psrc->fzsrc[i]);
 
       psrc->fxsrc[i] = psrc->fxsrc[i]*hcm;
       psrc->fysrc[i] = psrc->fysrc[i]*hcm;
@@ -3995,7 +4075,8 @@ if(js == 0)
 fflush(stderr);
 }
 
-void get_srf_parP3(struct pntsrcs *psrc,struct runparamsP3 *rp,int bfilt,float *flo,float *fhi,float *tsh)
+/* NOT SEGMENT*/
+void get_srf_parP3_NOTSEGMENT(struct pntsrcs *psrc,struct runparamsP3 *rp,int bfilt,float *flo,float *fhi,float *tsh)
 {
 FILE *fpw, *fpr, *fopfile();
 int iyleft, iyright;
@@ -4049,7 +4130,7 @@ sinR = sin(rp->modelrot*rperd);
 itsh = 0;
 if(bfilt)
    {
-   itsh = 1.0/((rp->dt)*(*flo));
+   itsh = 3.0/((rp->dt)*(*flo));
    *tsh = itsh*(rp->dt);
    }
 
@@ -4386,17 +4467,17 @@ float *l2msrc, *lamsrc, *musrc;
 float *stf1, *stf2, *stf3;
 float *mxx, *myy, *mzz, *mxy, *mxz, *myz;
 float *Mloc_xx, *Mloc_yy, *Mloc_zz, *Mloc_xy, *Mloc_xz, *Mloc_yz;
+double *Mxx_src, *Myy_src, *Mzz_src, *Mxy_src, *Mxz_src, *Myz_src;
 float l2mcnv, lamcnv, mucnv, vx, vy, vz, ux, uy, uz;
 float *rt, *area;
 float *stk, *dip, *rak, moment;
 float mfit, dd, xx, yy, zz;
 struct momenttensor *mt;
-float conv_fac;
+double conv_fac, rt2inv, conv_dynecm;
 char frmt[128];
 int nx, ny, nz;
 
 float dperr = 1.0/RPERD;
-float rt2inv = 0.707106781;
 
 int loc_iy;
 float h, dt;
@@ -4405,6 +4486,13 @@ struct nodeinfo *ni;
 ni = &(rpars->ni);
 h = rpars->h;
 dt = rpars->dt;
+
+if(psrc->MTaverage == 1)
+   fprintf(stderr,"         - moment-tensor averaged to center source at normal stress node\n");
+else
+   fprintf(stderr,"         - moment-tensor not averaged; shear components offset by 1/2 grid\n");
+
+fflush(stderr);
 
 /*
    Recall, global units are:
@@ -4421,6 +4509,20 @@ dt = rpars->dt;
                       = 1e+09 Nt/(m^2)
                       = 1e+09 Pa
                       = 1 GPa
+2015-01-26: Above is WRONG, should be (see main_mpi.c)
+
+    lambda,mu => km*km*gm/(s*s*cm*cm*cm)                      
+    Tnn,Tij   => [km*km*gm/(s*s*cm*cm*cm)]*(cm/km)  
+
+    The (cm/km) term in the above should be strain, but the units don't
+    cancel (displacement=cm, grid_spacing=km). I guess this is 10^-5 strain(?)
+
+    In any case, following this through:
+
+     Tnn,Tij   = km*cm*gm/(s*s*cm*cm*cm)
+               = 1e+04 Nt/(m^2)                                
+               = 1e+04 Pa                                      
+               = 1e-02 MPa
 
    distance and time measures-
     h         => km
@@ -4454,7 +4556,11 @@ nx = ni->loc_nx;
 ny = ni->loc_ny;
 nz = ni->loc_nz;
 
-conv_fac = 1.0e-10*dt/(h*h*h);
+rt2inv = 1.0/sqrt(2.0);
+conv_fac = 1.0e-10*(double)(dt)/(1.0*(double)(h)*(double)(h)*(double)(h));
+conv_dynecm = 1.0e+20*(1.0*(double)(h)*(double)(h)*(double)(h));
+
+psrc->MTavg = (struct MT_average_weights *) check_malloc ((psrc->nsource)*sizeof(struct MT_average_weights));
 
 xs = (float *) check_malloc ((psrc->nsource)*sizeof(float));
 ys = (float *) check_malloc ((psrc->nsource)*sizeof(float));
@@ -4483,6 +4589,13 @@ Mloc_xy = (float *) check_malloc ((psrc->nsource)*sizeof(float));
 Mloc_xz = (float *) check_malloc ((psrc->nsource)*sizeof(float));
 Mloc_yz = (float *) check_malloc ((psrc->nsource)*sizeof(float));
 
+Mxx_src = (double *) check_malloc ((psrc->nsource)*sizeof(double));
+Myy_src = (double *) check_malloc ((psrc->nsource)*sizeof(double));
+Mzz_src = (double *) check_malloc ((psrc->nsource)*sizeof(double));
+Mxy_src = (double *) check_malloc ((psrc->nsource)*sizeof(double));
+Mxz_src = (double *) check_malloc ((psrc->nsource)*sizeof(double));
+Myz_src = (double *) check_malloc ((psrc->nsource)*sizeof(double));
+
 for(isrc=0;isrc<psrc->nsource;isrc++)
    {
    slipss[isrc] = 0.0;
@@ -4496,6 +4609,13 @@ for(isrc=0;isrc<psrc->nsource;isrc++)
    Mloc_xy[isrc] = 0.0;
    Mloc_xz[isrc] = 0.0;
    Mloc_yz[isrc] = 0.0;
+
+   Mxx_src[isrc] = 0.0;
+   Myy_src[isrc] = 0.0;
+   Mzz_src[isrc] = 0.0;
+   Mxy_src[isrc] = 0.0;
+   Mxz_src[isrc] = 0.0;
+   Myz_src[isrc] = 0.0;
    }
 
 mfit = 0.0;
@@ -4506,7 +4626,7 @@ nloc = 0;
    tot_nloc = global # of unique source locations as resolved with other CPUs
 */
 
-for(iy=ni->iyminus;iy<=ni->iyplus;iy++)
+for(iy=ni->iyminus;iy<=(ni->iyplus+1);iy++)
    {
    loc_iy = iy - ni->ny1;
 
@@ -4582,74 +4702,98 @@ for(iy=ni->iyminus;iy<=ni->iyplus;iy++)
          free(mt->stf2);
          free(mt->stf3);
 
-         xx = psrc->xs[isrc]; /* use exact location */
-         yy = psrc->ys[isrc];
-         zz = psrc->zs[isrc];
+/* RWG-20181128
+ * Compute weights for MT components, cryptic but efficient for averaging of shear
+ * components so as to center source at normal stress node
+*/
 
-         for(iloc=0;iloc<nloc;iloc++)
-            {
-            if(xx == xs[iloc] && yy == ys[iloc] && zz == zs[iloc])
-               break;
-            }
+         get_MTavg_coefs(psrc,isrc,ni);
 
-	 if(iloc == nloc)  /* new source location */
+/* only count statistics if within responsible volume for this CPU (nov 2018) */
+
+         if(psrc->ix[isrc] >= ni->ixminus && psrc->ix[isrc] <= ni->ixplus
+               && psrc->iy[isrc] >= ni->iyminus && psrc->iy[isrc] <= ni->iyplus
+                  && psrc->iz[isrc] >= ni->izminus && psrc->iz[isrc] <= ni->izplus)
 	    {
-	    xs[iloc] = xx;
-	    ys[iloc] = yy;
-	    zs[iloc] = zz;
-	    l2mloc[iloc] = l2msrc[isrc];
-	    lamloc[iloc] = lamsrc[isrc];
-	    muloc[iloc] = musrc[isrc];
-	    nloc++;
+	    for(it=0;it<mt->nt;it++)
+	       {
+               Mxx_src[isrc] = Mxx_src[isrc] + (double)(mxx[it]);
+               Myy_src[isrc] = Myy_src[isrc] + (double)(myy[it]);
+               Mzz_src[isrc] = Mzz_src[isrc] + (double)(mzz[it]);
+               Mxy_src[isrc] = Mxy_src[isrc] + (double)(mxy[it]);
+               Mxz_src[isrc] = Mxz_src[isrc] + (double)(mxz[it]);
+               Myz_src[isrc] = Myz_src[isrc] + (double)(myz[it]);
+	       }
 
-            xf[iloc] = h*psrc->ix[isrc];
-            yf[iloc] = h*psrc->iy[isrc];
-            zf[iloc] = h*(psrc->iz[isrc] - 1);
+            xx = psrc->xs[isrc]; /* use exact location */
+            yy = psrc->ys[isrc];
+            zz = psrc->zs[isrc];
 
-            xx = xs[iloc] - xf[iloc];
-            yy = ys[iloc] - yf[iloc];
-            zz = zs[iloc] - zf[iloc];
+            for(iloc=0;iloc<nloc;iloc++)
+               {
+               if(xx == xs[iloc] && yy == ys[iloc] && zz == zs[iloc])
+                  break;
+               }
 
-            dd = sqrt(xx*xx + yy*yy + zz*zz);
-            if(dd > mfit)
-               mfit = dd;
-	    }
+	    if(iloc == nloc)  /* new source location */
+	       {
+	       xs[iloc] = xx;
+	       ys[iloc] = yy;
+	       zs[iloc] = zz;
+	       l2mloc[iloc] = l2msrc[isrc];
+	       lamloc[iloc] = lamsrc[isrc];
+	       muloc[iloc] = musrc[isrc];
+	       nloc++;
 
-	 slipss[iloc] = slipss[iloc] + cosL*mt->slip1 - sinL*mt->slip2;
-	 slipds[iloc] = slipds[iloc] + sinL*mt->slip1 + cosL*mt->slip2;
-	 slipnm[iloc] = slipnm[iloc] + mt->slip3;
+               xf[iloc] = h*psrc->ix[isrc];
+               yf[iloc] = h*psrc->iy[isrc];
+               zf[iloc] = h*(psrc->iz[isrc] - 1);
 
-	 ux = -(mt->slip3*sinD - cosD*(mt->slip1*sinL + mt->slip2*cosL))*sinS
+               xx = xs[iloc] - xf[iloc];
+               yy = ys[iloc] - yf[iloc];
+               zz = zs[iloc] - zf[iloc];
+
+               dd = sqrt(xx*xx + yy*yy + zz*zz);
+               if(dd > mfit)
+                  mfit = dd;
+	       }
+
+	    slipss[iloc] = slipss[iloc] + cosL*mt->slip1 - sinL*mt->slip2;
+	    slipds[iloc] = slipds[iloc] + sinL*mt->slip1 + cosL*mt->slip2;
+	    slipnm[iloc] = slipnm[iloc] + mt->slip3;
+
+	    ux = -(mt->slip3*sinD - cosD*(mt->slip1*sinL + mt->slip2*cosL))*sinS
 	               + (mt->slip1*cosL - mt->slip2*sinL)*cosS;
 
-	 uy =  (mt->slip3*sinD - cosD*(mt->slip1*sinL + mt->slip2*cosL))*cosS
+	    uy =  (mt->slip3*sinD - cosD*(mt->slip1*sinL + mt->slip2*cosL))*cosS
 	               + (mt->slip1*cosL - mt->slip2*sinL)*sinS;
 
-	 uz = -mt->slip3*cosD - (mt->slip1*sinL + mt->slip2*cosL)*sinD;
+	    uz = -mt->slip3*cosD - (mt->slip1*sinL + mt->slip2*cosL)*sinD;
 
-	 Mloc_xx[iloc] = Mloc_xx[iloc]
+	    Mloc_xx[iloc] = Mloc_xx[iloc]
 	                  + l2mloc[iloc]*vx*ux*mt->area
 			  + lamloc[iloc]*(vy*uy + vz*uz)*mt->area;
-	 Mloc_yy[iloc] = Mloc_yy[iloc]
+	    Mloc_yy[iloc] = Mloc_yy[iloc]
 	                  + l2mloc[iloc]*vy*uy*mt->area
 			  + lamloc[iloc]*(vx*ux + vz*uz)*mt->area;
-	 Mloc_zz[iloc] = Mloc_zz[iloc]
+	    Mloc_zz[iloc] = Mloc_zz[iloc]
 	                  + l2mloc[iloc]*vz*uz*mt->area
 			  + lamloc[iloc]*(vx*ux + vy*uy)*mt->area;
 
-	 Mloc_xy[iloc] = Mloc_xy[iloc] + muloc[iloc]*(vx*uy + vy*ux)*mt->area;
-	 Mloc_xz[iloc] = Mloc_xz[iloc] + muloc[iloc]*(vx*uz + vz*ux)*mt->area;
-	 Mloc_yz[iloc] = Mloc_yz[iloc] + muloc[iloc]*(vy*uz + vz*uy)*mt->area;
+	    Mloc_xy[iloc] = Mloc_xy[iloc] + muloc[iloc]*(vx*uy + vy*ux)*mt->area;
+	    Mloc_xz[iloc] = Mloc_xz[iloc] + muloc[iloc]*(vx*uz + vz*ux)*mt->area;
+	    Mloc_yz[iloc] = Mloc_yz[iloc] + muloc[iloc]*(vy*uz + vz*uy)*mt->area;
 
-	 area[iloc] = mt->area;
+	    area[iloc] = mt->area;
 
-	 stk[iloc] = mt->stk;
-	 dip[iloc] = mt->dip;
+	    stk[iloc] = mt->stk;
+	    dip[iloc] = mt->dip;
 
-         if((dt*psrc->it[isrc]) < ts[iloc]) /* use minimum tstart */
-	    ts[iloc] = dt*psrc->it[isrc];
+            if((dt*psrc->it[isrc]) < ts[iloc]) /* use minimum tstart */
+	       ts[iloc] = dt*psrc->it[isrc];
 
-	 rt[iloc] = dt*mt->nt;
+	    rt[iloc] = dt*mt->nt;
+            }
 	 }
       }
    }
@@ -4666,6 +4810,9 @@ mpi_global_val(&nloc,&tot_nloc,"Nloc",1,MPI_INT,MPI_SUM);
    rak = final rake value for vector slip
    slipv = total relative vector slip for each source location
    sum = total relative moment for all sources
+
+   full moment tensor: Mo = sqrt(0.5*[MM]),
+   [MM]=double dot product of moment tensor, Dahlen and Tromp
 */
 
 sum = 0.0;
@@ -4703,7 +4850,21 @@ for(iloc=0;iloc<nloc;iloc++)
    }
 
 tdbl = sum;
-mpi_global_val(&tdbl,&sum,"Momsum",1,MPI_DOUBLE,MPI_SUM);
+mpi_global_val(&tdbl,&sum,"Mom(sum)",1,MPI_DOUBLE,MPI_SUM);
+
+sum = 0.0;
+for(isrc=0;isrc<psrc->nsource;isrc++)
+   {
+   sum = sum + rt2inv*sqrt(Mxx_src[isrc]*Mxx_src[isrc]
+                         + Myy_src[isrc]*Myy_src[isrc]
+	                 + Mzz_src[isrc]*Mzz_src[isrc]
+	                 + 2.0*Mxy_src[isrc]*Mxy_src[isrc]
+	                 + 2.0*Mxz_src[isrc]*Mxz_src[isrc]
+	                 + 2.0*Myz_src[isrc]*Myz_src[isrc])*conv_dynecm;
+   }
+
+tdbl = sum;
+mpi_global_val(&tdbl,&sum,"Mom(src)",1,MPI_DOUBLE,MPI_SUM);
 
 moment = sum;
 
@@ -4797,6 +4958,13 @@ free(Mloc_xy);
 free(Mloc_xz);
 free(Mloc_yz);
 
+free(Mxx_src);
+free(Myy_src);
+free(Mzz_src);
+free(Mxy_src);
+free(Mxz_src);
+free(Myz_src);
+
 if(nloc > 0)
    {
    free(rak);
@@ -4809,20 +4977,66 @@ void get_adjsrc_parP3(struct pntsrcs *psrc,struct runparamsP3 *rp)
 struct seisheader shead;
 int fdr, *mypoints;
 float *pvbuf;
-int isrc, j, it, nsrc, ioff;
+int isrc, j, it, nsrc;
+int i, n, nt_max, nt_in;
+int n_comps, vx_pos, vy_pos, vz_pos;
+off_t i_off, cur_off, n_reed;
+char t_str[16];
 
 struct nodeinfo *ni;
 struct adjointsource *adj;
 
 int inside = 1;
-int nseis_comps = 9;
+int n_comps_max = 9;
 
 ni = &(rp->ni);
 psrc->modelrot = rp->modelrot;
 
-fdr = opfile_ro(psrc->adjointfile);
+n_comps = 0;
+vx_pos = -1;
+vy_pos = -1;
+vz_pos = -1;
 
-reed(fdr,&nsrc,sizeof(int));
+fprintf(stderr,"\n      adj_tfastest= %d\n",psrc->adjoint_tfastest);
+
+i = 0;
+while(psrc->adjoint_comps[i] != '\0' && n_comps < n_comps_max)
+   {
+   n = 0;
+   while(psrc->adjoint_comps[i+n] != ',' && psrc->adjoint_comps[i+n] != '\0')
+      n++;
+
+   strncpy(t_str,&psrc->adjoint_comps[i],n);
+   t_str[n] = '\0';
+
+   fprintf(stderr,"      adj_comp %d: %s\n",n_comps,t_str);
+
+   if(strncmp(t_str,"vx",2) == 0 || strncmp(t_str,"Vx",2) == 0 || strncmp(t_str,"VX",2) == 0)
+      vx_pos = n_comps;
+   else if(strncmp(t_str,"vy",2) == 0 || strncmp(t_str,"Vy",2) == 0 || strncmp(t_str,"VY",2) == 0)
+      vy_pos = n_comps;
+   else if(strncmp(t_str,"vz",2) == 0 || strncmp(t_str,"Vz",2) == 0 || strncmp(t_str,"VZ",2) == 0)
+      vz_pos = n_comps;
+
+   n_comps++;
+
+   if(psrc->adjoint_comps[i+n] == ',')
+      n++;
+
+   i = i + n;
+   }
+
+/*
+fprintf(stderr,"vx_pos= %d\n",vx_pos);
+fprintf(stderr,"vy_pos= %d\n",vy_pos);
+fprintf(stderr,"vz_pos= %d\n",vz_pos);
+*/
+
+fflush(stderr);
+
+fdr = opfile_ro(psrc->adjoint_file);
+
+n_reed = reed(fdr,&nsrc,sizeof(int));
 
 psrc->adjsrc = (struct adjointsource *) check_malloc (nsrc*sizeof(struct adjointsource));
 
@@ -4835,12 +5049,12 @@ psrc->iz = (int *) check_malloc (nsrc*sizeof(int));
 psrc->it = (int *) check_malloc (nsrc*sizeof(int));
 
 mypoints = (int *) check_malloc (nsrc*sizeof(int));
-pvbuf = (float *) check_malloc (nseis_comps*nsrc*sizeof(float));
 
+nt_max = -1;
 isrc = 0;
 for(j=0;j<nsrc;j++)
    {
-   reed(fdr,&shead,sizeof(struct seisheader));
+   n_reed = reed(fdr,&shead,sizeof(struct seisheader));
 
    psrc->ix[isrc] = shead.ix;
    psrc->iy[isrc] = shead.iy;
@@ -4859,6 +5073,20 @@ for(j=0;j<nsrc;j++)
       inside = 0;
       }
 
+   /*
+   if((rp->dt) < 0.999*shead.dt || (rp->dt) > 1.001*shead.dt)
+      {
+XXXXX      NEED to Resample input    XXXXX
+      }
+*/
+
+   /*
+   if((rp->modelrot) < 0.999*shead.modelrot || (rp->modelrot) > 1.001*shead.modelrot)
+      {
+XXXXX      X & Y component orientations may be different    XXXXX
+      }
+*/
+
    psrc->it[isrc] = 0;
 
    psrc->xs[isrc] = (shead.h)*(psrc->ix[isrc]);
@@ -4876,10 +5104,11 @@ for(j=0;j<nsrc;j++)
          && psrc->iy[isrc] >= ni->iyminus && psrc->iy[isrc] <= ni->iyplus
             && psrc->iz[isrc] >= ni->izminus && psrc->iz[isrc] <= ni->izplus)
       {
-      adj = &(psrc->adjsrc[isrc]);
-      adj->nt = shead.nt;
-
       mypoints[isrc] = j;  /* j gives offset within data field */
+      nt_in = shead.nt;
+
+      if(nt_in > nt_max)
+         nt_max = nt_in;
 
       isrc++;
       }
@@ -4903,29 +5132,76 @@ if(psrc->nsource)
 
    mypoints = (int *)check_realloc(mypoints,(psrc->nsource)*sizeof(int));
 
+   if(psrc->adjoint_tfastest == 0)   /*   (comps,srcs,time) (fastest -> slowest) */
+      pvbuf = (float *) check_malloc (n_comps*nsrc*sizeof(float));
+   else                              /*   (time,comps,srcs) (fastest -> slowest) */
+      pvbuf = (float *) check_malloc (n_comps*nt_in*sizeof(float));
+
    for(isrc=0;isrc<psrc->nsource;isrc++)
       {
       adj = &(psrc->adjsrc[isrc]);
 
+      adj->nt = rp->nt;
+
       adj->sx = (float *)check_malloc((adj->nt)*sizeof(float));
       adj->sy = (float *)check_malloc((adj->nt)*sizeof(float));
       adj->sz = (float *)check_malloc((adj->nt)*sizeof(float));
+
+      for(it=0;it<adj->nt;it++)
+         {
+         adj->sx[it] = 0.0;
+         adj->sy[it] = 0.0;
+         adj->sz[it] = 0.0;
+         }
       }
 
-   for(it=0;it<shead.nt;it++)
+   if(psrc->adjoint_tfastest == 0)   /*   original way */
       {
-      reed(fdr,pvbuf,nseis_comps*nsrc*sizeof(float));
+      for(it=0;it<adj->nt;it++)
+         {
+         reed(fdr,pvbuf,n_comps*nsrc*sizeof(float));
+
+         for(isrc=0;isrc<psrc->nsource;isrc++)
+            {
+	    i_off = mypoints[isrc]*n_comps;
+            adj = &(psrc->adjsrc[isrc]);
+
+	    if(vx_pos >= 0)
+	       adj->sx[it] = pvbuf[i_off+vx_pos];
+	    if(vy_pos >= 0)
+	       adj->sy[it] = pvbuf[i_off+vy_pos];
+	    if(vz_pos >= 0)
+	       adj->sz[it] = pvbuf[i_off+vz_pos];
+	    }
+         }
+      }
+   else /* tfastest way */
+      {
+      cur_off = sizeof(int) + nsrc*sizeof(struct seisheader);
 
       for(isrc=0;isrc<psrc->nsource;isrc++)
          {
-	 ioff = mypoints[isrc]*nseis_comps;
-         adj = &(psrc->adjsrc[isrc]);
+	 i_off = sizeof(int) + nsrc*sizeof(struct seisheader)
+	           + mypoints[isrc]*n_comps*nt_in*sizeof(float) - cur_off;
+	 lseek(fdr,i_off,SEEK_CUR);
 
-	 adj->sx[it] = pvbuf[ioff];
-	 adj->sy[it] = pvbuf[ioff+1];
-	 adj->sz[it] = pvbuf[ioff+2];
-	 }
+         n_reed = reed(fdr,pvbuf,n_comps*nt_in*sizeof(float));
+	 cur_off = cur_off + i_off + n_reed;
+
+         adj = &(psrc->adjsrc[isrc]);
+         for(it=0;it<adj->nt;it++)
+            {
+	    if(vx_pos >= 0)
+	       adj->sx[it] = pvbuf[it+vx_pos*nt_in];
+	    if(vy_pos >= 0)
+	       adj->sy[it] = pvbuf[it+vy_pos*nt_in];
+	    if(vz_pos >= 0)
+	       adj->sz[it] = pvbuf[it+vz_pos*nt_in];
+	    }
+         }
       }
+
+   free(pvbuf);
    }
 else
    {
@@ -4940,20 +5216,27 @@ else
    }
 
 free(mypoints);
-free(pvbuf);
 close(fdr);
 }
 
 void init_adjsrcP3(struct pntsrcs *psrc,struct runparamsP3 *rpars)
 {
 int isrc, it;
-float h, dt;
+float h, dt, hcm;
 struct adjointsource *adj;
 struct nodeinfo *ni;
+float xfac, yfac, zfac;
+float normf = 1.0e+05; /* convert km to cm */
 
 ni = &(rpars->ni);
 h = rpars->h;
 dt = rpars->dt;
+
+/* shouldn't need to do volume normalization
+hcm = 1.0/(normf*h);
+*/
+
+hcm = dt;
 
 /*
    Add factors of dt for time integration
@@ -4961,14 +5244,40 @@ dt = rpars->dt;
   And adjust to local indexing
 */
 
+fprintf(stderr,"\n");
+fprintf(stderr,"     adjoint sources in this node= %d\n",psrc->nsource);
+fflush(stderr);
+
 for(isrc=0;isrc<psrc->nsource;isrc++)
    {
    psrc->ix[isrc] = psrc->ix[isrc] - ni->nx1;
    psrc->iy[isrc] = psrc->iy[isrc] - ni->ny1;
    psrc->iz[isrc] = psrc->iz[isrc] - ni->nz1;
 
-   if(rpars->freesurf == 1 && ni->minusId_z < 0 && psrc->iz[isrc] < 1)
-      psrc->iz[isrc] = 1;
+   xfac = hcm;
+   yfac = hcm;
+   zfac = hcm;
+
+   if(rpars->freesurf == 1 && ni->minusId_z < 0)
+      {
+      if(psrc->iz[isrc] < 1)
+         psrc->iz[isrc] = 1;
+
+      /*  free-surface adjustment, Not sure if this is needed?
+      */
+      if(psrc->iz[isrc] == 1)
+         {
+         xfac = 2.0*xfac;
+         yfac = 2.0*yfac;
+	 }
+      }
+
+   fprintf(stderr,"     source: %d\n",isrc);
+   fprintf(stderr,"        ix_loc= %d\n",psrc->ix[isrc]);
+   fprintf(stderr,"        iy_loc= %d\n",psrc->iy[isrc]);
+   fprintf(stderr,"        iz_loc= %d\n",psrc->iz[isrc]);
+   fprintf(stderr,"        it_loc= %d\n",psrc->it[isrc]);
+   fflush(stderr);
 
    adj = &(psrc->adjsrc[isrc]);
 
@@ -4978,9 +5287,1103 @@ for(isrc=0;isrc<psrc->nsource;isrc++)
 
    for(it=0;it<adj->nt;it++)
       {
-      adj->sx[it] = dt*adj->sx[it];
-      adj->sy[it] = dt*adj->sy[it];
-      adj->sz[it] = dt*adj->sz[it];
+      adj->sx[it] = xfac*adj->sx[it];
+      adj->sy[it] = yfac*adj->sy[it];
+      adj->sz[it] = zfac*adj->sz[it];
+      }
+   }
+}
+
+/* SEGMENT*/
+void get_srf_parP3(struct pntsrcs *psrc,struct runparamsP3 *rp,int bfilt,float *flo,float *fhi,float *tsh)
+{
+FILE *fpw, *fpr, *fopfile();
+int iyleft, iyright;
+float modellon, modellat, modelrot;
+float *stf1, *stf2, *stf3, *space;
+float lon, lat, dep, stk, dip, rake, area, tinit, dt_stf, slip1, slip2, slip3;
+float de, dn, fnt, da, xx, yy;
+int nt1, nt2, nt3, ntmax, ntpad, ntrsmp, ntout, resamp;
+int isrc, j, jj, kk, it, nsrc;
+char str[MAXLINE], pword[32], *rchar;
+
+int gnt;
+float tol = 1.0e-02;
+
+struct momenttensor *mt;
+
+float rperd = RPERD;
+float erad = ERAD;
+float fc = FLAT_CONST;
+float g2, radc;
+float latavg;
+float cosR, sinR, kmlon, kmlat;
+float invh;
+
+double g0, b0;
+int xy2ll = 0;
+int ll2xy = 1;
+
+int inside = 1;
+float zap = 0.0;
+
+float nyq_perc = 1.0;
+float tap_perc = 0.0;
+
+int order = 4;
+
+int itsh;
+int phase = 0;
+
+struct nodeinfo *ni;
+size_t blen, nt_tot;
+
+ni = &(rp->ni);
+
+psrc->modelrot = rp->modelrot;
+
+invh = 1.0/(rp->h);
+
+cosR = cos(rp->modelrot*rperd);
+sinR = sin(rp->modelrot*rperd);
+
+itsh = 0;
+if(bfilt)
+   {
+   itsh = 3.0/((rp->dt)*(*flo));
+   *tsh = itsh*(rp->dt);
+   }
+
+psrc->momten = NULL;
+
+psrc->xs = NULL;
+psrc->ys = NULL;
+psrc->zs = NULL;
+psrc->ix = NULL;
+psrc->iy = NULL;
+psrc->iz = NULL;
+psrc->it = NULL;
+
+space = NULL;
+stf1 = NULL;
+stf2 = NULL;
+stf3 = NULL;
+
+nt_tot = 0;
+
+fpr = fopfile(psrc->faultfile,"r");
+
+/* 09/22/05
+   For now, simply assume ASCII input and scan down to find "POINTS" line
+*/
+
+fgets(str,MAXLINE,fpr);
+sscanf(str,"%s",pword);
+while(strncmp(pword,"POINTS",6) != 0)
+   {
+   rchar = fgets(str,MAXLINE,fpr);
+   if(rchar == NULL)
+      {
+      fprintf(stderr,"Unexpected EOF in %s, exiting...\n",psrc->faultfile);
+      exit(-99);
+      }
+   sscanf(str,"%s",pword);
+   }
+
+isrc = 0;
+while(strncmp(pword,"POINTS",6) == 0) /* will handle multiple "POINTS" entries */
+   {
+   sscanf(str,"%*s %d",&nsrc);
+
+   psrc->momten = (struct momenttensor *)check_realloc(psrc->momten,(isrc+nsrc)*sizeof(struct momenttensor));
+
+   psrc->xs = (float *)check_realloc(psrc->xs,(isrc+nsrc)*sizeof(float));
+   psrc->ys = (float *)check_realloc(psrc->ys,(isrc+nsrc)*sizeof(float));
+   psrc->zs = (float *)check_realloc(psrc->zs,(isrc+nsrc)*sizeof(float));
+   psrc->ix = (int *)check_realloc(psrc->ix,(isrc+nsrc)*sizeof(int));
+   psrc->iy = (int *)check_realloc(psrc->iy,(isrc+nsrc)*sizeof(int));
+   psrc->iz = (int *)check_realloc(psrc->iz,(isrc+nsrc)*sizeof(int));
+   psrc->it = (int *)check_realloc(psrc->it,(isrc+nsrc)*sizeof(int));
+
+   for(j=0;j<nsrc;j++)
+      {
+      if(fgets(str,MAXLINE,fpr) == NULL)
+         break;
+
+      sscanf(str,"%f %f %f %f %f %f %f %f",&lon,
+                                           &lat,
+                                           &dep,
+                                           &stk,
+                                           &dip,
+                                           &area,
+                                           &tinit,
+                                           &dt_stf);
+      fgets(str,MAXLINE,fpr);
+      sscanf(str,"%f %f %d %f %d %f %d",&rake,
+                                        &slip1,
+                                        &nt1,
+                                        &slip2,
+                                        &nt2,
+                                        &slip3,
+                                        &nt3);
+
+      ntmax = nt1;
+      if(nt2 > ntmax)
+         ntmax = nt2;
+      if(nt3 > ntmax)
+         ntmax = nt3;
+
+      if(ntmax)
+         {
+         stf1 = (float *)check_realloc((void *)stf1,ntmax*sizeof(float));
+         stf2 = (float *)check_realloc((void *)stf2,ntmax*sizeof(float));
+         stf3 = (float *)check_realloc((void *)stf3,ntmax*sizeof(float));
+         }
+
+      zero(stf1,ntmax);
+      zero(stf2,ntmax);
+      zero(stf3,ntmax);
+
+      for(it=0;it<nt1;it++)
+         fscanf(fpr,"%f",&stf1[it]);
+      for(it=0;it<nt2;it++)
+         fscanf(fpr,"%f",&stf2[it]);
+      for(it=0;it<nt3;it++)
+         fscanf(fpr,"%f",&stf3[it]);
+
+/* get rouge newline character */
+      if(nt1 || nt2 || nt3)
+         fgets(str,MAXLINE,fpr);
+
+/* convert source location to grid coordinates */
+
+      if(rp->geoproj == 0)
+         {
+         de = rp->kmlon*(lon - rp->modellon);
+         dn = rp->kmlat*(lat - rp->modellat);
+
+         psrc->xs[isrc] = (de*rp->cosR - dn*rp->sinR) - rp->xshift;
+         psrc->ys[isrc] = (-de*rp->sinR - dn*rp->cosR) - rp->yshift;
+         }
+      else if(rp->geoproj == 1)
+         {
+         gcproj(&xx,&yy,&lon,&lat,&rp->erad,&rp->g0,&rp->b0,rp->amat,rp->ainv,ll2xy);
+
+         psrc->xs[isrc] = xx;
+         psrc->ys[isrc] = yy;
+         }
+
+      psrc->ix[isrc] = (int)(psrc->xs[isrc]*invh + 0.5);
+      psrc->iy[isrc] = (int)(psrc->ys[isrc]*invh + 0.5);
+
+      psrc->zs[isrc] = dep;
+      if(rp->freesurf)
+         psrc->iz[isrc] = (int)(psrc->zs[isrc]*invh + 0.5) + 1;
+      else
+         psrc->iz[isrc] = (int)(psrc->zs[isrc]*invh + 0.5);
+
+      inside = 1;
+      if((psrc->ix[isrc] < 0 || psrc->ix[isrc] >= ni->globnx) ||
+            (psrc->iy[isrc] < 0 || psrc->iy[isrc] >= ni->globny) ||
+               (psrc->iz[isrc] < 1 || psrc->iz[isrc] >= ni->globnz))
+         {
+         fprintf(stderr,"**** source point %10.4f %10.4f is outside global model box\n",lon,lat);
+         fprintf(stderr,"     ix= %d iy= %d iz= %d\n",psrc->ix[isrc],psrc->iy[isrc],psrc->iz[isrc]);
+         inside = 0;
+         }
+
+      psrc->it[isrc] = (int)(tinit/(rp->dt) + 0.5);
+
+/* check if point is within model sub region for this node */
+
+/* extend to +1 for averaging (nov 2018) */
+      if((inside == 1)
+         && psrc->ix[isrc] >= ni->ixminus && psrc->ix[isrc] <= (ni->ixplus + 1)
+            && psrc->iy[isrc] >= ni->iyminus && psrc->iy[isrc] <= (ni->iyplus + 1)
+               && psrc->iz[isrc] >= ni->izminus && psrc->iz[isrc] <= (ni->izplus + 1))
+         {
+         mt = &(psrc->momten[isrc]);
+
+         mt->lon = lon;
+         mt->lat = lat;
+         mt->dep = dep;
+         mt->stk = stk;
+         mt->dip = dip;
+         mt->rake = rake;
+         mt->area = area;
+         mt->tinit = tinit;
+         mt->slip1 = slip1;
+         mt->slip2 = slip2;
+         mt->slip3 = slip3;
+         mt->dt_stf = dt_stf;
+         mt->nt_stf = ntmax;
+
+         if(ntmax == 0)
+	    {
+            mt->nt = 0;
+	    mt->stf1 = NULL;
+	    mt->stf2 = NULL;
+	    mt->stf3 = NULL;
+
+	    mt->mxx = NULL;
+	    mt->myy = NULL;
+	    mt->mzz = NULL;
+	    mt->mxy = NULL;
+	    mt->mxz = NULL;
+	    mt->myz = NULL;
+	    }
+         else if(((rp->dt) > 0.999*dt_stf && (rp->dt) < 1.001*dt_stf))
+            {
+	    mt->nt = ntmax + 2*itsh;
+	    mt->stf1 = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->stf2 = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->stf3 = (float *)check_malloc((mt->nt)*sizeof(float));
+
+	    mt->mxx = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->myy = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->mzz = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->mxy = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->mxz = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->myz = (float *)check_malloc((mt->nt)*sizeof(float));
+
+	    for(it=0;it<itsh;it++)
+	       {
+	       mt->stf1[it] = 0.0;
+	       mt->stf2[it] = 0.0;
+	       mt->stf3[it] = 0.0;
+	       mt->stf1[it+ntmax+itsh] = 0.0;
+	       mt->stf2[it+ntmax+itsh] = 0.0;
+	       mt->stf3[it+ntmax+itsh] = 0.0;
+	       }
+	    for(it=0;it<ntmax;it++)
+	       {
+	       mt->stf1[it+itsh] = stf1[it];
+	       mt->stf2[it+itsh] = stf2[it];
+	       mt->stf3[it+itsh] = stf3[it];
+	       }
+	    }
+         else  /* need to resample STFs */
+	    {
+	    ntpad = 2*ntmax;
+	    fnt = ntpad*dt_stf/(rp->dt);
+	    gnt = (int)(fnt + 0.5);
+
+            while(nt_tol(fnt,gnt) > tol)
+               {
+               ntpad++;
+               fnt = ntpad*dt_stf/(rp->dt);
+	       gnt = (int)(fnt + 0.5);
+               }
+
+            ntrsmp = (int)(fnt);
+	    ntout = (int)(ntmax*dt_stf/(rp->dt));
+
+            if((rp->dt) < dt_stf)
+               {
+               resamp = 1;
+
+               if(ntout > ntrsmp)
+                  ntout = ntrsmp;
+
+               space = (float *) check_realloc ((void *)space,2*ntrsmp*sizeof(float));
+               stf1 = (float *)check_realloc((void *)stf1,2*ntrsmp*sizeof(float));
+               stf2 = (float *)check_realloc((void *)stf2,2*ntrsmp*sizeof(float));
+               stf3 = (float *)check_realloc((void *)stf3,2*ntrsmp*sizeof(float));
+               }
+            else
+               {
+               resamp = -1;
+
+               if(ntout > ntpad)
+                  ntout = ntpad;
+
+               space = (float *) check_realloc (space,2*ntpad*sizeof(float));
+               stf1 = (float *)check_realloc(stf1,2*ntpad*sizeof(float));
+               stf2 = (float *)check_realloc(stf2,2*ntpad*sizeof(float));
+               stf3 = (float *)check_realloc(stf3,2*ntpad*sizeof(float));
+               }
+
+            resample(stf1,ntmax,&dt_stf,resamp,ntpad,ntrsmp,&(rp->dt),space,order,&nyq_perc,&tap_perc);
+            resample(stf2,ntmax,&dt_stf,resamp,ntpad,ntrsmp,&(rp->dt),space,order,&nyq_perc,&tap_perc);
+            resample(stf3,ntmax,&dt_stf,resamp,ntpad,ntrsmp,&(rp->dt),space,order,&nyq_perc,&tap_perc);
+
+	    mt->nt = ntout + 2*itsh;
+	    mt->stf1 = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->stf2 = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->stf3 = (float *)check_malloc((mt->nt)*sizeof(float));
+
+	    mt->mxx = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->myy = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->mzz = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->mxy = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->mxz = (float *)check_malloc((mt->nt)*sizeof(float));
+	    mt->myz = (float *)check_malloc((mt->nt)*sizeof(float));
+
+	    for(it=0;it<itsh;it++)
+	       {
+	       mt->stf1[it] = 0.0;
+	       mt->stf2[it] = 0.0;
+	       mt->stf3[it] = 0.0;
+	       mt->stf1[it+ntout+itsh] = 0.0;
+	       mt->stf2[it+ntout+itsh] = 0.0;
+	       mt->stf3[it+ntout+itsh] = 0.0;
+	       }
+	    for(it=0;it<ntout;it++)
+	       {
+	       mt->stf1[it+itsh] = stf1[it];
+	       mt->stf2[it+itsh] = stf2[it];
+	       mt->stf3[it+itsh] = stf3[it];
+	       }
+	    }
+
+	 nt_tot = nt_tot + mt->nt;
+
+         if(bfilt && mt->nt != 0)
+            {
+            space = (float *) check_realloc (space,4*mt->nt*sizeof(float));
+
+            tfilter(mt->stf1,&(rp->dt),mt->nt,bfilt,fhi,flo,phase,space);
+            tfilter(mt->stf2,&(rp->dt),mt->nt,bfilt,fhi,flo,phase,space);
+            tfilter(mt->stf3,&(rp->dt),mt->nt,bfilt,fhi,flo,phase,space);
+
+            taper_frontback(mt->stf1,mt->nt,itsh);
+            taper_frontback(mt->stf2,mt->nt,itsh);
+            taper_frontback(mt->stf3,mt->nt,itsh);
+            }
+
+         isrc++;
+         }
+      }
+
+   if(fgets(str,MAXLINE,fpr) == NULL)
+      break;
+   else
+      sscanf(str,"%s",pword);
+   }
+
+fclose(fpr);
+
+free(space);
+free(stf1);
+free(stf2);
+free(stf3);
+
+psrc->nsource = isrc;
+
+if(psrc->nsource)
+   {
+   psrc->momten = (struct momenttensor *)check_realloc(psrc->momten,(psrc->nsource)*sizeof(struct momenttensor));
+
+   psrc->xs = (float *)check_realloc(psrc->xs,(psrc->nsource)*sizeof(float));
+   psrc->ys = (float *)check_realloc(psrc->ys,(psrc->nsource)*sizeof(float));
+   psrc->zs = (float *)check_realloc(psrc->zs,(psrc->nsource)*sizeof(float));
+   psrc->ix = (int *)check_realloc(psrc->ix,(psrc->nsource)*sizeof(int));
+   psrc->iy = (int *)check_realloc(psrc->iy,(psrc->nsource)*sizeof(int));
+   psrc->iz = (int *)check_realloc(psrc->iz,(psrc->nsource)*sizeof(int));
+   psrc->it = (int *)check_realloc(psrc->it,(psrc->nsource)*sizeof(int));
+
+   blen = psrc->nsource*(7*sizeof(float) + sizeof(struct momenttensor)) + 9*nt_tot*sizeof(float);
+
+   fprintf(stderr,"\n");
+   fprintf(stderr,"**** Memory stats for finite-fault source (approximate):\n");
+   fprintf(stderr,"          total for source= %8.1f Mb\n\n",(float)(blen/1.0e+06));
+   fflush(stderr);
+   }
+else
+   {
+   free(psrc->momten);
+   free(psrc->xs);
+   free(psrc->ys);
+   free(psrc->zs);
+   free(psrc->ix);
+   free(psrc->iy);
+   free(psrc->iz);
+   free(psrc->it);
+   }
+}
+
+void get_dc_parP3_ns(struct pntsrcs *psrc,struct runparamsP3 *rp,float *tz,float *dt)
+{
+struct doublecouple *dc;
+float sum, invdt;
+int isrc, i;
+
+struct nodeinfo *ni;
+int *ixs_in, *iys_in, *izs_in, *its_in;
+float *tsrc_in, *rtime_in, *stk_in, *dip_in, *rak_in, *mom_in;
+
+ni = &(rp->ni);
+dc = &psrc->doublec;
+
+ixs_in = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+iys_in = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+izs_in = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+
+tsrc_in = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+rtime_in = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+its_in = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+
+stk_in = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+dip_in = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+rak_in = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+mom_in = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+
+for(isrc=0;isrc<psrc->nsource;isrc++)
+   rtime_in[isrc] = *tz;
+ 
+mstpar("xsrc","vd",ixs_in);
+mstpar("ysrc","vd",iys_in);
+mstpar("zsrc","vd",izs_in);
+mstpar("strike","vf",stk_in);
+mstpar("dip","vf",dip_in);
+mstpar("rake","vf",rak_in);
+getpar("rtime","vf",rtime_in);
+
+mstpar("moment","f",&dc->moment);
+
+getpar("modelrot","f",&psrc->modelrot);
+getpar("relative_slip","d",&psrc->relative_slip);
+getpar("absolute_slip","d",&psrc->absolute_slip);
+
+if(psrc->nsource > 1)
+   {
+   mstpar("tsrc","vf",tsrc_in);
+   mstpar("momwgts","vf",mom_in);
+
+   invdt = 1.0/(*dt);
+   sum = 0.0;
+   for(isrc=0;isrc<psrc->nsource;isrc++)
+      {
+      its_in[isrc] = tsrc_in[isrc]*invdt;
+      sum = sum + mom_in[isrc];
+      }
+
+   sum = 1.0/sum;
+   for(isrc=0;isrc<psrc->nsource;isrc++)
+      mom_in[isrc] = sum*mom_in[isrc];
+   }
+else
+   {
+   its_in[0] = 0;
+   mom_in[0] = 1.0;
+   }
+
+psrc->ix = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->iy = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->iz = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->it = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->stfindx = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->rtime = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+
+dc->strike  = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+dc->dip     = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+dc->rake    = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+dc->momwgts = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+dc->itsrc = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+
+isrc = 0;
+for(i=0;i<psrc->nsource;i++)
+   {
+/* extend to +1 for averaging (nov 2018) */
+   if(ixs_in[i] >= ni->ixminus && ixs_in[i] <= (ni->ixplus + 1)
+         && iys_in[i] >= ni->iyminus && iys_in[i] <= (ni->iyplus + 1)
+	    && izs_in[i] >= ni->izminus && izs_in[i] <= (ni->izplus + 1))
+      {
+      psrc->ix[isrc] = ixs_in[i];
+      psrc->iy[isrc] = iys_in[i];
+      psrc->iz[isrc] = izs_in[i];
+      psrc->it[isrc] = its_in[i];
+      psrc->stfindx[isrc] = isrc;
+      psrc->rtime[isrc] = rtime_in[i];
+
+      dc->strike[isrc] = stk_in[i];
+      dc->dip[isrc] = dip_in[i];
+      dc->rake[isrc] = rak_in[i];
+      dc->momwgts[isrc] = mom_in[i];
+      dc->itsrc[isrc] = its_in[i];
+
+      isrc++;
+      }
+   }
+
+psrc->nsource = isrc;
+psrc->nstf = isrc;
+
+if(psrc->nsource)
+   {
+   psrc->ix = (int *) check_realloc (psrc->ix,(psrc->nsource)*sizeof(int));
+   psrc->iy = (int *) check_realloc (psrc->iy,(psrc->nsource)*sizeof(int));
+   psrc->iz = (int *) check_realloc (psrc->iz,(psrc->nsource)*sizeof(int));
+   psrc->it = (int *) check_realloc (psrc->it,(psrc->nsource)*sizeof(int));
+   psrc->stfindx = (int *) check_realloc (psrc->stfindx,(psrc->nsource)*sizeof(int));
+   psrc->rtime = (float *) check_realloc (psrc->rtime,(psrc->nsource)*sizeof(float));
+
+   dc->strike  = (float *) check_realloc (dc->strike,(psrc->nsource)*sizeof(float));
+   dc->dip     = (float *) check_realloc (dc->dip,(psrc->nsource)*sizeof(float));
+   dc->rake    = (float *) check_realloc (dc->rake,(psrc->nsource)*sizeof(float));
+   dc->momwgts = (float *) check_realloc (dc->momwgts,(psrc->nsource)*sizeof(float));
+   dc->itsrc = (int *) check_realloc (dc->itsrc,(psrc->nsource)*sizeof(int));
+   }
+else
+   {
+   free(psrc->ix);
+   free(psrc->iy);
+   free(psrc->iz);
+   free(psrc->it);
+   free(psrc->stfindx);
+   free(psrc->rtime);
+
+   free(dc->strike);
+   free(dc->dip);
+   free(dc->rake);
+   free(dc->momwgts);
+   free(dc->itsrc);
+   }
+
+free(ixs_in);
+free(iys_in);
+free(izs_in);
+
+free(tsrc_in);
+free(rtime_in);
+free(its_in);
+
+free(stk_in);
+free(dip_in);
+free(rak_in);
+free(mom_in);
+}
+
+void init_dcP3_stf(struct pntsrcs *psrc,struct runparamsP3 *rpars,float *stfunc,int nt)
+{
+struct doublecouple *dc;
+struct momenttensor *mt;
+float cosD, sinD, cosL, sinL, cosA, sinA;
+float cos2D, sin2D, cos2A, sin2A;
+float sfac, arg, hcm, invh4, tmom;
+float dt, h, *stfp;
+int i, it;
+
+float half = 0.5;
+float two = 2.0;
+float normf = 1.0e-05; /* convert dyne-cm to Nt-km */
+struct nodeinfo *ni;
+
+ni = &(rpars->ni);
+dc = &psrc->doublec;
+h = rpars->h;
+dt = rpars->dt;
+
+if(psrc->MTaverage == 1)
+   fprintf(stderr,"         - moment-tensor averaged to center source at normal stress node\n");
+else
+   fprintf(stderr,"         - moment-tensor not averaged; shear components offset by 1/2 grid\n");
+
+fflush(stderr);
+
+psrc->momten = (struct momenttensor *) check_malloc ((psrc->nsource)*sizeof(struct momenttensor));
+psrc->MTavg = (struct MT_average_weights *) check_malloc ((psrc->nsource)*sizeof(struct MT_average_weights));
+
+hcm = normf/h;
+hcm = dt*hcm*hcm*hcm;
+
+invh4 = hcm*(dc->moment)*(normf);
+
+fprintf(stderr,"**** Point double-couple source\n");
+fprintf(stderr,"            sources active in this node:\n");
+
+for(i=0;i<psrc->nsource;i++)
+   {
+   dc->strike[i] = dc->strike[i] - psrc->modelrot; /* global to local conversion */
+   mt = &(psrc->momten[i]);
+
+   mt->nt = nt;
+   mt->mxx = (float *) check_malloc (nt*sizeof(float));
+   mt->myy = (float *) check_malloc (nt*sizeof(float));
+   mt->mzz = (float *) check_malloc (nt*sizeof(float));
+   mt->mxy = (float *) check_malloc (nt*sizeof(float));
+   mt->mxz = (float *) check_malloc (nt*sizeof(float));
+   mt->myz = (float *) check_malloc (nt*sizeof(float));
+
+   sfac = invh4*dc->momwgts[i];
+
+   arg = dc->strike[i]*RPERD;
+   cosA = cos(arg);
+   sinA = sin(arg);
+
+   cos2A = cosA*cosA - sinA*sinA;
+   sin2A = two*sinA*cosA;
+
+   arg = dc->dip[i]*RPERD;
+   cosD = cos(arg);
+   sinD = sin(arg);
+
+   cos2D = cosD*cosD - sinD*sinD;
+   sin2D = two*sinD*cosD;
+
+   arg = dc->rake[i]*RPERD;
+   cosL = cos(arg);
+   sinL = sin(arg);
+
+   stfp = stfunc + nt*psrc->stfindx[i];
+
+   if(dc->strike[i]+psrc->modelrot < -999.0)  /* explosion */
+      {
+      for(it=0;it<nt;it++)
+         {
+         mt->mxx[it] = sfac*stfp[it];
+         mt->myy[it] = sfac*stfp[it];
+         mt->mzz[it] = sfac*stfp[it];
+
+         mt->mxy[it] = 0.0;
+         mt->mxz[it] = 0.0;
+         mt->myz[it] = 0.0;
+         }
+      }
+   else
+      {
+      for(it=0;it<nt;it++)
+         {
+         mt->mxx[it] = sfac*(sinD*cosL*sin2A - sin2D*sinL*cosA*cosA)*stfp[it];
+         mt->myy[it] = -sfac*(sinD*cosL*sin2A + sin2D*sinL*sinA*sinA)*stfp[it];
+         mt->mzz[it] = sfac*sin2D*sinL*stfp[it];
+
+         mt->mxy[it] = -sfac*(sinD*cosL*cos2A + half*sin2D*sinL*sin2A)*stfp[it];
+         mt->mxz[it] = -sfac*(cosD*cosL*sinA - cos2D*sinL*cosA)*stfp[it];
+         mt->myz[it] = sfac*(cosD*cosL*cosA + cos2D*sinL*sinA)*stfp[it];
+         }
+      }
+
+/* only print statistics if completely within this node */
+   if(psrc->ix[i] >= ni->ixminus && psrc->ix[i] <= ni->ixplus
+         && psrc->iy[i] >= ni->iyminus && psrc->iy[i] <= ni->iyplus
+	    && psrc->iz[i] >= ni->izminus && psrc->iz[i] <= ni->izplus)
+      {
+      tmom = dc->moment*dc->momwgts[i];
+      fprintf(stderr,"            %d) Mo= %.5e dyne-cm (Mw= %.2f)\n",i,tmom,(2.0/3.0)*log10(tmom)-10.7);
+      }
+
+/* RWG-20181128
+ * Compute weights for MT components, cryptic but efficient for averaging of shear 
+ * components so as to center source at normal stress node 
+*/
+
+   get_MTavg_coefs(psrc,i,ni);
+   }
+
+/* transform to local indexing */
+for(i=0;i<psrc->nsource;i++)
+   {
+   psrc->ix[i] = psrc->ix[i] - ni->nx1;
+   psrc->iy[i] = psrc->iy[i] - ni->ny1;
+   psrc->iz[i] = psrc->iz[i] - ni->nz1;
+
+   if(rpars->freesurf == 1 && ni->minusId_z < 0 && psrc->iz[i] < 1)
+      psrc->iz[i] = 1;
+   }
+
+if(psrc->nsource == 0)
+   fprintf(stderr,"            NONE\n");
+
+fflush(stderr);
+}
+
+void get_pointmt_parP3_ns(struct pntsrcs *psrc,struct runparamsP3 *rp,float *tz,float *dt)
+{
+struct doublecouple *dc;
+struct momenttensor *mt;
+float sum, invdt;
+int isrc, i, nt;
+
+float *Mrr, *Mtt, *Mpp, *Mrt, *Mrp, *Mtp;
+float *Mnn, *Mee, *Mdd, *Mne, *Mnd, *Med;
+float arg, cosA, sinA, cos2A, sin2A;
+
+float rperd = RPERD;
+
+struct nodeinfo *ni;
+int *ixs_in, *iys_in, *izs_in, *its_in;
+float *tsrc_in, *rtime_in;
+
+ni = &(rp->ni);
+dc = &psrc->doublec;
+nt = rp->nt;
+
+ixs_in = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+iys_in = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+izs_in = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+
+tsrc_in = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+rtime_in = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+its_in = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+
+Mrr = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mtt = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mpp = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mrt = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mrp = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mtp = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+
+Mnn = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mee = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mdd = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mne = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Mnd = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+Med = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+
+for(isrc=0;isrc<psrc->nsource;isrc++)
+   rtime_in[isrc] = *tz;
+
+for(isrc=0;isrc<psrc->nsource;isrc++)
+   {
+   Mrr[isrc] = 1.0e-15;
+   Mtt[isrc] = 1.0e-15;
+   Mpp[isrc] = 1.0e-15;
+   Mrt[isrc] = 1.0e-15;
+   Mrp[isrc] = 1.0e-15;
+   Mtp[isrc] = 1.0e-15;
+
+   Mnn[isrc] = 1.0e-15;
+   Mee[isrc] = 1.0e-15;
+   Mdd[isrc] = 1.0e-15;
+   Mne[isrc] = 1.0e-15;
+   Mnd[isrc] = 1.0e-15;
+   Med[isrc] = 1.0e-15;
+   }
+
+mstpar("xsrc","vd",ixs_in);
+mstpar("ysrc","vd",iys_in);
+mstpar("zsrc","vd",izs_in);
+getpar("rtime","vf",rtime_in);
+getpar("modelrot","f",&psrc->modelrot);
+
+getpar("Mrr","vf",Mrr);
+getpar("Mtt","vf",Mtt);
+getpar("Mpp","vf",Mpp);
+getpar("Mrt","vf",Mrt);
+getpar("Mrp","vf",Mrp);
+getpar("Mtp","vf",Mtp);
+
+getpar("Mnn","vf",Mnn);
+getpar("Mee","vf",Mee);
+getpar("Mdd","vf",Mdd);
+getpar("Mne","vf",Mne);
+getpar("Mnd","vf",Mnd);
+getpar("Med","vf",Med);
+
+if(psrc->nsource > 1)
+   {
+   mstpar("tsrc","vf",tsrc_in);
+
+   invdt = 1.0/(*dt);
+   for(isrc=0;isrc<psrc->nsource;isrc++)
+      its_in[isrc] = tsrc_in[isrc]*invdt;
+   }
+else
+   its_in[0] = 0;
+
+if(Mrr[0] > 1.0e-14 || -Mrr[0] > 1.0e-14)
+   {
+   for(isrc=0;isrc<psrc->nsource;isrc++)
+      {
+      Mnn[isrc] = Mtt[isrc];
+      Mee[isrc] = Mpp[isrc];
+      Mdd[isrc] = Mrr[isrc];
+      Mne[isrc] = -Mtp[isrc];
+      Mnd[isrc] = Mrt[isrc];
+      Med[isrc] = -Mrp[isrc];
+      }
+   }
+
+psrc->ix = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->iy = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->iz = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->it = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->stfindx = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+psrc->rtime = (float *) check_malloc ((psrc->nsource)*sizeof(float));
+
+psrc->momten = (struct momenttensor *) check_malloc ((psrc->nsource)*sizeof(struct momenttensor));
+
+dc->itsrc = (int *) check_malloc ((psrc->nsource)*sizeof(int));
+
+arg = (90.0 + psrc->modelrot)*rperd;
+cosA = cos(arg);
+sinA = sin(arg);
+
+cos2A = cosA*cosA - sinA*sinA;
+sin2A = 2.0*sinA*cosA;
+
+isrc = 0;
+for(i=0;i<psrc->nsource;i++)
+   {
+/* extend to +1 for averaging (nov 2018) */
+   if(ixs_in[i] >= ni->ixminus && ixs_in[i] <= (ni->ixplus + 1)
+         && iys_in[i] >= ni->iyminus && iys_in[i] <= (ni->iyplus + 1)
+            && izs_in[i] >= ni->izminus && izs_in[i] <= (ni->izplus + 1))
+      {
+      psrc->ix[isrc] = ixs_in[i];
+      psrc->iy[isrc] = iys_in[i];
+      psrc->iz[isrc] = izs_in[i];
+      psrc->it[isrc] = its_in[i];
+      psrc->stfindx[isrc] = isrc;
+      psrc->rtime[isrc] = rtime_in[i];
+
+      dc->itsrc[isrc] = its_in[i];
+
+      mt = &(psrc->momten[isrc]);
+
+      mt->nt = nt;
+      mt->mxx = (float *) check_malloc (nt*sizeof(float));
+      mt->myy = (float *) check_malloc (nt*sizeof(float));
+      mt->mzz = (float *) check_malloc (nt*sizeof(float));
+      mt->mxy = (float *) check_malloc (nt*sizeof(float));
+      mt->mxz = (float *) check_malloc (nt*sizeof(float));
+      mt->myz = (float *) check_malloc (nt*sizeof(float));
+
+/* 
+ * store moment values in first element for now, later call to init_pointmtP3_stf()
+ * will add in source time function
+ */
+      mt->mxx[0] = Mnn[i]*cosA*cosA + Mee[i]*sinA*sinA + Mne[i]*sin2A;
+      mt->myy[0] = Mnn[i]*sinA*sinA + Mee[i]*cosA*cosA - Mne[i]*sin2A;
+      mt->mzz[0] = Mdd[i];
+      mt->mxy[0] = 0.5*(Mee[i] - Mnn[i])*sin2A + Mne[i]*cos2A;
+      mt->mxz[0] = Mnd[i]*cosA + Med[i]*sinA;
+      mt->myz[0] = -Mnd[i]*sinA + Med[i]*cosA;
+
+      isrc++;
+      }
+   }
+
+psrc->nsource = isrc;
+psrc->nstf = isrc;
+ 
+if(psrc->nsource)
+   {
+   psrc->ix = (int *) check_realloc (psrc->ix,(psrc->nsource)*sizeof(int));
+   psrc->iy = (int *) check_realloc (psrc->iy,(psrc->nsource)*sizeof(int));
+   psrc->iz = (int *) check_realloc (psrc->iz,(psrc->nsource)*sizeof(int));
+   psrc->it = (int *) check_realloc (psrc->it,(psrc->nsource)*sizeof(int));
+   psrc->stfindx = (int *) check_realloc (psrc->stfindx,(psrc->nsource)*sizeof(int));
+   psrc->rtime = (float *) check_realloc (psrc->rtime,(psrc->nsource)*sizeof(float));
+
+   psrc->momten = (struct momenttensor *) check_realloc (psrc->momten,(psrc->nsource)*sizeof(struct momenttensor));
+
+   dc->itsrc = (int *) check_realloc (dc->itsrc,(psrc->nsource)*sizeof(int));
+   }
+else
+   {
+   free(psrc->ix);
+   free(psrc->iy);
+   free(psrc->iz);
+   free(psrc->it);
+   free(psrc->stfindx);
+   free(psrc->rtime);
+
+   free(psrc->momten);
+
+   free(dc->itsrc);
+   }
+
+free(ixs_in);
+free(iys_in);
+free(izs_in);
+
+free(tsrc_in);
+free(rtime_in);
+free(its_in);
+
+free(Mrr);
+free(Mtt);
+free(Mpp);
+free(Mrt);
+free(Mrp);
+free(Mtp);
+
+free(Mnn);
+free(Mee);
+free(Mdd);
+free(Mne);
+free(Mnd);
+free(Med);
+}
+
+void init_pointmtP3_stf(struct pntsrcs *psrc,struct runparamsP3 *rpars,float *stfunc,int nt)
+{
+struct momenttensor *mt;
+float tmom, hcm;
+float dt, h, *stfp;
+float mxx_fac, myy_fac, mzz_fac, mxy_fac, mxz_fac, myz_fac;
+int i, it;
+
+float norm20 = 1.0e-20;
+float normf = 1.0e-05; /* convert dyne-cm to dyne-km */
+struct nodeinfo *ni;
+
+ni = &(rpars->ni);
+h = rpars->h;
+dt = rpars->dt;
+
+if(psrc->MTaverage == 1)
+   fprintf(stderr,"         - moment-tensor averaged to center source at normal stress node\n");
+else
+   fprintf(stderr,"         - moment-tensor not averaged; shear components offset by 1/2 grid\n");
+
+fflush(stderr);
+
+psrc->MTavg = (struct MT_average_weights *) check_malloc ((psrc->nsource)*sizeof(struct MT_average_weights));
+
+hcm = normf/h;
+hcm = dt*hcm*hcm*hcm;
+
+fprintf(stderr,"**** Point moment-tensor source\n");
+fprintf(stderr,"            sources active in this node:\n");
+
+for(i=0;i<psrc->nsource;i++)
+   {
+   mt = &(psrc->momten[i]);
+
+
+/* only print statistics if completely within this node */
+   if(psrc->ix[i] >= ni->ixminus && psrc->ix[i] <= ni->ixplus
+         && psrc->iy[i] >= ni->iyminus && psrc->iy[i] <= ni->iyplus
+	    && psrc->iz[i] >= ni->izminus && psrc->iz[i] <= ni->izplus)
+      {
+      tmom = sqrt( 0.5*(norm20*mt->mxx[0])*(norm20*mt->mxx[0])
+                 + 0.5*(norm20*mt->myy[0])*(norm20*mt->myy[0])
+                 + 0.5*(norm20*mt->mzz[0])*(norm20*mt->mzz[0])
+                     + (norm20*mt->mxy[0])*(norm20*mt->mxy[0])
+                     + (norm20*mt->mxz[0])*(norm20*mt->mxz[0])
+                     + (norm20*mt->myz[0])*(norm20*mt->myz[0]) );
+
+      tmom = tmom/norm20;
+      fprintf(stderr,"            %d) Mo= %.5e dyne-cm (Mw= %.2f)\n",i,tmom,(2.0/3.0)*log10(tmom)-10.7);
+      }
+
+   mxx_fac = normf*hcm*mt->mxx[0];
+   myy_fac = normf*hcm*mt->myy[0];
+   mzz_fac = normf*hcm*mt->mzz[0];
+   mxy_fac = normf*hcm*mt->mxy[0];
+   mxz_fac = normf*hcm*mt->mxz[0];
+   myz_fac = normf*hcm*mt->myz[0];
+
+   stfp = stfunc + nt*psrc->stfindx[i];
+   for(it=0;it<nt;it++)
+      {
+      mt->mxx[it] = mxx_fac*stfp[it];
+      mt->myy[it] = myy_fac*stfp[it];
+      mt->mzz[it] = mzz_fac*stfp[it];
+
+      mt->mxy[it] = mxy_fac*stfp[it];
+      mt->mxz[it] = mxz_fac*stfp[it];
+      mt->myz[it] = myz_fac*stfp[it];
+
+      }
+
+/* RWG-20181128
+ * Compute weights for MT components, cryptic but efficient for averaging of shear
+ * components so as to center source at normal stress node
+*/
+
+   get_MTavg_coefs(psrc,i,ni);
+   }
+
+/* transform to local indexing */
+for(i=0;i<psrc->nsource;i++)
+   {
+   psrc->ix[i] = psrc->ix[i] - ni->nx1;
+   psrc->iy[i] = psrc->iy[i] - ni->ny1;
+   psrc->iz[i] = psrc->iz[i] - ni->nz1;
+
+   if(rpars->freesurf == 1 && ni->minusId_z < 0 && psrc->iz[i] < 1)
+      psrc->iz[i] = 1;
+   }
+
+if(psrc->nsource == 0)
+   fprintf(stderr,"            NONE\n");
+
+fflush(stderr);
+}
+
+void get_MTavg_coefs(struct pntsrcs *psrc,int isrc,struct nodeinfo *ni)
+{
+
+/* first zero everything just to make sure (may not be necessary?) */
+
+psrc->MTavg[isrc].wxx_x0y0z0 = 0.0;
+psrc->MTavg[isrc].wyy_x0y0z0 = 0.0;
+psrc->MTavg[isrc].wzz_x0y0z0 = 0.0;
+
+psrc->MTavg[isrc].wxy_x0y0z0 = 0.0;
+psrc->MTavg[isrc].wxy_xmy0z0 = 0.0;
+psrc->MTavg[isrc].wxy_x0ymz0 = 0.0;
+psrc->MTavg[isrc].wxy_xmymz0 = 0.0;
+
+psrc->MTavg[isrc].wxz_x0y0z0 = 0.0;
+psrc->MTavg[isrc].wxz_xmy0z0 = 0.0;
+psrc->MTavg[isrc].wxz_x0y0zm = 0.0;
+psrc->MTavg[isrc].wxz_xmy0zm = 0.0;
+
+psrc->MTavg[isrc].wyz_x0y0z0 = 0.0;
+psrc->MTavg[isrc].wyz_x0ymz0 = 0.0;
+psrc->MTavg[isrc].wyz_x0y0zm = 0.0;
+psrc->MTavg[isrc].wyz_x0ymzm = 0.0;
+
+/* formulation below does no averaging */
+
+if(psrc->MTaverage == 0)
+   {
+   if(psrc->ix[isrc] >= ni->ixminus && psrc->ix[isrc] <= ni->ixplus
+               && psrc->iy[isrc] >= ni->iyminus && psrc->iy[isrc] <= ni->iyplus
+                  && psrc->iz[isrc] >= ni->izminus && psrc->iz[isrc] <= ni->izplus)
+      {
+      psrc->MTavg[isrc].wxx_x0y0z0 = 1.0;
+      psrc->MTavg[isrc].wyy_x0y0z0 = 1.0;
+      psrc->MTavg[isrc].wzz_x0y0z0 = 1.0;
+
+      psrc->MTavg[isrc].wxy_x0y0z0 = 1.0;
+      psrc->MTavg[isrc].wxy_xmy0z0 = 0.0;
+      psrc->MTavg[isrc].wxy_x0ymz0 = 0.0;
+      psrc->MTavg[isrc].wxy_xmymz0 = 0.0;
+
+      psrc->MTavg[isrc].wxz_x0y0z0 = 1.0;
+      psrc->MTavg[isrc].wxz_xmy0z0 = 0.0;
+      psrc->MTavg[isrc].wxz_x0y0zm = 0.0;
+      psrc->MTavg[isrc].wxz_xmy0zm = 0.0;
+
+      psrc->MTavg[isrc].wyz_x0y0z0 = 1.0;
+      psrc->MTavg[isrc].wyz_x0ymz0 = 0.0;
+      psrc->MTavg[isrc].wyz_x0y0zm = 0.0;
+      psrc->MTavg[isrc].wyz_x0ymzm = 0.0;
+      }
+   }
+
+/* formulation below averages across adjacent nodes to center source at normal stress */
+
+if(psrc->MTaverage == 1)
+   {
+   if(psrc->ix[isrc] >= ni->ixminus && psrc->ix[isrc] <= (ni->ixplus + 1)
+               && psrc->iy[isrc] >= ni->iyminus && psrc->iy[isrc] <= (ni->iyplus + 1)
+                  && psrc->iz[isrc] >= ni->izminus && psrc->iz[isrc] <= (ni->izplus + 1))
+      {
+      psrc->MTavg[isrc].wxx_x0y0z0 = 1.0;
+      psrc->MTavg[isrc].wyy_x0y0z0 = 1.0;
+      psrc->MTavg[isrc].wzz_x0y0z0 = 1.0;
+
+      psrc->MTavg[isrc].wxy_x0y0z0 = 0.25;
+      psrc->MTavg[isrc].wxy_xmy0z0 = 0.25;
+      psrc->MTavg[isrc].wxy_x0ymz0 = 0.25;
+      psrc->MTavg[isrc].wxy_xmymz0 = 0.25;
+
+      psrc->MTavg[isrc].wxz_x0y0z0 = 0.25;
+      psrc->MTavg[isrc].wxz_xmy0z0 = 0.25;
+      psrc->MTavg[isrc].wxz_x0y0zm = 0.25;
+      psrc->MTavg[isrc].wxz_xmy0zm = 0.25;
+
+      psrc->MTavg[isrc].wyz_x0y0z0 = 0.25;
+      psrc->MTavg[isrc].wyz_x0ymz0 = 0.25;
+      psrc->MTavg[isrc].wyz_x0y0zm = 0.25;
+      psrc->MTavg[isrc].wyz_x0ymzm = 0.25;
       }
    }
 }

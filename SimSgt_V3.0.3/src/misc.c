@@ -74,18 +74,18 @@ fflush(stderr);
 
             if(errno != EEXIST)
 	       {
-	       sprintf(str,"makedir() cannot make directory %s, exiting",stmp);
-	       perror(str);
-	       mpi_exit(-1);
+	       fprintf(stderr,"makedir() cannot make directory %s, errno= %d, exiting",stmp,errno);
+	       fflush(stderr);
+	       exit(-1);
 	       }
             }
          }
 
       else if(rtn == -1 && errno != ENOENT) /* some other problem */
          {
-	 sprintf(str,"problem with stat() on %s, exiting",stmp);
-	 perror(str);
-	 mpi_exit(-1);
+	 fprintf(stderr,"problem with stat() on %s, errno= %d, exiting",stmp,errno);
+	 fflush(stderr);
+	 exit(-1);
          }
       }
    j++;
@@ -100,9 +100,9 @@ fflush(stderr);
 rtn = mkdir(stmp,mode);
 if(rtn == -1 && errno != EEXIST)
    {
-   sprintf(str,"makedir() cannot make directory %s, exiting",stmp);
-   perror(str);
-   mpi_exit(-1);
+   fprintf(stderr,"makedir() cannot make directory %s, errno= %d, exiting",stmp,errno);
+   fflush(stderr);
+   exit(-1);
    }
 }
 
@@ -112,6 +112,14 @@ int i;
 
 for(i=0;i<n;i++)
    c[i] = c[i] + r[i];
+}
+
+void init_field_zero(float *x,int n)
+{
+int i;
+
+for(i=0;i<n;i++)
+   x[i] = 0.0;
 }
 
 void init_field_val(float v, float *x,int n)
@@ -194,7 +202,7 @@ cxy = pv + 12*nx*nz;
 cxz = pv + 13*nx*nz;
 cyz = pv + 14*nx*nz;
 
-/*for(i=0;i<nx*nz;i++)
+for(i=0;i<nx*nz;i++)
    {
    vx[0] = vx[0] + rf[0];
    vy[0] = vy[0] + rf[0];
@@ -215,26 +223,7 @@ cyz = pv + 14*nx*nz;
    vx++; vy++; vz++; rf++;
    txx++; tyy++; tzz++; txy++; txz++; tyz++;
    cxx++; cyy++; czz++; cxy++; cxz++; cyz++;
-   }*/
-
-for(i=0; i<nx*nz; i++) {
-   vx[i] = vx[i] + rf[i];
-   vy[i] = vy[i] + rf[i];
-   vz[i] = vz[i] + rf[i];
-   txx[i] = txx[i] + rf[i];
-   tyy[i] = tyy[i] + rf[i];
-   tzz[i] = tzz[i] + rf[i];
-   txy[i] = txy[i] + rf[i];
-   txz[i] = txz[i] + rf[i];
-   tyz[i] = tyz[i] + rf[i];
-   cxx[i] = cxx[i] + rf[i];
-   cyy[i] = cyy[i] + rf[i];
-   czz[i] = czz[i] + rf[i];
-   cxy[i] = cxy[i] + rf[i];
-   cxz[i] = cxz[i] + rf[i];
-   cyz[i] = cyz[i] + rf[i];
-}
-
+   }
 }
 
 void *check_realloc(void *ptr,size_t len)
@@ -245,7 +234,8 @@ ptr = (void *) realloc (ptr,len);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory reallocation error\n");
-   mpi_exit(-1);
+   fflush(stderr);
+   exit(-1);
    }
 
 return(ptr);
@@ -260,7 +250,8 @@ ptr = (void *) malloc (len);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory allocation error\n");
-   mpi_exit(-1);
+   fflush(stderr);
+   exit(-1);
    }
 
 return(ptr);
@@ -285,6 +276,19 @@ int *seed;
 {
 *seed = ((*seed) * 1103515245 + 12345) & 0x7fffffff;
 return((double)(*seed)/1073741824.0 - 1.0);
+}
+
+void dtimes_lite(struct tms tu1,clock_t rt1,struct tms *dtu)
+{
+struct tms tu2;
+clock_t rt2;
+
+rt2 = times(&tu2);
+
+dtu->tms_utime = dtu->tms_utime + tu2.tms_utime - tu1.tms_utime;
+dtu->tms_stime = dtu->tms_stime + tu2.tms_stime - tu1.tms_stime;
+dtu->tms_cutime = dtu->tms_utime + tu2.tms_cutime - tu1.tms_cutime;
+dtu->tms_cstime = dtu->tms_cstime + tu2.tms_cstime - tu1.tms_cstime;
 }
 
 dtimes(tu1,rt1,dtu,drt,ts2,len)
@@ -372,6 +376,80 @@ dtu->tms_utime = 0;
 dtu->tms_stime = 0;
 dtu->tms_cutime = 0;
 dtu->tms_cstime = 0;
+*drt = 0;
+*ts1 = *ts2;
+}
+
+void init_report_2015(clock_t rt0,clock_t *rt1,struct tms *u2,struct tms *u1,struct tms *dtu_mpicalls,struct tms *dtu,clock_t *drt,float *ts2,float *ts1,int report)
+{
+fprintf(stderr,"\nStatus given at initialization and every %d time steps\n",report);
+fprintf(stderr,"All times in seconds\n\n");
+fprintf(stderr,"                       Data Transfer           Transfer & Computation      Cumulative\n");
+fprintf(stderr,"time step       CPU  MPI_only    Mbyte  %%Real        CPU  %%Real            CPU  %%Real\n");
+
+dtu_mpicalls->tms_utime = 0;
+dtu_mpicalls->tms_stime = 0;
+dtu_mpicalls->tms_cutime = 0;
+dtu_mpicalls->tms_cstime = 0;
+
+dtu->tms_utime = 0;
+dtu->tms_stime = 0;
+dtu->tms_cutime = 0;
+dtu->tms_cstime = 0;
+
+*drt = 0;
+*ts2 = 0.0;
+*ts1 = 0.0;
+
+print_report_2015(rt0,rt1,u2,u1,dtu_mpicalls,dtu,drt,ts2,ts1,0);
+}
+
+void print_report_2015(clock_t rt0,clock_t *rt1,struct tms *u2,struct tms *u1,struct tms *dtu_mpicalls,struct tms *dtu,clock_t *drt,float *ts2,float *ts1,int it)
+{
+clock_t rt2;
+float uos, uou, uor;
+float tos, tou, tor;
+
+tou = (float)(dtu->tms_utime)/(float)(sysconf(_SC_CLK_TCK));
+tos = (float)(dtu->tms_stime)/(float)(sysconf(_SC_CLK_TCK));
+tor = (double)(*drt)/(double)(sysconf(_SC_CLK_TCK)) + 1.0e-05;
+
+rt2 = times(u2);
+uou = (float)(u2->tms_utime - u1->tms_utime)/(float)(sysconf(_SC_CLK_TCK));
+uos = (float)(u2->tms_stime - u1->tms_stime)/(float)(sysconf(_SC_CLK_TCK));
+uor = (double)(rt2 - *rt1)/(double)(sysconf(_SC_CLK_TCK));
+
+if(it < 0)
+   fprintf(stderr,"         ");
+else
+   fprintf(stderr,"%9d",it);
+
+fprintf(stderr,"%10.2f",tos + tou);
+fprintf(stderr,"%10.2f",(float)(1.0*dtu_mpicalls->tms_utime + 1.0*dtu_mpicalls->tms_stime)/(float)(1.0*sysconf(_SC_CLK_TCK)));
+fprintf(stderr,"%9.2f",(*ts2)-(*ts1));
+fprintf(stderr,"%7.2f",(tos + tou)/(tor));
+fprintf(stderr,"%11.2f",uos + uou);
+fprintf(stderr,"%7.2f",(uos + uou)/(uor));
+fprintf(stderr,"%14.0f.",(float)(u2->tms_utime + u2->tms_stime)/(float)(sysconf(_SC_CLK_TCK)));
+fprintf(stderr,"%7.2f\n",(double)(u2->tms_utime + u2->tms_stime)/(double)(rt2-rt0));
+fflush(stderr);
+
+u1->tms_utime = u2->tms_utime;
+u1->tms_stime = u2->tms_stime;
+u1->tms_cutime = u2->tms_cutime;
+u1->tms_cstime = u2->tms_cstime;
+*rt1 = rt2;
+
+dtu_mpicalls->tms_utime = 0;
+dtu_mpicalls->tms_stime = 0;
+dtu_mpicalls->tms_cutime = 0;
+dtu_mpicalls->tms_cstime = 0;
+
+dtu->tms_utime = 0;
+dtu->tms_stime = 0;
+dtu->tms_cutime = 0;
+dtu->tms_cstime = 0;
+
 *drt = 0;
 *ts1 = *ts2;
 }
@@ -506,7 +584,8 @@ while(fgets(str,1024,fpr) != NULL)
 if(iflag == 0)
    {
    fprintf(stderr,"**** ERROR: Node '%s %d' not found in tmpdirlist= %s\n",name,rank,list);
-   mpi_exit(-1);
+   fflush(stderr);
+   exit(-1);
    }
 }
 
@@ -518,6 +597,98 @@ if(name[*len-1] == '.')
    name[*len-1] = '\0';
 
 *len = *len - 1;
+}
+
+void get_nodetype_neighbor_topol(struct nodeinfo *ni,char *mode)
+{
+int ip, ipx, ipy, ipz;
+int xv, yv, zv;
+
+ip = 0;
+if(strcmp(mode,"xyz") == 0)
+   {
+   for(ipz=0;ipz<ni->nproc_z;ipz++)
+      {
+      for(ipy=0;ipy<ni->nproc_y;ipy++)
+         {
+         for(ipx=0;ipx<ni->nproc_x;ipx++)
+            {
+	    if(ni->segmentId == ip)
+	       {
+	       ni->procId_x = ipx;
+	       ni->procId_y = ipy;
+	       ni->procId_z = ipz;
+
+	       ni->minusId_x = ip-1;
+	       ni->plusId_x  = ip+1;
+	       ni->minusId_y = ip-(ni->nproc_x);
+	       ni->plusId_y  = ip+(ni->nproc_x);
+	       ni->minusId_z = ip-(ni->nproc_x)*(ni->nproc_y);
+	       ni->plusId_z  = ip+(ni->nproc_x)*(ni->nproc_y);
+	    
+               if(ipx == 0)
+	          ni->minusId_x = -1;
+               if(ipx == (ni->nproc_x - 1))
+	          ni->plusId_x = -1;
+	    
+               if(ipy == 0)
+	          ni->minusId_y = -1;
+               if(ipy == (ni->nproc_y - 1))
+	          ni->plusId_y = -1;
+	    
+               if(ipz == 0)
+	          ni->minusId_z = -1;
+               if(ipz == (ni->nproc_z - 1))
+	          ni->plusId_z = -1;
+	       }
+
+	    ip++;
+            }
+         }
+      }
+   }
+else	/* everything else gets default 'xzy' ordering */
+   {
+   for(ipy=0;ipy<ni->nproc_y;ipy++)
+      {
+      for(ipz=0;ipz<ni->nproc_z;ipz++)
+         {
+         for(ipx=0;ipx<ni->nproc_x;ipx++)
+            {
+	    if(ni->segmentId == ip)
+	       {
+	       ni->procId_x = ipx;
+	       ni->procId_y = ipy;
+	       ni->procId_z = ipz;
+
+	       ni->minusId_x = ip-1;
+	       ni->plusId_x  = ip+1;
+	       ni->minusId_z = ip-(ni->nproc_x);
+	       ni->plusId_z  = ip+(ni->nproc_x);
+	       ni->minusId_y = ip-(ni->nproc_x)*(ni->nproc_z);
+	       ni->plusId_y  = ip+(ni->nproc_x)*(ni->nproc_z);
+	    
+               if(ipx == 0)
+	          ni->minusId_x = -1;
+               if(ipx == (ni->nproc_x - 1))
+	          ni->plusId_x = -1;
+	    
+               if(ipy == 0)
+	          ni->minusId_y = -1;
+               if(ipy == (ni->nproc_y - 1))
+	          ni->plusId_y = -1;
+	    
+               if(ipz == 0)
+	          ni->minusId_z = -1;
+               if(ipz == (ni->nproc_z - 1))
+	          ni->plusId_z = -1;
+	       }
+
+	    ip++;
+            }
+         }
+      }
+   }
 }
 
 void get_nodetype_neighbor(struct nodeinfo *ni)
@@ -708,7 +879,7 @@ return(np);
 void get_n1n2(int flag,struct nodeinfo *ni)
 {
 int i;
-float fslice, fn1, fn2;
+double fslice, fn1, fn2;
 
 /* find nx1,nx2,nx
         ny1,ny2,ny
@@ -720,30 +891,14 @@ float fslice, fn1, fn2;
 
 if(flag == 0)
    {
-   fslice = (float)(ni->globnx)/(float)(ni->nproc_x) + 3.0;
+   fslice = (double)(ni->globnx)/(double)(ni->nproc_x) + 3.0;
    fn1 = -2.0;        /* start at -2 so 1st n2 is i=fslice+1  */
    }
 else
    {
-   fslice = (float)(ni->globnx + (ni->nproc_x-1.0)*4.0)/(float)(ni->nproc_x) - 1.0;
+   fslice = (double)(ni->globnx + (ni->nproc_x-1.0)*4.0)/(double)(ni->nproc_x) - 1.0;
    fn1 = 0.0;
    }
-
-/*
-   RWG 2012-09-04
-   
-   OLD way using loop can create optimization errors 
-
-for(i=0;i<=ni->procId_x;i++)
-   {
-   fn2 = fn1 + fslice;
-
-   ni->nx1 = (int)(fn1 + 0.5);
-   ni->nx2 = (int)(fn2 + 0.5);
-
-   fn1 = fn2 - 3.0;
-   }
-*/
 
 /*
    RWG 2012-09-04
@@ -776,30 +931,14 @@ ni->loc_nx = ni->nx2 - ni->nx1;
 
 if(flag == 0)
    {
-   fslice = (float)(ni->globny)/(float)(ni->nproc_y) + 3.0;
+   fslice = (double)(ni->globny)/(double)(ni->nproc_y) + 3.0;
    fn1 = -2.0;        /* start at -2 so 1st n2 is i=fslice+1  */
    }
 else
    {
-   fslice = (float)(ni->globny + (ni->nproc_y-1.0)*4.0)/(float)(ni->nproc_y) - 1.0;
+   fslice = (double)(ni->globny + (ni->nproc_y-1.0)*4.0)/(double)(ni->nproc_y) - 1.0;
    fn1 = 0.0;
    }
-
-/*
-   RWG 2012-09-04
-   
-   OLD way using loop can create optimization errors 
-
-for(i=0;i<=ni->procId_y;i++)
-   {
-   fn2 = fn1 + fslice;
-
-   ni->ny1 = (int)(fn1 + 0.5);
-   ni->ny2 = (int)(fn2 + 0.5);
-
-   fn1 = fn2 - 3.0;
-   }
-*/
 
 /*
    RWG 2012-09-04
@@ -832,30 +971,14 @@ ni->loc_ny = ni->ny2 - ni->ny1;
 
 if(flag == 0)
    {
-   fslice = (float)(ni->globnz)/(float)(ni->nproc_z) + 3.0;
+   fslice = (double)(ni->globnz)/(double)(ni->nproc_z) + 3.0;
    fn1 = -2.0;        /* start at -2 so 1st n2 is i=fslice+1  */
    }
 else
    {
-   fslice = (float)(ni->globnz + (ni->nproc_z-1.0)*4.0)/(float)(ni->nproc_z) - 1.0;
+   fslice = (double)(ni->globnz + (ni->nproc_z-1.0)*4.0)/(double)(ni->nproc_z) - 1.0;
    fn1 = 0.0;
    }
-
-/*
-   RWG 2012-09-04
-   
-   OLD way using loop can create optimization errors 
-
-for(i=0;i<=ni->procId_z;i++)
-   {
-   fn2 = fn1 + fslice;
-
-   ni->nz1 = (int)(fn1 + 0.5);
-   ni->nz2 = (int)(fn2 + 0.5);
-
-   fn1 = fn2 - 3.0;
-   }
-*/
 
 /*
    RWG 2012-09-04
@@ -1130,7 +1253,7 @@ for(k=0;k<9;k++)
             fprintf(stderr,"mrw= %13.5e\n",m[ix+iz*nx +12*nx*nz]);
 
             fflush(stderr);
-            mpi_exit(-1);
+            exit(-1);
             }
          }
       }

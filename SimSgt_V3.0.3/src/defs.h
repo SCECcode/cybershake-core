@@ -1,8 +1,8 @@
 #define MEM_LIMIT     2048 /* internal memory limit in Mega-bytes */
 #define ORDER            4
 #define ORDERX           2 /* spatial differencing order below iz=izord2 */
-#define N_WAVE_VARS     15 /* number of wave field variables (9 + 6 mem vars)*/
-#define N_MED_VARS      13 /* number of media field variables stored in memory */
+#define N_WAVE_VARS     17 /* number of wave field variables (9 + 6 mem vars + 2 diff coefs)*/
+#define N_MED_VARS      14 /* number of media field variables stored in memory */
 #define N_MEDPROF_VARS   6 /* number of media variables in medprof structure */
 #define NPROFS          20 /* max. number of media profiles */
 #define BASINPROF        1 /* != 0 -> scale vel. profiles with basin depth */
@@ -16,6 +16,7 @@
 /* number of characters for file and directory pathnames */
 #define DIR_STR_LEN   1024
 #define FILE_STR_LEN   2048
+#define MAXLINE   10000
  
 /* dummy flag that is not used as a flag for anything else */
 #define DUMY            -999
@@ -42,9 +43,52 @@
 #define YN              4 /* near iy=ny-1 */
 #define ZZERO           5 /* near iz=0 */
 #define ZN              6 /* near iz=nz-1 */
-#define NBND_PAD        2 /* replicate outer 3 grid points of velocity model
-			     for absorbing boundary stability (2 means 3 
+
+/* RWG 2016-11-07
+   Changed NBND_PAD from 2 to 4 to help with stability issues near boundaries.  Still
+   needs to be fully tested.
+
+   2019-05-07
+   Changed NBND_PAD from 4 to 10 to help with stability issues near boundaries.  Still
+   needs to be fully tested.
+*/
+#define NBND_PAD        10 /* replicate outer 11 grid points of velocity model
+			     for absorbing boundary stability (10 means 11 
 			     because of C-type indexing) */
+
+/* RWG 2017-11-09
+   Replaced NBND_PAD with NBND_PAD_SMOOTH, NPAD_PAD_COPY and NBND_PAD_TOPCOPY
+   
+   Velocity model smoothed to 1D average over (NBND_PAD_SMOOTH - NBND_PAD_COPY) points
+   from absorbing boundary.
+   
+   Velocity model copied over NBND_PAD_COPY points from absorbing boundary.
+   
+   Velocity model replicated over NBND_PAD_TOPCOPY points from free-surface
+   within NBND_PAD_COPY points from absorbing boundary.
+
+   see: mpi_global_prof1d() and pad_medslice_ckvpvsP3_smooth2().
+*/
+#define NBND_PAD_SMOOTH 25
+#define NBND_PAD_TOPCOPY 3
+
+/* RWG 2018-11-02
+   Added NBND_PAD_2NDORDER
+   
+   Use 2nd order operators within NBND_PAD_2NDORDER from absorbing boundaries
+   for now set NBNDPAD_2NDORDER = NBND_PAD_COPY
+   
+   see: setcoefs_pvc()
+   
+   Also, all smoothing of media is skipped, i.e., using pad_medslice_ckvpvsP3_OLD().
+*/
+
+#define NBND_PAD_COPY   10
+/*
+#define NBND_PAD_2NDORDER   10
+*/
+#define NBND_PAD_2NDORDER   -1
+
 #define NBND_ZERO_PLANE 5 /* taper initial plane wave within 5 grid
 		       	     points of x, y, z boundaries */
 #define SKIP_PLANE_Y1	-1 /* skip time update on pvptr[1] plane (in overlap region) */
