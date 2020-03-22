@@ -1315,6 +1315,10 @@ for(iz=izstart;iz<izend;iz++)
    else
       ord = fdc->ordx;
 
+/* XXXXXXXfsurftest
+if(iz<2 && ni->minusId_z == -1) ord = 2;
+*/
+
 /* x derivative */
 
    taup = txx + iz*nx + 2;
@@ -1423,6 +1427,11 @@ Txz(k-2) = -Txz(k+1),   Tyz(k-2) = -Tyz(k+1)
             c1 = 2.0*fdc->c1;
             }
 
+/* XXXXXXXfsurftest
+ */
+c0 = 2.0*fdc->dtoh;
+c1 = 0.0;
+
          for(ix=0;ix<ixend;ix++)
             vp[ix] = vp[ix] + med[ix]*(c0*taup[ix] + c1*taup[ix+nx]);
          }
@@ -1445,6 +1454,11 @@ Txz(k-2) = -Txz(k+1),   Tyz(k-2) = -Tyz(k+1)
             c0 = 2.0*fdc->c0;
             c1 = 2.0*fdc->c1;
             }
+
+/* XXXXXXXfsurftest
+ */
+c0 = 2.0*fdc->dtoh;
+c1 = 0.0;
 
          for(ix=0;ix<nx-2;ix++)
             vp[ix] = vp[ix] + med[ix]*(c0*taup[ix] + c1*taup[ix+nx]);
@@ -1469,6 +1483,8 @@ Txz(k-2) = -Txz(k+1),   Tyz(k-2) = -Tyz(k+1)
    }
 
 /* apply absorbing boundary along x and z edges */
+/* XXXX
+*/
 abs_xzbndP3(nx,nz,pvptr,pbnd,&fdc->dtoh,medptr,ybndflag,fs,intfac,ni);
 
 /* apply boundary condition at iy=0,ny-1 */
@@ -1623,11 +1639,15 @@ if(ybndflag == YZERO) /* set pointers for vx and vz update */
       }
 
    /* apply absorbing boundary along x and z edges */
+   /* XXXX
+   */
    abs_xzbnd1P3(nx,nz,pvptr,pbnd,&fdc->dtoh,medptr,fs,intfac,ni);
    }
 
 /* absorb vx and vz on plane at iy=0,ny-1 */
 /* absorb vy on plane at iy=0,ny-2 */
+/* XXXX
+*/
 abs_ybndP3(nx,nz,pvptr,medptr,pbnd,fdc,fs,ybndflag,intfac,ni);
 }
 
@@ -1746,7 +1766,7 @@ for(iz=izstart;iz<izend;iz++)
 
       if(iz < nz-1) /* txx,tyy,tzz not needed at iz=nz-1 */
          {
-         if(ni->minusId_z == -1 && iz == 1 && fs)
+         if(ni->minusId_z == -1 && iz == 1 && fs && l2mp[nx] < 0.0)
             ordx = 2;
          else
             ordx = ord;
@@ -1807,7 +1827,7 @@ for(iz=izstart;iz<izend;iz++)
 
       if(iz < nz-1) /* txx,tyy,tzz not needed at iz=nz-1 */
          {
-         if((ni->minusId_z == -1 && iz == 1 && fs) || ybndflag == YN)
+         if((ni->minusId_z == -1 && iz == 1 && fs && l2mp[nx] < 0.0) || ybndflag == YN)
             ordx = 2;
          else
             ordx = ord;
@@ -2253,19 +2273,18 @@ if(eflag == 0)
    }
 }
 
-void fsurf_vel(int nx,int nz,float **pvptr,float **medp,struct fdcoefs *fdc,int bndflag)
+void fsurf_vel(int nx,int nz,float **pvptr,float **medp,struct fdcoefs *fdc,int bndflag,struct media_input *mi)
 {
 float *vx0, *vx1, *vx2, *vx3, *vx4;
 float *vy0, *vy1, *vy2, *vy3, *vy4;
 float *vz0, *vz1, *vz2, *vz3;
-float *lp, *l2mp, *mup;
+float *lp, *l2mp, *mraw, *lraw;
 int n1, ip, pstr, pend;
 float a0, a1, sum, ff;
+float ffmin, ffmax;
 float c0xy, c0z, c1, c2xy, c2z;
 
 float two = 2.0;
-
-/* XXXXYYYY */
 
 if(fdc->order == 2)
    {
@@ -2277,13 +2296,48 @@ else if(fdc->order == 4)
    c0xy = -1.0/27.0;
    c0z = -1.0/27.0;
    }
+/* XXXXXXX for stability when Vp/Vs is large, go back to 2nd order 2017-10-20
+c0xy = 0.0;
+c0z = 0.0;
+ */
 
 c1 = 1.0/(1.0 + c0xy);
 c2z = c0z*c1;
 c2xy = c0xy*c1;
 
+/* RWG 2015-12-20
+   Changed coefficients for stability when poisson's ratio less than about 0.2 and
+   sharp velocity contrasts are at free surface.
+
+        ff = [a0 + a1*lam/(lam + 2*mu)]/(a0+a1)
+ 
+   With a0=1.0 and a1=0.0, this effectively means mu->0, which could be justified since point is
+   right on free-surface.
+*/
+/* XXXXYYYY
+*/
+a0 = 1.0;
+a1 = 0.0;
+
+/* RWG 2017-09-25:
+ * go back to original formulation for a0 & a1
+ * seems more stable with high or stongly variable Vp/Vs.
 a0 = 0.0;
 a1 = 1.0;
+*/
+
+/* RWG 2017-09-25:
+ * additional constraint on Vp/Vs used in free surface condition
+*/
+if(mi->vpvs_max_freesurf < 0.0)
+   ffmax = 1.0e+20;
+else
+   ffmax = 1.0 - 2.0/((mi->vpvs_max_freesurf)*(mi->vpvs_max_freesurf));
+
+/*
+*/
+ffmin = 1.0 - 2.0/(1.6*1.6);
+ffmin = 1.0 - 2.0/((mi->vpvs_min_freesurf)*(mi->vpvs_min_freesurf));
 
 sum = 1.0/(a0 + a1);
 
@@ -2310,6 +2364,10 @@ zero(vz0,nx);
 
 l2mp = medp[ip] +            nx + 2;
 lp   = medp[ip] +    nx*nz + nx + 2;
+/*
+*/
+lraw = medp[ip] + 11*nx*nz + nx + 2;
+mraw = medp[ip] + 12*nx*nz + nx + 2;
 
 vx0 = pvptr[ip]   +           nx;
 vx1 = pvptr[ip]   +           nx + 1;
@@ -2327,13 +2385,27 @@ vz2 = pvptr[ip]   + 2*nx*nz +   nx + 2;
 vz3 = pvptr[ip]   + 2*nx*nz + 2*nx + 2;
 
 /* 2nd order at ix=1 boundary */
+/*
 ff = sum*(a0 + a1*lp[-1]/l2mp[-1]);
+*/
+ff = sum*(a0 + a1*lraw[-1]/(lraw[-1]+2.0*mraw[-1]));
+if(ff > ffmax)
+   ff = ffmax;
+if(ff < ffmin)
+   ff = ffmin;
 vz1[-1] = vz2[-1] + ff*(vx2[-1] - vx1[-1] + vy2[-1] - vy1[-1]);
 
 n1 = nx - 3;
 while(n1--)
    {
+   /*
    ff = sum*(a0 + a1*lp[0]/l2mp[0]);
+   */
+   ff = sum*(a0 + a1*lraw[0]/(lraw[0]+2.0*mraw[0]));
+   if(ff > ffmax)
+      ff = ffmax;
+   if(ff < ffmin)
+      ff = ffmin;
 
    vz1[0] = vz2[0] + ff*(vx2[0] - vx1[0] + vy2[0] - vy1[0])
                       + c0z*vz3[0] + c0xy*ff*(vx3[0] - vx0[0] + vy3[0] - vy0[0]);
@@ -2342,10 +2414,18 @@ while(n1--)
    vy0++; vy1++; vy2++; vy3++;
           vz1++; vz2++; vz3++;
    lp++; l2mp++;
+   mraw++; lraw++;
    }
 
 /* 2nd order at ix=nx-1 boundary, remember pointers already incremented */
+/*
 ff = sum*(a0 + a1*lp[0]/l2mp[0]);
+*/
+ff = sum*(a0 + a1*lraw[0]/(lraw[0]+2.0*mraw[0]));
+if(ff > ffmax)
+   ff = ffmax;
+if(ff < ffmin)
+   ff = ffmin;
 vz1[0] = vz2[0] + ff*(vx2[0] - vx1[0] + vy2[0] - vy1[0]);
 
 /* 
@@ -2423,6 +2503,8 @@ if(bndflag == YZERO)
 
    l2mp = medp[ip] +            nx + 1;
    lp   = medp[ip] +    nx*nz + nx + 1;
+lraw = medp[ip] + 11*nx*nz + nx + 1;
+mraw = medp[ip] + 12*nx*nz + nx + 1;
 
    vx1 = pvptr[ip]   +           nx;
    vx2 = pvptr[ip]   +           nx + 1;
@@ -2437,7 +2519,14 @@ if(bndflag == YZERO)
    n1 = nx - 1;
    while(n1--)
       {
+      /*
       ff = sum*(a0 + a1*lp[0]/l2mp[0]);
+      */
+      ff = sum*(a0 + a1*lraw[0]/(lraw[0]+2.0*mraw[0]));
+      if(ff > ffmax)
+         ff = ffmax;
+      if(ff < ffmin)
+         ff = ffmin;
 
       vz1[0] = vz2[0] + ff*(vx2[0] - vx1[0] + vy2[0] - vy1[0]);
 
@@ -2445,6 +2534,1173 @@ if(bndflag == YZERO)
       vy1++; vy2++;
       vz1++; vz2++;
       lp++; l2mp++;
+      mraw++; lraw++;
       }
+   }
+}
+
+/*
+	tstepvP3_pvc() updates the velocity variables vx, vy, and vz for the new
+	time step.  The varibles vx and vz are centered in plane 2 and the
+	variable vy is centered in plane 1.
+	
+	These variables are absorbed
+	at the x, y and z boundaries.
+
+	if iflag=YZERO -> 2nd order y derivative of tyy, affects vy near iy=0;
+                          also calls function tstepvbndP3() to update velocities
+                          at iy=0 boundary.
+	if iflag=YN    -> 2nd order y derivative of tyy, txy and txz, affects
+                          vx, vy and vz near iy=ny-1;  also calls function
+			  tstepvbndP3_pvc() to update vx and vz at iy=ny-1 boundary.
+
+        The "_pvc" means that the FD coefs are spatially variable and contained in
+        the pvfield at offsets of:
+
+          pvptr[?]+15*nx*nz -> c0          differencing coef c0 (2017-10-18)
+          pvptr[?]+16*nx*nz -> c1          differencing coef c1 (2017-10-18)
+*/
+
+void tstepvP3_pvc(int nx,int nz,float **pvptr,float **medptr,float *pbnd,struct fdcoefs *fdc,int fs,int ybndflag,struct interface *intfac,struct nodeinfo *ni)
+{
+float *vx, *vy, *vz, *txx, *tzz, *txz;
+float *tyy0, *tyy1, *tyy2, *tyy3;
+float *txy0, *txy1, *txy2, *txy3;
+float *tyz0, *tyz1, *tyz2, *tyz3;
+float *vxi, *vyi, *vzi;
+float *taup, *vp, *med, *med1, *med2;
+float *tp0, *tp1, *tp2, *tp3;
+float *bxp, *byp, *bzp;
+int ix, iz, ord, ordx, off1, off2, off3;
+int ixend, izstart, izend;
+
+float *c0_plane1, *c0_plane2, *c1_plane1, *c1_plane2;
+float *c0ptr, *c1ptr;
+float c0, c1;
+ 
+/* do interior solution */
+
+bxp  = medptr[2] + 5*nx*nz; /* center on plane 2 for vx */
+byp  = medptr[1] + 6*nx*nz; /* center on plane 1 for vy */
+bzp  = medptr[2] + 7*nx*nz; /* center on plane 2 for vz */
+
+vx  = pvptr[2];
+vy  = pvptr[1] +   nx*nz;   /* center on plane 1 */
+vz  = pvptr[2] + 2*nx*nz;
+txx = pvptr[2] + 3*nx*nz;
+tzz = pvptr[2] + 5*nx*nz;
+txz = pvptr[2] + 7*nx*nz;
+
+tyy0 = pvptr[0] + 4*nx*nz;
+tyy1 = pvptr[1] + 4*nx*nz;
+tyy2 = pvptr[2] + 4*nx*nz;
+tyy3 = pvptr[3] + 4*nx*nz;
+
+txy0 = pvptr[0] + 6*nx*nz;
+txy1 = pvptr[1] + 6*nx*nz;
+txy2 = pvptr[2] + 6*nx*nz;
+txy3 = pvptr[3] + 6*nx*nz;
+
+tyz0 = pvptr[0] + 8*nx*nz;
+tyz1 = pvptr[1] + 8*nx*nz;
+tyz2 = pvptr[2] + 8*nx*nz;
+tyz3 = pvptr[3] + 8*nx*nz;
+
+c0_plane2 = pvptr[2] + 15*nx*nz;   /* center on plane 2 for vx,vz */
+c0_plane1 = pvptr[1] + 15*nx*nz;   /* center on plane 1 for vy */
+c1_plane2 = pvptr[2] + 16*nx*nz;   /* center on plane 2 for vx,vz */
+c1_plane1 = pvptr[1] + 16*nx*nz;   /* center on plane 1 for vy */
+
+/* retain previous time step on inner ring for abs() */
+
+vxi = pbnd + 3*nx*nz;
+vyi = pbnd + 3*nx*nz + 2*(nx+nz);
+vzi = pbnd + 3*nx*nz + 4*(nx+nz);
+
+store_iring(vx,vxi,vy,vyi,vz,vzi,nx,nz);
+
+/* retain previous time step on plane if near iy=0 or iy=ny-1 */
+
+if(ybndflag == YZERO || ybndflag == YN)
+   storev(nx,nz,pvptr,pbnd,ybndflag);
+
+ixend = nx-2;
+if(ni->plusId_x == -1)
+   ixend = nx-3;
+
+izstart = 2;
+if(ni->minusId_z == -1)
+   izstart = 1;
+
+izend = nz-2;
+if(ni->plusId_z == -1)
+   izend = nz-1;
+
+for(iz=izstart;iz<izend;iz++)
+   {
+   if(iz < fdc->izord2)
+      ord = fdc->order;
+   else
+      ord = fdc->ordx;
+
+/* x derivative */
+
+   taup = txx + iz*nx + 2;
+   vp   = vx  + iz*nx + 1;
+   med  = bxp + iz*nx + 1;
+   c0ptr  = c0_plane2 + iz*nx + 1;
+   c1ptr  = c1_plane2 + iz*nx + 1;
+
+   if(ybndflag != SKIP_PLANE_Y2)
+      diff_pvc(ixend,vp,c0ptr,c1ptr,med,taup,taup-1,taup+1,taup-2,fdc,ord,XDERIV);
+
+   taup = txy1 + iz*nx + 1;
+   vp   = vy   + iz*nx + 1;
+   med  = byp  + iz*nx + 1;
+   c0ptr  = c0_plane1 + iz*nx + 1;
+   c1ptr  = c1_plane1 + iz*nx + 1;
+
+   if(ybndflag != SKIP_PLANE_Y1)
+      diff_pvc(nx-2,vp,c0ptr,c1ptr,med,taup,taup-1,taup+1,taup-2,fdc,ord,XDERIV);
+   
+   taup = txz + iz*nx + 1;
+   vp   = vz  + iz*nx + 1;
+   med  = bzp + iz*nx + 1;
+   c0ptr  = c0_plane2 + iz*nx + 1;
+   c1ptr  = c1_plane2 + iz*nx + 1;
+
+   if(iz < nz-2 && ybndflag != SKIP_PLANE_Y2)
+      diff_pvc(nx-2,vp,c0ptr,c1ptr,med,taup,taup-1,taup+1,taup-2,fdc,ord,XDERIV);
+
+/* y derivative */
+
+   tp0 = txy0 + iz*nx + 1;
+   tp1 = txy1 + iz*nx + 1;
+   tp2 = txy2 + iz*nx + 1;
+   tp3 = txy3 + iz*nx + 1;
+   vp  = vx   + iz*nx + 1;
+   med = bxp  + iz*nx + 1;
+   c0ptr = c0_plane2 + iz*nx + 1;
+   c1ptr = c1_plane2 + iz*nx + 1;
+
+   ordx = ord;
+   if(ybndflag == YN) /* true -> near y=ny boundary */
+      ordx = 2;
+
+   if(ybndflag != SKIP_PLANE_Y2)
+      diff_pvc(ixend,vp,c0ptr,c1ptr,med,tp2,tp1,tp3,tp0,fdc,ordx,YDERIV);
+   
+   tp0  = tyy0 + iz*nx + 1;
+   tp1  = tyy1 + iz*nx + 1;
+   tp2  = tyy2 + iz*nx + 1;
+   tp3  = tyy3 + iz*nx + 1;
+   vp   = vy   + iz*nx + 1;
+   med  = byp  + iz*nx + 1;
+   c0ptr  = c0_plane1 + iz*nx + 1;
+   c1ptr  = c1_plane1 + iz*nx + 1;
+   
+   ordx = ord;
+   if(ybndflag == YZERO || ybndflag == YN) /* true -> near y=0 or y=ny boundary */
+      ordx = 2;
+
+   if(ybndflag != SKIP_PLANE_Y1)
+      diff_pvc(nx-2,vp,c0ptr,c1ptr,med,tp2,tp1,tp3,tp0,fdc,ordx,YDERIV);
+
+   tp0 = tyz0 + iz*nx + 1;
+   tp1 = tyz1 + iz*nx + 1;
+   tp2 = tyz2 + iz*nx + 1;
+   tp3 = tyz3 + iz*nx + 1;
+   vp  = vz   + iz*nx + 1;
+   med = bzp  + iz*nx + 1;
+   c0ptr = c0_plane2 + iz*nx + 1;
+   c1ptr = c1_plane2 + iz*nx + 1;
+   
+   ordx = ord;
+   if(iz < nz-2 && ybndflag != SKIP_PLANE_Y2)
+      {
+      if(ybndflag == YN) /* true -> near y=ny boundary */
+         ordx = 2;
+
+      diff_pvc(nx-2,vp,c0ptr,c1ptr,med,tp2,tp1,tp3,tp0,fdc,ordx,YDERIV);
+      }
+   
+/* z derivative */
+
+/* RWG 2012-07-04
+
+For Txz and Tyz, apply fourth-order Dz derivatives at iz=1.  Old way used 2nd-order, which works
+quite well for forward calculations.  But when force is inserted at free-surface (at Vx
+or Vy node) this results in a slight amplification relative to forward calculation (about 10%).
+This was discovered using SGT tests for CyberShake.  Using fourth-order operators for the
+derivatives on the shear stress components reduces the misfit to a couple of percent.
+
+The fourth-order derivatives are computed using anti-symmetry for the shear stress values
+above the free-surface:
+
+Txz(k-1) = -Txz(k),     Tyz(k-1) = -Tyz(k)
+Txz(k-2) = -Txz(k+1),   Tyz(k-2) = -Tyz(k+1)
+
+*/
+/* RWG 2017-10-20
+ 
+  Above implmentation appears to create instabilites when sharp Vp/Vs contrast is at/near surface.
+  Going back to 2nd order seems to help.
+  But must also use 2nd order in fsurf_vel()!!!
+*/
+
+   if(iz == 1 || iz == nz-2)
+      ordx = 2;
+   else
+      ordx = ord;
+
+   taup = txz + iz*nx + 1;
+   vp   = vx  + iz*nx + 1;
+   med  = bxp + iz*nx + 1;
+   c0ptr = c0_plane2 + iz*nx + 1;
+   c1ptr = c1_plane2 + iz*nx + 1;
+
+   if(ybndflag != SKIP_PLANE_Y2)
+      {
+      if(iz == 1)
+         {
+         c0 = 2.0*fdc->dtoh;
+         c1 = 0.0;
+         if(ord == 4)
+            {
+            c0 = 2.0*fdc->c0;
+            c1 = 2.0*fdc->c1;
+            }
+
+/* XXXXXXX go back to 2nd order 2017-10-20
+c0 = 2.0*fdc->dtoh;
+c1 = 0.0;
+ */
+
+         for(ix=0;ix<ixend;ix++)
+            vp[ix] = vp[ix] + med[ix]*(c0*taup[ix] + c1*taup[ix+nx]);
+         }
+      else
+         diff_pvc(ixend,vp,c0ptr,c1ptr,med,taup,taup-nx,taup+nx,taup-2*nx,fdc,ordx,ZDERIV);
+      }
+
+   taup = tyz1 + iz*nx + 1;
+   vp   = vy   + iz*nx + 1;
+   med  = byp  + iz*nx + 1;
+   c0ptr = c0_plane1 + iz*nx + 1;
+   c1ptr = c1_plane1 + iz*nx + 1;
+   
+   if(ybndflag != SKIP_PLANE_Y1)
+      {
+      if(iz == 1)
+         {
+         c0 = 2.0*fdc->dtoh;
+         c1 = 0.0;
+         if(ord == 4)
+            {
+            c0 = 2.0*fdc->c0;
+            c1 = 2.0*fdc->c1;
+            }
+
+/* XXXXXXX go back to 2nd order 2017-10-20
+c0 = 2.0*fdc->dtoh;
+c1 = 0.0;
+ */
+
+         for(ix=0;ix<nx-2;ix++)
+            vp[ix] = vp[ix] + med[ix]*(c0*taup[ix] + c1*taup[ix+nx]);
+         }
+      else
+         diff_pvc(nx-2,vp,c0ptr,c1ptr,med,taup,taup-nx,taup+nx,taup-2*nx,fdc,ordx,ZDERIV);
+      }
+
+   taup = tzz + (iz+1)*nx + 1;
+   vp   = vz  +     iz*nx + 1;
+   med  = bzp +     iz*nx + 1;
+   c0ptr  = c0_plane2 + iz*nx + 1;
+   c1ptr  = c1_plane2 + iz*nx + 1;
+
+   if(iz < nz-2 && ybndflag != SKIP_PLANE_Y2)
+      {
+      if(ni->minusId_z == -1 && iz == 1 && fs)
+         ordx = ord;
+      if(ni->plusId_z == -1 && iz == nz-3)
+         ordx = 2;
+
+      diff_pvc(nx-2,vp,c0ptr,c1ptr,med,taup,taup-nx,taup+nx,taup-2*nx,fdc,ordx,ZDERIV);
+      }
+   }
+
+/* apply absorbing boundary along x and z edges */
+/* XXXX
+*/
+abs_xzbndP3(nx,nz,pvptr,pbnd,&fdc->dtoh,medptr,ybndflag,fs,intfac,ni);
+
+/* apply boundary condition at iy=0,ny-1 */
+if(ybndflag == YZERO || ybndflag == YN)
+   tstepvbndP3_pvc(nx,nz,pvptr,medptr,pbnd,fdc,fs,ybndflag,intfac,ni);
+
+/* do freesurface for vz; vx, vy not needed */
+/* 2012-07-31 do this as separate call from main_mpi.c
+if(ni->minusId_z == -1 && fs)
+   fsurf(nx,nz,pvptr,medptr,ybndflag,VEL);
+*/
+   /*
+   fsurfSHEAR(nx,nz,pvptr,medptr,ybndflag,VEL);
+   */
+}
+
+/*
+	When iflag=YZERO (near iy=0 boundary), tstepvbndP3_pvc() updates the velocity
+        variables vx and vz for the new time step on plane 1 using 2nd order
+        y derivatives.
+      
+	The values of vx, vy and vz on plane 0 (iflag=YZERO) or plane 3
+        (iflag=YN) are updated using an absorbing boundary condition in the
+        function abs_ybndP3().
+
+        The "_pvc" means that the FD coefs are spatially variable and contained in
+        the pvfield at offsets of:
+
+          pvptr[?]+15*nx*nz -> c0          differencing coef c0 (2017-10-18)
+          pvptr[?]+16*nx*nz -> c1          differencing coef c1 (2017-10-18)
+*/
+
+void tstepvbndP3_pvc(int nx,int nz,float **pvptr,float **medptr,float *pbnd,struct fdcoefs *fdc,int fs,int ybndflag,struct interface *intfac,struct nodeinfo *ni)
+{
+float *vx, *vy, *vz, *txx, *tzz, *txz;
+float *txy0, *txy1;
+float *tyz0, *tyz1;
+float *tyy2, *tyy3;
+float *txy2;
+float *tyz2;
+float *vxi, *vyi, *vzi;
+float *taup, *vp, *med;
+float *tp0, *tp1, *tp2, *tp3;
+float *bxp, *byp, *bzp;
+int ix, iz, ord, ordx, off1, off2, off3, ip;
+int ixend, izstart, izend;
+
+float *c0_plane1, *c1_plane1;
+float *c0ptr, *c1ptr;
+ 
+/*
+         ybndflag=YZERO -> do interior solution for vx and vz; vy already done in tstepv().
+         ybndflag=YN    -> go to abs_ybnd(), vx,vy and vz already done in tstepv().
+*/
+
+if(ybndflag == YZERO) /* set pointers for vx and vz update */
+   {
+/* vy, vyi not solved, but needed for store_iring() */
+   bxp = medptr[1] + 5*nx*nz;
+   byp = medptr[1] + 6*nx*nz;
+   bzp = medptr[1] + 7*nx*nz;
+
+   vx  = pvptr[1];
+   vy  = pvptr[1] +   nx*nz;
+   vz  = pvptr[1] + 2*nx*nz;
+   txx = pvptr[1] + 3*nx*nz;
+   tzz = pvptr[1] + 5*nx*nz;
+   txz = pvptr[1] + 7*nx*nz;
+
+   txy0 = pvptr[0] + 6*nx*nz;
+   txy1 = pvptr[1] + 6*nx*nz;
+
+   tyz0 = pvptr[0] + 8*nx*nz;
+   tyz1 = pvptr[1] + 8*nx*nz;
+
+   c0_plane1 = pvptr[1] + 15*nx*nz;
+   c1_plane1 = pvptr[1] + 16*nx*nz;
+ 
+   /* retain previous time step on inner ring for abs() */
+
+   vxi = pbnd + 3*nx*nz;
+   vyi = pbnd + 3*nx*nz + 2*(nx+nz);
+   vzi = pbnd + 3*nx*nz + 4*(nx+nz);
+   store_iring(vx,vxi,vy,vyi,vz,vzi,nx,nz);
+
+   ixend = nx-2;
+   if(ni->plusId_x == -1)
+      ixend = nx-3;
+
+   izstart = 2;
+   if(ni->minusId_z == -1)
+      izstart = 1;
+
+   izend = nz-2;
+   if(ni->plusId_z == -1)
+      izend = nz-1;
+
+   for(iz=izstart;iz<izend;iz++)
+      {
+      if(iz < fdc->izord2)
+         ord = fdc->order;
+      else
+         ord = fdc->ordx;
+
+/* x derivative */
+
+      taup = txx + iz*nx + 2;
+      vp   = vx  + iz*nx + 1;
+      med  = bxp + iz*nx + 1;
+      c0ptr  = c0_plane1 + iz*nx + 1;
+      c1ptr  = c1_plane1 + iz*nx + 1;
+
+      diff_pvc(ixend,vp,c0ptr,c1ptr,med,taup,taup-1,taup+1,taup-2,fdc,ord,XDERIV);
+
+      taup = txz + iz*nx + 1;
+      vp   = vz  + iz*nx + 1;
+      med  = bzp + iz*nx + 1;
+      c0ptr  = c0_plane1 + iz*nx + 1;
+      c1ptr  = c1_plane1 + iz*nx + 1;
+
+      if(iz < nz-2)
+         diff_pvc(nx-2,vp,c0ptr,c1ptr,med,taup,taup-1,taup+1,taup-2,fdc,ord,XDERIV);
+   
+/* 2nd order y derivative */
+
+      tp0 = txy0 + iz*nx + 1;
+      tp1 = txy1 + iz*nx + 1;
+      vp  = vx   + iz*nx + 1;
+      med = bxp  + iz*nx + 1;
+
+      diff(ixend,vp,med,tp1,tp0,taup,taup,fdc,2,YDERIV);
+
+      tp0 = tyz0 + iz*nx + 1;
+      tp1 = tyz1 + iz*nx + 1;
+      vp  = vz   + iz*nx + 1;
+      med = bzp  + iz*nx + 1;
+   
+      if(iz < nz-2)
+         diff(nx-2,vp,med,tp1,tp0,taup,taup,fdc,2,YDERIV);
+   
+/* z derivative */
+
+      if(iz == 1 || iz == nz-2)
+         ordx = 2;
+      else
+         ordx = ord;
+
+      taup = txz + iz*nx + 1;
+      vp   = vx  + iz*nx + 1;
+      med  = bxp + iz*nx + 1;
+      c0ptr  = c0_plane1 + iz*nx + 1;
+      c1ptr  = c1_plane1 + iz*nx + 1;
+
+      diff_pvc(ixend,vp,c0ptr,c1ptr,med,taup,taup-nx,taup+nx,taup-2*nx,fdc,ordx,ZDERIV);
+
+      taup = tzz + (iz+1)*nx + 1;
+      vp   = vz  +     iz*nx + 1;
+      med  = bzp +     iz*nx + 1;
+      c0ptr  = c0_plane1 + iz*nx + 1;
+      c1ptr  = c1_plane1 + iz*nx + 1;
+
+      if(iz < nz-2)
+         {
+      /* only have 4th-order information above free-surface for tzz */
+         if(ni->minusId_z == -1 && iz == 1 && fs)
+            ordx = ord;
+         if(ni->plusId_z == -1 && iz == nz-3)
+            ordx = 2;
+
+         diff_pvc(nx-2,vp,c0ptr,c1ptr,med,taup,taup-nx,taup+nx,taup-2*nx,fdc,ordx,ZDERIV);
+	 }
+      }
+
+   /* apply absorbing boundary along x and z edges */
+   /* XXXX
+   */
+   abs_xzbnd1P3(nx,nz,pvptr,pbnd,&fdc->dtoh,medptr,fs,intfac,ni);
+   }
+
+/* absorb vx and vz on plane at iy=0,ny-1 */
+/* absorb vy on plane at iy=0,ny-2 */
+/* XXXX
+*/
+abs_ybndP3(nx,nz,pvptr,medptr,pbnd,fdc,fs,ybndflag,intfac,ni);
+}
+
+/*
+	tsteppP3_pvc() updates the stress variables txx, tyy, tzz, txy, txz and tyz
+	for the new time step.  The varibles txx, tyy, tzz and txz are centered
+	in plane 2 and the variables txy and tyz are centered in plane 1.
+
+        The "_pvc" means that the FD coefs are spatially variable and contained in
+        the pvfield at offsets of:
+
+          pvptr[?]+15*nx*nz -> c0          differencing coef c0 (2017-10-18)
+          pvptr[?]+16*nx*nz -> c1          differencing coef c1 (2017-10-18)
+*/
+
+void tsteppP3_pvc(int nx,int nz,float **pvptr,float **medptr,struct fdcoefs *fdc,int fs,int ybndflag,int eflag,struct nodeinfo *ni)
+{
+float *vx0, *vx1, *vx2, *vx3;
+float *vy0, *vy1, *vy2, *vy3;
+float *vz0, *vz1, *vz2, *vz3;
+float *txx, *tyy, *tzz, *txy, *txz, *tyz;
+float *cxx, *cyy, *czz, *cxy, *cxz, *cyz;
+float *taup, *vp, *med;
+float *tp1, *tp2, *tp3, *med1, *med2;
+float *cp1, *cp2, *cp3, *pkp, *skp;
+float *vp0, *vp1, *vp2, *vp3;
+float *l2mp, *lp, *mxyp, *mxzp, *myzp;
+float *ak, *pk, *sk, *aky, *sky;
+int ix, iz, ord, ordx, j;
+int izstart, izend;
+
+float *c0_plane1, *c0_plane2, *c1_plane1, *c1_plane2;
+float *c0ptr, *c1ptr;
+
+l2mp  = medptr[2];
+lp    = medptr[2] +   nx*nz;
+mxyp  = medptr[1] + 2*nx*nz; /* centered on plane 1 for txy */
+mxzp  = medptr[2] + 3*nx*nz; /* centered on plane 2 for txz */
+myzp  = medptr[1] + 4*nx*nz; /* centered on plane 1 for tyz */
+
+ak    = medptr[2] +  8*nx*nz;
+aky   = medptr[1] +  8*nx*nz; /* centered on plane 1 for txy,tyz */
+pk    = medptr[2] +  9*nx*nz;
+sk    = medptr[2] + 10*nx*nz;
+sky   = medptr[1] + 10*nx*nz; /* centered on plane 1 for txy,tyz */
+ 
+vx0 = pvptr[0];
+vx1 = pvptr[1];
+vx2 = pvptr[2];
+vx3 = pvptr[3];
+
+vy0 = pvptr[0] +   nx*nz;
+vy1 = pvptr[1] +   nx*nz;
+vy2 = pvptr[2] +   nx*nz;
+vy3 = pvptr[3] +   nx*nz;
+
+vz0 = pvptr[0] + 2*nx*nz;
+vz1 = pvptr[1] + 2*nx*nz;
+vz2 = pvptr[2] + 2*nx*nz;
+vz3 = pvptr[3] + 2*nx*nz;
+
+txx = pvptr[2] + 3*nx*nz;
+tyy = pvptr[2] + 4*nx*nz;
+tzz = pvptr[2] + 5*nx*nz;
+txy = pvptr[1] + 6*nx*nz; /* centered on plane 1 */
+txz = pvptr[2] + 7*nx*nz;
+tyz = pvptr[1] + 8*nx*nz; /* centered on plane 1 */
+
+cxx = pvptr[2] +  9*nx*nz;
+cyy = pvptr[2] + 10*nx*nz;
+czz = pvptr[2] + 11*nx*nz;
+cxy = pvptr[1] + 12*nx*nz; /* centered on plane 1 */
+cxz = pvptr[2] + 13*nx*nz;
+cyz = pvptr[1] + 14*nx*nz; /* centered on plane 1 */
+
+c0_plane2 = pvptr[2] + 15*nx*nz;   /* center on plane 2 for txx, tyy, tzz, txz */
+c0_plane1 = pvptr[1] + 15*nx*nz;   /* center on plane 1 for txy, tyz */
+c1_plane2 = pvptr[2] + 16*nx*nz;   /* center on plane 2 for txx, tyy, tzz, txz */
+c1_plane1 = pvptr[1] + 16*nx*nz;   /* center on plane 1 for txy, tyz */
+
+if(eflag == 0)
+   {
+   if(ybndflag != SKIP_PLANE_Y2)
+      {
+      mv_mult1(txx,cxx,ak,nx*nz);
+      mv_mult1(tyy,cyy,ak,nx*nz);
+      mv_mult1(tzz,czz,ak,nx*nz);
+      mv_mult1(txz,cxz,ak,nx*nz);
+      }
+   if(ybndflag != SKIP_PLANE_Y1)
+      {
+      mv_mult1(txy,cxy,aky,nx*nz);
+      mv_mult1(tyz,cyz,aky,nx*nz);
+      }
+   }
+
+izstart = 2;
+if(ni->minusId_z == -1)
+   izstart = 1;
+
+izend = nz-1;
+if(ni->plusId_z == -1)
+   izend = nz;
+
+for(iz=izstart;iz<izend;iz++)
+   {
+   if(iz < fdc->izord2)
+      ord = fdc->order;
+   else
+      ord = fdc->ordx;
+
+   ordx = ord;
+
+/* x derivative */
+
+   if(ybndflag != SKIP_PLANE_Y2)
+      {
+      tp1  = txx  + iz*nx + 1;
+      tp2  = tyy  + iz*nx + 1;
+      tp3  = tzz  + iz*nx + 1;
+      vp   = vx2  + iz*nx + 1;
+      med1 = l2mp + iz*nx + 1;
+      med2 = lp   + iz*nx + 1;
+      c0ptr = c0_plane2 + iz*nx + 1;
+      c1ptr = c1_plane2 + iz*nx + 1;
+
+      cp1  = cxx  + iz*nx + 1;
+      cp2  = cyy  + iz*nx + 1;
+      cp3  = czz  + iz*nx + 1;
+      pkp  = pk   + iz*nx + 1;
+      skp  = sk   + iz*nx + 1;
+
+      if(iz < nz-1) /* txx,tyy,tzz not needed at iz=nz-1 */
+         {
+         if(ni->minusId_z == -1 && iz == 1 && fs && l2mp[nx] < 0.0)
+            ordx = 2;
+         else
+            ordx = ord;
+
+         if(eflag == 0)
+            diffx_mv_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,cp1,cp2,cp3,med1,med2,pkp,skp,vp,vp-1,vp+1,vp-2,fdc,ordx,XDERIV);
+         else
+            diffx_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,med1,med2,vp,vp-1,vp+1,vp-2,fdc,ordx,XDERIV);
+         }
+
+      taup = txz  + (iz-1)*nx;
+      vp   = vz2  + (iz-1)*nx + 1;
+      med  = mxzp + (iz-1)*nx;
+      c0ptr = c0_plane2 + (iz-1)*nx;
+      c1ptr = c1_plane2 + (iz-1)*nx;
+
+      cp1  = cxz  + (iz-1)*nx;
+      skp  = sk   + (iz-1)*nx;
+
+      if(eflag == 0)
+         diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+      else
+         diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+      }
+
+   if(iz < (nz-1) && ybndflag != SKIP_PLANE_Y1) /* txy not needed at iz = nz-1 */
+      {
+      taup = txy  + iz*nx;
+      vp   = vy1  + iz*nx + 1;
+      med  = mxyp + iz*nx;
+      c0ptr = c0_plane1 + iz*nx;
+      c1ptr = c1_plane1 + iz*nx;
+
+      cp1  = cxy  + iz*nx;
+      skp  = sky  + iz*nx;
+
+      if(eflag == 0)
+         diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+      else
+         diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+      }
+  
+/* y derivative */
+
+   if(ybndflag != SKIP_PLANE_Y2)
+      {
+      tp1  = tyy  + iz*nx + 1;
+      tp2  = tzz  + iz*nx + 1;
+      tp3  = txx  + iz*nx + 1;
+      vp0  = vy0  + iz*nx + 1;
+      vp1  = vy1  + iz*nx + 1;
+      vp2  = vy2  + iz*nx + 1;
+      vp3  = vy3  + iz*nx + 1;
+      med1 = l2mp + iz*nx + 1;
+      med2 = lp   + iz*nx + 1;
+      c0ptr = c0_plane2 + iz*nx + 1;
+      c1ptr = c1_plane2 + iz*nx + 1;
+
+      cp1  = cyy  + iz*nx + 1;
+      cp2  = czz  + iz*nx + 1;
+      cp3  = cxx  + iz*nx + 1;
+      pkp  = pk   + iz*nx + 1;
+      skp  = sk   + iz*nx + 1;
+
+      if(iz < nz-1) /* txx,tyy,tzz not needed at iz=nz-1 */
+         {
+         if((ni->minusId_z == -1 && iz == 1 && fs && l2mp[nx] < 0.0) || ybndflag == YN)
+            ordx = 2;
+         else
+            ordx = ord;
+
+         if(eflag == 0)
+            diffx_mv_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,cp1,cp2,cp3,med1,med2,pkp,skp,vp2,vp1,vp3,vp0,fdc,ordx,YDERIV);
+         else
+            diffx_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,med1,med2,vp2,vp1,vp3,vp0,fdc,ordx,YDERIV);
+         }
+      }
+
+   if(ybndflag != SKIP_PLANE_Y1)
+      {
+      taup = tyz  + (iz-1)*nx + 1;
+      vp0  = vz0  + (iz-1)*nx + 1;
+      vp1  = vz1  + (iz-1)*nx + 1;
+      vp2  = vz2  + (iz-1)*nx + 1;
+      vp3  = vz3  + (iz-1)*nx + 1;
+      med  = myzp + (iz-1)*nx + 1;
+      c0ptr = c0_plane1 + (iz-1)*nx + 1;
+      c1ptr = c1_plane1 + (iz-1)*nx + 1;
+
+      cp1  = cyz  + (iz-1)*nx + 1;
+      skp  = sky  + (iz-1)*nx + 1;
+
+                 /* tyz not needed at ix = nx-1 */
+      if(eflag == 0)
+         diff_mv_pvc(nx-2,taup,c0ptr,c1ptr,cp1,med,skp,vp2,vp1,vp3,vp0,fdc,ord,YDERIV);
+      else
+         diff_pvc(nx-2,taup,c0ptr,c1ptr,med,vp2,vp1,vp3,vp0,fdc,ord,YDERIV);
+
+      if(iz < (nz-1)) /* txy not needed at iz = nz-1 */
+         {
+         taup = txy  + iz*nx;
+         vp0  = vx0  + iz*nx;
+         vp1  = vx1  + iz*nx;
+         vp2  = vx2  + iz*nx;
+         vp3  = vx3  + iz*nx;
+         med  = mxyp + iz*nx;
+         c0ptr = c0_plane1 + iz*nx;
+         c1ptr = c1_plane1 + iz*nx;
+
+         cp1  = cxy  + iz*nx;
+         skp  = sky  + iz*nx;
+
+         if(eflag == 0)
+            diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp2,vp1,vp3,vp0,fdc,ord,YDERIV);
+         else
+            diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp2,vp1,vp3,vp0,fdc,ord,YDERIV);
+         }
+      }
+  
+/* do x-strips: z derivative */
+
+   if(ybndflag != SKIP_PLANE_Y2)
+      {
+      tp1  = tzz  + iz*nx + 1;
+      tp2  = txx  + iz*nx + 1;
+      tp3  = tyy  + iz*nx + 1;
+      vp   = vz2  + iz*nx + 1;
+      med1 = l2mp + iz*nx + 1;
+      med2 = lp   + iz*nx + 1;
+      c0ptr = c0_plane2 + iz*nx + 1;
+      c1ptr = c1_plane2 + iz*nx + 1;
+
+      cp1  = czz  + iz*nx + 1;
+      cp2  = cxx  + iz*nx + 1;
+      cp3  = cyy  + iz*nx + 1;
+      pkp  = pk   + iz*nx + 1;
+      skp  = sk   + iz*nx + 1;
+
+      if(iz < nz-1)
+         {
+         ordx = ord;
+         if(iz == 1 || iz == nz-2)
+            ordx = 2;
+
+vp2 = vp-2*nx;
+/* XXXXYYYY
+*/
+if(iz == 1)
+   {
+   ordx = ord;
+   vp2 = vz2  + (nz-1)*nx + 1;
+   }
+
+         if(eflag == 0)
+            diffx_mv_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,cp1,cp2,cp3,med1,med2,pkp,skp,vp,vp-nx,vp+nx,vp2,fdc,ordx,ZDERIV);
+         else
+            diffx_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,med1,med2,vp,vp-nx,vp+nx,vp2,fdc,ordx,ZDERIV);
+         }
+
+      ordx = ord;
+      if(iz == 1 || iz == nz-1)
+         ordx = 2;
+
+      taup = txz  + (iz-1)*nx;
+      vp   = vx2  +     iz*nx;
+      med  = mxzp + (iz-1)*nx;
+      c0ptr = c0_plane2 + (iz-1)*nx;
+      c1ptr = c1_plane2 + (iz-1)*nx;
+
+      cp1  = cxz  + (iz-1)*nx;
+      skp  = sk   + (iz-1)*nx;
+
+      if(eflag == 0)
+         diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+      else
+         diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+      }
+
+   if(ybndflag != SKIP_PLANE_Y1)
+      {
+      ordx = ord;
+      if(iz == 1 || iz == nz-1)
+         ordx = 2;
+
+      taup = tyz  + (iz-1)*nx + 1;
+      vp   = vy1  +     iz*nx + 1;
+      med  = myzp + (iz-1)*nx + 1;
+      c0ptr = c0_plane1 + (iz-1)*nx + 1;
+      c1ptr = c1_plane1 + (iz-1)*nx + 1;
+
+      cp1  = cyz  + (iz-1)*nx + 1;
+      skp  = sky  + (iz-1)*nx + 1;
+
+                 /* tyz not needed at ix = nx-1 */
+      if(eflag == 0)
+         diff_mv_pvc(nx-2,taup,c0ptr,c1ptr,cp1,med,skp,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+      else
+         diff_pvc(nx-2,taup,c0ptr,c1ptr,med,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+      }
+   }
+
+if(eflag == 0)
+   {
+   if(ybndflag != SKIP_PLANE_Y2)
+      {
+      mv_mult2(txx,cxx,nx*nz);
+      mv_mult2(tyy,cyy,nx*nz);
+      mv_mult2(tzz,czz,nx*nz);
+      mv_mult2(txz,cxz,nx*nz);
+      }
+   if(ybndflag != SKIP_PLANE_Y1)
+      {
+      mv_mult2(txy,cxy,nx*nz);
+      mv_mult2(tyz,cyz,nx*nz);
+      }
+   }
+
+ /* apply 2nd order boundary condition at iy=0,ny-1 */
+if(ybndflag == YZERO || ybndflag == YN)
+   tsteppbndP3_pvc(nx,nz,pvptr,medptr,fdc,fs,ybndflag,eflag,ni);
+
+if(ni->minusId_z == -1 && fs)    /* do freesurface for tzz, txz, and tyz */
+   fsurf(nx,nz,pvptr,medptr,ybndflag,TAU);
+   /*
+   fsurfSHEAR(nx,nz,pvptr,medptr,ybndflag,TAU);
+   */
+}
+
+/*
+	tsteppbndP3_pvc() updates the stress variables txx, tyy, tzz, txy, txz
+        and tyz for the new time step when iy=0 or iy=ny-1.  The varibles
+        txx, tyy, tzz and txz are centered in plane 1,3 when
+        iy=0,ny-1; respectively, and the variables txy and tyz are centered
+        in plane 0,2 when iy=0,ny-1; respectively.  The field txz is not needed
+        when iy=ny-1.
+
+        The "_pvc" means that the FD coefs are spatially variable and contained in
+        the pvfield at offsets of:
+
+          pvptr[?]+15*nx*nz -> c0          differencing coef c0 (2017-10-18)
+          pvptr[?]+16*nx*nz -> c1          differencing coef c1 (2017-10-18)
+*/
+
+void tsteppbndP3_pvc(int nx,int nz,float **pvptr,float **medptr,struct fdcoefs *fdc,int fs,int ybndflag,int eflag,struct nodeinfo *ni)
+{
+float *vx0, *vx1;
+float *vy0, *vy1;
+float *vz0, *vz1;
+float *txx, *tyy, *tzz, *txy, *txz, *tyz;
+float *cxx, *cyy, *czz, *cxy, *cxz, *cyz;
+float *taup, *vp, *med;
+float *tp1, *tp2, *tp3, *med1, *med2;
+float *cp1, *cp2, *cp3, *pkp, *skp;
+float *vp0, *vp1;
+float *l2mp, *lp, *mxyp, *mxzp, *myzp;
+float *ak, *pk, *sk;
+int ix, iz, ord, ordx, ip, ipm;
+int ixend, izstart, izend;
+
+float *c0_plane1, *c0_plane2, *c1_plane1, *c1_plane2;
+float *c0ptr, *c1ptr;
+
+/*
+   ip = 0 when ybndflag = YZERO (iy=0) -> solve all.
+   ip = 2 when ybndflag = YN (iy=ny-1) -> solve only txy and tyz.
+
+   ipm = 1 when ybndflag = YZERO
+   ipm = 0 when ybndflag = YN
+           => this shifts media pointer to be 1 plane inside
+	      boundary (consistent with absorbing boundary condition)
+*/
+
+if(ybndflag == YZERO)
+   {
+   ipm = 1;
+   ip = 0;
+   }
+else if(ybndflag == YN)
+   {
+   ipm = 0;
+   ip = 2;
+   }
+
+l2mp  = medptr[ip+ipm];
+lp    = medptr[ip+ipm] +   nx*nz;
+mxyp  = medptr[ip+ipm] + 2*nx*nz;
+mxzp  = medptr[ip+ipm] + 3*nx*nz;
+myzp  = medptr[ip+ipm] + 4*nx*nz;
+
+ak    = medptr[ip+ipm] +  8*nx*nz;
+pk    = medptr[ip+ipm] +  9*nx*nz;
+sk    = medptr[ip+ipm] + 10*nx*nz;
+
+vx0 = pvptr[ip];
+vx1 = pvptr[ip+1];
+
+vy0 = pvptr[ip]   + nx*nz;
+vy1 = pvptr[ip+1] + nx*nz;
+
+vz0 = pvptr[ip]   + 2*nx*nz;
+vz1 = pvptr[ip+1] + 2*nx*nz;
+
+txx = pvptr[ip+1] + 3*nx*nz;
+tyy = pvptr[ip+1] + 4*nx*nz;
+tzz = pvptr[ip+1] + 5*nx*nz;
+txy = pvptr[ip]   + 6*nx*nz; /* centered on plane 0,2 */
+txz = pvptr[ip+1] + 7*nx*nz;
+tyz = pvptr[ip]   + 8*nx*nz; /* centered on plane 0,2 */
+
+cxx = pvptr[ip+1] +  9*nx*nz;
+cyy = pvptr[ip+1] + 10*nx*nz;
+czz = pvptr[ip+1] + 11*nx*nz;
+cxy = pvptr[ip]   + 12*nx*nz; /* centered on plane 0,2 */
+cxz = pvptr[ip+1] + 13*nx*nz;
+cyz = pvptr[ip]   + 14*nx*nz; /* centered on plane 0,2 */
+
+c0_plane2 = pvptr[ip+1] + 15*nx*nz;   /* center on plane ip+1 for txx, tyy, tzz, txz */
+c0_plane1 = pvptr[ip]   + 15*nx*nz;   /* center on plane ip for txy, tyz */
+c1_plane2 = pvptr[ip+1] + 16*nx*nz;   /* center on plane ip+1 for txx, tyy, tzz, txz */
+c1_plane1 = pvptr[ip]   + 16*nx*nz;   /* center on plane ip for txy, tyz */
+
+if(eflag == 0)
+   {
+   mv_mult1(txx,cxx,ak,nx*nz);
+   mv_mult1(tyy,cyy,ak,nx*nz);
+   mv_mult1(tzz,czz,ak,nx*nz);
+   mv_mult1(txy,cxy,ak,nx*nz);
+   mv_mult1(txz,cxz,ak,nx*nz);
+   mv_mult1(tyz,cyz,ak,nx*nz);
+   }
+
+izstart = 2;
+if(ni->minusId_z == -1)
+   izstart = 1;
+
+izend = nz-1;
+if(ni->plusId_z == -1)
+   izend = nz;
+
+for(iz=izstart;iz<izend;iz++)
+   {
+   if(iz < fdc->izord2)
+      ord = fdc->order;
+   else
+      ord = fdc->ordx;
+
+/* x derivative */
+
+   if(ybndflag != YN) /* txx,tyy,tzz not needed at iy=ny-1 */
+      {
+      tp1  = txx  + iz*nx + 1;
+      tp2  = tyy  + iz*nx + 1;
+      tp3  = tzz  + iz*nx + 1;
+      vp   = vx1  + iz*nx + 1;
+      med1 = l2mp + iz*nx + 1;
+      med2 = lp   + iz*nx + 1;
+      c0ptr = c0_plane2 + iz*nx + 1;
+      c1ptr = c1_plane2 + iz*nx + 1;
+
+      cp1  = cxx  + iz*nx + 1;
+      cp2  = cyy  + iz*nx + 1;
+      cp3  = czz  + iz*nx + 1;
+      pkp  = pk   + iz*nx + 1;
+      skp  = sk   + iz*nx + 1;
+
+      if(iz < nz-1) /* txx,tyy,tzz not needed at iz=nz-1 */
+	 {
+	 if(eflag == 0)
+            diffx_mv_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,cp1,cp2,cp3,med1,med2,pkp,skp,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+	 else
+            diffx_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,med1,med2,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+	 }
+      }
+
+   if(iz < (nz-1)) /* txy not needed at iz = nz-1 */
+      {
+      taup = txy  + iz*nx;
+      vp   = vy0  + iz*nx + 1;
+      med  = mxyp + iz*nx;
+      c0ptr = c0_plane1 + iz*nx;
+      c1ptr = c1_plane1 + iz*nx;
+
+      cp1  = cxy  + iz*nx;
+      skp  = sk   + iz*nx;
+
+      if(eflag == 0)
+         diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+      else
+         diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+      }
+
+   if(ybndflag == YZERO) /* txz not needed at iy = ny-1 */
+      {
+      taup = txz  + (iz-1)*nx;
+      vp   = vz1  + (iz-1)*nx + 1;
+      med  = mxzp + (iz-1)*nx;
+      c0ptr = c0_plane2 + (iz-1)*nx;
+      c1ptr = c1_plane2 + (iz-1)*nx;
+
+      cp1  = cxz  + (iz-1)*nx;
+      skp  = sk   + (iz-1)*nx;
+
+      if(eflag == 0)
+         diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+      else
+         diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp,vp-1,vp+1,vp-2,fdc,ord,XDERIV);
+      }
+  
+/* y derivative */
+
+   if(ybndflag != YN) /* txx,tyy,tzz not needed at iy=ny-1 */
+      {
+      tp1  = tyy  + iz*nx + 1;
+      tp2  = tzz  + iz*nx + 1;
+      tp3  = txx  + iz*nx + 1;
+      vp0  = vy0  + iz*nx + 1;
+      vp1  = vy1  + iz*nx + 1;
+      med1 = l2mp + iz*nx + 1;
+      med2 = lp   + iz*nx + 1;
+      c0ptr = c0_plane2 + iz*nx + 1;
+      c1ptr = c1_plane2 + iz*nx + 1;
+
+      cp1  = cyy  + iz*nx + 1;
+      cp2  = czz  + iz*nx + 1;
+      cp3  = cxx  + iz*nx + 1;
+      pkp  = pk   + iz*nx + 1;
+      skp  = sk   + iz*nx + 1;
+
+      if(iz < nz-1) /* txx,tyy,tzz not needed at iz=nz-1 */
+	 {
+	 if(eflag == 0)
+            diffx_mv_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,cp1,cp2,cp3,med1,med2,pkp,skp,vp1,vp0,vp,vp,fdc,2,YDERIV);
+	 else
+            diffx_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,med1,med2,vp1,vp0,vp,vp,fdc,2,YDERIV);
+	 }
+      }
+
+   taup = tyz  + (iz-1)*nx + 1;
+   vp0  = vz0  + (iz-1)*nx + 1;
+   vp1  = vz1  + (iz-1)*nx + 1;
+   med  = myzp + (iz-1)*nx + 1;
+   c0ptr = c0_plane1 + (iz-1)*nx + 1;
+   c1ptr = c1_plane1 + (iz-1)*nx + 1;
+
+   cp1  = cyz  + (iz-1)*nx + 1;
+   skp  = sk   + (iz-1)*nx + 1;
+
+                 /* tyz not needed at ix = nx-1 */
+
+   if(eflag == 0)
+      diff_mv_pvc(nx-2,taup,c0ptr,c1ptr,cp1,med,skp,vp1,vp0,vp,vp,fdc,2,YDERIV);
+   else
+      diff_pvc(nx-2,taup,c0ptr,c1ptr,med,vp1,vp0,vp,vp,fdc,2,YDERIV);
+
+   if(iz < (nz-1)) /* txy not needed at iz = nz-1 */
+      {
+      taup = txy  + iz*nx;
+      vp0  = vx0  + iz*nx;
+      vp1  = vx1  + iz*nx;
+      med  = mxyp + iz*nx;
+      c0ptr = c0_plane1 + iz*nx;
+      c1ptr = c1_plane1 + iz*nx;
+
+      cp1  = cxy  + iz*nx;
+      skp  = sk   + iz*nx;
+
+      if(eflag == 0)
+         diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp1,vp0,vp,vp,fdc,2,YDERIV);
+      else
+         diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp1,vp0,vp,vp,fdc,2,YDERIV);
+      }
+  
+/* z derivative */
+
+   if(ybndflag != YN) /* txx,tyy,tzz not needed at iy=ny-1 */
+      {
+      tp1  = tzz  + iz*nx + 1;
+      tp2  = txx  + iz*nx + 1;
+      tp3  = tyy  + iz*nx + 1;
+      vp   = vz1  + iz*nx + 1;
+      med1 = l2mp + iz*nx + 1;
+      med2 = lp   + iz*nx + 1;
+      c0ptr = c0_plane2 + iz*nx + 1;
+      c1ptr = c1_plane2 + iz*nx + 1;
+
+      cp1  = czz  + iz*nx + 1;
+      cp2  = cxx  + iz*nx + 1;
+      cp3  = cyy  + iz*nx + 1;
+      pkp  = pk   + iz*nx + 1;
+      skp  = sk   + iz*nx + 1;
+
+      if(iz < nz-1)
+         {
+         if(iz == 1 || iz == nz-2)
+            ordx = 2;
+         else
+            ordx = ord;
+
+	 if(eflag == 0)
+            diffx_mv_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,cp1,cp2,cp3,med1,med2,pkp,skp,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+	 else
+            diffx_pvc(nx-2,tp1,tp2,tp3,c0ptr,c1ptr,med1,med2,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+         }
+      }
+
+   if(iz == 1 || iz == nz-1)
+      ordx = 2;
+   else
+      ordx = ord;
+
+   if(ybndflag == YZERO) /* txz not needed at iy = ny-1 */
+      {
+      taup = txz  + (iz-1)*nx;
+      vp   = vx1  +     iz*nx;
+      med  = mxzp + (iz-1)*nx;
+      c0ptr = c0_plane2 + (iz-1)*nx;
+      c1ptr = c1_plane2 + (iz-1)*nx;
+
+      cp1  = cxz  + (iz-1)*nx;
+      skp  = sk   + (iz-1)*nx;
+
+      if(eflag == 0)
+         diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+      else
+         diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+      }
+
+   taup = tyz  + (iz-1)*nx + 1;
+   vp   = vy0  +     iz*nx + 1;
+   med  = myzp + (iz-1)*nx + 1;
+   c0ptr = c0_plane1 + (iz-1)*nx + 1;
+   c1ptr = c1_plane1 + (iz-1)*nx + 1;
+
+   cp1  = cyz  + (iz-1)*nx + 1;
+   skp  = sk   + (iz-1)*nx + 1;
+
+                 /* tyz not needed at ix = nx-1 */
+   if(eflag == 0)
+      diff_mv_pvc(nx-1,taup,c0ptr,c1ptr,cp1,med,skp,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+   else
+      diff_pvc(nx-1,taup,c0ptr,c1ptr,med,vp,vp-nx,vp+nx,vp-2*nx,fdc,ordx,ZDERIV);
+   }
+
+if(eflag == 0)
+   {
+   mv_mult2(txx,cxx,nx*nz);
+   mv_mult2(tyy,cyy,nx*nz);
+   mv_mult2(tzz,czz,nx*nz);
+   mv_mult2(txy,cxy,nx*nz);
+   mv_mult2(txz,cxz,nx*nz);
+   mv_mult2(tyz,cyz,nx*nz);
    }
 }

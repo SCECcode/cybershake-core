@@ -213,19 +213,22 @@ struct tsheader_proc  /* structure for individual processor time slice header */
    float modellon;  /* longitude of model origin                            */
    };
 
-struct tsheaderP3    /* structure for P3 time slice header information */
+struct tsheader_procP3    /* structure for P3 individual processor time slice header */
    {
-   int loc_np;      /* total of points in local time slice, loc_np=loc_na*loc_nb */
-   int loc_na;      /* local number of points in fast direction */
-   int loc_nb;      /* local number of points in slow direction */
-   int globnp;      /* global total of points for entire time slice, globnp=globna*globnb */
-   int globna;      /* global number of points in fast direction */
-   int globnb;      /* global number of points in slow direction */
-   int na1;         /* global index of first point in fast direction */
-   int nb1;         /* global index of first point in slow direction */
+   int ix0;     /* global index of first output point in x direction */
+   int iy0;     /* global index of first output point in y direction */
+   int iz0;     /* global index of first output point in z direction */
+   int it0;     /* global index of first output point in time direction */
+   int loc_nx;      /* local number of output points in x direction */
+   int loc_ny;      /* local number of output points in y direction */
+   int loc_nz;      /* local number of output points in z direction */
+   int nx;     /* global number of output points in x direction */
+   int ny;     /* global number of output points in y direction */
+   int nz;     /* global number of output points in z direction */
    int nt;          /* number of time points in time slice                  */
-   float da;        /* grid spacing in fast direction                       */
-   float db;        /* grid spacing in slow direction                       */
+   float dx;       /* grid spacing in x direction                       */
+   float dy;       /* grid spacing in y direction                       */
+   float dz;       /* grid spacing in z direction                       */
    float dt;        /* time sampling                                        */
    float modelrot;  /* rotation of y-axis from south (clockwise positive)   */
    float modellat;  /* latitude of model origin                             */
@@ -275,6 +278,7 @@ struct tsoutputparams       /* structure for time slice output with buffering */
    int nz;
    int np;
    int ntout;
+   int ncomp;
    int fdw;
    int iyleft;     /* global iy of first 'responsible' plane in this node */
    int iyright;    /* global iy of last  'responsible' plane in this node */
@@ -399,6 +403,7 @@ struct outputfields       /* structure for output fields */
    int ts_xy;
    int ts_xz;
    int ts_yz;
+   int ts_xyz;	/* for entire volume */
    int ix_ts;
    int iy_ts;
    int iz_ts;
@@ -415,6 +420,7 @@ struct outputfields       /* structure for output fields */
    struct tsoutputparams xyslice;  /* xy time slice */
    struct tsoutputparams xzslice;  /* xz time slice */
    struct tsoutputparams yzslice;  /* yz time slice */
+   struct tsoutputparams xyzslice;  /* xyz volume time slice */
    };
  
 struct statseis
@@ -442,7 +448,7 @@ struct medprof
    float *dep;
    };
  
-struct media_input
+struct media_input20150507
    {
    int model_style;
    struct medstencil *medsten;
@@ -459,6 +465,87 @@ struct media_input
    int dampwidth;
    float qbndmax;
    float qbndmin;
+   };
+
+struct perturb_media
+   {
+   char pertbfile[1024];
+   int nx_pertb;
+   int ny_pertb;
+   int nz_pertb;
+   float *vp1d;
+   float *vs1d;
+   float *dn1d;
+   float *qp1d;
+   float *qs1d;
+   float vp_scale_factor;
+   float vs_scale_factor;
+   float den_scale_factor;
+   float vpmax_pertb;
+   float vpmin_pertb;
+   float vsmax_pertb;
+   float vsmin_pertb;
+   float vs_maxlimit_pertb;
+   float vs_minlimit_pertb;
+   };
+
+struct profile1d
+   {
+   float vp;
+   float vs;
+   float dn;
+   float qp;
+   float qs;
+   };
+ 
+struct media_input
+   {
+   int model_style;
+   struct medstencil *medsten;
+   struct medprof *medprofs;
+   int nprof;
+   float xorg;
+   float yorg;
+   char modfile[1024];
+   char pmodfile[1024];
+   char smodfile[1024];
+   char dmodfile[1024];
+   char qmodfile[1024];
+   int media_boundary;
+   int dampwidth;
+   float qbndfac;
+   float qbndmax;
+   float qbndmin;
+   struct perturb_media pertb_med;
+   float vpvs_max_global;	/* 2016-11-07, default = -1.0; see main_mpi.c & genmodel.c */
+   float vpvs_min_global;	/* 2017-11-21 */
+   float vpvs_max_boundary;	/* 2016-11-07, default = 3.0; see main_mpi.c & genmodel.c */
+   float vpvs_min_boundary;	/* 2017-11-21 */
+   float vpvs_max_freesurf;	/* 2017-09-25, default = -1.0; see main_mpi.c & tstep.c [fsurf_vel()] */
+   float vpvs_min_freesurf;	/* 2017-11-21 */
+   float vp_min_boundary;	/* 2016-11-07, default = 1.5; see main_mpi.c & genmodel.c */
+   struct profile1d *prof1d;
+   };
+ 
+struct media_input20161107
+   {
+   int model_style;
+   struct medstencil *medsten;
+   struct medprof *medprofs;
+   int nprof;
+   float xorg;
+   float yorg;
+   char modfile[1024];
+   char pmodfile[1024];
+   char smodfile[1024];
+   char dmodfile[1024];
+   char qmodfile[1024];
+   int media_boundary;
+   int dampwidth;
+   float qbndmax;
+   float qbndmin;
+   struct perturb_media pertb_med;
+   float vpvs_max;	/* added 2016-05-20, default = -1.0; see main_mpi.c & genmodel.c */
    };
  
 struct qvalues
@@ -483,6 +570,34 @@ struct fdcoefs
    float dtoh;
    float c0;
    float c1;
+   };
+ 
+struct vel_minmax
+   {
+   float vpmax;
+   int ix_vpmax;
+   int iy_vpmax;
+   int iz_vpmax;
+   float vpmin;
+   int ix_vpmin;
+   int iy_vpmin;
+   int iz_vpmin;
+   float vsmax;
+   int ix_vsmax;
+   int iy_vsmax;
+   int iz_vsmax;
+   float vsmin;
+   int ix_vsmin;
+   int iy_vsmin;
+   int iz_vsmin;
+   float vpvsmax;
+   int ix_vpvsmax;
+   int iy_vpvsmax;
+   int iz_vpvsmax;
+   float vpvsmin;
+   int ix_vpvsmin;
+   int iy_vpvsmin;
+   int iz_vpvsmin;
    };
 
 struct doublecouple
@@ -544,6 +659,28 @@ struct adjointsource
    float *sz;
    };
 
+struct MT_average_weights
+   {
+   float wxx_x0y0z0;
+   float wyy_x0y0z0;
+   float wzz_x0y0z0;
+
+   float wxy_x0y0z0;
+   float wxy_xmy0z0;
+   float wxy_x0ymz0;
+   float wxy_xmymz0;
+
+   float wxz_x0y0z0;
+   float wxz_xmy0z0;
+   float wxz_x0y0zm;
+   float wxz_xmy0zm;
+
+   float wyz_x0y0z0;
+   float wyz_x0ymz0;
+   float wyz_x0y0zm;
+   float wyz_x0ymzm;
+   };
+
 struct pntsrcs
    {
    int psrc;
@@ -576,7 +713,11 @@ struct pntsrcs
    float area;
    float modelrot;
    char faultfile[512];
-   char adjointfile[512];
+   char adjoint_file[512];
+   char adjoint_comps[512];
+   int adjoint_tfastest;
+   int MTaverage;
+   struct MT_average_weights *MTavg;
    };
  
 struct planesrc

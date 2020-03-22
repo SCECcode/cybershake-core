@@ -1,7 +1,7 @@
 #include "include.h"
 
 int main(int argc, char** argv) {
-	int nt = 40000;
+	int nt = 60000;
 	float dt = 0.005;
 	struct pntsrcs srcs;
 	float tzero = 0.1;
@@ -9,9 +9,9 @@ int main(int argc, char** argv) {
 	char stype[256] = "cos";
 	char name[256] = "source";
 	char stfdir[256] = "Stf";
-	char stf_file[256] = "fx_src";
+	char stf_file[256] = "fx_src_v3.0.8";
 	int bfilt=4;
-	float flo=1.0;
+	float flo=2.0;
 	float fhi=0.0;
 	float tdelay = 0.0;
 	struct runparamsP3 rpars_p3;
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 	srcs.relative_slip = 0;
 	srcs.absolute_slip = 0;
 	srcs.area = 1.0;
-	float it = 1.0/(dt*flo);
+	float it = 3.0/(dt*flo);
 	tdelay = it*dt;
 	rpars_p3.dt = dt;
 	rpars_p3.tdelay = tdelay;
