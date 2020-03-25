@@ -67,8 +67,12 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 
 void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration, int src_dir_hierarchy) {
 	//Construct easy-access task tuples for monitoring status for restart
-	short src_rup_table[MAX_SOURCE_ID][MAX_RUPTURE_ID];
+	//short src_rup_table[MAX_SOURCE_ID][MAX_RUPTURE_ID];
 	int i;
+	short** src_rup_table = check_malloc(sizeof(short*)*MAX_SOURCE_ID);
+	for (i=0; i<MAX_SOURCE_ID; i++) {
+		src_rup_table[i] = check_malloc(sizeof(short)*MAX_RUPTURE_ID);
+	}
 	if (debug) {
 		char buf[256];
 		sprintf(buf, "%d ruptures to be processed.", num_ruptures);
@@ -209,10 +213,20 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 			//close down file pointers and exit
 			if (debug) write_log("Received workers complete message, shutting down.");
 			remove_fp_cache();
+			//Free src_rup_table
+			for (i=0; i<MAX_SOURCE_ID; i++) {
+				free(src_rup_table[i]);
+			}
+			free(src_rup_table);
 			break;
 		} else {
 			fprintf(stderr, "Master received a message with unknown type %d from id %d, aborting.", msg.msg_type, msg.msg_src);
 			if (debug) close_log();
+			//Free src_rup_table
+			for (i=0; i<MAX_SOURCE_ID; i++) {
+				free(src_rup_table[i]);
+			}
+			free(src_rup_table);
 			MPI_Finalize();
 			exit(4);
 		}
