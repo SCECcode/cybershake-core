@@ -19,7 +19,7 @@ import os
 import sys
 import string
 import math
-import MySQLdb
+import pymysql
 
 class faultinfo:
   """
@@ -43,9 +43,9 @@ class boundaryinfo:
 
 def opendb(h,pt,us,pwd,d):
   try:
-    connection = MySQLdb.connect(host=h,port=pt,user=us,passwd=pwd,db=d)
+    connection = pymysql.connect(host=h,port=pt,user=us,passwd=pwd,db=d)
     return connection
-  except MySQLdb.OperationalError,message:
+  except pymysql.Error,message:
     errorMessage = "Error %d:\n%s" % (message [ 0],message[1])
     print errorMessage
     sys.exit(-1)
@@ -54,7 +54,7 @@ def closedb(conn):
   try:
     conn.close()
     return	
-  except MySQLdb.OperationalError,message:
+  except pymysql.Error,message:
     errorMessage = "Error %d:\n%s" % (message [ 0],message[1])
     print errorMessage
     sys.exit(-1)
@@ -65,8 +65,8 @@ def closedb(conn):
 #
 pi= 3.14159
 kplat = 111.19
-#model_rot = -55.0
-model_rot = -30.0
+model_rot = -55.0
+#model_rot = -30.0
 bound_pad = 30.0
 xmin = 1.0e15
 xmax = -1.0e15
@@ -121,7 +121,7 @@ cur = conn.cursor()
 sql_string = "select CS_Site_Lon, CS_Site_Lat, CS_Site_ID from CyberShake_Sites where CS_Short_Name='%s'" % site
 try:
   cur.execute(sql_string)
-except MySQLdb.DatabaseError,e:
+except pymysql.DatabaseError,e:
   print e
   sys.exit(-1)
   
@@ -137,7 +137,7 @@ site_id = int(res[0][2])
 sql_string = "select distinct Ruptures.Source_ID,Ruptures.Rupture_ID,Source_Name,Mag,Prob,Start_Lat,Start_Lon,End_Lat,End_Lon from Ruptures,CyberShake_Site_Ruptures where Ruptures.ERF_ID=%s and Ruptures.ERF_ID=CyberShake_Site_Ruptures.ERF_ID and CyberShake_Site_Ruptures.CS_Site_ID=%s and CyberShake_Site_Ruptures.Source_ID=Ruptures.Source_ID and CyberShake_Site_Ruptures.Rupture_ID=Ruptures.Rupture_ID order by Mag desc"%(erf,site_id)
 try:
   cur.execute(sql_string)
-except MySQLdb.DatabaseError,e:
+except pymysql.DatabaseError,e:
   print e
   sys.exit(-1)
 
