@@ -11,12 +11,12 @@ CC=cc
 FC=ftn
 CFLAGS = -I${GETPARINCL} \
 	-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE \
-	-D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS -O3 -g
+	-D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS -O3 -g -fno-expensive-optimizations
 LIBS = -L${GETPARLIB} -lget -lgfortran -lm
 LDFLAGS = -static
 
 # Uncomment for memcached support
-MEMC = /projects/sciteam/jmz/CyberShake/utils/libmemcached_1.0.18
+MEMC = /gpfs/alpine/proj-shared/geo112/CyberShake/utils/libmemcached_1.0.18
 CFLAGS := $(CFLAGS) -I${MEMC}/include -D_USE_MEMCACHED
 LIBS := ${LIBS} -L${MEMC}/lib -lmemcached
 
