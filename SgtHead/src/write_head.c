@@ -243,7 +243,10 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 	                }
 
 			//Note that flo is now the frequency the source was filtered at
-	                shp->tst = -1.0/flo;
+			//on 3-23-20, we updated this to -3.0 to be consistent with tshift in the impulse generator in v3.0.8
+	                //shp->tst = -1.0/flo;
+	                shp->tst = -3.0/flo;
+	                
         
 	                xx = shp->xsrc*spacing;
         	        yy = shp->ysrc*spacing;
