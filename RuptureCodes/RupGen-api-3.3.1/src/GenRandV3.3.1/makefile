@@ -25,14 +25,14 @@ CFLAGS = -I${GETPAR}/include ${FFTW_POST_LINK_OPTS} \
 #        -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE \
 #        -D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS
 
-UFLAGS = -O3 -g
+UFLAGS = -O3 -g -fno-expensive-optimizations
 
 CC = cc
 
 CFLAGS := $(CFLAGS) ${UFLAGS} ${LF_FLAGS}
 
 # Uncomment for memcached support
-MEMC = /projects/sciteam/jmz/CyberShake/utils/libmemcached_1.0.18
+MEMC = /gpfs/alpine/proj-shared/geo112/CyberShake/utils/libmemcached_1.0.18
 CFLAGS := $(CFLAGS) -I${MEMC}/include -D_USE_MEMCACHED
 LIBS = ${LDLIBS} -L${MEMC}/lib -lmemcached
 
