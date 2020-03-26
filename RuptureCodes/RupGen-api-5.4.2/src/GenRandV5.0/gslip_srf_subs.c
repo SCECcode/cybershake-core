@@ -172,7 +172,7 @@ for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
 srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 
 //If version 2, initialize np_seg to NULL
-printf("Version: %s\n", srf[0].version);
+//printf("Version: %s\n", srf[0].version);
 if (strcmp(srf[0].version, "2.0")==0) {
 	srf[0].np_seg = NULL;
 	srf[0].srf_hcmnt.cbuf = NULL;
