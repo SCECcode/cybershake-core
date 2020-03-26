@@ -434,7 +434,8 @@ float shypo = -1.0e+15;
 float dhypo = -1.0e+15;
 
 int nrup_min = 10;
-float target_hypo_spacing = 3.0;
+//After investigation, selected 4.0
+float target_hypo_spacing = 4.0;
 float hypo_s0, hypo_d0, hypo_ds, hypo_dd;
 int ih_scnt, ih_dcnt, nhypo_s, nhypo_d;
 
@@ -782,6 +783,7 @@ getpar("uniform_prob4hypo","d",&uniform_prob4hypo);
 getpar("nrup_min","d",&nrup_min);
 /* RWG 2014-04-24 target spacing of hypocenters, replaces nrup_scale_fac */
 getpar("target_hypo_spacing","f",&target_hypo_spacing);
+//printf("Using target_hypo_spacing = %f\n", target_hypo_spacing);
 
 getpar("hypo_taperperc_left","f",&hpar_as.x0);
 getpar("hypo_taperval_left","f",&hpar_as.f0);
@@ -837,7 +839,7 @@ if(kmodel < 0)
 if(kmodel != MAI_FLAG && kmodel != INPUT_CORNERS_FLAG && kmodel != FRANKEL_FLAG && kmodel < 100)
    kmodel = SOMERVILLE_FLAG;
 
-fprintf(stderr,"kmodel= %d\n",kmodel);
+//fprintf(stderr,"kmodel= %d\n",kmodel);
 
 if(kmodel == MAI_FLAG)
    {
