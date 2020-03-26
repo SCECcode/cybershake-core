@@ -3,7 +3,7 @@
 import os
 import sys
 
-import MySQLdb
+import pymysql
 
 #server = "focal.usc.edu"
 server = "moment.usc.edu"
@@ -26,7 +26,7 @@ if len(sys.argv)==6:
 	if sys.argv[5]=="-rsqsim":
 		header_rows = 4
 
-conn = MySQLdb.connect(host=server, user=user, passwd=passwd, db=db)
+conn = pymysql.connect(host=server, user=user, passwd=passwd, db=db)
 cur = conn.cursor()
 query = 'select R.Source_ID, R.Rupture_ID from CyberShake_Site_Ruptures R, CyberShake_Sites S where S.CS_Short_Name="%s" and R.CS_Site_ID=S.CS_Site_ID and R.ERF_ID=%d order by R.Source_ID, R.Rupture_ID' % (site, erf_id)
 cur.execute(query)
