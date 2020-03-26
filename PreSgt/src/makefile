@@ -7,7 +7,7 @@ LIBS = -lm -L${GETPAR}/lib -lget -L../../../utils/libcfu_0.03/lib -lcfu
 
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
-I_FLAGS = -I${GETPAR}/include/libget.h -I../../../utils/libcfu_0.03/include
+I_FLAGS = -I${GETPAR}/include -I../../../utils/libcfu_0.03/include
 
 UFLAGS = -O3
 
@@ -15,7 +15,7 @@ include ../../Compilers.mk
 CC = $(MY_MPICC)
 FC = $(MY_FC)
 
-BIN_LIST = gen_sgtgrid gen_sgtgrid_qsort
+BIN_LIST = gen_sgtgrid
 
 ##### compile options
 
@@ -30,9 +30,6 @@ all: $(BIN_LIST)
 	done
 
 gen_sgtgrid: ${COBJS} ${FOBJS}
-	${CC} ${CFLAGS} -o $@ $^ ${LIBS}
-
-gen_sgtgrid_qsort: gen_sgtgrid_qsort.o sacio.o iofunc.o fft1d.o geoproj_subs.o
 	${CC} ${CFLAGS} -o $@ $^ ${LIBS}
 
 clean :
