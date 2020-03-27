@@ -1,9 +1,11 @@
 #define BLOCK_SIZE_X 2
 #define BLOCK_SIZE_Y 2
 //#define BLOCK_SIZE_Z 256
-//#define BLOCK_SIZE_Z 200
-#define BLOCK_SIZE_Z 288
+#define BLOCK_SIZE_Z 200
+//#define BLOCK_SIZE_Z 288
 //#define BLOCK_SIZE_Z 252
+//#define BLOCK_SIZE_Z 250
+//#define BLOCK_SIZE_Z 16
 #define align 32
 #define loop  1 
 
