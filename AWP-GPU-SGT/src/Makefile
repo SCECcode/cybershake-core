@@ -1,13 +1,20 @@
-CC 	= cc
-CFLAGS	= -O3 -Wall
-GFLAGS	= nvcc -use_fast_math -arch=sm_35
+CUDA_HOME = $(subst bin/nvcc,,$(shell which nvcc))
+MPI_HOME=$(dir $(shell which mpicc))../
 
-INCDIR  = -I/opt/nvidia/cudatoolkit/5.0.35.102/include #-I/usr/include/mpich2/
-OBJECTS	= command.o pmcl3d.o grid.o source.o mesh.o cerjan.o swap.o kernel.o io.o sgt.o
-LIB	= -lm -ldl -L/opt/nvidia/cudatoolkit/5.0.35.102/lib64 -lcudart -lmpich
+CC      = mpicc
+CFLAGS = -O3
+#CFLAGS  = -g -O0
+#GFLAGS  = $(CUDA_HOME)bin/nvcc -use_fast_math -arch=sm_70 -O3 -lineinfo -Xptxas -v
+GFLAGS = $(CUDA_HOME)bin/nvcc -O0
+
+INCDIR  = -I$(CUDA_HOME)include -I$(MPI_HOME)/include
+OBJECTS = command.o pmcl3d.o grid.o source.o mesh.o cerjan.o swap.o kernel.o io.o sgt.o
+LIB     = -L$(CUDA_HOME)/lib64 -L$(MPI_HOME)/lib -ldl -lcudart -lmpi_ibm -lm -lpthread -lnvToolsExt -lstdc++
+#LIB = -L$(CUDA_HOME)/lib64 -lcudart -lm
 
 pmcl3d:	$(OBJECTS)
 	$(CC) $(CFLAGS) $(INCDIR) -o	pmcl3d	$(OBJECTS)	$(LIB)
+	cp pmcl3d ../bin/
 
 pmcl3d.o:	pmcl3d.c
 	$(CC) $(CFLAGS) $(INCDIR) -c -o pmcl3d.o	pmcl3d.c		
