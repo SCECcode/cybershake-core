@@ -12,20 +12,20 @@ TEST_DURATION_OBJS = ${DURATION_OBJS} iofunc.o
 
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
-BASE_DIR = /projects/sciteam/baln/CyberShake
+BASE_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake
 GETPAR = ../../Getpar/getpar
 LIBCFU = ${BASE_DIR}/utils/libcfu_0.03
 LDLIBS = -L${GETPAR}/lib -lget -lmemcached -L${BASE_DIR}/utils/libmemcached_1.0.18/lib -L${LIBCFU}/lib -lcfu -lm 
 IFLAGS = -I${GETPAR}/include -I${BASE_DIR}/utils/libmemcached_1.0.18/include -I${LIBCFU}/include 
 
-UFLAGS = -O3 -Wuninitialized -dynamic -g
+UFLAGS = -O3 -Wuninitialized -g -fno-expensive-optimizations
 
 CFLAGS = ${UFLAGS} ${IFLAGS}
 FFLAGS = ${UFLAGS} -ffixed-line-length-132
 #FFLAGS = ${UFLAGS}
 
-CC = cc
-FC = ftn
+CC = mpicc
+FC = mpif77
 
 all: $(TARGETS)
 	for TARGET in $(TARGETS); do \
