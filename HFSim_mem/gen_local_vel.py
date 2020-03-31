@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
 
 if len(sys.argv)<3:
-	print "Usage: %s <1D velocity model> <output>" % sys.argv[0]
+	print("Usage: %s <1D velocity model> <output>" % sys.argv[0])
 	sys.exit(1)
 
 velocity_model = sys.argv[1]
