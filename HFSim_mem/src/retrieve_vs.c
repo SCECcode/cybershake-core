@@ -110,7 +110,7 @@ float ucvm_vsD(float lon, float lat, char* model, int depth) {
 			fprintf(stderr, "UCVM query failed.\n");
 			exit(-3);
 		}
-		//printf("%d: %f\n", i, query_data.cmb.vs);
+		printf("%d: %f\n", i, query_data.cmb.vs);
 		vs_sum += 1.0/query_data.cmb.vs;
 	}
 	float vs = ((float)depth)/vs_sum;

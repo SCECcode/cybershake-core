@@ -6,8 +6,8 @@ HF_SYNTH_OBJS = srf2stoch.o ${HFSIM_OBJS} hfsim.o get_vs30.o
 SITEAMP_OBJS = iofunc.o misc.o fft1d.o
 
 GETPAR_DIR = ../../Getpar/getpar
-RUPGEN_DIR = /projects/sciteam/baln/CyberShake/software/RuptureCodes/RupGen-api-3.3.1
-MEMCACHED_DIR = /projects/sciteam/baln/CyberShake/utils/libmemcached_1.0.18
+RUPGEN_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/RuptureCodes/RupGen-api-5.4.2
+MEMCACHED_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/utils/libmemcached_1.0.18
 
 #UCVM_HOME = /projects/sciteam/baln/CyberShake/software/UCVM/ucvm_14.3.0
 #ETREE_HOME = ${UCVM_HOME}/lib/euclid3
@@ -15,7 +15,7 @@ MEMCACHED_DIR = /projects/sciteam/baln/CyberShake/utils/libmemcached_1.0.18
 #VX_HOME = ${UCVM_HOME}/model/cvmh1191
 #CVMS_HOME = ${UCVM_HOME}/model/cvms4
 #CVMSI_HOME = ${UCVM_HOME}/model/cvms426
-UCVM_HOME = /projects/sciteam/baln/CyberShake/software/UCVM/ucvm-15.10.0
+UCVM_HOME = /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0_01302019
 ETREE_HOME = ${UCVM_HOME}/lib/euclid3
 PROJ4_HOME = ${UCVM_HOME}/lib/proj-4
 VX_HOME = ${UCVM_HOME}/model/cvmh1510
@@ -25,11 +25,26 @@ CVMS5_HOME = ${UCVM_HOME}/model/cvms5
 CCA_HOME = ${UCVM_HOME}/model/cca
 CENCAL_HOME = ${UCVM_HOME}/model/cencal
 
+#For integration with BBP
+BBP_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp
+GP_DIR = ${BBP_DIR}/src/gp
+SRF2STOCH_DIR = ${GP_DIR}/StandRupFormat
+WCC_DIR = ${GP_DIR}/WccFormat/Progs
+HB_HIGH_DIR = ${GP_DIR}/StochSim/V6.0
+
+HF_SYNTH_BBP_OBJS = hfsim_bbp.o ${SRF2STOCH_DIR}/srf2stoch_sub.o get_vs30.o
+HFSIM_BBP_OBJS = ${WCC_DIR}/wcc_getpeak_sub.o ${WCC_DIR}/wcc_siteamp14_sub.o ${HB_HIGH_DIR}/hb_high_v6.0.3_sub.o misc.o iofunc.o ${WCC_DIR}/fft1d.o ${WCC_DIR}/integ_diff_sub.o ${WCC_DIR}/wcc_tfilter_sub.o
+BBP_INC = -I${WCC_DIR} -I${SRF2STOCH_DIR}
+
 #UCVMLIBS = -L${UCVM_HOME}/lib -lucvm -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi -L${PROJ4_HOME}/lib -lproj -L${ETREE_HOME}/lib -letree -Wl,-R${CVMSI_HOME}/lib -Wl,-R${ETREE_HOME}/lib -Wl,-R${PROJ4_HOME}/lib
 UCVMLIBS = -L${UCVM_HOME}/lib -lucvm -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi  -L${CENCAL_HOME}/lib -lcencalvm -L${PROJ4_HOME}/lib -lproj -L${ETREE_HOME}/lib -letree -L${UCVM_HOME}/lib -lucvm -lstdc++ -ldl 
 UCVMINC = -I${UCVM_HOME}/include -I${GETPAR_HOME}/include
 
-LIBS = -lm ${GETPAR_DIR}/lib/libget.a -L${FFTW_DIR} -lfftw3f
+#For calling calculate_rvfac
+PYTHON_LIBS = -lpython2.7
+PYTHON_INC = -I/usr/include/python2.7/
+
+LIBS = -lm ${GETPAR_DIR}/lib/libget.a -L${OLCF_FFTW_ROOT}/lib -lfftw3f -lgfortran
 IFLAGS = -I${GETPAR_DIR}/include -I${RUPGEN_DIR}/include -I${MEMCACHED_DIR}/include
 LDLIBS = -L${RUPGEN_DIR}/lib -lrupgen -L${MEMCACHED_DIR}/lib -lmemcached ${LIBS} -lstdc++ 
 
@@ -38,19 +53,29 @@ LDLIBS = -L${RUPGEN_DIR}/lib -lrupgen -L${MEMCACHED_DIR}/lib -lmemcached ${LIBS}
 # use following for large file capability
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
-UFLAGS = -O3 -Wimplicit-function-declaration -Wl,-upthread_mutex_destroy
+UFLAGS = -O3 -g -Wimplicit-function-declaration -Wl,-upthread_mutex_destroy
 
 FC = gfortran
 CC = gcc
 #FC = ftn
 #CC = cc
 
-CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS}
+CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS} -D_USE_MEMCACHED
 FFLAGS = ${UFLAGS} -ffixed-line-length-132 -finit-local-zero -Wuninitialized
 #FFLAGS = ${UFLAGS} -N 132 -e 0 
 ##### make options
 
-all: hf_synth hf_synth_lite
+all: hf_synth_bbp hf_synth hf_synth_lite
+
+hfsim_bbp.o : hfsim_bbp.c ${HFSIM_BBP_OBJS}	
+	${CC} ${CFLAGS} -c -o hfsim_bbp.o hfsim_bbp.c ${IFLAGS} ${PYTHON_INC} ${BBP_INC}
+
+hf_synth_bbp.o : hf_synth_bbp.c
+	${CC} ${CFLAGS} -c -o hf_synth_bbp.o hf_synth_bbp.c ${BBP_INC}
+
+hf_synth_bbp : hf_synth_bbp.o ${HF_SYNTH_BBP_OBJS}	
+	${CC} ${CFLAGS} -o hf_synth_bbp hf_synth_bbp.o ${HF_SYNTH_BBP_OBJS} ${HFSIM_BBP_OBJS} ${LDLIBS} ${UCVMLIBS} ${PYTHON_LIBS} 
+	cp hf_synth_bbp ../bin/
 
 hf_synth : hf_synth.o ${HF_SYNTH_OBJS}
 	${FC} ${FFLAGS} -o hf_synth hf_synth.o ${HF_SYNTH_OBJS} ${LDLIBS} ${UCVMLIBS}
@@ -95,6 +120,9 @@ wcc_siteamp14 : wcc_siteamp14_standalone.c ${SITEAMP_OBJS}
 
 get_vs30.o : get_vs30.c
 	${CC} ${CFLAGS} -c -o get_vs30.o get_vs30.c ${UCVMINC}
+
+call_calc_rvfac :  call_calc_rvfac.c
+	${CC} -g -O0 -o call_calc_rvfac call_calc_rvfac.c -I/usr/include/python2.7/ -lpython2.7
 
 clean :
 	rm -f ${OBJS} ${GENRAND_OBJS} ${BAILEY_OBJS} ${GEOPROJ_OBJS} *.o
