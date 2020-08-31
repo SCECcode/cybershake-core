@@ -2,17 +2,24 @@ HEADS = structure.h
 OBJS = wcc_siteamp14.o get_vs30.o iofunc.o misc.o integ_diff.o wcc_getpeak.o fft1d.o
 
 GETPAR_DIR = ../../Getpar/getpar
-RUPGEN_DIR = /projects/sciteam/jmz/CyberShake/software/RuptureCodes/RupGen-api-3.3.1
-MEMCACHED_DIR = /projects/sciteam/jmz/CyberShake/utils/libmemcached_1.0.18
+RUPGEN_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/RuptureCodes/RupGen-api-5.4.2
+MEMCACHED_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/utils/libmemcached_1.0.18
 
-UCVM_HOME = /projects/sciteam/jmz/CyberShake/software/UCVM/ucvm_14.3.0
+UCVM_HOME = /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0_01302019
 ETREE_HOME = ${UCVM_HOME}/lib/euclid3
 PROJ4_HOME = ${UCVM_HOME}/lib/proj-4
-VX_HOME = ${UCVM_HOME}/model/cvmh1191
-CVMS_HOME = ${UCVM_HOME}/model/cvms4
+VX_HOME = ${UCVM_HOME}/model/cvmh1510
+CVMS_HOME = ${UCVM_HOME}/model/cvms
 CVMSI_HOME = ${UCVM_HOME}/model/cvms426
+CENCAL_HOME = ${UCVM_HOME}/model/cencal
 
-UCVMLIBS = -L${UCVM_HOME}/lib -lucvm -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi -L${PROJ4_HOME}/lib -lproj -L${ETREE_HOME}/lib -letree
+BBP_HOME = /gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp
+WCC_DIR = ${BBP_HOME}/src/gp/WccFormat/Progs
+
+BBP_OBJS = retrieve_vs.o iofunc.o misc.o ${WCC_DIR}/wcc_siteamp14_sub.o ${WCC_DIR}/integ_diff_sub.o ${WCC_DIR}/wcc_getpeak_sub.o ${WCC_DIR}/fft1d.o
+BBP_INC = -I${WCC_DIR}
+
+UCVMLIBS = -L${UCVM_HOME}/lib -lucvm -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi -L${PROJ4_HOME}/lib -lproj -L${ETREE_HOME}/lib -letree -L${CENCAL_HOME}/lib -lcencalvm
 UCVMINC = -I${UCVM_HOME}/include -I${GETPAR_HOME}/include
 
 LIBS = -lm ${GETPAR_DIR}/lib/libget.a
@@ -27,15 +34,15 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 UFLAGS = -O3 -Wimplicit-function-declaration -Wl,-upthread_mutex_destroy
 #UFLAGS = -g
 
-FC = ftn
-CC = cc
+FC = gfortran
+CC = gcc
 
-CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS}
+CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS} -ldl -lgfortran
 FFLAGS = ${UFLAGS} -ffixed-line-length-132 -finit-local-zero -Wuninitialized
 #FFLAGS = ${UFLAGS} -N 132 -e 0 
 ##### make options
 
-all: lf_site_response
+all: lf_site_response lf_site_response_bbp
 
 test : test.c
 	${CC} ${CFLAGS} -o test test.c
@@ -43,6 +50,13 @@ test : test.c
 lf_site_response : lf_site_response.c ${OBJS}
 	${CC} ${CFLAGS} -o lf_site_response lf_site_response.c ${OBJS} ${LDLIBS} ${UCVMLIBS}
 	cp lf_site_response ../bin/
+
+lf_site_response_bbp : lf_site_response_bbp.c ${BBP_OBJS}
+	${CC} ${CFLAGS} -o lf_site_response_bbp lf_site_response_bbp.c ${BBP_INC} ${UCVMINC} ${BBP_OBJS} ${LDLIBS} ${UCVMLIBS}
+	cp lf_site_response_bbp ../bin/
+
+retrieve_vs.o : retrieve_vs.c
+	${CC} ${CFLAGS} -c -o retrieve_vs.o retrieve_vs.c ${UCVMINC} ${UCVMLIBS}
 
 get_vs30.o : get_vs30.c
 	${CC} ${CFLAGS} -c -o get_vs30.o get_vs30.c ${UCVMINC}
