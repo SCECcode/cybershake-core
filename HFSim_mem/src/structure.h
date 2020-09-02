@@ -8,9 +8,9 @@
 
 //for compatibility with params.h
 #define mmv 60000
-#define LV 1000
-#define NP 100
-#define NQ 600
+#define LV 10
+#define NP 500
+#define NQ 2000
 
 struct statdata
    {
@@ -49,6 +49,7 @@ struct slipfile {
    float* tr;
    float* ti;
    float qfexp;
+   float rvfac;
 };
 
 //All the information needed to regenerate a seismogram
