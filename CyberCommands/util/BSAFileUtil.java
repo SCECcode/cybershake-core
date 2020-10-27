@@ -67,8 +67,11 @@ public class BSAFileUtil {
 	
 	private static void createTotalFileListRotd(File saFile) {
 		File[] rotdList;
+		File[] rotddirsList = null;
 		if (saFile.isDirectory()) {
 			rotdList = saFile.listFiles(new RotDFilenameFilter());
+			//Support for directory hierarchy
+			rotddirsList = saFile.listFiles(new NonCVSDirFileFilter());
 		} else {
 			//just inserting 1 file		totalFileList.addAll(Arrays.asList(zipfilesList));
 			rotdList = new File[1];
@@ -88,6 +91,14 @@ public class BSAFileUtil {
 				System.out.println("\tFilename: " + rotdList[filesIndex].getName());
 			}
 			totalFilenameList.add(rotdList[filesIndex].getName());
+		}
+		if (rotddirsList != null) {
+			for (int dirsIndex=0; dirsIndex<rotddirsList.length; dirsIndex++) {
+				createTotalFileListRotd(rotddirsList[dirsIndex]);
+			}
+		}
+		else {
+			return;
 		}
 	}
 	
