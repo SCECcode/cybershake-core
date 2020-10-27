@@ -86,6 +86,10 @@ public class RuptureVariationFileInserter {
     
     private boolean verbose = false;
     
+    //Periods used as proxies for PGA or PGV
+    private double PGA_period = 1.0e-4;
+    private double PGV_period = 1.0e-5;
+    
     private Connection conn = null;
 
 	public RuptureVariationFileInserter(String newPathName, RunID rid, String serverName, Mode m, String periods, String insertValues, boolean convert, boolean forceInsert, boolean verbose) throws IOException {
@@ -123,7 +127,13 @@ public class RuptureVariationFileInserter {
 		}
 		String[] pieces = periods.split(",");
 		for (String p: pieces) {
-			desiredPeriods.add(Double.parseDouble(p));
+			if (p.equalsIgnoreCase("PGA")) {
+				desiredPeriods.add(PGA_period);
+			} else if (p.equalsIgnoreCase("PGV")) {
+				desiredPeriods.add(PGV_period);
+			} else {
+				desiredPeriods.add(Double.parseDouble(p));
+			}
 		}
 		convertGtoCM = convert;
 		initSessionFactory(serverName);
@@ -187,8 +197,10 @@ public class RuptureVariationFileInserter {
 		} else {
 			insertAllRuptureVariationFiles(sess);
 
-		}		
-		sess.getTransaction().commit();
+		}
+		if (sess.getTransaction().isActive()) {
+			sess.getTransaction().commit();
+		}
 		sess.close();
 	}
 
@@ -567,8 +579,9 @@ public class RuptureVariationFileInserter {
 				}
 			}
 		}
-		
-		sess.beginTransaction();
+		if (!sess.getTransaction().isActive()) {
+			sess.beginTransaction();
+		}
 		
 		for (DurationEntry e: entries) {
 			String keyString = "" + e.type;
@@ -715,6 +728,10 @@ public class RuptureVariationFileInserter {
 		if (rd100periodValueToIDMap==null) {
 			rd100periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
+				//For PGA and PGV periods, use RotD50 only
+				if (desiredPeriods.get(i)==PGA_period || desiredPeriods.get(i)==PGV_period) {
+					continue;
+				}
 				SQLQuery query = rotdSession.createSQLQuery(rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
 				System.out.println(query.getQueryString());
 				int typeID = (Integer)(query.list().get(0));
@@ -725,14 +742,22 @@ public class RuptureVariationFileInserter {
 		if (rd50periodValueToIDMap==null) {
 			rd50periodValueToIDMap = new HashMap<Float, Integer>();
 			for (int i=0; i<desiredPeriods.size(); i++) {
-				SQLQuery query = rotdSession.createSQLQuery(rd50Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
+				SQLQuery query;
+				if (desiredPeriods.get(i)==PGA_period) {
+					query = rotdSession.createSQLQuery("SELECT IM_Type_ID FROM IM_Types where IM_Type_Measure = 'PGA'");
+				} else if (desiredPeriods.get(i)==PGV_period) {
+					query = rotdSession.createSQLQuery("SELECT IM_Type_ID FROM IM_Types where IM_Type_Measure = 'PGV'");
+				} else {
+					query = rotdSession.createSQLQuery(rd50Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
+				}
 				int typeID = (Integer)(query.list().get(0));
 				rd50periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
 				System.out.println("Adding IM_Type_ID " + typeID + " to list.");
 			}
 		}
-		
-		sess.beginTransaction();
+		if (!sess.getTransaction().isActive()) {
+			sess.beginTransaction();
+		}
 		
 		//Look for entries with matching period
 		for (RotDEntry e: entries) {
