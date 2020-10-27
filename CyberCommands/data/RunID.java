@@ -56,8 +56,9 @@ public class RunID {
 
 	private void createConnection() {
 		if (connection==null) {
-			String drivers = "com.mysql.jdbc.Driver";
-			String url = "jdbc:mysql://"+HOSTNAME+":"+PORT+"/"+DB_NAME;
+			String drivers = "com.mysql.cj.jdbc.Driver";
+			//Have to add serverTimezone now; assume 
+			String url = "jdbc:mysql://"+HOSTNAME+":"+PORT+"/"+DB_NAME + "?serverTimezone=America/Los_Angeles";
 			if (isSQLite) {
 				//Use SQLite drivers
 				url = "jdbc:" + HOSTNAME;
