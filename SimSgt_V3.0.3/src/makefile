@@ -11,6 +11,8 @@ LDLIBS = -L${GETPARLIB} -lm -lget
 UFLAGS = -O3
 CC = mpicc
 FC = mpif77
+#CC = gcc
+#FC = gfortran
 
 ##### If hardware and OS supports 64-bit use the following to
 #     enable option of opening large (>2**31 bytes) files
