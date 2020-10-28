@@ -4,7 +4,6 @@ int main(int argc, char** argv) {
 	int nt = 60000;
 	float dt = 0.005;
 	struct pntsrcs srcs;
-	float tzero = 0.1;
 	int nbounce = 1;
 	char stype[256] = "cos";
 	char name[256] = "source";
@@ -14,6 +13,7 @@ int main(int argc, char** argv) {
 	float flo=2.0;
 	float fhi=0.0;
 	float tdelay = 0.0;
+	float tzero = 0.1/(flo/2.0);
 	struct runparamsP3 rpars_p3;
 	struct nodeinfo ninfo;
 	rpars_p3.geoproj = 1;
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 	rpars_p3.tdelay = tdelay;
 	setpar(argc, argv);
 	get_bforce_parP3(&srcs,&tzero,&rpars_p3);
-	init_bforceP3(&srcs,&rpars_p3);
+	//init_bforceP3(&srcs,&rpars_p3);
 	int intsrc = 0;
         float* stfunc = check_malloc(nt*sizeof(float));
 	getsource(stfunc,&dt,nt,&srcs.rtime[0],nbounce,intsrc,stype,name,bfilt,&flo,&fhi,0,0,&tdelay,stfdir,stf_file);
