@@ -512,7 +512,9 @@ float wavelength_max = 1.0e+15;
    if perturb_subfault_location=1, apply roughness perturbations to strike & dip,
                                    and also move subfault location
 */
-int perturb_subfault_location = 1;
+
+// 12-9-20: per RWG, change this to 0 by default.
+int perturb_subfault_location = 0;
 
 float erad = 6378.139;
 float mrot = -90.0;
@@ -626,6 +628,7 @@ int nstk_fd, ndip_fd, istk_off, idip_off;
 int ixs, iys, nsring, ntot, *ispace;
 ispace = NULL;
 float rvel_rand = 0.0;
+int random_rvfac = 0;
 
 velfile[0] = '\0';
 init_slip_file[0] = '\0';
@@ -769,6 +772,11 @@ getpar("nh","d",&nh);
 
 getpar("shypo","f",&shypo);
 getpar("dhypo","f",&dhypo);
+
+getpar("random_rvfac", "d", &random_rvfac);
+if (random_rvfac==1) {
+	//int rupture_seed = rupgen_get_rupture_seed(header.source_id, header.rupture_id);
+}
 
 /*XXXX*/
 getpar("generate_seed","d",&generate_seed);
@@ -1423,9 +1431,45 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
 
    seed = starting_seed;
    for(k=0;k<10*js;k++)
-      sval = _sfrand(&seed);
+      sval =  _sfrand(&seed);
+ 
 
-   //fprintf(stderr,"js= %d seed= %d ran= %10.6f\n",js,seed,sval);
+   fprintf(stderr,"js= %d seed= %d ran= %10.6f\n",js,seed,sval);
+
+   if (state==GET_SEED) {
+   	free(rvfac_seg);
+   	free(gbnd);
+   	free(gwid);
+   	free(psrc);
+   	free(psrc_orig);
+   	free(slip_c);
+   	free(rake_c);
+   	free(tsfac1_c);
+   	free(rtime1_c);
+   	free(rough_c);
+   	free(tsfac2_c);
+   	free(rtime2_c);
+   	free(slip_r);
+   	free(rake_r);
+   	free(tsfac1_r);
+   	free(rtime1_r);
+   	free(rough_r);
+   	free(tsfac2_r);
+   	free(rtime2_r);
+   	free(stk_r);
+   	free(dip_r);
+   	free(psrc_rake);
+   	free(vmod.vp);
+   	free(vmod.vs);
+   	free(vmod.den);
+   	free(vmod.th);
+   	free(vmod.dep);
+   	free(vmod.mu);
+   	free(vmod.invb2);
+   	free_srf_ptrs(srf);
+	free(rspd);
+	return seed;
+   }
 
    if(uniformgrid_hypo == 1) /* RWG 20140424 added option for uniform grid of hypocenters */
       {
