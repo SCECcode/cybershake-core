@@ -170,6 +170,12 @@ for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
    srf[0].srf_apnts.np = srf[0].srf_apnts.np + (prseg_ptr[ig].nstk)*(prseg_ptr[ig].ndip);
 
 srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+//Initialize the stf arrays to null
+for(ig=0; ig<srf[0].srf_apnts.np; ig++) {
+	srf[0].srf_apnts.apntvals[ig].stf1 = NULL;
+	srf[0].srf_apnts.apntvals[ig].stf2 = NULL;
+	srf[0].srf_apnts.apntvals[ig].stf3 = NULL;
+}
 
 //If version 2, initialize np_seg to NULL
 //printf("Version: %s\n", srf[0].version);
@@ -1090,7 +1096,7 @@ for(iseg=0;iseg<nseg;iseg++)
                {
                tzero = rtfac*spar->trise;
 
-               apval_ptr[ip].nt1 = gen_tri_stf(&(ps[ip0].slip),&tzero,stf,spar->nt,&spar->dt);
+				apval_ptr[ip].nt1 = gen_tri_stf(&(ps[ip0].slip),&tzero,stf,spar->nt,&spar->dt);
                }
 	    }
          else
@@ -1211,7 +1217,6 @@ for(iseg=0;iseg<nseg;iseg++)
          {
 	 ip = noff + i + j*prseg_ptr[iseg].nstk;
 	 ip0 = i + ioff + j*ntot;
-
          apval_ptr[ip].stf1 = (float *)_check_malloc(spar->nt*sizeof(float));
          stf = apval_ptr[ip].stf1;
 
@@ -1281,9 +1286,9 @@ for(iseg=0;iseg<nseg;iseg++)
          else
             apval_ptr[ip].nt1 = 0;
 
-         if(apval_ptr[ip].nt1)
+         if(apval_ptr[ip].nt1) {
             apval_ptr[ip].stf1 = (float *)_check_realloc(apval_ptr[ip].stf1,(apval_ptr[ip].nt1)*sizeof(float));
-         else
+         } else
             {
             free(apval_ptr[ip].stf1);
             apval_ptr[ip].stf1 = NULL;
