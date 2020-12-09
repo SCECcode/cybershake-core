@@ -74,7 +74,7 @@ int rupgen_get_num_rv_with_params(char* rup_geom_file, rg_stats_t *stats, int hy
 #endif
   
 	/* Free pseudo-program args */
-	for (j = 0; j < NUM_GENSLIP_ARGS; j++) {
+	for (j = 0; j < MAX_ARGS; j++) {
 	    free(rgargv[j]);
 	}
 
@@ -83,9 +83,10 @@ int rupgen_get_num_rv_with_params(char* rup_geom_file, rg_stats_t *stats, int hy
 
 }
 
+
+
 //Includes string "params" containing getpar-friendly key=value space-delimited pairs, passed directly through to genslip args
 int rupgen_genslip_with_params(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist, float dt, char* params) {
-	fprintf(stderr, "Using genslip with params.\n");
         int write_srf = 1;
 
         int i, j, rgargc;
@@ -164,13 +165,23 @@ int rupgen_genslip_with_params(char* rup_geom_file, int slip, int hypo, rg_stats
         }
 
         /* Free pseudo-program args */
-        for (j = 0; j < NUM_GENSLIP_ARGS; j++) {
+        for (j = 0; j < MAX_ARGS; j++) {
             free(rgargv[j]);
         }
 
         free(rgargv);
         free(srf_out_file);
         return(0);
+}
+
+/* Version of rupgen_genslip that takes a seed.
+ */
+
+int rupgen_genslip_seed(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist, float dt, int seed) {
+	char* seed_string = malloc(sizeof(char) * MAX_STR_ARGV);
+	sprintf(seed_string, "seed=%d", seed);
+	rupgen_genslip_with_params(rup_geom_file, slip, hypo, stats, srf, hypo_dist, dt, seed_string);
+	free(seed_string);
 }
 
 
@@ -190,15 +201,15 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
 	char* srf_out_file = malloc(strlen(rup_geom_file)+20);
 	sprintf(srf_out_file, "%s_s%d_h%d.srf", basename(rup_geom_file), slip, hypo);
 
-        /* Create pseudo-program args */
-        rgargc = NUM_GENSLIP_ARGS;
-        rgargv = malloc(rgargc * sizeof(char*));
-        for (j = 0; j < NUM_GENSLIP_ARGS; j++) {
-                rgargv[j] = malloc(MAX_STR_ARGV);
+    /* Create pseudo-program args */
+    rgargc = NUM_GENSLIP_ARGS;
+    rgargv = malloc(rgargc * sizeof(char*));
+    for (j = 0; j < NUM_GENSLIP_ARGS; j++) {
+	    rgargv[j] = malloc(MAX_STR_ARGV);
 		memset(rgargv[j], 0, MAX_STR_ARGV);
-        }
-        sprintf(rgargv[0], "%s", "rupgen");
-        sprintf(rgargv[1], "infile=%s", rup_geom_file);
+    }
+    sprintf(rgargv[0], "%s", "rupgen");
+    sprintf(rgargv[1], "infile=%s", rup_geom_file);
 	sprintf(rgargv[2], "doslip=%d", slip);
 	sprintf(rgargv[3], "dohypo=%d", hypo);
 	sprintf(rgargv[4], "write_srf=%d", write_srf);
@@ -250,4 +261,66 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
         free(rgargv);
 	free(srf_out_file);
         return(0);
+}
+
+/* This function returns the initial seed used for a (source_id, rupture_id) tuple.
+ * This seed can then be passed into genslip using the genslip_with_seed() function,
+ * and genslip will automatically determine the correct seed to use with each rupture 
+ * variation.
+ * Otherwise, seed defaults to 0 for all ruptures.
+ */
+int rupgen_get_rupture_seed(int src_id, int rup_id) {
+	return src_id*10000 + rup_id;
+}
+
+/* This function returns the seed used for a specific (source_id, rupture_id, slip, hypo) tuple.
+ * This is useful for hb_high or other applications which don't call genslip but need to 
+ * use the same seed.
+ */
+
+int rupgen_get_variation_seed(char* rup_geom_file, rg_stats_t *stats, int hypo_dist, int src_id, int rup_id, int slip, int hypo) {
+    /* Create pseudo-program args */
+    int MAX_ARGS = 30;
+    int index = 0;
+	int rgargc, j;
+	char** rgargv;
+    rgargc = MAX_ARGS;
+    rgargv = malloc(rgargc * sizeof(char*));
+    for (j = 0; j < MAX_ARGS; j++) {
+        rgargv[j] = malloc(MAX_STR_ARGV);
+        memset(rgargv[j], 0, MAX_STR_ARGV);
+    }
+    sprintf(rgargv[0], "%s", "rupgen");
+    sprintf(rgargv[1], "infile=%s", rup_geom_file);
+    if (hypo_dist==RUPGEN_RANDOM_HYPO) {
+        sprintf(rgargv[2], "uniformgrid_hypo=0");
+        sprintf(rgargv[3], "random_hypo=1");
+    } else if (hypo_dist==RUPGEN_UNIFORM_HYPO) {
+        sprintf(rgargv[2], "uniformgrid_hypo=1");
+        sprintf(rgargv[3], "random_hypo=0");
+    } else {
+    	fprintf(stderr, "Error, did not specify a valid hypocenter location distribution, aborting.\n");
+    	exit(2);
+    }
+    sprintf(rgargv[4], "doslip=%d", slip);
+    sprintf(rgargv[5], "dohypo=%d", hypo);
+	//Set initial seed
+	int initial_seed = rupgen_get_rupture_seed(src_id, rup_id);
+	sprintf(rgargv[6], "seed=%d", initial_seed);
+
+	/* Run rupture generator */
+    struct standrupformat srf;
+	int seed;
+#ifdef _USE_MEMCACHED
+    seed = mc_genslip(rgargc, rgargv, stats, &srf, GET_SEED, mc_server);
+#else
+    seed = genslip(rgargc, rgargv, stats, &srf, GET_SEED);
+#endif
+    /* Free pseudo-program args */
+    for (j = 0; j < MAX_ARGS; j++) {
+  		free(rgargv[j]);
+    }
+    free(rgargv);
+
+	return seed;	
 }

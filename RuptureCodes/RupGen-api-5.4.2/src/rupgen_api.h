@@ -20,6 +20,9 @@ int rupgen_get_num_rv(char* rup_geom_file, rg_stats_t *stats, int hypo_dist);
 int rupgen_get_num_rv_with_params(char* rup_geom_file, rg_stats_t *stats, int hypo_dist, char* params);
 int rupgen_genslip_with_params(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist, float dt, char* params);
 int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist, float dt);
+int rupgen_genslip_seed(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist, float dt, int seed);
 void free_srf_ptrs(struct standrupformat* srf);
+int rupgen_get_rupture_seed(int src_id, int rup_id);
+int rupgen_get_variation_seed(char* rup_geom_file, rg_stats_t *stats, int hypo_dist, int src_id, int rup_id, int slip, int hypo);
 
 #endif
