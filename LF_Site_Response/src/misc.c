@@ -8,7 +8,7 @@ void *check_malloc(size_t len)
 {
 void *ptr;
 
-fprintf(stderr, "Allocating %ld bytes.\n", len);
+//fprintf(stderr, "Allocating %ld bytes.\n", len);
 ptr = (void *) malloc (len);
 
 if(ptr == NULL)
