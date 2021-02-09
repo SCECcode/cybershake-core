@@ -74,4 +74,9 @@ struct rupture_variation {
   int hypo_id;
 };
 
+struct pga_entry {
+	int rup_var_id;
+	float pga[3];
+};
+
 #endif
