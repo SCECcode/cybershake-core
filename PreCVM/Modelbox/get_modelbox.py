@@ -144,7 +144,6 @@ except pymysql.DatabaseError,e:
 count = cur.rowcount
 
 rup_set = cur.fetchall()
-
 #
 # Close db, connections, and results sets
 #
@@ -224,7 +223,7 @@ sinR = math.sin(pi*(90.0+mrot)/180.0)
 xm = []
 ym = []
 
-for i in range(0,np-1):
+for i in range(0,np):
   n = (lat[i]-clat)*kplat
   e = (lon[i]- clon)*kplon
   xm.append((e*sinR) + (n*cosR))
