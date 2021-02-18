@@ -25,6 +25,7 @@ def build_src(site, fdloc, awp_comp, frequency, nt, filter=None, spacing=None):
 		filter = frequency
 
 	source_name = "%s/data/f%s_src_%d_%.1fhzFilter" % (sys.path[0], awp_comp, nt, filter)
+	#print("Using source %s" % source_name)
 	if not os.path.exists(source_name):
 		print "Error: could not find source file %s with nt=%d and filter frequency = %.1f, aborting." % (source_name, nt, filter)
 		return 1
@@ -44,3 +45,21 @@ def build_src(site, fdloc, awp_comp, frequency, nt, filter=None, spacing=None):
 	fp_out.flush()
 	fp_out.close()
 	return 0
+
+if __name__=="__main__":
+	#build_src(site, fdloc, awp_comp, frequency, nt, filter=None, spacing=None)
+	if len(sys.argv)<6:
+		print("Usage: %s <site> <fdloc file> <awp component> <frequency for AWP> <nt for AWP> [filter frequency]" % sys.argv[0])
+		sys.exit(1)
+
+	site=sys.argv[1]
+	fdloc_filename=sys.argv[2]
+	awp_component=sys.argv[3]
+	freq=float(sys.argv[4])
+	nt=int(sys.argv[5])
+	filter_freq = freq
+	if len(sys.argv)>6:
+		filter_freq=float(sys.argv[6])
+	sys.exit(build_src(site, fdloc_filename, awp_component, freq, nt, filter=filter_freq, spacing=None))
+
+
