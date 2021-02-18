@@ -30,11 +30,17 @@ def calc_simulated_time(run_id, param):
 	query = "%s order by V.Hypocenter_Lat asc limit 1;" % (query_prefix)
 	print query
 	cur.execute(query)
+	hits = cur.fetchone()
+	if hits[0] == None:
+		return sgt_length
 	hypo = []
-	hypo.append([float(l) for l in cur.fetchone()])
+	hypo.append([float(l) for l in hits])
 	query = "%s order by V.Hypocenter_Lon desc limit 1;" % (query_prefix)
 	cur.execute(query)
-	hypo.append([float(l) for l in cur.fetchone()])
+	hits = cur.fetchone()
+	if hits[0] == None:
+		return sgt_length
+	hypo.append([float(l) for l in hits])
 	max_dist = 0.0
 	proj = Proj(proj='utm', zone='11', ellps='WGS84')
 	(site_e, site_n) = proj(site_lon, site_lat)
@@ -45,7 +51,6 @@ def calc_simulated_time(run_id, param):
 			max_dist = dist
 	print "Maximum distance = %f km" % max_dist
 	if max_dist>CUTOFF_DIST:
-		#pass
 		sgt_length = 300.0
 	conn.close()
 	return sgt_length
@@ -126,12 +131,12 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 	if nx % proc[0] != 0:
 		print "PX %d must be a factor of NX %d, aborting." % (proc[0], nx)
 		sys.exit(2)
-        if ny % proc[1] != 0:
-                print "PY %d must be a factor of NY %d, aborting." % (proc[1], ny)
-                sys.exit(2)
-        if nz % proc[2] != 0:
-                print "PZ %d must be a factor of NZ %d, aborting." % (proc[2], nz)
-                sys.exit(2)	
+	if ny % proc[1] != 0:
+		print "PY %d must be a factor of NY %d, aborting." % (proc[1], ny)
+		sys.exit(2)
+	if nz % proc[2] != 0:
+		print "PZ %d must be a factor of NZ %d, aborting." % (proc[2], nz)
+		sys.exit(2)	
 	
 	param["NPX"] = proc[0]
 	param["NPY"] = proc[1]
