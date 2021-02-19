@@ -4,7 +4,7 @@ import sys
 import os
 
 if len(sys.argv)<4:
-	print "Usage: %s <source file> <comp> <output file>" % sys.argv[0]
+	print("Usage: %s <source file> <comp> <output file>" % sys.argv[0])
 	sys.exit(1)
 
 fp_in = open(sys.argv[1], "r")
