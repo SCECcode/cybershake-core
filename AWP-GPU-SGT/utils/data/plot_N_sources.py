@@ -8,7 +8,7 @@ matplotlib.use("AGG", warn=False)
 from pylab import *
 
 if len(sys.argv)<4 or len(sys.argv)%2 != 0:
-	print "Usage: %s <source file 1> <label 1> <maxt 1> <source file 2> <label 2> <maxt 2> ... <source file N> <label N> <output file>" % sys.argv[0]
+	print("Usage: %s <source file 1> <label 1> <maxt 1> <source file 2> <label 2> <maxt 2> ... <source file N> <label N> <output file>" % sys.argv[0])
 	sys.exit(1)
 
 filenames = []
@@ -30,10 +30,10 @@ for j in range(0, len(filenames)):
 	data_vals = []
 	for line in data:
 		pieces = line.split(",")
-	        data_vals.append(float(pieces[0].strip()))
+		data_vals.append(float(pieces[0].strip()))
 	nt = len(data_vals)
 	dt = maxts[j]/nt
-	print "Using dt=%f, nt=%d" % (dt, nt)
+	print("Using dt=%f, nt=%d" % (dt, nt))
 	timesteps = [dt*i for i in range(0, nt)]
 	plot(timesteps, data_vals, label=labels[j])
 
