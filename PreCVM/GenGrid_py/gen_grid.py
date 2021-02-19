@@ -46,19 +46,22 @@ def genBoundfile(gridout, coordfile, boundfile):
     output.close()
 
 
-def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, freq, sp, gpu=False):
-    '''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
-    SPACING = 0.1/freq
-    if sp>0:
-        SPACING = sp
+def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, freq, sp, gpu=False, depth=-1.0):
+	'''Replaces the gen_grid.csh script;  produces a regular grid from a modelbox file.'''
+	SPACING = 0.1/freq
+	if sp>0:
+		SPACING = sp
 
-    #Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance, requires GPU or CPU counts get all off
-    if gpu:
-	ZLEN = 50.4
-	#ZLEN = 40.0
-    else:
-	#ZLEN = 50.0
-	ZLEN = 40.0
+	#Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance, requires GPU or CPU counts get all off
+	if gpu:
+		#ZLEN = 50.4
+		ZLEN = 40.0
+	else:
+		#ZLEN = 50.0
+		ZLEN = 40.0
+
+	if depth>0:
+		ZLEN = depth
 	#Make sure it is evenly divisible, and nz is even
 	#Use ceil because we want the depth to be at least ZLEN
 	nz = int(math.ceil(ZLEN/SPACING))
@@ -67,52 +70,52 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 	if nz%2!=0:
 		nz += 1
 		ZLEN = nz*SPACING
-    #if gpu:
-    #	#Change ZLEN to 51.2 so it's a multiple of 256 pts
-    #	ZLEN = 51.2
-    #SPACING = .2
+	#if gpu:
+	#	#Change ZLEN to 51.2 so it's a multiple of 256 pts
+	#	ZLEN = 51.2
+	#SPACING = .2
 
-    SPACING = 0.1/freq
-    if sp>0:
-	SPACING = sp
+	SPACING = 0.1/freq
+	if sp>0:
+		SPACING = sp
 
-    print "SPACING = %f, freq = %f, sp= %f\n" % (SPACING, freq, sp)
-    modelboxInput = open(modelboxFile)
-    modelboxData = [line.strip() for line in modelboxInput.readlines()]
-    modelboxInput.close()
+	print "SPACING = %f, freq = %f, sp= %f\n" % (SPACING, freq, sp)
+	modelboxInput = open(modelboxFile)
+	modelboxData = [line.strip() for line in modelboxInput.readlines()]
+	modelboxInput.close()
     
-    site = modelboxData[0]
-    # skipping centroid info and parameters header
-    modelParamsLine = modelboxData[4]
-    # this line is
-    #    mlon= <lon>  mlat= <lat>  mrot= <rot>  xlen = <xdist>  ylen= <ydist>
-    modelParamsData = modelParamsLine.split()
-    model_lon = float(modelParamsData[1])
-    model_lat = float(modelParamsData[3])
-    model_rot = float(modelParamsData[5])
-    xlen = float(modelParamsData[7])
-    ylen = float(modelParamsData[9])
+	site = modelboxData[0]
+	# skipping centroid info and parameters header
+	modelParamsLine = modelboxData[4]
+	# this line is
+	#    mlon= <lon>  mlat= <lat>  mrot= <rot>  xlen = <xdist>  ylen= <ydist>
+	modelParamsData = modelParamsLine.split()
+	model_lon = float(modelParamsData[1])
+	model_lat = float(modelParamsData[3])
+	model_rot = float(modelParamsData[5])
+	xlen = float(modelParamsData[7])
+	ylen = float(modelParamsData[9])
 
-    genGridfile(site, gridfile, xlen, ylen, ZLEN, SPACING)
+	genGridfile(site, gridfile, xlen, ylen, ZLEN, SPACING)
     
-    if MPI_CMD=="aprun":
-	executable = "aprun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
-    elif MPI_CMD=="jsrun":
-        executable = "jsrun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))    
-    parameters = "geoproj=1 gridfile=%s gridout=%s center_origin=1 do_coords=1 nzout=1 name=%s gzip=0 latfirst=0 modellon=%f modellat=%f modelrot=%f" % (gridfile, gridout, coordfile, model_lon, model_lat, model_rot)
-    pipe = "> " + paramfile
-    command = executable + " " + parameters + " " + pipe
-    exitcode = os.system(command)
-    print command
-    if exitcode!=0:
-    	print "Exit with code %d\n" % ((exitcode >> 8) & 0xFF)
-	sys.exit((exitcode >> 8) & 0xFF)
-    genBoundfile(gridout, coordfile, boundsfile)
+	if MPI_CMD=="aprun":
+		executable = "aprun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
+	elif MPI_CMD=="jsrun":
+		executable = "jsrun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))    
+	parameters = "geoproj=1 gridfile=%s gridout=%s center_origin=1 do_coords=1 nzout=1 name=%s gzip=0 latfirst=0 modellon=%f modellat=%f modelrot=%f" % (gridfile, gridout, coordfile, model_lon, model_lat, model_rot)
+	pipe = "> " + paramfile
+	command = executable + " " + parameters + " " + pipe
+	exitcode = os.system(command)
+	print command
+	if exitcode!=0:
+		print "Exit with code %d\n" % ((exitcode >> 8) & 0xFF)
+		sys.exit((exitcode >> 8) & 0xFF)
+	genBoundfile(gridout, coordfile, boundsfile)
 
 
 def main():
     if len(sys.argv) < 9:
-        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency> <spacing> [gpu]"
+        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency> <spacing> [gpu] [depth]"
         print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC 0.5"
         sys.exit(1)
 	
@@ -124,10 +127,18 @@ def main():
     boundsfile = sys.argv[6]
     frequency = float(sys.argv[7])
     spacing = float(sys.argv[8])
-    if len(sys.argv)==10 and sys.argv[9]=="gpu":
-    	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency, spacing, gpu=True)
-    else:
-	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency, spacing)
+	gpu = False
+	depth = -1.0
+	index = 9
+	while index<len(sys.argv):
+		if sys.argv[index]=="gpu":
+			gpu = True
+		else:
+			#It's a depth
+			depth = float(sys.argv[index])
+		index += 1
+	
+	genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, frequency, spacing, gpu=gpu, depth=depth)
 
 if __name__=="__main__":
     main()

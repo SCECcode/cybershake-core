@@ -19,6 +19,7 @@ parser.add_option("--spacing", dest="spacing", action="store", type="float", hel
 parser.add_option("--server", dest="server", action="store", default="focal.usc.edu", help="Address of server to query in creating modelbox, default is focal.usc.edu.")
 parser.add_option("--bounding-box", dest="bbox", action="store_true", default=False, help="Assume (StartLat, StartLon) and (EndLat, EndLon) represent 2 corners of a box, all 4 corners of which must be inside the volume (as opposed to only requiring those 2 points)")
 parser.add_option("--tight-box", dest="tight", action="store_true", default=False, help="Use a box with 20 km padding (the default is 30 km)")
+parser.add_option("--depth", dest="depth", action"store", type="float", help="Override default depth with this value, in km")
 
 (option, args) = parser.parse_args()
 
@@ -50,7 +51,9 @@ if option.bbox:
 tight_arg = ""
 if option.tight:
 	tight_arg = "tight"
-
+depth = -1.0
+if option.depth:
+	depth = option.depth
 
 os.chdir(os.path.join(sys.path[0], "Modelbox"))
 gpu_arg = ""
@@ -61,5 +64,5 @@ exitcode = os.system("./get_modelbox.py %s %s %s %f %s %s %s %s" % (site, erfID,
 if exitcode!=0:
 	sys.exit((exitcode >> 8) & 0xFF)
 os.chdir("../GenGrid_py")
-exitcode = os.system("./gen_grid.py %s %s %s %s %s %s %f %f %s" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile, frequency, spacing, gpu_arg))
+exitcode = os.system("./gen_grid.py %s %s %s %s %s %s %f %f %s" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile, frequency, spacing, gpu_arg, depth))
 sys.exit((exitcode >> 8) & 0xFF)
