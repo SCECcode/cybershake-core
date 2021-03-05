@@ -16,12 +16,15 @@ parser.add_option("--boundsfile", dest="boundsfile", action="store", help="Path 
 parser.add_option("--frequency", dest="frequency", action="store", type="float", help="Frequency")
 parser.add_option("--gpu", dest="gpu_arg", action="store_true", default=False, help="Use GPU box settings.")
 parser.add_option("--spacing", dest="spacing", action="store", type="float", help="Override default spacing with this value, in km.")
-parser.add_option("--server", dest="server", action="store", default="focal.usc.edu", help="Address of server to query in creating modelbox, default is focal.usc.edu.")
+parser.add_option("--server", dest="server", action="store", default="focal.usc.edu", help="Address of server to query in creating modelbox, default is focal.usc.edu. Can specify sqlite database with sqlite://<file>")
 parser.add_option("--bounding-box", dest="bbox", action="store_true", default=False, help="Assume (StartLat, StartLon) and (EndLat, EndLon) represent 2 corners of a box, all 4 corners of which must be inside the volume (as opposed to only requiring those 2 points)")
 parser.add_option("--tight-box", dest="tight", action="store_true", default=False, help="Use a box with 20 km padding (the default is 30 km)")
-parser.add_option("--depth", dest="depth", action"store", type="float", help="Override default depth with this value, in km")
+parser.add_option("--depth", dest="depth", action="store", type="float", help="Override default depth with this value, in km")
+parser.add_option("--rotation", dest="rotation", action="store", type="float", help="Override default rotation with this value")
 
 (option, args) = parser.parse_args()
+
+DEFAULT_ROTATION = -55.0
 
 site = option.site
 erfID = option.erf_id
@@ -54,15 +57,18 @@ if option.tight:
 depth = -1.0
 if option.depth:
 	depth = option.depth
+rotation = DEFAULT_ROTATION
+if option.rotation is not None:
+	rotation = option.rotation
 
 os.chdir(os.path.join(sys.path[0], "Modelbox"))
 gpu_arg = ""
 if use_gpu:
 	gpu_arg = "gpu"
 
-exitcode = os.system("./get_modelbox.py %s %s %s %f %s %s %s %s" % (site, erfID, modelbox, spacing, server, gpu_arg, bbox_arg, tight_arg))
+exitcode = os.system("./get_modelbox.py %s %s %s %f %s %f %s %s %s" % (site, erfID, modelbox, spacing, server, rotation, gpu_arg, bbox_arg, tight_arg))
 if exitcode!=0:
 	sys.exit((exitcode >> 8) & 0xFF)
 os.chdir("../GenGrid_py")
-exitcode = os.system("./gen_grid.py %s %s %s %s %s %s %f %f %s" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile, frequency, spacing, gpu_arg, depth))
+exitcode = os.system("./gen_grid.py %s %s %s %s %s %s %f %f %s %f" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile, frequency, spacing, gpu_arg, depth))
 sys.exit((exitcode >> 8) & 0xFF)
