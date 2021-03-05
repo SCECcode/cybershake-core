@@ -20,6 +20,7 @@ import sys
 import string
 import math
 import pymysql
+import sqlite3
 
 class faultinfo:
   """
@@ -41,14 +42,19 @@ class boundaryinfo:
     min = 0.0
     max = 0.0
 
-def opendb(h,pt,us,pwd,d):
-  try:
-    connection = pymysql.connect(host=h,port=pt,user=us,passwd=pwd,db=d)
+def opendb(h,pt,us,pwd,d,sqlite=False):
+  if sqlite==False:
+    try:
+      connection = pymysql.connect(host=h,port=pt,user=us,passwd=pwd,db=d)
+      return connection
+    except pymysql.Error,message:
+      errorMessage = "Error %d:\n%s" % (message [ 0],message[1])
+      print errorMessage
+      sys.exit(-1)
+  else:
+    print(h)
+    connection = sqlite3.connect(h)
     return connection
-  except pymysql.Error,message:
-    errorMessage = "Error %d:\n%s" % (message [ 0],message[1])
-    print errorMessage
-    sys.exit(-1)
 
 def closedb(conn):
   try:
@@ -81,8 +87,8 @@ port = 3306
 db="CyberShake"
 
 if len(sys.argv) < 6:
-  print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name spacing(in km) Server"
-  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 0.2 focal.usc.edu [gpu] [bbox] [tight]"
+  print "Syntax: get_modelbox.py SITE_Name ERF_ID Outfile_name spacing(in km) Server rotation [gpu] [bbox] [tight]"
+  print "Example: get_modelbox.py USC 34 ./usc_modelbox.txt 0.2 focal.usc.edu -55"
   sys.exit()
 
 site = sys.argv[1]
@@ -90,19 +96,26 @@ erf = sys.argv[2]
 outfile = sys.argv[3]
 spacing = float(sys.argv[4])
 host = sys.argv[5]
+sqlite_db = False
+if host[0:9]=="sqlite://":
+    print("Using SQLite database.")
+    sqlite_db = True
+    host = host[9:]
+
+model_rot = float(sys.argv[6])
 
 gpu = False
-if len(sys.argv) >= 7 and "gpu" in sys.argv[6:]:
+if len(sys.argv) >= 7 and "gpu" in sys.argv[7:]:
 	print "GPU mode."
 	gpu = True
 
 bbox = False
-if len(sys.argv) >= 7 and "bbox" in sys.argv[6:]:
+if len(sys.argv) >= 7 and "bbox" in sys.argv[7:]:
 	print "Bounding box mode."
 	bbox = True
 
 tight = False
-if len(sys.argv) >= 7 and "tight" in sys.argv[6:]:
+if len(sys.argv) >= 7 and "tight" in sys.argv[7:]:
 	print "Tight (20 km spacing) mode."
 	tight = True
 
@@ -115,7 +128,7 @@ f = open(outfile,"w")
 f.write("%s\n"%(site))
 
 # Open CyberShake DB
-conn = opendb(host,port,username,pwd,db)
+conn = opendb(host,port,username,pwd,db,sqlite=sqlite_db)
 cur = conn.cursor()
 
 sql_string = "select CS_Site_Lon, CS_Site_Lat, CS_Site_ID from CyberShake_Sites where CS_Short_Name='%s'" % site
