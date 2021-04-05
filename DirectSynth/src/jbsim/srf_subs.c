@@ -291,6 +291,7 @@ else
    }
 }
 
+#ifndef _V3_3_1
 void write_srf2(struct standrupformat *srf,char *file,int bflag)
 {
 FILE *fpw, *_f_opfile();
@@ -358,10 +359,11 @@ if(bflag)
    }
 else
    {
-   if(strcmp(file,"stdout") == 0)
+   if(strcmp(file,"stdout") == 0) {
       fpw = stdout;
-   else
+   } else {
       fpw = _f_opfile(file,"w");
+   }
 
    fprintf(fpw,"%s\n",srf->version);
 
@@ -485,14 +487,17 @@ else
    fclose(fpw);
    }
 }
-
+#endif
 
 void write_srf(struct standrupformat *srf,char *file,int bflag) {
 	if (strcmp(srf->version, "1.0")==0) {
 		write_srf1(srf, file, bflag);
-	} else if (strcmp(srf->version, "2.0")==0) {
+	}
+	#ifndef _V3_3_1
+	 else if (strcmp(srf->version, "2.0")==0) {
 		write_srf2(srf, file, bflag);
 	}
+	#endif
 }
 
 /*void free_srf_stf(struct standrupformat *srf)
