@@ -4,7 +4,7 @@
 #include "srf_structure.h"
 #include "function.h"
 
-void get_srfpars(struct standrupformat *srf,int off, int ip,float *rt,float *vs,float *stk,float *dip,float *rak,struct mechparam *mpar)
+void get_srfpars(struct standrupformat *srf,int off, int ip,float *rt,float *vs,float *stk,float *dip,float *rak,struct mechparam *mpar, int my_id)
 {
 struct srf_planerectangle *prect_ptr;
 struct srf_prectsegments *prseg_ptr;
@@ -20,6 +20,11 @@ mpar->nmech = 0;
 mpar->flag[0] = 0;
 mpar->flag[1] = 0;
 mpar->flag[2] = 0;
+
+/*if (my_id<1220) {
+	printf("off=%d, apval_ptr=%ld, apval_ptr[ip]=%ld\n", off, apval_ptr, apval_ptr[ip]);
+	fflush(stdout);
+}*/
 
 if(apval_ptr[ip].nt1 > 0)
    {
