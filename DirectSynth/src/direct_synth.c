@@ -72,13 +72,13 @@ int main(int argc, char** argv) {
 	mstpar("run_id","d",&run_id);
 
 	int run_PSA, run_rotd, run_duration;
-	//Default is to run everything
+	//Default is to run PSA and RotD but not duration
 	run_PSA = 1;
 	run_rotd = 1;
-	run_duration = 1;
+	run_duration = 0;
 	getpar("run_psa","d",&run_PSA);
 	getpar("run_rotd","d",&run_rotd);
-	getpar("run_duration","d",&run_duration);
+	getpar("run_durations","d",&run_duration);
 
 	//track timing
 	int timing = 0;
