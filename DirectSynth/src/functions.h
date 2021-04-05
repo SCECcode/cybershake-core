@@ -58,6 +58,9 @@ void get_master_list_opt(struct sgtparams *sgtp, int np, long long* mindx, int* 
 void get_indx(float *lon,float *lat,float *dep,struct sgtindex *indx,struct geoprojection *gp);
 void cfft_r(struct complex* x,int n,int isign);
 
+//srf_rupm.c
+void get_srfpars(struct standrupformat *srf,int off, int ip,float *rt,float *vs,float *stk,float *dip,float *rak,struct mechparam *mpar, int my_id);
+
 //sgt3d_subs.c
 void get_sgtpars(struct sgtfileparams *sgtfpar,struct sgtmaster *sgtmast,struct sgtindex **sgtindx);
 void find_sgt(struct sgtparams *sgtpar,struct sgtmaster *sgtmast,struct sgtindex *sgtindx,struct sgtindex *eqindx,struct sgtindex *statindx,float *maxd,float *fwt);
