@@ -75,6 +75,7 @@ int ptol;
 int print_tol = 25;
 
 int slip_id, hypo_id;
+int generate_seed = 0;
 
 //Default 1 GB
 int max_buf_mb = 1*1024;
@@ -110,6 +111,8 @@ getpar("sname","s",sname);
 //If we specify target_hypo_spacing, then pass it through to rupgen_genslip
 float target_hypo_spacing = -1.0;
 getpar("target_hypo_spacing", "f", &target_hypo_spacing);
+float rvfrac = -1.0;
+getpar("rvfrac", "f", &rvfrac); 
 
 rg_stats_t stats;
 set_memcached_server("127.0.0.1");
@@ -131,12 +134,36 @@ if (strcmp(rupture_spacing_string,"random")==0) {
 if (debug) {
 	gettimeofday(&tv_start, NULL);
 }
+
+getpar("generate_seed", "d", &generate_seed);
+char params[512];
+params[0] = '\0';
+int params_flag = 0;
+if (target_hypo_spacing>0.0) {
+	params_flag = 1;
+    sprintf(params, "target_hypo_spacing=%f", target_hypo_spacing);
+	if (generate_seed==0) {
+		//Overwrite with a specific seed, if we're not providing this later
+		strcat(params, " seed=6000011");
+	}
+}
+#ifndef _V3_3_1
+if (generate_seed==1) {
+	params_flag = 1;
+	int seed = rupgen_get_rupture_seed(header->source_id, header->rupture_id);
+	sprintf(params, "%s seed=%d", params, seed);
+}
+#endif
+
+if (rvfrac>0.0) {
+	params_flag = 1;
+	sprintf(params, "%s rvfrac=%f", params, rvfrac);
+}
+
 //Generate all ruptures
 for (i=0; i<num_rup_vars; i++) {
 	//printf("Generating rupture from file %s, slip %d, hypo %d, spacing %d, dtout %f\n", rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, rupture_spacing, dtout);
-	if (target_hypo_spacing>0.0) {
-		char params[256];
-		sprintf(params, "target_hypo_spacing=%f seed=6000011", target_hypo_spacing);
+	if (params_flag==1) {
 		rupgen_genslip_with_params(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout, params);
 	} else {
 		rupgen_genslip(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout);
@@ -424,8 +451,13 @@ while (1) {
 			//fprintf(stderr, "Processing RV %d.\n", rup_vars[i].rup_var_id);
 			//if (i==1) printf("Location (%f, %f)\n", apval_ptr[i][srf_index].lat, apval_ptr[i][srf_index].lon);
 			zapit(subseis[i],maxmech*3*ntout);
-
-			get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
+			/*if (my_id<1220) {
+				printf("%d)i=%d, ip=%d, apv_off=%d, npts=%d\n", my_id, i, ip, apv_off[i], srf[i].srf_apnts.np);
+				printf("%d) apntvals=%ld, apntvals+off=%ld \n", my_id, srf[i].srf_apnts.apntvals, srf[i].srf_apnts.apntvals+apv_off[i]);
+				printf("%d) nt1=%d\n", my_id, (srf[i].srf_apnts.apntvals+apv_off[i])[ip].nt1);
+				fflush(stdout);
+			}*/
+			get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar, my_id);
 			scale = slip_conv*apval_ptr[i][srf_index].area;
 	                //if (i==test_rv) fprintf(stderr, "Scale = %e, vslip = %e\n", scale, vslip);
 			mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
@@ -485,7 +517,7 @@ for (ip=0; ip<num_srfs_split; ip++) {
 	for (i=0; i<num_rup_vars; i++) {
 		zapit(subseis[i],maxmech*3*ntout);
 
-		get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
+		get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar,my_id);
 		scale = slip_conv*apval_ptr[i][srf_index].area;
 		//if (i==0) fprintf(stderr, "Scale = %e, vslip = %e\n", scale, vslip);
 
