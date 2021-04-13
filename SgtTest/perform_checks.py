@@ -69,4 +69,5 @@ cmd = "%s %s/SgtTest/bin/check_for_nans %s" % (mpi_cmd, cs_path, sgt_filename)
 exitcode = os.system(cmd)
 if exitcode!=0:
 	print "Error when checking for NaNs, zeros."
+	sys.exit(3)
 sys.exit(exitcode)
