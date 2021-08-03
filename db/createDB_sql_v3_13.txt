@@ -859,11 +859,11 @@ ERF_ID int unsigned not null,
 Rup_Var_Scenario_ID int unsigned not null,
 Source_ID int unsigned not null,
 Rupture_ID int unsigned not null,
-Rup_Var_ID int unsigned not null,
+Rup_Var_ID bigint(20) unsigned not null,
 Rup_Var_Seed int unsigned not null,
 primary key (ERF_ID, Rup_Var_Scenario_ID, Source_ID, Rupture_ID, Rup_Var_ID),
 foreign key (ERF_ID) references ERF_IDs (ERF_ID),
 foreign key (Rup_Var_Scenario_ID) references Rupture_Variation_Scenario_IDs (Rup_Var_Scenario_ID),
 foreign key (ERF_ID, Source_ID, Rupture_ID) references Ruptures (ERF_ID, Source_ID, Rupture_ID),
-foreign key (Rup_Var_ID, Rup_Var_Scenario_ID, ERF_ID, Source_ID, Rupture_ID) references Rupture_Variations (Rup_Var_ID, Rup_Var_Scenario_ID, ERF_ID, Source_ID, Rupture_ID)
+foreign key (ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID) references Rupture_Variations (ERF_ID, Source_ID, Rupture_ID, Rup_Var_ID, Rup_Var_Scenario_ID)
 ) ENGINE=InnoDB;
