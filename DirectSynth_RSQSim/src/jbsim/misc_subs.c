@@ -152,6 +152,13 @@ void get_indx(float *lon,float *lat,float *dep,struct sgtindex *indx,struct geop
 float xs, ys, xr, yr;
 double invh;
 
+/*printf("Searching for (%f, %f, %f)\n", *lon, *lat, *dep);
+printf("geoproj=%d, erad=%f, g0=%f, b0=%f\n", gp->geoproj, gp->erad, gp->g0, gp->b0);
+int i;
+for (i=0; i<9; i++) {
+	printf("amat[%d]=%f, ainv[%d]=%f\n", i, gp->amat[i], i, gp->ainv[i]);
+}*/
+
 invh = 1.0/(double)(indx->h);
 
 if(gp->geoproj == 0)
@@ -165,6 +172,8 @@ if(gp->geoproj == 0)
 else if(gp->geoproj == 1)
    gcproj(&xr,&yr,lon,lat,&gp->erad,&gp->g0,&gp->b0,gp->amat,gp->ainv,1);
 
+
+//printf("xr=%f, yr=%f, invh=%lf\n", xr, yr, invh);
 indx->xsgt = (int)((double)(xr)*invh + 0.5);
 indx->ysgt = (int)((double)(yr)*invh + 0.5);
 indx->zsgt = (int)((double)((*dep))*invh + 1.5);
@@ -278,9 +287,7 @@ while(n--)
    }
 }
 
-taper_norm(g,dt,nt)
-float *g, *dt;
-int nt;
+void taper_norm(float *g,float *dt,int nt)
 {
 float fac, df, arg;
 int i;
@@ -300,9 +307,7 @@ for(i=nt-ntap;i<nt;i++)
    }
 }
 
-norm(g,dt,nt)
-float *g, *dt;
-int nt;
+void norm(float *g,float *dt,int nt)
 {
 float fac;
 
@@ -523,7 +528,7 @@ int n,isign;
 	return;
    }
 
-double gaus_rand(float *sigma,float *mean,int *seed)
+double gaus_rand(float *sigma,float *mean,long *seed)
 {
 double r = 0.0;
 double six = 6.0;
@@ -540,13 +545,13 @@ return((double)((r - six)*(*sigma) + *mean));
 /* sfrand() returns a uniform distribution of random numbers
  * in the range -1.0 -> 1.0.
  */
-double sfrand(int *seed)
+double sfrand(long *seed)
 {
 *seed = ((*seed) * 1103515245 + 12345) & 0x7fffffff;
 return((double)(*seed)/1073741824.0 - 1.0);
 }
 
-void rand_init(float *rt,float *pct,int *seed,int ns,int nd,int nfs,int nfd,int nsmth,int gaus)
+void rand_init(float *rt,float *pct,long *seed,int ns,int nd,int nfs,int nfd,int nsmth,int gaus)
 {
 float *xt, maxr, gmean;
 int i, j, k, l, ip;
@@ -797,7 +802,7 @@ if(diff < 0.0)
    diff = -diff;
 
 
-fprintf(stderr,"%f vs %d: diff= %15.10e\n",fnt, gnt, diff);
+//fprintf(stderr,"%f vs %d: diff= %15.10e\n",fnt, gnt, diff);
 
 
 return(diff);
