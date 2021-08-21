@@ -29,6 +29,7 @@ float z0, strike, dip, rake;
 int fdw, ip, maxmech, nstf, ntsum, maxnt, ig;
 int i,j;
 float mindt, maxdelta, fweight;
+double d_scale;
 
 char string[256], outfile[128];
 char outdir[256], sgtdir[256], sname[8], rupmodfile[256];
@@ -50,7 +51,7 @@ int nm, non_exact;
 
 int extract_sgt = 0;
 
-float* tmom = check_malloc(sizeof(float) * num_rup_vars);
+double* tmom = check_malloc(sizeof(double) * num_rup_vars);
 for (i=0; i<num_rup_vars; i++) {
 	tmom[i] = 0.0;
 }
@@ -209,13 +210,13 @@ while (1) {
 
 	request_sgt(sgthead, sgtbuf, num_comps, request_from_handler_id, sgts_by_handler, starting_index, ending_index, sgtmast.nt, my_id);
 
-	if (debug) {
+	/*if (debug) {
 		struct mallinfo m_info;
 		m_info = mallinfo();
 		char buf[512];
 		sprintf(buf, "non_mmap_alloc=%d, free_blocks=%d, fastbin_free_blocks=%d, mmap_alloc=%d, bytes_mmap_alloc=%d, highwater=%d, fastbin_alloc=%d, total_alloced=%d, total_free=%d, releasable=%d", m_info.arena, m_info.ordblks, m_info.smblks, m_info.hblks, m_info.hblkhd, m_info.usmblks, m_info.fsmblks, m_info.uordblks, m_info.fordblks, m_info.keepcost);
 		write_log(buf);
-	}
+	}*/
 
 	//read_part_sgt(&sgtfilepar,&sgtmast,sgtindx,sgthead,sgtbuf,starting_pt,ending_pt);
 
@@ -370,20 +371,18 @@ while (1) {
 		for (i=0; i<num_rup_vars; i++) {
 			zapit(subseis[i],maxmech*3*ntout);
 
-			get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
-			scale = slip_conv*apval_ptr[i][srf_index].area;
-	                //fprintf(stderr, "Scale = %e, vslip = %e\n", scale, vslip);
-			mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
-			tmom[i] = tmom[i] + vslip*scale;
-                   	//fprintf(stderr, "tmom = %e, scale = %e\n", tmom[i], scale);
-                   	/*for (j=0; j<ntout; j++) {
-                   	     printf("gfmech[%d] = %e\n", j, gfmech[i][j]);
-                   	}*/
+			//get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
+			get_srfpars_v2(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar);
+			d_scale = (double)(slip_conv)*(double)(apval_ptr[i][srf_index].area);
+	        //printf("Scale = %e, vslip = %e\n", scale, vslip);
+			//mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
+			mech_sgt_d(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&d_scale);
+			tmom[i] = tmom[i] + (double)vslip*d_scale;
+            //printf("tmom = %e, scale = %e\n", tmom[i], scale);
 			sum_sgt(subseis[i],ntout,gfmech[i],&sgtparms[srf_index],ntsum,&rt,&tstart,mechpar);
-                        /*for (j=0; j<ntout; j++) {
-                                printf("subseis[%d] = %e\n", j, subseis[i][j]);
-                        }*/
-			srf_stf(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
+            //printf("srf_index=%d, subseis[ntout+100] = %e, seis[ntout+100] = %e\n", srf_index, subseis[i][ntout+100], seis[i][ntout+100]);
+			//srf_stf(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
+			srf_stf_v2(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
 			//int j;
 			/*for (j=0; j<ntout; j++) {
 				printf("seis[%d] = %e\n", j, subseis[i][j]);
@@ -423,14 +422,17 @@ for (ip=0; ip<num_srfs_split; ip++) {
 	for (i=0; i<num_rup_vars; i++) {
 		zapit(subseis[i],maxmech*3*ntout);
 
-		get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
-		scale = slip_conv*apval_ptr[i][srf_index].area;
+		//get_srfpars(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar.stk,&mechpar.dip,&mechpar.rak,&mechpar);
+		get_srfpars_v2(&(srf[i]),apv_off[i],srf_index,&rt,&vslip,&mechpar);
+		d_scale = (double)slip_conv*(double)apval_ptr[i][srf_index].area;
 
-		mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
-		tmom[i] = tmom[i] + vslip*scale;
+		//mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
+		mech_sgt_d(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&d_scale);
+		tmom[i] = tmom[i] + (double)vslip*d_scale;
 
 		sum_sgt(subseis[i],ntout,gfmech[i],&sgtparms[srf_index],ntsum,&rt,&tstart,mechpar);
-		srf_stf(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
+		//srf_stf(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
+		srf_stf_v2(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
 	}
 }
 int all_points_processed = 1;

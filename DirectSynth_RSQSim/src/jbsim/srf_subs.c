@@ -308,7 +308,7 @@ for(i=0;i<apnts_ptr->np;i++)
    }
 }*/
 
-void read_srf(struct standrupformat *srf,char *file,int bflag)
+/*void read_srf(struct standrupformat *srf,char *file,int bflag)
 {
 FILE *fpr, *fopfile();
 struct srf_prectsegments *prseg_ptr;
@@ -472,11 +472,322 @@ else
          for(it=0;it<(apval_ptr[i].nt3);it++)
             fscanf(fpr,"%f",&stf[it]);
 
-         /* get rouge newline character */
+         // get rouge newline character 
          if((apval_ptr[i].nt1) || (apval_ptr[i].nt2) || (apval_ptr[i].nt3))
             fgets(str,1024,fpr);
          }
       }
+   fclose(fpr);
+   }
+}*/
+
+//Updated from Rob's code on 3-2-21
+void read_srf(struct standrupformat *srf,char *file,int bflag)
+{
+FILE *fpr, *fopfile();
+struct srf_prectsegments *prseg_ptr;
+struct srf_apointvalues *apval_ptr;
+char *sptr, str[MAXLINE];
+
+float *stf;
+int i, j, k, it, ig;
+
+char pword[32];
+int fdr;
+
+int ip, np_seg, npread, np_tot;
+long foff;
+
+if(bflag)
+   {
+   if(strcmp(file,"stdin") == 0)
+      fdr = STDIN_FILENO;
+   else
+      fdr = opfile_ro(file);
+
+   reed(fdr,srf->version,sizeof(srf->version));
+
+   reed(fdr,pword,sizeof(pword));
+   if(strcmp(pword,"PLANE") == 0)
+      {
+      sprintf(srf->type,"PLANE");
+
+      reed(fdr,&(srf[0].srf_prect.nseg),sizeof(int));
+      srf[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+      prseg_ptr = srf[0].srf_prect.prectseg;
+
+      reed(fdr,prseg_ptr,(srf[0].srf_prect.nseg)*sizeof(struct srf_prectsegments));
+
+      while(strncmp(pword,"POINTS",6) != 0)
+         reed(fdr,pword,sizeof(pword));
+      }
+
+   if(strncmp(pword,"POINTS",6) == 0)
+      {
+      reed(fdr,&(srf[0].srf_apnts.np),sizeof(int));
+      srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+
+      apval_ptr = srf[0].srf_apnts.apntvals;
+
+      for(i=0;i<srf[0].srf_apnts.np;i++)
+         {
+         reed(fdr,&(apval_ptr[i].lon),sizeof(float));
+         reed(fdr,&(apval_ptr[i].lat),sizeof(float));
+         reed(fdr,&(apval_ptr[i].dep),sizeof(float));
+         reed(fdr,&(apval_ptr[i].stk),sizeof(float));
+         reed(fdr,&(apval_ptr[i].dip),sizeof(float));
+         reed(fdr,&(apval_ptr[i].area),sizeof(float));
+         reed(fdr,&(apval_ptr[i].tinit),sizeof(float));
+         reed(fdr,&(apval_ptr[i].dt),sizeof(float));
+         reed(fdr,&(apval_ptr[i].rake),sizeof(float));
+         reed(fdr,&(apval_ptr[i].slip1),sizeof(float));
+         reed(fdr,&(apval_ptr[i].nt1),sizeof(int));
+         reed(fdr,&(apval_ptr[i].slip2),sizeof(float));
+         reed(fdr,&(apval_ptr[i].nt2),sizeof(int));
+         reed(fdr,&(apval_ptr[i].slip3),sizeof(float));
+         reed(fdr,&(apval_ptr[i].nt3),sizeof(int));
+
+         apval_ptr[i].stf1 = (float *)check_malloc((apval_ptr[i].nt1)*sizeof(float));
+         apval_ptr[i].stf2 = (float *)check_malloc((apval_ptr[i].nt2)*sizeof(float));
+         apval_ptr[i].stf3 = (float *)check_malloc((apval_ptr[i].nt3)*sizeof(float));
+
+         reed(fdr,apval_ptr[i].stf1,(apval_ptr[i].nt1)*sizeof(float));
+         reed(fdr,apval_ptr[i].stf2,(apval_ptr[i].nt2)*sizeof(float));
+         reed(fdr,apval_ptr[i].stf3,(apval_ptr[i].nt3)*sizeof(float));
+         }
+      }
+   close(fdr);
+   }
+else
+   {
+   if(strcmp(file,"stdin") == 0)
+      fpr = stdin;
+   else
+      fpr = fopfile(file,"r");
+
+   fgets(str,MAXLINE,fpr);
+   sscanf(str,"%s",srf[0].version);
+
+   /* reserve first 3 lines for writing out command that generated SRF */
+   srf[0].srf_hcmnt.nline = 3;
+   srf[0].srf_hcmnt.cbuf = (char *)check_malloc((srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+
+   /* initialize first 3 lines with NULL, if not reset, won't print out */
+   srf[0].srf_hcmnt.cbuf[0] = '\0';
+   srf[0].srf_hcmnt.cbuf[MAXLINE] = '\0';
+   srf[0].srf_hcmnt.cbuf[2*MAXLINE] = '\0';
+
+   fgets(str,MAXLINE,fpr);
+   while(str[0] == '#')
+      {
+      srf[0].srf_hcmnt.nline++;
+      srf[0].srf_hcmnt.cbuf = (char *)check_realloc(srf[0].srf_hcmnt.cbuf,(srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+
+      /* get rid of annoying newline */
+      i = 0;
+      while(str[i] != '\n' && str[i] != '\0')
+         i++;
+      str[i] = '\0';
+
+      sptr = srf[0].srf_hcmnt.cbuf + (srf[0].srf_hcmnt.nline-1)*MAXLINE;
+      sprintf(sptr,"%s",str);
+
+      /* just to make sure string ends without issue */
+      sptr[MAXLINE-1] = '\0';
+
+      if(fgets(str,MAXLINE,fpr) == NULL)
+         break;
+      }
+
+   sscanf(str,"%s",pword);
+
+   if(strncmp(pword,"PLANE",5) == 0)
+      {
+      sscanf(str,"%s %d",srf[0].type,&(srf[0].srf_prect.nseg));
+
+      srf[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+      prseg_ptr = srf[0].srf_prect.prectseg;
+
+      for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
+         {
+         fgets(str,MAXLINE,fpr);
+         sscanf(str,"%f %f %d %d %f %f",&(prseg_ptr[ig].elon),
+                                     &(prseg_ptr[ig].elat),
+                                     &(prseg_ptr[ig].nstk),
+                                     &(prseg_ptr[ig].ndip),
+                                     &(prseg_ptr[ig].flen),
+                                     &(prseg_ptr[ig].fwid));
+         fgets(str,MAXLINE,fpr);
+         sscanf(str,"%f %f %f %f %f",&(prseg_ptr[ig].stk),
+                                  &(prseg_ptr[ig].dip),
+                                  &(prseg_ptr[ig].dtop),
+                                  &(prseg_ptr[ig].shyp),
+                                  &(prseg_ptr[ig].dhyp));
+         }
+      }
+
+   if(strncmp(pword,"POINTS",6) != 0)
+      {
+      fgets(str,MAXLINE,fpr);
+      while(str[0] == '#')
+         {
+         srf[0].srf_hcmnt.nline++;
+         srf[0].srf_hcmnt.cbuf = (char *)check_realloc(srf[0].srf_hcmnt.cbuf,(srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+
+         sptr = srf[0].srf_hcmnt.cbuf + (srf[0].srf_hcmnt.nline-1)*MAXLINE;
+         sprintf(sptr,"%s",str);
+
+         /* just to make sure string ends without issue */
+         sptr[MAXLINE-2] = '\n';
+         sptr[MAXLINE-1] = '\0';
+
+         if(fgets(str,MAXLINE,fpr) == NULL)
+            break;
+         }
+
+      sscanf(str,"%s",pword);
+      }
+
+   if(strncmp(pword,"POINTS",6) == 0)
+      {
+      srf[0].nseg = 0;
+      srf[0].srf_apnts.np = 0;
+
+      srf[0].np_seg = NULL;
+      srf[0].srf_apnts.apntvals = NULL;
+
+      while(strncmp(pword,"POINTS",6) == 0)
+         {
+         srf[0].nseg++;
+         srf[0].np_seg = (int *)check_realloc(srf[0].np_seg,(srf[0].nseg)*sizeof(int));
+
+         sscanf(str,"%*s %d",&np_seg);
+
+     np_tot = np_seg + srf[0].srf_apnts.np;
+
+         srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_realloc(srf[0].srf_apnts.apntvals,np_tot*sizeof(struct srf_apointvalues));
+
+         npread = 0;
+         for(i=0;i<np_seg;i++)
+            {
+        ip = i + srf[0].srf_apnts.np;
+            apval_ptr = &(srf[0].srf_apnts.apntvals[ip]);
+
+        foff = ftell(fpr);
+            if(fgets(str,MAXLINE,fpr) == NULL)
+           break;
+        else
+           {
+               sscanf(str,"%s",pword);
+               if(strncmp(pword,"POINTS",6) == 0)
+                  {
+          fseek(fpr,foff,SEEK_SET);
+          break;
+          }
+
+           npread++;
+
+               if(atof(srf->version) < 2.0)
+                  {
+                  sscanf(str,"%f %f %f %f %f %f %f %f",&(apval_ptr->lon),
+                                           &(apval_ptr->lat),
+                                           &(apval_ptr->dep),
+                                           &(apval_ptr->stk),
+                                           &(apval_ptr->dip),
+                                           &(apval_ptr->area),
+                                           &(apval_ptr->tinit),
+                                           &(apval_ptr->dt));
+
+                  apval_ptr->vs = -1;
+                  apval_ptr->den = -1;
+              }
+               else if(atof(srf->version) >= 2.0)
+                  {
+                  sscanf(str,"%f %f %f %f %f %f %f %f %f %f",&(apval_ptr->lon),
+                                           &(apval_ptr->lat),
+                                           &(apval_ptr->dep),
+                                           &(apval_ptr->stk),
+                                           &(apval_ptr->dip),
+                                           &(apval_ptr->area),
+                                           &(apval_ptr->tinit),
+                                           &(apval_ptr->dt),
+                                           &(apval_ptr->vs),
+                                           &(apval_ptr->den));
+              }
+
+               fgets(str,MAXLINE,fpr);
+               sscanf(str,"%f %f %d %f %d %f %d",&(apval_ptr->rake),
+                                        &(apval_ptr->slip1),
+                                        &(apval_ptr->nt1),
+                                        &(apval_ptr->slip2),
+                                        &(apval_ptr->nt2),
+                                        &(apval_ptr->slip3),
+                                        &(apval_ptr->nt3));
+
+           if(apval_ptr->nt1)
+                  apval_ptr->stf1 = (float *)check_malloc((apval_ptr->nt1)*sizeof(float));
+           else
+                  apval_ptr->stf1 = NULL;
+
+               stf = apval_ptr->stf1;
+
+               for(it=0;it<(apval_ptr->nt1);it++)
+                  fscanf(fpr,"%f",&stf[it]);
+
+           if(apval_ptr->nt2)
+                  apval_ptr->stf2 = (float *)check_malloc((apval_ptr->nt2)*sizeof(float));
+           else
+                  apval_ptr->stf2 = NULL;
+
+               stf = apval_ptr->stf2;
+
+               for(it=0;it<(apval_ptr->nt2);it++)
+                  fscanf(fpr,"%f",&stf[it]);
+
+           if(apval_ptr->nt3)
+                  apval_ptr->stf3 = (float *)check_malloc((apval_ptr->nt3)*sizeof(float));
+           else
+                  apval_ptr->stf3 = NULL;
+
+               stf = apval_ptr->stf3;
+
+               for(it=0;it<(apval_ptr->nt3);it++)
+                  fscanf(fpr,"%f",&stf[it]);
+
+               /* get rouge newline character */
+               if((apval_ptr->nt1) || (apval_ptr->nt2) || (apval_ptr->nt3))
+                  fgets(str,MAXLINE,fpr);
+           }
+            }
+
+     srf[0].np_seg[(srf[0].nseg)-1] = npread;
+         srf[0].srf_apnts.np = srf[0].srf_apnts.np + npread;
+
+         if(fgets(str,MAXLINE,fpr) == NULL)
+            break;
+         else
+        {
+            sscanf(str,"%s",pword);
+            while(strncmp(pword,"POINTS",6) != 0)
+               {
+               if(fgets(str,MAXLINE,fpr) == NULL)
+                  break;
+               else
+                  sscanf(str,"%s",pword);
+               }
+        }
+	}
+
+      if(np_tot > srf[0].srf_apnts.np)
+        srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_realloc(srf[0].srf_apnts.apntvals,(srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+      }
+   else
+      {
+      fprintf(stderr,"*** No valid data found.  Last input line read is:\n");
+      fprintf(stderr,"%s",str);
+      exit(-99);
+      }
+
    fclose(fpr);
    }
 }
