@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import sys
 import os
@@ -8,6 +8,7 @@ if len(sys.argv)<2:
 	sys.exit(1)
 
 for line in open(sys.argv[1], "r"):
-	os.mkdir(line.strip())
-
+	dirname = line.strip()
+	if not os.path.exists(dirname):
+		os.mkdir(line.strip())
 
