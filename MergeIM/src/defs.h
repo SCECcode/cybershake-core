@@ -1,3 +1,6 @@
+#define MAX_PARAMS 100 /* maximum number of parameters to pass */
+#define MAX_PARAM_LENGTH 64 /* maximum length of an individual parameter */
+
 #define         NTMAX              10000
 #define         SOMERVILLE_FLAG    1
 #define         MAI_FLAG           2
