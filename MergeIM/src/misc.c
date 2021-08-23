@@ -36,20 +36,20 @@ static  long    frandx = 1;
 /* frand() returns a uniform distribution of random numbers
  * in the range -1.0 -> 1.0.
  */
-double frand(void)
+/*double frand(void)
 {
 frandx = (frandx * 1103515245 + 12345) & 0x7fffffff;
 return((double)(frandx)/1073741824.0 - 1.0);
-}
+}*/
 
 /* sfrand() returns a uniform distribution of random numbers
  * in the range -1.0 -> 1.0.
  */
-double sfrand(long *seed)
+/*double sfrand(long *seed)
 {
 *seed = ((*seed) * 1103515245 + 12345) & 0x7fffffff;
 return((double)(*seed)/1073741824.0 - 1.0);
-}
+}*/
 
 double gaussian_rand(float *sigma,float *mean,long *seed)
 {
@@ -65,7 +65,7 @@ for(i=0;i<12;i++)
 return((double)((r - six)*(*sigma) + *mean));
 }
 
-zapit(s,n)
+/*zapit(s,n)
 float *s;
 int n;
 {
@@ -74,7 +74,7 @@ while(n--)
    s[0] = 0.0;
    s++;
    }
-}
+}*/
 
 void set_ne(float *elon,float *elat,float *slon,float *slat,float *sn,float *se)
 {
