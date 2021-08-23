@@ -222,7 +222,6 @@ int resamp, ntpad, ntrsmp, gnt;
 
 float slip, sfac, dt_stf, dt_tmp, ds_dt;
 int nt_fac, nt_tmp, jj, kk;
-int realloc_flag = 0;
 
 float tol = 1.0e-02;
 
@@ -280,7 +279,6 @@ for(im=0;im<mp.nmech;im++)
          {
          nstf = nstf + 2;
          sptr = (float *)check_realloc((void *)sptr,nstf*sizeof(float));
-         realloc_flag = 1;
 
          sptr[2] = 0.0;
          sptr[1] = sptr[0];
@@ -290,7 +288,6 @@ for(im=0;im<mp.nmech;im++)
          {
          nstf++;
          sptr = (float *)check_realloc((void *)sptr,nstf*sizeof(float));
-         realloc_flag = 1;
 
          sptr[nstf-1] = 0.0;
          }
@@ -319,7 +316,6 @@ for(im=0;im<mp.nmech;im++)
             }
 
          sptr = (float *)check_realloc((void *)sptr,nt_tmp*sizeof(float));
-         realloc_flag = 1;
          for(it=0;it<nt_tmp;it++)
             sptr[it] = sptr2[it];
 
@@ -395,11 +391,7 @@ for(im=0;im<mp.nmech;im++)
    do_cnvlv(s,uptr,nt,stf,nstf);
    }
 
-if(realloc_flag == 1) {
-   free(sptr);
-   sptr = NULL;
-}
-
+free(sptr);
 free(space);
 free(sptr2);
 }
