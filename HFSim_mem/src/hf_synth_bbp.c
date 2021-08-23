@@ -11,6 +11,9 @@ const int X_COMP_FLAG = 1;
 const int Y_COMP_FLAG = 2;
 const int Z_COMP_FLAG = 4;
 
+const int RUP_GEOM_MODE = 1;
+const int SRF_MODE = 2;
+
 void parse_rup_vars(char* rup_var_string, int num_rup_vars, struct rupture_variation* rup_vars);
 
 int add_param_reset(char** param_string, char* param, int reset) {
@@ -46,19 +49,19 @@ void write_slipfile(struct slipfile sfile, char* outfile) {
 		fprintf(fp_out,"%4.0f %4.0f %4.0f %8.2f %8.2f %8.2f\n",sfile.strike[i],sfile.dip[i],sfile.ravg[i],sfile.dtop[i],sfile.shypo[i],sfile.dhypo[i]);
 		for (j=0; j<sfile.ny[i]; j++) {
 			for (k=0; k<sfile.nx[i]; k++) {
-				fprintf(fp_out, "%13.5e", sfile.sp[i*NQ*NP + j*NP + k]);
+				fprintf(fp_out, "%13.5e", sfile.sp[i*NQ*NP + j*sfile.nx[i] + k]);
 			}
 			fprintf(fp_out, "\n");
 		}
         for (j=0; j<sfile.ny[i]; j++) {
         	for (k=0; k<sfile.nx[i]; k++) {
-            	fprintf(fp_out, "%13.5e", sfile.tr[i*NQ*NP + j*NP + k]);
+            	fprintf(fp_out, "%13.5e", sfile.tr[i*NQ*NP + j*sfile.nx[i] + k]);
             }
 			fprintf(fp_out, "\n");
         }
         for (j=0; j<sfile.ny[i]; j++) {
         	for (k=0; k<sfile.nx[i]; k++) {
-            	fprintf(fp_out, "%13.5e", sfile.ti[i*NQ*NP + j*NP + k]);
+            	fprintf(fp_out, "%13.5e", sfile.ti[i*NQ*NP + j*sfile.nx[i] + k]);
             }
 			fprintf(fp_out, "\n");
         }
@@ -69,11 +72,13 @@ void write_slipfile(struct slipfile sfile, char* outfile) {
 int main(int argc, char** argv) {
 	char slipfile[256];
 	char outfile[256];
-	char infile[256];
+	char infile[256] = {'\0'};
+	//Stores PGAs needed for site response
+	char pga_outfile[256] = {'\0'};
 	char** param_string;
 	float avgstk = -1.0e+15;
 	//for hfsim
-	char stat[12];
+	char stat[64];
 	float slon, slat;
 	char local_vmod[256];
 	float vs30 = -1.0;
@@ -83,7 +88,7 @@ int main(int argc, char** argv) {
 	float dt = 0.025;
 	float modelrot = -55;
 
-	char rup_geom_file[256] = {0};
+	char rup_geom_file[256] = {'\0'};
 	int slip_id;
 	int hypo_id;
 	int i;
@@ -94,6 +99,9 @@ int main(int argc, char** argv) {
 	int det_max_freq = -1.0;
 	int stoch_max_freq = 10.0;
 
+	float target_dx = 1.0;
+	float target_dy = 1.0;
+
 	int do_site_response = 1;
 
 	int num_rup_vars = -1;
@@ -102,12 +110,15 @@ int main(int argc, char** argv) {
 
 	int debug = 0;
 
+	int mode = RUP_GEOM_MODE;
+	int srf_seed;
+
 	param_string = check_malloc(sizeof(char*) * MAX_PARAMS);
 	for (i=0; i<MAX_PARAMS; i++) {
 		param_string[i] = check_malloc(sizeof(char) * MAX_PARAM_LENGTH);
 	}
 
-	memset(stat, ' ', 12);
+	memset(stat, ' ', 64);
 	memset(local_vmod, ' ', 256);
 	memset(outfile, ' ', 256);	
 
@@ -116,6 +127,7 @@ int main(int argc, char** argv) {
 	//for srf2stoch
 	//getpar("infile", "s", infile);
 	//Can use rupture geometry file or SRF
+	//Specify rup_geom_file OR infile
 	getpar("rup_geom_file", "s", rup_geom_file);
 	getpar("infile", "s", infile);
 	getpar("avgstk", "f", &avgstk);
@@ -138,6 +150,9 @@ int main(int argc, char** argv) {
     getpar("det_max_freq", "f", &det_max_freq);
     getpar("stoch_max_freq", "f", &stoch_max_freq);
 	getpar("num_comps", "d", &num_comps);
+	getpar("pga_outfile", "s", &pga_outfile);
+	getpar("target_dx", "f", &target_dx);
+	getpar("target_dy", "f", &target_dy);
 
 	//If vs30 is not given, then use UCVM to determine it
 	if (vs30==-1.0) {
@@ -149,92 +164,120 @@ int main(int argc, char** argv) {
 		if (debug) printf("vs30=%f\n", vs30);
 	}
 
-	//Support for multiple rupture variations
-	getpar("num_rup_vars", "d", &num_rup_vars);
-	printf("num_rvs = %d\n", num_rup_vars);
 	struct rupture_variation* rup_vars;
-	if (num_rup_vars==-1) {
-		mstpar("rup_var_id", "d", &rup_var_id);
-		mstpar("slip", "d", &slip_id);
-		mstpar("hypo", "d", &hypo_id);
-		num_rup_vars = 1;
-		rup_vars = check_malloc(sizeof(struct rupture_variation)*num_rup_vars);
-		rup_vars[0].rup_var_id = rup_var_id;
-		rup_vars[0].slip_id = slip_id;
-		rup_vars[0].hypo_id = hypo_id;
-	} else {
-		getpar("rup_vars", "s", rup_var_string);
-		rup_vars = check_malloc(sizeof(struct rupture_variation)*num_rup_vars);
-		//If rup_vars aren't defined, then we do all the rupture variations for this rupture
-		//Figure out how many from rupgen_get_num_rv
-		if (rup_var_string[0]==0) {
-			if (rup_geom_file[0]==0) {
-				fprintf(stderr, "Rupture geometry file was not specified, aborting.\n");
-				exit(3);
-			}
-			rg_stats_t stats;
-			set_memcached_server("localhost");
-			rupgen_get_num_rv(rup_geom_file, &stats, RUPGEN_UNIFORM_HYPO);
-			for (i=0; i<num_rup_vars; i++) {
-				rup_vars[i].rup_var_id = i;
-				rup_vars[i].slip_id = i;
-				rup_vars[i].hypo_id = 0;
-			}
+	if (rup_geom_file[0]!='\0') {
+		//If rup_geom_file is passed, assume we're generating the SRFs
+		//Support for multiple rupture variations
+		mode = RUP_GEOM_MODE;
+		getpar("num_rup_vars", "d", &num_rup_vars);
+		printf("num_rvs = %d\n", num_rup_vars);
+		if (num_rup_vars==-1) {
+			mstpar("rup_var_id", "d", &rup_var_id);
+			mstpar("slip", "d", &slip_id);
+			mstpar("hypo", "d", &hypo_id);
+			num_rup_vars = 1;
+			rup_vars = check_malloc(sizeof(struct rupture_variation)*num_rup_vars);
+			rup_vars[0].rup_var_id = rup_var_id;
+			rup_vars[0].slip_id = slip_id;
+			rup_vars[0].hypo_id = hypo_id;
 		} else {
-			parse_rup_vars(rup_var_string, num_rup_vars, rup_vars);
-			set_memcached_server("localhost");
+			getpar("rup_vars", "s", rup_var_string);
+			rup_vars = check_malloc(sizeof(struct rupture_variation)*num_rup_vars);
+			//If rup_vars aren't defined, then we do all the rupture variations for this rupture
+			//Figure out how many from rupgen_get_num_rv
+			if (rup_var_string[0]==0) {
+				if (rup_geom_file[0]==0) {
+					fprintf(stderr, "Rupture geometry file was not specified, aborting.\n");
+					exit(3);
+				}
+				rg_stats_t stats;
+				set_memcached_server("localhost");
+				rupgen_get_num_rv(rup_geom_file, &stats, RUPGEN_UNIFORM_HYPO);
+				for (i=0; i<num_rup_vars; i++) {
+					rup_vars[i].rup_var_id = i;
+					rup_vars[i].slip_id = i;
+					rup_vars[i].hypo_id = 0;
+				}
+			} else {
+				parse_rup_vars(rup_var_string, num_rup_vars, rup_vars);
+				set_memcached_server("localhost");
+			}
 		}
+	} else if (infile[0]!='\0') {
+		//SRF file was specified
+		printf("Running in SRF mode.\n");
+		mode = SRF_MODE;
+		num_rup_vars = 1;
+		mstpar("rup_var_id", "d", &rup_var_id);
+		mstpar("srf_seed", "d", &srf_seed);
+		rup_vars = check_malloc(sizeof(struct rupture_variation)*num_rup_vars);
+        rup_vars[0].rup_var_id = rup_var_id;
+	} else {
+		printf("Error: must specify either rup_geom_file or infile.  Aborting.\n");
+		exit(2);
 	}
 	endpar();
 
 	FILE* fp_out = fopen(outfile, "wb");
+	FILE* pga_fp_out = NULL;
+	if (strlen(pga_outfile)>0) { 
+		pga_fp_out = fopen(pga_outfile, "w");
+	} else {
+		sprintf(pga_outfile, "%s.pga", outfile);
+		pga_fp_out = fopen(pga_outfile, "w");
+	}
 
 	int rv;
 	struct standrupformat srf;
 	//Generate them sequentially
-	for (rv=0; rv<num_rup_vars; rv++) {
-		//float seis[3][mmv];
-		float** seis = check_malloc(sizeof(float*) * 3);
-		for (i=0; i<3; i++) {
-			seis[i] = check_malloc(sizeof(float)*mmv);
-		}
-	    struct seisheader header;
-	    strcpy(header.version, "12.10");
-	    strcpy(header.site_name, stat);
-	    header.source_id = source_id;
-	    header.rupture_id = rupture_id;
-	    header.rup_var_id = rup_vars[rv].rup_var_id;
-	    header.det_max_freq = det_max_freq;
-	    header.stoch_max_freq = stoch_max_freq;
-		header.dt = dt;
-		header.nt = (int)(tlen/dt+0.5);
-		header.comps = X_COMP_FLAG | Y_COMP_FLAG;
-
-		rg_stats_t stats;
-		int rupture_seed = rupgen_get_rupture_seed(header.source_id, header.rupture_id);
-		rupgen_genslip_seed(rup_geom_file, rv, 0, &stats, &srf, RUPGEN_UNIFORM_HYPO, 0.05, rupture_seed);
-		if (debug) {
-			char srf_filename[128];
-			sprintf(srf_filename, "%s.srf", rup_geom_file);
-			write_srf(&srf, srf_filename, 0);
-		}
-
-	    struct slipfile sfile;
-		//Set up expexted arguments
-		int param_string_len;
-		char pstring[MAX_PARAM_LENGTH];
-		add_param(param_string, "target_dx=1.0");
-		add_param(param_string, "target_dy=1.0");
-		sprintf(pstring, "avgstk=%e", avgstk);
-		param_string_len = add_param(param_string, pstring);
-
-		srf2stoch(param_string_len, param_string, &srf, &sfile, debug);
-
-		sprintf(slipfile, "%s.slip", infile);
+		for (rv=0; rv<num_rup_vars; rv++) {
+			//float seis[3][mmv];
+			float** seis = check_malloc(sizeof(float*) * 3);
+			for (i=0; i<3; i++) {
+				seis[i] = check_malloc(sizeof(float)*mmv);
+			}
+		    struct seisheader header;
+		    strcpy(header.version, "12.10");
+		    strcpy(header.site_name, stat);
+		    header.source_id = source_id;
+		    header.rupture_id = rupture_id;
+		    header.rup_var_id = rup_vars[rv].rup_var_id;
+		    header.det_max_freq = det_max_freq;
+		    header.stoch_max_freq = stoch_max_freq;
+			header.dt = dt;
+			header.nt = (int)(tlen/dt+0.5);
+			header.comps = X_COMP_FLAG | Y_COMP_FLAG;
+	
+			if (mode==RUP_GEOM_MODE) {
+				rg_stats_t stats;
+				int rupture_seed = rupgen_get_rupture_seed(header.source_id, header.rupture_id);
+				rupgen_genslip_seed(rup_geom_file, rv, 0, &stats, &srf, RUPGEN_UNIFORM_HYPO, 0.05, rupture_seed);
+				if (debug) {
+					char srf_filename[128];
+					sprintf(srf_filename, "%s.srf", rup_geom_file);
+					write_srf(&srf, srf_filename, 0);
+				}
+			} else if (mode==SRF_MODE) {
+				read_srf(&srf, infile, 0);
+			}
+	
+		    struct slipfile sfile;
+			//Set up expexted arguments
+			int param_string_len;
+			char pstring[MAX_PARAM_LENGTH];
+			sprintf(pstring, "target_dx=%.1f\n", target_dx);
+			add_param(param_string, pstring);
+			sprintf(pstring, "target_dy=%.1f\n", target_dy);
+			add_param(param_string, pstring);
+			sprintf(pstring, "avgstk=%e", avgstk);
+			param_string_len = add_param(param_string, pstring);
+	
+			srf2stoch(param_string_len, param_string, &srf, &sfile, debug);
+	
+			sprintf(slipfile, "%s.slip", infile);
 		if (debug) write_slipfile(sfile, slipfile);
 		//Need to do some rounding
 		int i;
-		printf("elon value from srf2stoch is %f\n", sfile.elon[0]);
 		//Note that casting to int is not the same as floor for negative #s
 		//So we are using floorf instead
 		for(i=0; i<sfile.nseg; i++) {
@@ -243,7 +286,6 @@ int main(int argc, char** argv) {
 			//sfile.elat[i] = ((int)(10000.0*sfile.elat[i]+0.5))/10000.0;
 			sfile.elat[i] = (float)(floor(10000.0*sfile.elat[i]+0.5)/10000.0);
 		}
-		printf("rounded elon value from srf2stoch is %f\n", sfile.elon[0]);
 		for(i=0; i<sfile.nseg; i++) {
 			/*sfile.ravg[i] = (int)(sfile.ravg[i]+0.5);
 			sfile.dtop[i] = ((int)(100.0*sfile.dtop[i]+0.5))/100.0;
@@ -269,9 +311,15 @@ int main(int argc, char** argv) {
 		sfile.qfexp = 0.6;
 
 		//Calculate the variation seed out here, since we have all the parameters
-		int variation_seed = rupgen_get_variation_seed(rup_geom_file, &stats, RUPGEN_UNIFORM_HYPO, header.source_id, header.rupture_id, rv, 0); 
+		int variation_seed = 0;
+		if (mode==RUP_GEOM_MODE) {
+			rg_stats_t stats;
+			variation_seed = rupgen_get_variation_seed(rup_geom_file, &stats, RUPGEN_UNIFORM_HYPO, header.source_id, header.rupture_id, rv, 0);
+		} else if (mode==SRF_MODE) {
+			variation_seed = srf_seed;
+		}
 
-		hfsim(seis, stat, slon, slat, local_vmod, fp_out, vs30, &header, modelrot, &sfile, num_comps, do_site_response, vref, vpga, variation_seed, debug);
+		hfsim(seis, stat, slon, slat, local_vmod, fp_out, pga_fp_out, vs30, &header, modelrot, &sfile, num_comps, do_site_response, vref, vpga, variation_seed, debug);
 
 		free(sfile.sp);
        	free(sfile.tr);
@@ -280,9 +328,15 @@ int main(int argc, char** argv) {
 			free(seis[i]);
 		}
 		free(seis);
+		free_srf_ptrs(&srf);
 	}
 	fflush(fp_out);
 	fclose(fp_out);
+
+	fflush(pga_fp_out);
+	fclose(pga_fp_out);
+
+	free(rup_vars);
 
 	for (i=0; i<MAX_PARAMS; i++) {
 		free(param_string[i]);
