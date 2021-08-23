@@ -327,7 +327,6 @@ for(im=0;im<mp.nmech;im++)
          dt_stf = dt_tmp;
          }
 
-printf("C: stf1=%p\n", apval_ptr[ip].stf1);
 /* second, check to see if additional adjustment is still needed */
 
       if((*dt)/dt_stf > pratio_tol || (*dt)/dt_stf < mratio_tol)
@@ -335,7 +334,6 @@ printf("C: stf1=%p\n", apval_ptr[ip].stf1);
          ntpad = 2*nstf;
          fnt = ntpad*dt_stf/(*dt);
          gnt = (int)(fnt + 0.5);
-		printf("D\n");
          while(nt_tol(fnt,gnt) > tol)
             {
             ntpad++;
@@ -349,7 +347,6 @@ printf("C: stf1=%p\n", apval_ptr[ip].stf1);
         {
         space = (float *) check_realloc ((void *)space,2*ntrsmp*sizeof(float));
         sptr2 = (float *)check_realloc((void *)sptr2,2*ntrsmp*sizeof(float));
-		printf("D1\n");
             for(it=0;it<2*ntrsmp;it++)
                sptr2[it] = 0.0;
 
@@ -359,7 +356,6 @@ printf("C: stf1=%p\n", apval_ptr[ip].stf1);
         {
         space = (float *) check_realloc ((void *)space,2*ntpad*sizeof(float));
         sptr2 = (float *)check_realloc((void *)sptr2,2*ntpad*sizeof(float));
-		printf("D2\n");
             for(it=0;it<2*ntpad;it++)
                sptr2[it] = 0.0;
 
@@ -382,7 +378,6 @@ printf("C: stf1=%p\n", apval_ptr[ip].stf1);
          sfac = 0.0;
          for(it=0;it<nstf;it++)
             sfac = sfac + (*dt)*sptr[it];
-		printf("E\n");
          sfac = slip/sfac;
          for(it=0;it<nstf;it++)
             sptr[it] = sfac*sptr[it];
@@ -400,15 +395,10 @@ printf("C: stf1=%p\n", apval_ptr[ip].stf1);
    do_cnvlv(s,uptr,nt,stf,nstf);
    }
 
-printf("E: stf1=%p\n", apval_ptr[ip].stf1);
-printf("sptr before free=%p\n", sptr);
-
 if(realloc_flag == 1) {
    free(sptr);
    sptr = NULL;
 }
-
-printf("F: stf1=%p\n", apval_ptr[ip].stf1);
 
 free(space);
 free(sptr2);
