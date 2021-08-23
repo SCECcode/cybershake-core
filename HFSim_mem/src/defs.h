@@ -19,6 +19,9 @@
 #define RDWR_FLAGS      O_RDWR
 #define CROPTR_FLAGS    O_CREAT | O_TRUNC | O_RDWR
 
+#define MAX_PARAMS 100 /* maximum number of parameters to pass */
+#define MAX_PARAM_LENGTH 64 /* maximum length of an individual parameter */
+
 #if _FILE_OFFSET_BITS == 64
 
 #undef RDONLY_FLAGS
