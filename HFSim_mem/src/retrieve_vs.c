@@ -12,41 +12,74 @@ void initialize_ucvm(char* model) {
 		fprintf(stderr, "Failed to init UCVM, aborting.");
         exit(3);
     }
+	char* model_string;
+	if (strstr(model, ",")==NULL) {
+		//No comma, only one model
+		if (strcmp(model, "cvmh")==0) {
+                model_string = UCVM_MODEL_CVMH;
+            } else if (strcmp(model, "cvms")==0) {
+                model_string = UCVM_MODEL_CVMS;
+            } else if (strcmp(model, "1d")==0 || strcmp(model, "scec1d")==0) {
+                model_string = UCVM_MODEL_1D;
+            } else if (strcmp(model, "cvmsi")==0) {
+                model_string = UCVM_MODEL_CVMSI;
+            } else if (strcmp(model, "bbp1d")==0) {
+                model_string = UCVM_MODEL_BBP1D;
+            } else if (strcmp(model, "usgs")==0) {
+                model_string = UCVM_MODEL_CENCAL;
+            } else if (strcmp(model, "cca")==0) {
+                model_string = "cca";
+            } else {
+                fprintf(stderr, "Don't recognize model %s.  Aborting.\n", model);
+                exit(1);
+            }
+            printf("Adding model %s.\n", model_string);
+            if (ucvm_add_model(model_string)!=UCVM_CODE_SUCCESS) {
+                fprintf(stderr, "Error retrieving UCVM model %s.", model_string);
+                exit(3);
+            }
 
-	//Model might be a comma-separated list of models; load them all
-	char* tok;
-	tok = strtok(model, ",");
-	while (tok!=NULL) {
-	    char* model_string;
-        if (strcmp(tok, "cvmh")==0) { 
-    	    model_string = UCVM_MODEL_CVMH;
-        } else if (strcmp(tok, "cvms")==0) {
-            model_string = UCVM_MODEL_CVMS;
-        } else if (strcmp(tok, "1d")==0 || strcmp(model, "scec1d")==0) {
-            model_string = UCVM_MODEL_1D;
-        } else if (strcmp(tok, "cvmsi")==0) {
-            model_string = UCVM_MODEL_CVMSI;
-        } else if (strcmp(tok, "bbp1d")==0) {
-            model_string = UCVM_MODEL_BBP1D;
-        } else if (strcmp(tok, "usgs")==0) {
-			model_string = UCVM_MODEL_CENCAL;
-		} else if (strcmp(tok, "cca")==0) {
-			model_string = "cca";
-		} else {
-			fprintf(stderr, "Don't recognize model %s.  Aborting.\n", tok);
-			exit(1);
+            if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+                fprintf(stderr, "Set query mode by depth failed.\n");
+                exit(-2);
+            }
+	} else {
+		//Model is a comma-separated list of models; load them all
+		char* tok;
+		printf("model string is :%s:\n", model);
+		tok = strtok(model, ",");
+		while (tok!=NULL) {
+			printf("Searching for model %s.\n", tok);
+	        if (strcmp(tok, "cvmh")==0) { 
+	    	    model_string = UCVM_MODEL_CVMH;
+	        } else if (strcmp(tok, "cvms")==0) {
+	            model_string = UCVM_MODEL_CVMS;
+	        } else if (strcmp(tok, "1d")==0 || strcmp(tok, "scec1d")==0) {
+	            model_string = UCVM_MODEL_1D;
+	        } else if (strcmp(tok, "cvmsi")==0) {
+	            model_string = UCVM_MODEL_CVMSI;
+	        } else if (strcmp(tok, "bbp1d")==0) {
+	            model_string = UCVM_MODEL_BBP1D;
+	        } else if (strcmp(tok, "usgs")==0) {
+				model_string = UCVM_MODEL_CENCAL;
+			} else if (strcmp(tok, "cca")==0) {
+				model_string = "cca";
+			} else {
+				fprintf(stderr, "Don't recognize model %s.  Aborting.\n", tok);
+				exit(1);
+			}
+	        printf("Adding model %s.\n", model_string);
+	        if (ucvm_add_model(model_string)!=UCVM_CODE_SUCCESS) {
+	        	fprintf(stderr, "Error retrieving UCVM model %s.", model_string);
+	            exit(3);
+	        }
+	
+	        if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+	        	fprintf(stderr, "Set query mode by depth failed.\n");
+	            exit(-2);
+	        }
+			tok = strtok(NULL, ",");
 		}
-        printf("Adding model %s.\n", model_string);
-        if (ucvm_add_model(model_string)!=UCVM_CODE_SUCCESS) {
-        	fprintf(stderr, "Error retrieving UCVM model %s.", model_string);
-            exit(3);
-        }
-
-        if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
-        	fprintf(stderr, "Set query mode by depth failed.\n");
-            exit(-2);
-        }
-		tok = strtok(NULL, ",");
 	}
 	printf("Initialization complete.\n");
 }
@@ -110,7 +143,7 @@ float ucvm_vsD(float lon, float lat, char* model, int depth) {
 			fprintf(stderr, "UCVM query failed.\n");
 			exit(-3);
 		}
-		printf("%d: %f\n", i, query_data.cmb.vs);
+		//printf("%d: %f\n", i, query_data.cmb.vs);
 		vs_sum += 1.0/query_data.cmb.vs;
 	}
 	float vs = ((float)depth)/vs_sum;
