@@ -60,6 +60,17 @@ void write_grm(char* outname, float** seis, int nt) {
 	fclose(fp_out);
 }
 
+void write_grm_comp(char* outname, float* seis, int nt) {
+	FILE* fp_out = fopen(outname, "wb");
+	if (fp_out==NULL) {
+        fprintf(stderr, "Unable to open file %s for writing.\n", outname);
+        exit(1);
+    }
+	fwrite(seis, sizeof(float), nt, fp_out);
+	fflush(fp_out);
+	fclose(fp_out);
+}
+
 void write_grm_head(FILE* fp_out, float** seis, struct seisheader* header, int num_comps) {
     int i;
 	fwrite(header, sizeof(struct seisheader), 1, fp_out);
@@ -68,14 +79,14 @@ void write_grm_head(FILE* fp_out, float** seis, struct seisheader* header, int n
     }
 }
 
-void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, float vref, float vpga, int seed, int debug) {
+void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, FILE* pga_output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, float vref, float vpga, int seed, int debug) {
 	//parse cmd-line args
 	int stat_len;
 	int local_vmod_len;
 	int output_len;
 	float seis[mmv][3]; //needs to agree with mmv in hb_high
 	int i;
-	char output[16] = "output.tmp";
+	char output[256] = "output.tmp";
 	char** param_string;
 	//Must be provided
 	float targ_mag = -1;
@@ -100,9 +111,11 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	output_len = strlen(output);
 	output[output_len] = ' ';
 
-	char velfile[1];
-	velfile[0] = ' ';
-	int velfile_len = 1;
+	char velfile[256];
+	memset(velfile, ' ', 256);
+	velfile[0] = '-';
+	velfile[1] = '1';
+	int velfile_len = 256;
 
 	//Reorder sp, tr, and ti arrays to be column-major for Fortran
 	float *tmp_sp, *tmp_tr, *tmp_ti;
@@ -110,10 +123,13 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	tmp_tr = check_malloc(sizeof(float) * NP*NQ*LV);
 	tmp_ti = check_malloc(sizeof(float) * NP*NQ*LV);
 
-	//Copy over, then swap
+	//Copy over, clear, then swap
 	memcpy(tmp_sp, sfile->sp, sizeof(float)*NP*NQ*LV);
     memcpy(tmp_tr, sfile->tr, sizeof(float)*NP*NQ*LV);
     memcpy(tmp_ti, sfile->ti, sizeof(float)*NP*NQ*LV);
+	memset(sfile->sp, 0, sizeof(float)*NP*NQ*LV);
+	memset(sfile->tr, 0, sizeof(float)*NP*NQ*LV);
+	memset(sfile->ti, 0, sizeof(float)*NP*NQ*LV);
 
 	int ix, iy;
 
@@ -125,20 +141,17 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 		printf("ny=%d\n", sfile->ny[i]);
 		for(iy=0; iy<sfile->ny[i]; iy++) {
 			for(ix=0; ix<sfile->nx[i]; ix++) {
-				sfile->sp[iy*NQ*LV + ix*LV + i] = tmp_sp[i*NQ*NP + iy*NP + ix];
-				if (iy==1 && tmp_sp[i*NQ*NP+iy*NQ+ix]!=0.0) {
-					printf("y=%d, x=%d, offset=%d\n", iy, ix, iy*NQ*LV + ix*LV + i);
-				}
+				sfile->sp[iy*NQ*LV + ix*LV + i] = tmp_sp[i*NQ*NP + iy*sfile->nx[i] + ix];
 			}
 		}
 		for(iy=0; iy<sfile->ny[i]; iy++) {
             for(ix=0; ix<sfile->nx[i]; ix++) {
-				sfile->tr[iy*NQ*LV + ix*LV + i] = tmp_tr[i*NQ*NP + iy*NP + ix];
+				sfile->tr[iy*NQ*LV + ix*LV + i] = tmp_tr[i*NQ*NP + iy*sfile->nx[i] + ix];
             }
         }
 		for(iy=0; iy<sfile->ny[i]; iy++) {
             for(ix=0; ix<sfile->nx[i]; ix++) {
-				sfile->ti[iy*NQ*LV + ix*LV + i] = tmp_ti[i*NQ*NP + iy*NP + ix];
+				sfile->ti[iy*NQ*LV + ix*LV + i] = tmp_ti[i*NQ*NP + iy*sfile->nx[i] + ix];
             }
         }
 	}
@@ -154,6 +167,11 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 
 	//Generate high-frequency seismogram
 	if (debug) printf("Calculating HF seismogram.\n");
+	/*stat_len = 64;
+	local_vmod_len = 256;
+	output_len = 256;
+	velfile_len = 256;*/
+	if (debug) printf("stat len=%d, local_vmod_len=%d, output_len=%d, velfile_len=%d\n", stat_len, local_vmod_len, output_len, velfile_len);
 	//extern void hb_high_(char* stat, float* slon, float* slat, char* local_vmod, char* outfile, float* tlen, float* dt, float* seis, int* nseg, float* elon, float* elat, float* targ_mag, int* nx, int* ny, float* dx, float* dy, float* strike, float* dip, float* ravg, float* dtop, float* shypo, float* dhypo, float* sp, float* tr, float* ti, float* qfexp, float* stress_average, int* msite, int stat_len, int local_vmod_len, int outfile_len);
 	//Initializes a bunch of hb_high variables to their CyberShake values
 	cs_params_();
@@ -193,10 +211,12 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
                 exit(2);
         }
 
-	write_grm("raw_hf", seisC, header->nt);
-    //Write accelerogram for verification
-	FILE* acc_fp_out = fopen("accseis", "wb");
-    write_grm_head(acc_fp_out, seisC, header, num_comps);
+	if (debug) {
+		write_grm("raw_hf", seisC, header->nt);
+		FILE* acc_fp = fopen("accseis", "wb");
+		write_grm_head(acc_fp, seisC, header, num_comps);
+		fclose(acc_fp);
+	}
 	
 	
 	/*for each component:
@@ -209,6 +229,7 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	head1.dt = dt;
 	char pstring[MAX_PARAM_LENGTH];
 	int num_params = 0;
+	char pga_string[256] = {'\0'};
 	for (i=0; i<3; i++) {
 		if (do_site_response) {
 			//printf("Calculating peak for component %d.\n", i);
@@ -216,6 +237,7 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 			if (debug) printf("Calculating site amp with pga=%f, vs30=%f.\n", pga, vs30);
 			wcc_siteamp14(seisC[i], header->nt, header->dt, pga, vs30);*/
 			float pga = wcc_getpeak(num_params, param_string, seisC[i], &head1)/981.0;
+			sprintf(pga_string, "%s%.6f ", pga_string, pga);
 			if (debug) printf("Calculating site amp with pga=%f, vs30=%f.\n", pga, vs30);
 			sprintf(pstring, "vref=%f", 500.0);
 			add_param_reset(param_string, pstring, 1);
@@ -231,12 +253,25 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 			add_param(param_string, "fmin=0.05");
 			sprintf(pstring, "pga=%f", pga);
 			num_params = add_param(param_string, pstring);
-			printf("seisC: %ld\n", seisC);
-			printf("seisC[i]: %ld\n", seisC[i]);
-			printf("before: seisC[%d][10000]=%f\n", i, seisC[i][10000]);
+			int k;
+			for (k=0; k<num_params; k++) {
+				printf("Param %d: %s\n", k, param_string[k]);
+			}
 			wcc_siteamp14(num_params, param_string, &(seisC[i]), &head1);
-			add_param_reset(param_string, "order=4", 1);
-			num_params = add_param(param_string, "fhi=1.0");
+			if (debug) {
+				char filename[256];
+				sprintf(filename, "raw_hf_with_amp_%d", i);
+				write_grm_comp(filename, seisC[i], nt);
+			}
+			int order = 4;
+			sprintf(pstring, "order=%d", order);
+			add_param_reset(param_string, pstring, 1);
+			//Same as BBP logic to calculate high-pass filter frequency
+			float val = 1.0 / (2.0 * order);
+			float fhi = exp(val*log(sqrt(2.0) - 1.0));
+			sprintf(pstring, "fhi=%f", fhi);
+			num_params = add_param(param_string, pstring);
+			printf("Filtering with fhi=%f\n", fhi);
 			wcc_tfilter(num_params, param_string, seisC[i], &head1);
 		}
 		printf("Integrating.\n");
@@ -244,6 +279,10 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 		num_params = add_param(param_string, "diff=0");
 		integ_diff(num_params, param_string, seisC[i], &head1);
 		//integ_diff(1, seisC[i], nt, dt);
+	}
+	if (strlen(pga_string)>0) {
+		//Write PGA string to file
+		fprintf(pga_output_fp, "%d %s", header->rup_var_id, pga_string);
 	}
 	//remember seisC is 000, 090, ver
 	//so must rotate so that X has heading 90 + modelrot to get to CyberShake
