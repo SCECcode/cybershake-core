@@ -29,6 +29,8 @@ fflush(stdout);
 if(ptr == NULL)
    {
    fprintf(stderr,"*****  memory reallocation error\n");
+   fprintf(stderr,"Tried to allocated %ld bytes.\n", len);
+   fflush(stderr);
    exit(-1);
    }
 
