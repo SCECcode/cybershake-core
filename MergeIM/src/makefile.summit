@@ -1,0 +1,74 @@
+TARGETS = merge_psa_bbp
+HEADS = include.h structure.h function_bbp.h
+OBJS =  iofunc.o misc.o fourg.o surfseis_rspectra.o setparm180.o sub_bandpass.o integ_diff.o duration.o
+MERGE_OBJS = wcc_tfilter.o wcc_resamp_arbdt.o wcc_add.o merge.o
+ROTD_OBJS = rotd/calcrsp.o rotd/fftsub.o rotd/ft_th.o rotd/sort.o rotd/spline.o rotd/splint.o rotd/rotd.o rotd/rotd100.o
+
+#For integration with BBP
+BBP_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp
+GP_DIR = ${BBP_DIR}/src/gp
+WCC_DIR = ${GP_DIR}/WccFormat/Progs
+
+BBP_OBJS = ${WCC_DIR}/wcc_tfilter_sub.o ${WCC_DIR}/wcc_add_sub.o ${WCC_DIR}/wcc_resamp_arbdt_sub.o
+
+LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+
+GETPAR = ../../Getpar/getpar
+LDLIBS = -lm ${GETPAR}/lib/libget.a
+IFLAGS = -I${GETPAR}/include
+BBP_INC = -I${WCC_DIR}
+
+UFLAGS = -g
+
+include ../../Compilers.mk
+
+CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS}
+FFLAGS = ${UFLAGS} -ffixed-line-length-132 -finit-local-zero
+
+#CC = $(MY_CC)
+#FC = $(MY_FC)
+#CC = icc
+FC = gfortran
+CC = gcc
+#FC = f77
+
+##### make options
+
+all: $(TARGETS)
+	for TARGET in $(TARGETS); do \
+		rm -f ../bin/$$TARGET ; \
+		cp $$TARGET ../bin ; \
+	done
+
+merge_psa : merge_psa.o ${OBJS} ${ROTD_OBJS}
+	${FC} ${LDFLAGS} -o merge_psa merge_psa.o ${OBJS} ${ROTD_OBJS} ${LDLIBS}
+
+merge_bbp.o : merge_bbp.c
+	${CC} ${CFLAGS} -c -o merge_bbp.o merge_bbp.c ${BBP_INC} ${IFLAGS}
+
+merge_psa_bbp : merge_psa_bbp.o merge_bbp.o ${OBJS} ${BBP_OBJS} ${ROTD_OBJS}
+	${FC} ${FFLAGS} -o merge_psa_bbp merge_psa_bbp.o merge_bbp.o ${OBJS} ${BBP_OBJS} ${ROTD_OBJS} ${LDLIBS}
+	cp merge_psa_bbp ../bin/
+
+
+ray_stimes : ray_stimes.o ${OBJS}
+	${CC} ${LDFLAGS} -o ray_stimes ray_stimes.o ${OBJS} ${LDLIBS}
+
+jbsim3d : jbsim3d.o ${OBJS} ${SRF_OBJS}
+	${CC} ${LDFLAGS} -o jbsim3d jbsim3d.o ${OBJS} ${LDLIBS} ${SRF_OBJS}
+
+gen_gflist : gen_gflist.o ${OBJS} ${SRF_OBJS}
+	${CC} ${LDFLAGS} -o gen_gflist gen_gflist.o ${OBJS} ${LDLIBS} ${SRF_OBJS}
+
+bailey2srf : bailey2srf.o ${OBJS}
+	${CC} ${LDFLAGS} -o bailey2srf bailey2srf.o ${OBJS} ${LDLIBS}
+
+PARM    = setparm180.f
+
+surfseis_rspectra : sub_bandpass.o surfseis_rspectra.o
+	$(FC) $(FFLAGS) -o $@ $^ $(PARM)
+
+${OBJS} : ${HEADS}
+
+clean :
+	-rm -f $(OBJS) $(ROTD_OBJS) $(TARGETS) *.o
