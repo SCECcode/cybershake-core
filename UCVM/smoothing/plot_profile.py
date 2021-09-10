@@ -7,19 +7,20 @@ import matplotlib
 matplotlib.use("AGG", warn=False)
 from pylab import *
 
-if len(sys.argv)<8:
-	print "Usage: %s <velocity file 1> <nx> <ny> <nz> <x-coord 1> <y-coord 1> <output file>" % sys.argv[0]
+if len(sys.argv)<9:
+	print("Usage: %s <velocity file 1> <nx> <ny> <nz> <grid spacing in km> <x-coord 1> <y-coord 1> <output file>" % sys.argv[0])
 	sys.exit(1)
 
 velocity_file = sys.argv[1]
 nx = int(sys.argv[2])
 ny = int(sys.argv[3])
 nz = int(sys.argv[4])
-x_coord = int(sys.argv[5])
-y_coord = int(sys.argv[6])
-output_filename = sys.argv[7]
+grid_spacing = float(sys.argv[5])
+x_coord = int(sys.argv[6])
+y_coord = int(sys.argv[7])
+output_filename = sys.argv[8]
 
-print "Reading velocity file."
+print("Reading velocity file.")
 
 profile = []
 for i in range(0, 3):
@@ -36,7 +37,7 @@ with open(velocity_file, "rb") as fp_in:
 
 depths = []
 for i in range(0, nz):
-	depths.append(-0.1*i)
+	depths.append(-1.0*grid_spacing*i)
 
 
 clf()
@@ -45,7 +46,7 @@ for i in range(0, 3):
 	plot(profile[i], depths, label=labels[i])
 ylabel("Depth (km)")
 xlim(0, 8000)
-ylim(-0.1*nz, 0)
+ylim(-1.0*grid_spacing*nz, 0)
 legend(loc="lower left")
 #grid(b=True, which='major')
 #minorticks_on()
