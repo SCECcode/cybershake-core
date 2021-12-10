@@ -39,7 +39,7 @@ void addsrc_H(int i,      int READ_STEP, int dim,    int* psrc,  int npsrc,  cud
 void ComputeSGT(float* xx,   float* yy,        float* zz,    float* xy,    float* xz,     float* yz,
 //                float* sgt1, float* sgt2,      float* sgt3,  float* sgt4,  float* sgt5,   float* sgt6,
                 float* sg1,  float* sg2,       float* mu,    int sgt_numsta, int* sgt_sta,float* sgtBuf,     
-                cudaStream_t St,  int nzt,     int SGT_BLOCK_SIZE, int SGT_NUMBLOCKS);
+                cudaStream_t St,  int nzt,     int SGT_BLOCK_SIZE, int SGT_NUMBLOCKS, float* qs, float* d1);
 
 void calcRecordingPoints(int *rec_nbgx, int *rec_nedx, 
   int *rec_nbgy, int *rec_nedy, int *rec_nbgz, int *rec_nedz, 
@@ -217,6 +217,10 @@ int main(int argc,char **argv)
     char filenamebasey[50];
     char filenamebasez[50];
     char filenamebase_sgt[50];
+
+    /*computation of moment and magnitude for kinematic source */
+    float *mom, *d_mom, tmom=0.0f, gmom, mag;
+    int n;
 
 //  variable initialization begins 
     command(argc,argv,
@@ -411,7 +415,7 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
     ybs  = nyt+2;
     ybe  = nyt+4*loop+1;   
 
-    if(IGREEN != -1){
+    if(IGREEN > -1){
       time_inisgt -= gethrtime();
       if(rank==0) printf("Before inisgt\n");
       err = inisgt(rank, INSGT, &sgt_numsta_all, &sgt_numsta, &sgt_max_numsta,
@@ -500,6 +504,18 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
       time_inisgt += gethrtime();
       if(rank == sgtmaster)
         printf("SGT is initialized. Time elapsed (sec): %lf\n", time_inisgt);
+    }
+
+    if (IFAULT == 5){
+       if (rank==0) fprintf(stdout, "Using IFAULT=5: kinematic source.\n");
+       if ((NST != 2) || (READ_STEP != 2)) {
+             if (rank==0) fprintf(stderr, "IFAULT=5 requires NST = READ_STEP =2.\nQuitting.");
+          MPI_Finalize();
+          return(-1);
+          }
+		mom = calloc(npsrc, sizeof(float));
+		CUCHK(cudaMalloc((void*) &d_mom, num_bytes));
+		CUCHK(cudaMemcpy(d_mom, mom, num_bytes, cudaMemcpyHostToDevice));
     }
 
     time_src -= gethrtime();
@@ -859,7 +875,15 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
                   d_mu, d_qp, d_qs, d_dcrjx, d_dcrjy, d_dcrjz, nyt,  nzt,  stream_i, d_lam_mu, NX,   coord[0], coord[1],   xls,  xre,
                   yls,  yre, rank);
          //update source input
-         if(rank==srcproc && cur_step<NST)
+        //**Below was added in 2021 as part of BBP verification work**
+		if (IFAULT==5) {
+                CUCHK(cudaDeviceSynchronize());
+                addkinsrc_H(cur_step, maxdim, d_tpsrc, npsrc, stream_i, d_mu,
+            d_taxx, d_tayy, d_tazz, d_taxz, d_tayz, d_taxy,
+            d_xx, d_yy, d_zz, d_xy, d_yz, d_xz, d_mom);
+		}
+
+         if(rank==srcproc && cur_step<NST && IFAULT<4)
          {
             ++source_step;
 /*            //printf("call addsrc_H rank=%d cur_step=%ld\n",rank,cur_step);
@@ -872,7 +896,7 @@ printf("xx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%f\naxx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%
       xx[i_][j_][k_],yy[i_][j_][k_],zz[i_][j_][k_],xy[i_][j_][k_],xz[i_][j_][k_],yz[i_][j_][k_],
       taxx[cur_step],tayy[cur_step],tazz[cur_step],taxy[cur_step],taxz[cur_step],tayz[cur_step]);
 */
-            addsrc_H(source_step, READ_STEP_GPU, maxdim, d_tpsrc, npsrc, stream_i, 
+	            addsrc_H(source_step, READ_STEP_GPU, maxdim, d_tpsrc, npsrc, stream_i, 
                     IGREEN, nzt, d_d1, d_u1, d_v1, d_w1, 
                     d_taxx, d_tayy, d_tazz, d_taxz, d_tayz, d_taxy,
                     d_xx,       d_yy,      d_zz,   d_xy,    d_yz,  d_xz);
@@ -881,7 +905,7 @@ printf("xx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%f\naxx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%
          { 
             ComputeSGT(d_xx,          d_yy,      d_zz,   d_xy,      d_xz,         d_yz,
                        d_sg1,         d_sg2,     d_mu,   sgt_numsta, d_sgt_sta, d_sgtBuf,
-                       stream_i,      nzt,       SGT_BLOCK_SIZE,    SGT_NUMBLOCKS);
+                       stream_i,      nzt,       SGT_BLOCK_SIZE,    SGT_NUMBLOCKS, d_qs, d_d1);
             cudaThreadSynchronize();
             cerr = cudaGetLastError();
             if(cerr!=cudaSuccess) printf("CUDA ERROR! rank=%d after threadSync: %s\n",rank,cudaGetErrorString(cerr));
@@ -955,6 +979,7 @@ printf("xx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%f\naxx,yy,zz,xy,xz,yz=%f,%f,%f,%f,%f,%
                 //idz = ((nzt+align-1) - k)/NSKPZ;
                 //tmpInd = idtmp + idz*rec_nxt*rec_nyt + idy*rec_nxt + idx;
                 //if(rank==0) printf("%ld:%d,%d,%d\t",tmpInd,i,j,k);
+                printf("%d) Writing value for local point (%d, %d, %d), which corresponds to array index (%d, %d, %d)\n", rank, i-(2+4*loop), j-(2+4*loop), (-1*k)+(nzt+align-1), i, j, k);
                 Bufx[tmpInd] = u1[i][j][k];
                 Bufy[tmpInd] = v1[i][j][k];
                 Bufz[tmpInd] = w1[i][j][k];
@@ -1322,12 +1347,14 @@ void calcRecordingPoints(int *rec_nbgx, int *rec_nedx,
   else{
     if(nxt*coord[0] >= NBGX){
       *rec_nbgx = (nxt*coord[0]+NBGX-1)%NSKPX;
+      //*rec_nbgx = NSKPX-(nxt*coord[0]-NBGX+1)%NSKPX;
       *displacement += (nxt*coord[0]-NBGX)/NSKPX+1;
     }
     else
       *rec_nbgx = NBGX-nxt*coord[0]-1;  // since rec_nbgx is 0-based
     if(nxt*(coord[0]+1) <= NEDX)
       *rec_nedx = (nxt*(coord[0]+1)+NBGX-1)%NSKPX-NSKPX+nxt;
+      //*rec_nedx = nxt-(nxt*(coord[0]+1)-1-NBGX+1)%NSKPX;
     else
       *rec_nedx = NEDX-nxt*coord[0]-1;
     *rec_nxt = (*rec_nedx-*rec_nbgx)/NSKPX+1;
@@ -1338,12 +1365,14 @@ void calcRecordingPoints(int *rec_nbgx, int *rec_nedx,
   else{
     if(nyt*coord[1] >= NBGY){
       *rec_nbgy = (nyt*coord[1]+NBGY-1)%NSKPY;
+      //*rec_nbgy = NSKPY-(nyt*coord[1]+NBGY-1)%NSKPY;
       *displacement += ((nyt*coord[1]-NBGY)/NSKPY+1)*rec_NX;
     }
     else
       *rec_nbgy = NBGY-nyt*coord[1]-1;  // since rec_nbgy is 0-based
     if(nyt*(coord[1]+1) <= NEDY)
       *rec_nedy = (nyt*(coord[1]+1)+NBGY-1)%NSKPY-NSKPY+nyt;
+      //*rec_nedy = nyt-(nxt*(coord[1]+1)-1-NBGY+1)%NSKPY;
     else
       *rec_nedy = NEDY-nyt*coord[1]-1;
     *rec_nyt = (*rec_nedy-*rec_nbgy)/NSKPY+1;
