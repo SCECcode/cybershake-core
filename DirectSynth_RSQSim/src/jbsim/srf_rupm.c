@@ -238,6 +238,7 @@ apval_ptr = apnts_ptr->apntvals + off;
 
 zapit(stf,nt);
 
+sptr = NULL;
 space = NULL;
 sptr2 = NULL;
 
@@ -392,7 +393,8 @@ for(im=0;im<mp.nmech;im++)
    }
 
 free(sptr);
+sptr = NULL;
 free(space);
-free(sptr2);
+//free(sptr2);
 }
 
