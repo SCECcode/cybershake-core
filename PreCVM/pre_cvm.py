@@ -21,6 +21,7 @@ parser.add_option("--bounding-box", dest="bbox", action="store_true", default=Fa
 parser.add_option("--tight-box", dest="tight", action="store_true", default=False, help="Use a box with 20 km padding (the default is 30 km)")
 parser.add_option("--depth", dest="depth", action="store", type="float", help="Override default depth with this value, in km")
 parser.add_option("--rotation", dest="rotation", action="store", type="float", help="Override default rotation with this value")
+parser.add_option("--padding", dest="padding", action="store", type="float", help="Override default padding of 30 km with this value, in km")
 
 (option, args) = parser.parse_args()
 
@@ -60,15 +61,23 @@ if option.depth:
 rotation = DEFAULT_ROTATION
 if option.rotation is not None:
 	rotation = option.rotation
+padding = -1.0
+if option.padding is not None:
+        padding = option.padding
+
 
 os.chdir(os.path.join(sys.path[0], "Modelbox"))
 gpu_arg = ""
 if use_gpu:
 	gpu_arg = "gpu"
 
-exitcode = os.system("./get_modelbox.py %s %s %s %f %s %f %s %s %s" % (site, erfID, modelbox, spacing, server, rotation, gpu_arg, bbox_arg, tight_arg))
+cmd = "./get_modelbox.py %s %s %s %f %s %f %s %s %s %s" % (site, erfID, modelbox, spacing, server, rotation, padding, gpu_arg, bbox_arg, tight_arg)
+print(cmd)
+exitcode = os.system(cmd)
 if exitcode!=0:
 	sys.exit((exitcode >> 8) & 0xFF)
 os.chdir("../GenGrid_py")
-exitcode = os.system("./gen_grid.py %s %s %s %s %s %s %f %f %s %f" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile, frequency, spacing, gpu_arg, depth))
+cmd = "./gen_grid.py %s %s %s %s %s %s %f %f %s %f" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile, frequency, spacing, gpu_arg, depth)
+print(cmd)
+exitcode = os.system(cmd)
 sys.exit((exitcode >> 8) & 0xFF)
