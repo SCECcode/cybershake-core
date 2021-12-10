@@ -20,6 +20,7 @@ parser.add_option("--format", dest="format", action="store", help="Specify awp o
 parser.add_option("--frequency", dest="frequency", type="float", action="store", help="Frequency")
 parser.add_option("--spacing", dest="spacing", type="float", action="store", help="Override default spacing with this value (km)")
 parser.add_option("--min_vs", dest="min_vs", type="float", action="store", help="Override minimum Vs value.  Minimum Vp and minimum density will be 3.4 times this value.")
+parser.add_option("--h_fraction", dest="h_frac", type="float", action="store", help="Depth, in fractions of a grid point, to query UCVM at when populating the surface points.")
 
 (option, args) = parser.parse_args()
 
@@ -29,7 +30,7 @@ modelcords = option.coordsfile
 models = option.models
 format = option.format
 if site==None or gridout==None or modelcords==None or models==None or format==None:
-	print "All of site, gridout, modelcords, models, and format must be specified."
+	print("All of site, gridout, modelcords, models, and format must be specified.")
 	parser.print_help()
 	sys.exit(-1)
 
@@ -42,6 +43,11 @@ if option.spacing is not None:
 	zstep = option.spacing*1000.0
 else:
 	zstep = 100.0/frequency
+
+#Depth to query UCVM at for surface points, in m
+surface_cvm_depth = 0.0
+if option.h_frac is not None:
+	surface_cvm_depth = float(option.h_frac)*zstep
 
 #get grid steps
 input = open(gridout)
@@ -67,29 +73,24 @@ mpi_cmd = config.getProperty("MPI_CMD")
 job_id = config.getJobID()
 
 #if cca is one of the models, check to see if GTL is on
-with open('%s/UCVM/ucvm-18.5.0/model/cca/data/config' % cs_path, 'r') as fp_in:
+with open('%s/UCVM/ucvm-18.5.0_01302019/model/cca/data/config' % cs_path, 'r') as fp_in:
 	data = fp_in.readlines()
 	for line in data:
 		if line.find('gtl')>-1:
 			pieces = line.split('=')
 			if pieces[1].strip()=='off':
-				print "CCA: GTL is off."
+				print("CCA: GTL is off.")
 			elif pieces[1].strip()=='on':
-				print "CCA: GTL is ON."
+				print("CCA: GTL is ON.")
 			else:
-				print "CCA: GTL status unknown."
+				print("CCA: GTL status unknown.")
 			break
 	fp_in.close()
 
-#set up for striping if awp
-LFS_CMD = "/opt/cray/lustre-cray_gem_s/2.5_3.0.101_0.31.1_1.0502.8394.10.1-1.0502.17198.8.50/bin/lfs"
-if format=="awp":
-	os.system("%s setstripe -c 100 -s 5m awp.%s.media" % (LFS_CMD, site))
-
 if option.min_vs is not None:
-        command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, option.min_vs)
+        command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, option.min_vs)
 else:
-	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format)
-print command
+	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth)
+print(command)
 exitcode = os.system(command)
 sys.exit((exitcode >> 8) & 0xFF)
