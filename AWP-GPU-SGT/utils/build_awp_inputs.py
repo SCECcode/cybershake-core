@@ -17,7 +17,7 @@ import errno
 #LFS_PATH = "/usr/bin/lfs" 
 #LFS_PATH = "/opt/cray/lustre-cray_gem_s/2.5_3.0.101_0.31.1_1.0502.8394.10.1-1.0502.17198.8.50/bin/lfs"
 
-print "Adding config to path."
+print("Adding config to path.")
 sys.stdout.flush()
 #Add back 3 levels
 full_path = os.path.abspath(sys.argv[0])
@@ -66,14 +66,14 @@ cordfile = option.cordfile
 run_id = option.run_id
 
 if site==None or gridout==None or fdloc==None or cordfile==None or run_id==None:
-	print "site, gridout, fdloc, cordfile, and run_ID must be specified."
+	print("site, gridout, fdloc, cordfile, and run_ID must be specified.")
 	parser.print_help()
 	sys.exit(1)
 
 procs = [option.px, option.py, option.pz]
 
 if (procs[0]==None or procs[1]==None or procs[2]==None):
-	print "px, py, pz must be specified."
+	print("px, py, pz must be specified.")
 	parser.print_help()
 	sys.exit(1)
 
@@ -106,20 +106,20 @@ for c in awp_comps:
 	#	print "Error striping with command %s setstripe -c 160 -s 5m comp_%s/output_sgt, exiting." % (LFS_PATH, c)
 	#	sys.exit(exitcode)
 
-	print "Building IN3D file for comp %s." % c
+	print("Building IN3D file for comp %s." % c)
 	sys.stdout.flush()
 	[rc, nt] = build_IN3D(site, gridout, c, frequency, procs, awp_media, run_id, spacing=option.spacing)
 	if not rc==0:
-		print "Error in build_IN3D, aborting."
+		print("Error in build_IN3D, aborting.")
 		sys.exit(2)
-	print "Building source file."
+	print("Building source file.")
 	sys.stdout.flush()
 	rc = build_src(site, fdloc, c, frequency, nt, filter=source_frequency, spacing=option.spacing)
 	if not rc==0:
-	        print "Error in build_src, aborting."
+	        print("Error in build_src, aborting.")
 	        sys.exit(3)
 awp_cordfile = "awp.%s.cordfile" % site
-print "Building cordfile."
+print("Building cordfile.")
 sys.stdout.flush()
 #Determine max depth index from gridout file
 with open(gridout, "r") as fp_in:
@@ -129,7 +129,7 @@ with open(gridout, "r") as fp_in:
 
 rc = build_cordfile(site, cordfile, awp_cordfile, max_depth_index)
 if not rc==0:
-        print "Error in build_cordfile, aborting."
+        print("Error in build_cordfile, aborting.")
         sys.exit(2)
 for c in awp_comps:
 	if os.path.lexists("comp_%s/input/%s" % (c, awp_cordfile)):
@@ -137,17 +137,17 @@ for c in awp_comps:
 	os.symlink("../../%s" % awp_cordfile, "comp_%s/input/%s" % (c, awp_cordfile))
 
 if rwg_vel_prefix is not None:
-	print "Building media file."
+	print("Building media file.")
 	sys.stdout.flush()
 	rc = build_media(site, gridout, rwg_vel_prefix, awp_media)
 	if not rc==0:
-	        print "Error in build_media, aborting."
+	        print("Error in build_media, aborting.")
 	        sys.exit(2)
 else:
 	if not os.path.exists(awp_media):
-		print "Error, since expected velocity file %s does not exist.  Aborting." % awp_media
+		print("Error, since expected velocity file %s does not exist.  Aborting." % awp_media)
 		sys.exit(3)
-	print "No velocity prefix specified, skipping velocity file reformat."
+	print("No velocity prefix specified, skipping velocity file reformat.")
 
 for c in awp_comps:
 	if os.path.lexists("comp_%s/input/%s" % (c, awp_media)):
