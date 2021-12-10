@@ -22,8 +22,10 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
    nbz     = 1;
    nez     = nzt;
    // IFAULT=1 has bug! READ_STEP does not work, it tries to read NST all at once - Efe
-   if(IFAULT<=1)
+   if(IFAULT<=1 || IFAULT==5)
    {
+	  printf("Reading source.\n");
+	  fflush(stdout);
       tpsrc = Alloc1P(NSRC*maxdim);
       taxx  = Alloc1D(NSRC*READ_STEP);
       tayy  = Alloc1D(NSRC*READ_STEP);
@@ -37,7 +39,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
       	 FILE   *file;
          int    tmpsrc[3];
          Grid1D tmpta;
-         if(IFAULT == 1){
+         if(IFAULT == 1 || IFAULT==5 ){
           file = fopen(INSRC,"rb");
           tmpta = Alloc1D(NST*6);
          }
@@ -47,7 +49,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
             printf("can't open file %s", INSRC);
 	    return 0;
          }
-         if(IFAULT == 1){
+         if(IFAULT == 1 || IFAULT==5 ){
           for(i=0;i<NSRC;i++)
           { 
             if(fread(tmpsrc,sizeof(int),3,file) && fread(tmpta,sizeof(float),NST*6,file))
@@ -121,6 +123,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
                  tpsrcp[k*maxdim]   = tpsrc[i*maxdim]   - nbx - 1;
                  tpsrcp[k*maxdim+1] = tpsrc[i*maxdim+1] - nby - 1;
                  tpsrcp[k*maxdim+2] = tpsrc[i*maxdim+2] - nbz + 1;
+				printf("Source at coordinates tpsrcp[k*maxdim]=%d, tpsrcp[k*maxdim+1]=%d, tpsrcp[k*maxdim+2]=%d\n", tpsrcp[k*maxdim],  tpsrcp[k*maxdim+1], tpsrcp[k*maxdim+2]);
                  for(j=0;j<READ_STEP;j++)
                  {
                     taxxp[k*READ_STEP+j] = taxx[i*READ_STEP+j];
@@ -171,6 +174,7 @@ void addsrc(int i,      float DH,   float DT,   int NST,    int npsrc,  int READ
      idx = psrc[j*dim]   + 1 + 4*loop;
      idy = psrc[j*dim+1] + 1 + 4*loop;
      idz = psrc[j*dim+2] + align - 1;
+	 printf("Adding source at array indices (%d, %d, %d)\n", idx, idy, idz);
      if(igreen == -1)
      {
         xx[idx][idy][idz] = xx[idx][idy][idz] - vtst*axx[j*READ_STEP+i];

@@ -19,10 +19,16 @@ __global__ void dstrqc(float* xx, float* yy,    float* zz,    float* xy,    floa
 
 __global__ void ComputeSGT_cu(float* xx,   float* yy,    float* zz,    float* xy,    float* xz,     float* yz,
                               float* sg1,  float* sg2,   float* mu,    int sgt_numsta, int* sgt_sta,float* sgtBuf,
-                              int SGT_BLOCK_SIZE,        int SGT_NUMBLOCKS);
+                              int SGT_BLOCK_SIZE,        int SGT_NUMBLOCKS, float* qs, float* d1);
 
 __global__ void addsrc_cu(int i,      int READ_STEP, int dim,    int npsrc, int* psrc,  int igreen, int nzt,
                           float* d1,  float* u1,     float* v1,  float* w1,
                           float* axx, float* ayy,    float* azz, float* axz, float* ayz, float* axy,
                           float* xx,  float* yy,     float* zz,  float* xy,  float* yz,  float* xz);
+
+__global__ void addkinsrc_cu(int i, int dim,    int* psrc,  int npsrc, float* mu,
+                          float* axx, float* ayy,    float* azz, float* axz, float* ayz, float* axy,
+                          float* xx,  float* yy,     float* zz,  float* xy,  float* yz,  float* xz, 
+                          float *mom);
+
 #endif

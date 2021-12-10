@@ -166,6 +166,16 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
             for(k=0;k<nzt;k++){
                  tmpsq[i][j][k]=0.05*tmpvs[i][j][k];
                  tmppq[i][j][k]=2.0*tmpsq[i][j][k];
+                //Set Qp = 20000 and Qs = 10000 for testing
+				//tmppq[i][j][k] = 20000.0;
+                //tmpsq[i][j][k] = 10000.0;
+                //tmppq[i][j][k] = 2e10;
+				//tmpsq[i][j][k] = 1e10;
+                //Set Qp = 75, Qs = 37.5
+                //tmppq[i][j][k] = 75.0;
+                //tmpsq[i][j][k] = 37.5;
+                //tmppq[i][j][k] = 200.0;
+				//tmpsq[i][j][k] = 100.0;
             }
           }
       }
@@ -230,6 +240,10 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
              lam[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k] = 1./(tmpdd[i][j][k]*(tmpvp[i][j][k]*tmpvp[i][j][k]
                                                                               -2.*tmpvs[i][j][k]*tmpvs[i][j][k]));
              d1[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k]  = tmpdd[i][j][k];
+			 /*if (i==1 && j==1) {
+				printf("(%d, %d, %d): mu=%e, lambda=%e\n",  i, j, k, mu[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k], lam[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k]);
+				printf("(%d, %d, %d): tmpdd=%f, tmpvs=%f, tmpvp=%f\n", i, j, k, tmpdd[i][j][k], tmpvs[i][j][k], tmpvp[i][j][k]);
+			 }*/
              if(NVE==1)
              {
                 if(tmppq[i][j][k]<=0.0)
@@ -244,9 +258,13 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
                 }
                 tmppq[i][j][k]=tmp1*qpinv/(1.0-tmp2*qpinv);
                 tmpsq[i][j][k]=tmp1*qsinv/(1.0-tmp2*qsinv);
+
                 qp[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k] = tmppq[i][j][k];
                 qs[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k] = tmpsq[i][j][k];
              }
+			 /*if (i==1 && j==1) {
+				printf("(%d, %d, %d): tmp1=%f, tmp2=%f, qp=%e, qs=%e\n", i, j, k, tmp1, tmp2, qp[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k], qs[i+2+4*loop][j+2+4*loop][(nzt+align-1) - k]);
+			 }*/
              if(tmpvs[i][j][k]<vse[0]) vse[0] = tmpvs[i][j][k];
              if(tmpvs[i][j][k]>vse[1]) vse[1] = tmpvs[i][j][k];
              if(tmpvp[i][j][k]<vpe[0]) vpe[0] = tmpvp[i][j][k];
