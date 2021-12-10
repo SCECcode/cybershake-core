@@ -17,11 +17,11 @@ def genGridfile(site, outputFile, xlen, ylen, zlen, spacing):
     '''Takes a site, path to output directory, and data to produce gridfile_<site> with the X, Y, and Z lengths and spacing'''
     output = open(outputFile, "w")
     output.write("xlen=%.6f\n" % xlen)
-    output.write("    0.0000   %.4f  %e\n" % (xlen, spacing))
+    output.write("    0.0000   %.6f  %e\n" % (xlen, spacing))
     output.write("ylen=%.6f\n" % ylen)
-    output.write("    0.0000   %.4f  %e\n" % (ylen, spacing))
+    output.write("    0.0000   %.6f  %e\n" % (ylen, spacing))
     output.write("zlen=%.6f\n" % zlen)
-    output.write("    0.0000    %.4f  %e\n" % (zlen, spacing))
+    output.write("    0.0000    %.6f  %e\n" % (zlen, spacing))
     output.flush()
     output.close()
 
@@ -54,8 +54,8 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 
 	#Changed to ZLEN = 50.4 for central CA, since we're propagating over a larger distance, requires GPU or CPU counts get all off
 	if gpu:
-		#ZLEN = 50.4
-		ZLEN = 40.0
+		ZLEN = 50.4
+		#ZLEN = 40.0
 	else:
 		#ZLEN = 50.0
 		ZLEN = 40.0
@@ -65,11 +65,13 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 	#Make sure it is evenly divisible, and nz is even
 	#Use ceil because we want the depth to be at least ZLEN
 	nz = int(math.ceil(ZLEN/SPACING))
+        print("Initial nz is %d\n" % nz)
 	if nz*SPACING!=ZLEN:
 		ZLEN = nz*SPACING
-	if nz%2!=0:
-		nz += 1
+	if nz%4!=0:
+		nz += 4 - (nz%4)
 		ZLEN = nz*SPACING
+		print("ZLEN adjusted to %f." % ZLEN)
 	#if gpu:
 	#	#Change ZLEN to 51.2 so it's a multiple of 256 pts
 	#	ZLEN = 51.2
@@ -114,19 +116,19 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 
 
 def main():
-    if len(sys.argv) < 9:
-        print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency> <spacing> [gpu] [depth]"
-        print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC 0.5"
-        sys.exit(1)
+	if len(sys.argv) < 9:
+		print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency> <spacing> [gpu] [depth]"
+		print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC 0.5"
+		sys.exit(1)
 	
-    modelboxFile = sys.argv[1]
-    gridfile = sys.argv[2]
-    gridout = sys.argv[3]
-    coordfile = sys.argv[4]
-    paramfile = sys.argv[5]
-    boundsfile = sys.argv[6]
-    frequency = float(sys.argv[7])
-    spacing = float(sys.argv[8])
+	modelboxFile = sys.argv[1]
+	gridfile = sys.argv[2]
+	gridout = sys.argv[3]
+	coordfile = sys.argv[4]
+	paramfile = sys.argv[5]
+	boundsfile = sys.argv[6]
+	frequency = float(sys.argv[7])
+	spacing = float(sys.argv[8])
 	gpu = False
 	depth = -1.0
 	index = 9
