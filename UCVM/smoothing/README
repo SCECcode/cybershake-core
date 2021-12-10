@@ -7,3 +7,4 @@ The steps involved in constructing a smoothed mesh are:
 3) Run determine_smoothing_points.py to translate the model surface file into a series of grid coordinates which require smoothing.
 4) Run smooth, which takes the list of points, and the mesh, and applies the smoothing.
 
+run_smoothing_mpi.py combines all these steps into a single executable.
