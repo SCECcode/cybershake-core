@@ -1,4 +1,4 @@
-TARGETS = write_head compare_head strip_head reformat_awp reformat_velocity reformat_awp_mpi
+TARGETS = write_head compare_head strip_head reformat_awp reformat_velocity reformat_awp_mpi decimate_sgt search_head generate_point_list
 HEADS = defs.h include.h structure.h function.h
 #OBJS =  absorb.o diff.o fft1d.o  interface.o iofunc.o \
         memory_slices.o  misc.o tstep.o \
@@ -65,6 +65,15 @@ reformat_awp_mpi : reformat_awp_mpi.o
 
 reformat_velocity : ${VEL_OBJS}
 	${CC} ${CFLAGS} -o reformat_velocity ${VEL_OBJS}
+
+decimate_sgt : decimate_sgt.c
+	${CC} ${CFLAGS} -o decimate_sgt decimate_sgt.c
+
+search_head : search_head.c
+	${CC} ${CFLAGS} -o search_head search_head.c
+
+generate_point_list : generate_point_list.c
+	${CC} ${CFLAGS} -o generate_point_list generate_point_list.c
 
 clean :
 	-rm -f ${OBJS} ${WRITE_OBJS} ${CMP_OBJS} ${REF_OBJS} ${TARGETS}
