@@ -6,7 +6,7 @@ from operator import itemgetter
 
 
 if len(sys.argv)<4:
-	print "Usage: %s <rwg cordfile> <awp cordfile> <max depth index>" % sys.argv[0]
+	print("Usage: %s <rwg cordfile> <awp cordfile> <max depth index>" % sys.argv[0])
 	sys.exit(1)
 
 fp_in = open(sys.argv[1], "r")
@@ -26,10 +26,11 @@ for i in range(5, len(data), 1):
 	x = int(pieces[0])
 	y = int(pieces[1])
 	z = int(pieces[2])
-	point_str = "%d %d %d\n" % (y+1, x+1, min([z+1, max_depth_index]))
+        #Adjusted point_str to not add 1 to z-coordinate, since both AWP and RWG use z=1 to represent the free surface
+	point_str = "%d %d %d\n" % (y+1, x+1, z)
 	if point_str in points:
-		print "Duplicate point entry %s" % point_str
-	points.add("%d %d %d\n" % (y+1, x+1, min([z+1, max_depth_index])))
+		print("Duplicate point entry %s" % point_str)
+	points.add(point_str)
 
 p_list = []
 for p in points:
@@ -46,6 +47,6 @@ fp_out.close()
 
 #Make sure both cordfiles have the same number of points
 if num_pts_in!=len(p_list):
-	print "Error: input file %s has %d points, but %d points were written to output file %s." % (sys.argv[1], num_pts_in, len(p_list), sys.argv[2])
+	print("Error: input file %s has %d points, but %d points were written to output file %s." % (sys.argv[1], num_pts_in, len(p_list), sys.argv[2]))
 	sys.exit(2)
 
