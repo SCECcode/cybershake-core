@@ -16,10 +16,11 @@ def calc_simulated_time(run_id, param):
 	#in KM
 	sgt_length = float(param['TMAX'])
 	CUTOFF_DIST = 450
+	return sgt_length
 	conn = pymysql.connect(host='moment.usc.edu', user='cybershk_ro', passwd='CyberShake2007', db='CyberShake')
 	cur = conn.cursor()
 	query = 'select S.CS_Site_Lat, S.CS_Site_Lon from CyberShake_Sites S, CyberShake_Runs R where S.CS_Site_ID=R.Site_ID and R.Run_ID=%d;' % (run_id)
-	print query
+	print(query)
 	cur.execute(query)
 	#if for some reason this site isn't in the DB, assume we're doing something by hand and use the standard SGT length
 	hits = cur.fetchone()
@@ -28,7 +29,7 @@ def calc_simulated_time(run_id, param):
 	[site_lat, site_lon] = [float(l) for l in hits]
 	query_prefix = 'select V.Hypocenter_Lat, V.Hypocenter_Lon from CyberShake_Runs R, CyberShake_Site_Ruptures SR, Rupture_Variations V where R.Run_ID=%d and R.Site_ID=SR.CS_Site_ID and R.ERF_ID=SR.ERF_ID and R.Rup_Var_Scenario_ID=V.Rup_Var_Scenario_ID and R.ERF_ID=V.ERF_ID and SR.Source_ID=V.Source_ID and SR.Rupture_ID=V.Rupture_ID' % (run_id)
 	query = "%s order by V.Hypocenter_Lat asc limit 1;" % (query_prefix)
-	print query
+	print(query)
 	cur.execute(query)
 	hits = cur.fetchone()
 	if hits[0] == None:
@@ -49,7 +50,7 @@ def calc_simulated_time(run_id, param):
 		dist = math.sqrt((site_e-hypo_e)*(site_e-hypo_e) + (site_n-hypo_n)*(site_n-hypo_n))/1000.0
 		if dist>max_dist:
 			max_dist = dist
-	print "Maximum distance = %f km" % max_dist
+	print("Maximum distance = %f km" % max_dist)
 	if max_dist>CUTOFF_DIST:
 		sgt_length = 300.0
 	conn.close()
@@ -69,19 +70,21 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 
 	#determine igreen
 	igreen = 0
+        #IGREEN=4,5,6 do stress insertion of impulse
+        #IGREEN=1,2,3 do velocity insertion
 	if awp_comp=='x':
 		#swap x and y
 		comp = 'y'
-		igreen = 4
+		igreen = 1
 	elif awp_comp=='y':
 		#swap x and y
 		comp = 'x'
-		igreen = 5
+		igreen = 2
 	elif awp_comp=='z':
 		comp = 'z'
-		igreen = 6
+		igreen = 3
 	else:
-		print "Component %s not recognized, aborting." % comp
+		print("Component %s not recognized, aborting." % comp)
 		sys.exit(2)
 	
 	param["igreen"] = igreen
@@ -101,7 +104,7 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 	#Round up to nearest 1000
 	nst = int(SIMULATED_TIME/param["DT"])
 	if (nst % 1000)!=0:
-		nst = 1000*(nst/1000 + 1)
+		nst = 1000*(nst//1000 + 1)
 	param["NST"] = nst
 	#Change TMAX based on DT and NST
 	param["TMAX"] = param["NST"]*param["DT"]
@@ -111,7 +114,7 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 	param["READ_STEP"] = param["NST"]
 	#Divide by 10 because WRITE_STEP is in units of # of steps being written, not total # of timesteps
 	#So if 20000 simulated timesteps and decimation of 10, WRITE_STEP = 2000
-	param["WRITE_STEP"] = param["READ_STEP"]/int(param["NTISKP_SGT"])
+	param["WRITE_STEP"] = param["READ_STEP"]//int(param["NTISKP_SGT"])
 	param["WRITE_STEP2"] = param["WRITE_STEP"]
 	
 	#determine NX, NY, NZ
@@ -129,13 +132,13 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 
 	#Check proc values to make sure they are evenly divisible
 	if nx % proc[0] != 0:
-		print "PX %d must be a factor of NX %d, aborting." % (proc[0], nx)
+		print("PX %d must be a factor of NX %d, aborting." % (proc[0], nx))
 		sys.exit(2)
 	if ny % proc[1] != 0:
-		print "PY %d must be a factor of NY %d, aborting." % (proc[1], ny)
+		print("PY %d must be a factor of NY %d, aborting." % (proc[1], ny))
 		sys.exit(2)
 	if nz % proc[2] != 0:
-		print "PZ %d must be a factor of NZ %d, aborting." % (proc[2], nz)
+		print("PZ %d must be a factor of NZ %d, aborting." % (proc[2], nz))
 		sys.exit(2)	
 	
 	param["NPX"] = proc[0]
@@ -224,7 +227,7 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 	fp_out.write("%9s NEDZ2\n" % (param["NEDZ2"]))
 	fp_out.write("%9s NSKPZ2\n\n" % (param["NSKPZ2"]))
 	fp_out.write("%9s NTISKP2\n\n" % (param["NTISKP"]))
-        fp_out.write("%9s NTISKP_SGT\n\n" % (param["NTISKP_SGT"]))
+	fp_out.write("%9s NTISKP_SGT\n\n" % (param["NTISKP_SGT"]))
 	fp_out.write("'comp_%s/%s' CHKP\n" % (awp_comp, param["CHKP"]))
 	fp_out.write("'comp_%s/%s' CHKJ\n\n" % (awp_comp, param["CHKJ"]))
 	fp_out.write("'%s' INSRC\n" % (param["INSRC"]))
