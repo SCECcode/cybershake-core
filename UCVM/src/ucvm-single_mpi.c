@@ -24,7 +24,7 @@ float *mlon, *mlat, *mdep;
 float *vp_buf, *vs_buf, *rho_buf, *buf;
 vp_buf = vs_buf = rho_buf = buf = NULL;
 
-//char config_filename[] = "/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf";
+//char config_filename[] = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0_01302019/conf/ucvm.conf";
 
 int fdw, i, j, k, nn, newn, s;
 int nx, ny, nz, ix, iz, icnt;
@@ -49,6 +49,9 @@ int max_iter = 20;
 //Apply a constant mantle below some depth
 int const_mantle = 0;
 float const_mantle_depth = 45000.0;
+
+//Depth, in meters, to use when querying UCVM to populate the surface point. So 25 means use a depth of 25m for the surface point, instead of 0.
+float surface_cvm_depth = 0.0;
 
 //In m/s (RWG expects km/s)
 float min_vp, min_vs, min_rho;
@@ -88,6 +91,9 @@ getpar("format","s",format_name);
 
 getpar("const_mantle", "d", &const_mantle);
 getpar("const_mantle_depth", "f", &const_mantle_depth);
+
+//When populating the surface points, use this depth in meters instead
+getpar("surface_cvm_depth", "f", &surface_cvm_depth);
 
 endpar();
 
@@ -257,7 +263,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 				exit(-2);
 			}
 			if (!ucvm_initialized) {
-		                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+		                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		                   fprintf(stderr, "Failed to setup ucvm.\n");
 		                   fflush(stderr);
 		                   exit(-1);
@@ -285,7 +291,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	                }
 		} else if (strcmp(tok, "1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -299,7 +305,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			}
 		} else if (strcmp(tok, "cvmsi")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -313,7 +319,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
                 } else if (strcmp(tok, "scec1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -327,7 +333,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
 		} else if (strcmp(tok, "usgs")==0) {
 			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -341,7 +347,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         } 
 		} else if (strcmp(tok, "cvms5")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -375,7 +381,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
 		} else if (strcmp(tok, "bbp1d")==0) {
 			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -388,7 +394,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                          }
 		} else if (strcmp(tok, "cca1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -401,7 +407,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                          }
                 } else if (strcmp(tok, "cca")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -428,7 +434,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		exit(-1);
 		}
 	} else {
-	     if (ucvm_init("/lustre/atlas/proj-shared/geo112/ucvm_18_5/install/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	     if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Failed to setup ucvm.\n");
                 fflush(stderr);
                 exit(-1);
@@ -530,6 +536,10 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		if (const_mantle && z_value>const_mantle_depth) {
 			z_value = const_mantle_depth;
 		}
+		//Check to see if we are at surface and should use a different value
+		if (z_ind==0) {
+			z_value = surface_cvm_depth;
+		}
 		for(i=0; i<nx; i++) {
 			//offset in coordinate list (fast x, y)
 			int input_offset = y_ind*nx + i;
@@ -550,6 +560,9 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                 if (const_mantle && z_value>const_mantle_depth) {
                         z_value = const_mantle_depth;
                 }
+		if (z_ind==0) {
+			z_value = surface_cvm_depth;
+		}
 		for(j=0; j<ny; j++) {
 			int input_offset = j*nx + x_ind;
 			int output_offset = (s-starting_stripe)*ny + j;
@@ -570,10 +583,10 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
  		fprintf(stderr, "Query UCVM failed.\n");
         	exit(-2);
 	}
-	if (my_id==0) {
+	/*if (my_id==0) {
 		//Print the first point
 		printf("%d) Point 0 i(%f, %f, %f) has properties vp=%lf, vs=%lf, rho=%lf, crust vp=%lf, crust vs=%lf, crust rho=%lf\n", my_id, pts[0].coord[0], pts[0].coord[1], pts[0].coord[2], props[0].cmb.vp, props[0].cmb.vs, props[0].cmb.rho, props[0].crust.vp, props[0].crust.vs, props[0].crust.rho);
-	}
+	}*/
 
 	 /* perform sanity checks on the material properties */     
 
@@ -665,7 +678,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	MPI_File_open(MPI_COMM_WORLD, outfile, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp_out);
 	//output is fast y, x, z, all 3 values
 	offset = (long)starting_stripe * ny * 3 * sizeof(float);
-	printf("%d) Offset is %ld bytes.\n", my_id, offset);
+	printf("%d) Offset is %lld bytes.\n", my_id, offset);
 	int rc = MPI_File_write_at_all(fp_out, offset, buf, 3*local_np, MPI_FLOAT, &status);
         if (rc!=MPI_SUCCESS) {
         	char error_string[256];
@@ -673,7 +686,9 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                 MPI_Error_string(rc, error_string, &len_err_string);
                 fprintf(stderr, "%d) Error writing to file %s: %s\n", my_id, outfile, error_string);
                 mpi_exit(3);
-        }
+        } else {
+		fprintf(stderr, "[%d] Writing to file completed.\n", my_id);
+	}
 	MPI_File_close(&fp_out);
  }
 
@@ -689,7 +704,9 @@ free(vp_buf);
 free(rho_buf);
 free(buf);
 
+fprintf(stderr, "[%d] Completed.\n", my_id);
 fflush(stderr);
+fflush(stdout);
 
 mpi_exit(0);
 }
