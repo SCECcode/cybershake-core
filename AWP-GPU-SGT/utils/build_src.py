@@ -11,7 +11,7 @@ def build_src(site, fdloc, awp_comp, frequency, nt, filter=None, spacing=None):
 	elif awp_comp=='z':
 		comp = "z"
 	else:
-		print "Error:  component %s not recognized, aborting." % comp
+		print("Error:  component %s not recognized, aborting." % comp)
 		sys.exit(1)
 	
 	fp_in = open(fdloc, "r")
@@ -27,7 +27,7 @@ def build_src(site, fdloc, awp_comp, frequency, nt, filter=None, spacing=None):
 	source_name = "%s/data/f%s_src_%d_%.1fhzFilter" % (sys.path[0], awp_comp, nt, filter)
 	#print("Using source %s" % source_name)
 	if not os.path.exists(source_name):
-		print "Error: could not find source file %s with nt=%d and filter frequency = %.1f, aborting." % (source_name, nt, filter)
+		print("Error: could not find source file %s with nt=%d and filter frequency = %.1f, aborting." % (source_name, nt, filter))
 		return 1
 
 	fp_in = open("%s" % (source_name), "r")
