@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -10,33 +10,33 @@ ABOVE = 1
 smoothing_points = set()
 
 def add_points(y, x, direction):
-	for i in range(x-1, x-SMOOTHING_DIST-1, -1):
-		if i<0:
-			continue
-		else:
-			if coords[y][i] not in smoothing_points:
-				smoothing_points.add(coords[y][i])
-	if direction==BEFORE:
+        for i in range(x-1, x-SMOOTHING_DIST-1, -1):
+                if i<0:
+                        continue
+                else:
+                        if coords[y][i] not in smoothing_points:
+                            smoothing_points.add(coords[y][i])
+        if direction==BEFORE:
 		#Do 1 more earlier
-		i = x-SMOOTHING_DIST-1
-		if i>=0:
-			smoothing_points.add(coords[y][i])			
-	for i in range(x, x+SMOOTHING_DIST+1):
-		if i>=nx: 
+                i = x-SMOOTHING_DIST-1
+                if i>=0:
+                    smoothing_points.add(coords[y][i])			
+        for i in range(x, x+SMOOTHING_DIST+1):
+                if i>=nx: 
                         continue
                 else:   
                         if coords[y][i] not in smoothing_points:
                                 smoothing_points.add(coords[y][i])
-	for j in range(y-1, y-SMOOTHING_DIST-1, -1):
-		if j<0:
-			continue
-		else:
-			if coords[j][x] not in smoothing_points:
-                                smoothing_points.add(coords[j][x])
-	if direction==ABOVE:
-		j = y-SMOOTHING_DIST-1	
-		if j>=0:
-			smoothing_points.add(coords[j][x])
+        for j in range(y-1, y-SMOOTHING_DIST-1, -1):
+                if j<0:
+                        continue
+                else:
+                        if coords[j][x] not in smoothing_points:
+                            smoothing_points.add(coords[j][x])
+        if direction==ABOVE:
+                j = y-SMOOTHING_DIST-1	
+                if j>=0:
+                    smoothing_points.add(coords[j][x])
         for j in range(y, y+SMOOTHING_DIST+1):
                 if j>=ny:
                         continue
@@ -51,7 +51,7 @@ def add_points(y, x, direction):
 SMOOTHING_DIST = 58
 
 if len(sys.argv)<7:
-	print "Usage: %s <surf file> <model coords file> <nx> <ny> <smoothing dist> <output file>" % sys.argv[0]
+	print("Usage: %s <surf file> <model coords file> <nx> <ny> <smoothing dist> <output file>" % sys.argv[0])
 	sys.exit(1)
 
 surf_file = sys.argv[1]
@@ -66,17 +66,17 @@ coords = []
 for i in range(0, ny):
 	coords.append([])
 
-print "Reading model coords file."
+print("Reading model coords file.")
 with open(model_coords, "r") as fp_in:
-	data = fp_in.readlines()
+        data = fp_in.readlines()
         for i in range(0, ny):
-		for j in range(0, nx):
-			line = data[j+i*nx]
-			pieces = line.split()
-			coords[i].append((float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])))
-	fp_in.close()
+                for j in range(0, nx):
+                        line = data[j+i*nx]
+                        pieces = line.split()
+                        coords[i].append((float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])))
+        fp_in.close()
 
-print "Reading surface file."
+print("Reading surface file.")
 with open(surf_file, "r") as fp_in:
 	data = fp_in.readlines()
 	line_before = data[0]
@@ -105,7 +105,7 @@ with open(surf_file, "r") as fp_in:
 		pieces_before = pieces
 	fp_in.close()
 
-print len(smoothing_points)
+print(len(smoothing_points))
 
 #Write points to file
 with open(output_file, "w") as fp_out:
