@@ -14,8 +14,9 @@ struct coord_entry {
 const int RAD = 6371;
 
 int main(int argc, char** argv) {
-	if (argc<9) {
-		printf("Usage: %s <SRF file> <model coords> <velocity mesh> <nx> <ny> <nz> <grid spacing, km> <output file>\n", argv[0]);
+	if (argc<10) {
+		printf("Usage: %s <SRF file> <model coords> <velocity mesh> <nx> <ny> <nz> <grid spacing, km> <average | point> <output file>\n", argv[0]);
+		printf("'average' uses a distance-weighted average of the 8 nearest points in the mesh to the fault point; 'point' uses the values at the single mesh point nearest to the fault point.\n");
 		exit(1);
 	}
 
@@ -26,12 +27,23 @@ int main(int argc, char** argv) {
 	int ny = atoi(argv[5]);
 	int nz = atoi(argv[6]);
 	float grid_spacing = atof(argv[7]);
-	char* output_file = argv[8];
+	char* retrieval_type = argv[8];
+	char* output_file = argv[9];
+
+	int average_method = 0;
+	if (strcmp(retrieval_type, "average")==0) {
+		average_method = 1;
+	} else if (strcmp(retrieval_type, "point")==0) {
+		average_method = 0;
+	} else {
+		printf("Don't recognize the retrieval type %s.  Needs to be one of 'average' or 'point', aborting.\n");
+		exit(2);
+	}
 
 	int i,j,k,m;
 
 	struct standrupformat srf;
-	_read_srf(&srf, srf_filename, 0);
+	read_srf(&srf, srf_filename, 0);
 
 	//Read model coords
 	printf("Reading model coords.\n");
@@ -97,10 +109,16 @@ int main(int argc, char** argv) {
 				break;
 			}
 		}
-		//Get parameters for up to 8 points, average
-		float tot = 0.0;
-		float dist_tot = 0.0;
-		for (j=0; j<4; j++) {
+        //Get parameters for up to 8 points, average
+        float tot = 0.0;
+        float dist_tot = 0.0;
+		int max_j = 0;
+		if (average_method==0) {
+			max_j = 1;
+		} else {
+			max_j = 4;
+		}
+		for (j=0; j<max_j; j++) {
 			float mesh_data[3];
 			float shear_mod;
 			if (closest_indices[j]!=-1) {
@@ -114,28 +132,37 @@ int main(int argc, char** argv) {
 				//include depth in dist calc
 				float full_dist = sqrt(closest_dists[j]*closest_dists[j] + (top_dep_index*grid_spacing - srf_dep)*(top_dep_index*grid_spacing - srf_dep));
 				//printf("Point (%f, %f, %f) has XY distance %f, 3D distance %f, vs=%f, rho=%f\n", entry.lon, entry.lat, (top_dep_index*grid_spacing), closest_dists[j], full_dist, mesh_data[1], mesh_data[2]);
-				tot += 1.0/(full_dist*full_dist)*shear_mod;
-				dist_tot += 1.0/(full_dist*full_dist);
+				tot += 1.0/(full_dist)*shear_mod;
+				dist_tot += 1.0/(full_dist);
 				//If there's a deeper point available, do it again
 				if (top_dep_index+1 < nz) {
 					num_close_points++;
 					offset = 3*sizeof(float)*((top_dep_index+1)*nx*ny + entry.grid_x*ny + entry.grid_y);
-	                                fseek(fp_in, offset, SEEK_SET);
-	                                fread(mesh_data, sizeof(float), 3, fp_in);
-	                                shear_mod = mesh_data[2]*mesh_data[1]*mesh_data[1];
-					full_dist = sqrt(closest_dists[j]*closest_dists[j] + ((top_dep_index+1)*grid_spacing - srf_dep)*((top_dep_index+1)*grid_spacing - srf_dep));
-					//printf("Point (%f, %f, %f) has XY distance %f, 3D distance %f, vs=%f, rho=%f\n", entry.lon, entry.lat, ((top_dep_index+1)*grid_spacing), closest_dists[j], full_dist, mesh_data[1], mesh_data[2]);
-	                                tot += 1.0/(full_dist*full_dist)*shear_mod;
-					dist_tot += 1.0/(full_dist*full_dist);
+                    fseek(fp_in, offset, SEEK_SET);
+                    fread(mesh_data, sizeof(float), 3, fp_in);
+                    shear_mod = mesh_data[2]*mesh_data[1]*mesh_data[1];
+					float deeper_full_dist = sqrt(closest_dists[j]*closest_dists[j] + ((top_dep_index+1)*grid_spacing - srf_dep)*((top_dep_index+1)*grid_spacing - srf_dep));
+					//printf("Point (%f, %f, %f) has XY distance %f, 3D distance %f, vs=%f, rho=%f\n", entry.lon, entry.lat, ((top_dep_index+1)*grid_spacing), closest_dists[j], deeper_full_dist, mesh_data[1], mesh_data[2]);
+					if (average_method==1) {
+		                tot += 1.0/(deeper_full_dist)*shear_mod;
+						dist_tot += 1.0/(deeper_full_dist);
+					} else {
+						if (deeper_full_dist<full_dist) {
+							//Use this value instead
+							tot = 1.0/deeper_full_dist*shear_mod;
+							dist_tot = 1.0/deeper_full_dist;
+						}
+					}
 				}
 			} else {
 				//done with points
 				break;
 			}
 		}
-		int nearest_z_index = ((int)(srf_dep/0.4 + 0.5));
-		//Add 1 so it's 1-indexed
-		fprintf(fp_out, "%f %f %f %d %d %d %f\n", srf_lon, srf_lat, srf_dep, grid_points[closest_indices[0]].grid_x+1, grid_points[closest_indices[0]].grid_y+1, nearest_z_index+1, (tot/dist_tot));
+		//int nearest_z_index = ((int)(srf_dep/0.4 + 0.5));
+		int nearest_z_index = (int)(srf_dep/grid_spacing+0.5);
+		//Add 1 so it's 1-indexed, and flip X and Y for AWP
+		fprintf(fp_out, "%f %f %f %d %d %d %f\n", srf_lon, srf_lat, srf_dep, grid_points[closest_indices[0]].grid_y+1, grid_points[closest_indices[0]].grid_x+1, nearest_z_index+1, (tot/dist_tot));
 	}
 	fflush(fp_out);
 	fclose(fp_out);
