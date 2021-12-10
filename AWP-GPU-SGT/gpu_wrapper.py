@@ -14,7 +14,7 @@ sys.path.append(path_add)
 import config
 
 if len(sys.argv)<2:
-	print "Usage: %s <IN3D file>" % sys.argv[0]
+	print("Usage: %s <IN3D file>" % sys.argv[0])
 	sys.exit(1)
 
 fp_in = open(sys.argv[1], "r")
@@ -45,15 +45,16 @@ elif mpi_cmd=='jsrun':
 	exec_string = "jsrun -n %d -g 1 -a 1 -c 1 %s" % (nproc, suffix)
 
 #run exec_string
-print exec_string
+print(exec_string)
+sys.stdout.flush()
 #exitcode = os.system("%s; %s" % (module_cmd, exec_string))
 #sys.exit(0)
 exitcode = os.system("%s" % exec_string)
 if exitcode!=0:
-	print "Job FAILED with exitcode %d." % ((exitcode >> 8) & 0xFF)
+	print("Job FAILED with exitcode %d." % ((exitcode >> 8) & 0xFF))
 	sys.exit((exitcode >> 8) & 0xFF)
 
 #move output file
-print "Moving %s/SGT00%s to %s" % (params["SGTGRO"].rsplit("/", 1)[0], params["NST"], params["SGTGRO"])
+print("Moving %s/SGT00%s to %s" % (params["SGTGRO"].rsplit("/", 1)[0], params["NST"], params["SGTGRO"]))
 shutil.move("%s/SGT00%s" % (params["SGTGRO"].rsplit("/", 1)[0], params["NST"]), params["SGTGRO"])
 sys.exit(0)
