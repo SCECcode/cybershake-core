@@ -56,8 +56,8 @@ extern const int Z_COMP_FLAG;
 //MAXPERIODS as defined in surfseis_rspectra
 #define MAXPERIODS 305
 
-//num periods as defined in rotd.c
-#define NUM_ROTD_PERIODS 22
+//num periods as defined in rotd.c + PGV period
+#define NUM_ROTD_PERIODS 23
 
 //Checkpoint filename
 #define CHECKPOINT_FILE "checkpoint.out"
@@ -71,6 +71,8 @@ extern const int Z_COMP_FLAG;
 #define         SOMERVILLE_FLAG    1
 #define         MAI_FLAG           2
 #define         MINSLIP            1.0e-02
+
+#define	MAXLINE	8192
 
 #define   DHYPO_FRAC       0.75     /* hypo at 0.75 down-dip width */
 #define   SHYPO_STEP       20.0     /* hypo spacing at 20 km along strike */
