@@ -16,7 +16,7 @@ def build_media(site, gridout, rwg_vel_prefix, media_out):
 	nz = int((data[1+nx+2+ny+2].split("="))[1])
 	
 	cmd = "%s/SgtHead/bin/reformat_velocity %d %d %d %s %s" % (cs_path, nx, ny, nz, rwg_vel_prefix, media_out)
-	print cmd
+	print(cmd)
 	exitcode = os.system(cmd)
 	return ((exitcode >> 8) & 0xFF)
 
