@@ -1,7 +1,7 @@
 #!/bin/csh
 
-if ($# != 12 && $# != 13) then
-  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> [min vs]"
+if ($# != 13 && $# != 14) then
+  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> <surface_cvm_depth> [min vs]"
   exit 1
 endif
 
@@ -17,9 +17,10 @@ set MODELS = $9
 set MPI_CMD = $10
 set JOB_ID = $11
 set FORMAT = $12
+set SURF_CVM_DEPTH = $13
 
-if ($# == 13) then
-	set VSMIN = $13
+if ($# == 14) then
+	set VSMIN = $14
 	if ($VSMIN == 900.0) then
 		set VPMIN = 1800.0
 		set DENMIN = 2000.0
@@ -83,6 +84,17 @@ else if ($MPI_CMD == "aprun") then
 	        set MPI_CMD = "${MPI_CMD} -n ${NP}"
 	endif
 	set MPI_CMD = "${MPI_CMD} -S 4"
+else if ($MPI_CMD == "jsrun") then
+	#We're running on Summit
+	#LSB_DJOB_NUMPROC is 42*num_nodes + 1
+	@ NP = $LSB_DJOB_NUMPROC - 1
+	@ NNODES = $NP / 42
+	@ NUM_RESOURCE_SETS = $NNODES * 42
+	#-a 1: 1 MPI tasks per core
+	#-c 1: 1 core per resource set
+	#-r 42: 42 resource sets per node
+	set MPI_CMD = "${MPI_CMD} -n $NUM_RESOURCE_SETS -a 1 -c 1 -r 42 -l CPU-CPU"
+	echo "LSB_DJOB_NUMPROC=$LSB_DJOB_NUMPROC, NP=$NP, NNODES=$NNODES, NUM_RESOURCE_SETS=$NUM_RESOURCE_SETS"
 endif
 
 #set VPMIN = 1700.0
@@ -92,16 +104,20 @@ endif
 #Add to LD_LIBRARY_PATH
 #setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
 
-set UCVM_HOME = /lustre/atlas/proj-shared/geo112/ucvm_18_5/UCVMC/install
-setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-4/lib:${UCVM_HOME}/model/cvms426/lib:${UCVM_HOME}/model/cencal/lib:${UCVM_HOME}/model/cvms5/lib:${UCVM_HOME}/model/cca/lib:${UCVM_HOME}/model/cs173/lib:$LD_LIBRARY_PATH
+set UCVM_HOME = /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0
+setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-4/lib:${UCVM_HOME}/model/cvms426/lib:${UCVM_HOME}/model/cencal/lib:${UCVM_HOME}/model/cvms5/lib:${UCVM_HOME}/model/cca/lib:$LD_LIBRARY_PATH
+setenv PROJ_LIB /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/lib/proj-4/share/proj
 
 #source /lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/setup.csh
 echo $LD_LIBRARY_PATH
-ldd ${BPATH}/${BPROG}
+#ldd ${BPATH}/${BPROG}
 
-echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR}"
+#On Summit, must unload darshan-runtime module or will hang on MPI_Finalize
+module unload darshan-runtime
 
-${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR}
+echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH}"
+
+${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH}
 
 set RC = $?
 
@@ -113,7 +129,7 @@ else
 endif
 
 if ($FORMAT == "awp") then
-	#Move to awp.<site>.media
+	#Move to awp.<site>.media if it's different
 	mv ${OUTDIR}/${FILEROOT} ${OUTDIR}/awp.${SITE}.media
 endif
 
