@@ -7,7 +7,7 @@
 int ucvm_initialized = 0;
 
 void initialize_ucvm(char* model) {
-	if (ucvm_init("/lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Failed to init UCVM, aborting.");
                 exit(3);
         }
