@@ -52,7 +52,7 @@ void send_data_cluster(char data_filename[256], int src_id, int rup_id, int star
 float** jbsim3d_synth(float*** seis_return, struct seisheader* header, char stat[], float slon, float slat, int ntout, char seis_file[], struct standrupformat* srf, struct sgtfileparams* sfp, struct sgtparams* sgtparms, struct sgtmaster sgtmast, struct sgtindex* sgtindx, struct geoprojection geop, long long* indx_master, int num_sgts, long long** sgts_by_handler, int* num_sgts_by_handler, int num_sgt_handlers, int num_rup_vars, struct rupture_variation* rup_vars, int my_id);
 
 //misc_subs.c
-double sfrand(int *seed);
+double sfrand(long *seed);
 void set_ne(float *elon,float *elat,float *slon,float *slat,float *sn,float *se);
 void get_master_list_opt(struct sgtparams *sgtp, int np, long long* mindx, int* nm);
 void get_indx(float *lon,float *lat,float *dep,struct sgtindex *indx,struct geoprojection *gp);
@@ -61,6 +61,7 @@ double nt_tol(float fnt,int gnt);
 //sgt3d_subs.c
 void get_sgtpars(struct sgtfileparams *sgtfpar,struct sgtmaster *sgtmast,struct sgtindex **sgtindx);
 void find_sgt(struct sgtparams *sgtpar,struct sgtmaster *sgtmast,struct sgtindex *sgtindx,struct sgtindex *eqindx,struct sgtindex *statindx,float *maxd,float *fwt);
+void mech_sgt_d(float* gfmech, struct sgtparams* sgtpar, int nts, struct mechparam mp, double* d_scl);
 
 //geoproj_subs.c
 void set_geoproj(struct sgtmaster *sgtmast,struct geoprojection *geop);
@@ -74,5 +75,12 @@ int duration(struct seisheader* header, float* full_seis, struct duration_record
 
 //integ_diff.c
 void integ_diff(int integ_notdiff, float* seis, int nt, float dt);
+
+//srf_rupm.c
+void get_srfpars(struct standrupformat *,int,int,float *,float *,float *,float *,float *,struct mechparam *);
+void get_srfpars_v2(struct standrupformat *,int,int,float *,float *,struct mechparam *);
+void get_srfparsOLD(struct standrupformat *,int,int,float *,float *,float *,int,int,struct mechparam *);
+void srf_stf(struct standrupformat *,int,int,float *,float *,float *,int,float *,struct mechparam,float *);
+void srf_stf_v2(struct standrupformat *,int,int,float *,float *,float *,int,float *,struct mechparam,float *);
 
 extern void spectrad_(struct seisheader* header, int* nx, int* ny, int* npts, float* dt, char* seis_units, char* output_units, char* output_type, char* period, float* filter_high_hz, char* byteswap, char* input_file, char* output_file, float* seis, int* output_option, float* psa_data, int seis_units_len, int output_units_len, int output_type_len, int period_len, int byteswap_len, int input_file_len, int output_file_len);
