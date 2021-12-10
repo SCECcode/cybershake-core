@@ -22,7 +22,7 @@ struct pointsource
    };
 
 //#ifdef _V1
-struct srf_apointvalues
+/*struct srf_apointvalues
    {
    float lon;
    float lat;
@@ -43,7 +43,7 @@ struct srf_apointvalues
    float *stf2;
    float *stf3;
    };
-/*#else
+#else*/
 struct srf_apointvalues
    {
    float lon;
@@ -68,7 +68,7 @@ struct srf_apointvalues
    float *stf3;
    };
 
-struct srf_apointvalues20141109
+/*struct srf_apointvalues20141109
    {
    float lon;
    float lat;
@@ -128,14 +128,14 @@ struct srf_headercomment
    };
 
 //#ifdef _V1
-struct standrupformat
+/*struct standrupformat
    {
    char version[32];
    char type[32];
    struct srf_planerectangle srf_prect;
    struct srf_allpoints srf_apnts;
    };
-/*#else
+#else*/
 struct standrupformat
    {
    char version[32];
@@ -147,7 +147,7 @@ struct standrupformat
    struct srf_allpoints srf_apnts;
    };
 
-struct standrupformat20141109
+/*struct standrupformat20141109
    {
    char version[32];
    char type[32];
