@@ -67,10 +67,10 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 	float convert_factor = 1.0e+10;
 	float scale_factor = 0.001; //to compensate for m/s in AWP velocity file
 
-	//Set magic values for 0.5 Hz
+	//Set magic values
 	float fh = 25.0;
-	float fp = 0.5;
-	float qs = 25.0;
+	float fp = 1.0;
+	//float qs = 25.0;
 
 	//set defaults
 	rpars.geoproj = 1;
@@ -289,10 +289,12 @@ void write_header(char* modelbox, char* coordfile, char* fdloc, char* gridout, f
 			}*/
 
 			if (mu_corr_flag==1) {
+				//Assume Qs = 0.05Vs
+				float qs = 0.05*vel_data[vs_index];
 				float vs_corr = vel_data[vs_index]*scale_factor*(1+(log(fh/fp)/(qs*3.14159)));
 				mu = vel_data[rho_index]*scale_factor*vs_corr*vs_corr;
 			} else {
-		                mu = vel_data[vs_index]*scale_factor*vel_data[vs_index]*scale_factor*vel_data[rho_index]*scale_factor;
+		        mu = vel_data[vs_index]*scale_factor*vel_data[vs_index]*scale_factor*vel_data[rho_index]*scale_factor;
 			}
 			lam = vel_data[vp_index]*scale_factor*vel_data[vp_index]*scale_factor*vel_data[rho_index]*scale_factor - 2*mu;
 
