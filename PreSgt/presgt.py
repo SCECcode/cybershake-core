@@ -4,6 +4,8 @@ import pymysql
 import sys
 import os
 import time
+import sqlite3
+import optparse
 
 full_path = os.path.abspath(sys.argv[0])
 path_add = os.path.dirname(os.path.dirname(full_path))
@@ -12,28 +14,22 @@ sys.path.append(path_add)
 
 import config
 
-def getSiteCoords(site):
-	print "Retrieving coordinates from the database for %s.\n" % site
-	#host = "focal.usc.edu"
-	host = "moment.usc.edu"
+def getSiteCoords(site, host):
+	print("Retrieving coordinates from the database for %s.\n" % site)
 	user = "cybershk_ro"
 	passwd = "CyberShake2007"
 	db = "CyberShake"
-	try:
+	if host[0:9]=="sqlite://":
+		cursor = sqlite3.connect(host[9:]).cursor()
+	else:
 		cursor = pymysql.connect(host, user, passwd, db).cursor()
-		sql_string = 'select CS_Site_Lat, CS_Site_Lon from CyberShake_Sites where CS_Short_Name="%s"' % site
-		cursor.execute(sql_string)
-		return cursor.fetchone()	
-	except pymysql.OperationalError,e:
-		print e
-		sys.exit(-1)
-	except pymysql.DatabaseError,e:
-	        print e
-	        sys.exit(-2)
+	sql_string = 'select CS_Site_Lat, CS_Site_Lon from CyberShake_Sites where CS_Short_Name="%s"' % site
+	cursor.execute(sql_string)
+	return cursor.fetchone()	
 
 def genFdloc(outputName, site, mlon, mlat, cordfileName):
     '''Duplicates gen_fdsrcloc.csh: generates an fdloc file, which contains the (X,Y) grid coordinates which are nearest to the site'''
-    print "Generating %s.fdloc.\n" % site
+    print("Generating %s.fdloc.\n" % site)
     cordfile = open(cordfileName)
     minDistance = 1000.0
     minLoc = [-1, -1]
@@ -41,7 +37,7 @@ def genFdloc(outputName, site, mlon, mlat, cordfileName):
     for line in cordfile:
 	    i = i+1
 	    if i % 100000==0:
-	        print '%d' % i
+	        print('%d' % i)
 	    pieces = line.split()
 	    distance = (float(pieces[0])-mlon)*(float(pieces[0])-mlon)+(float(pieces[1])-mlat)*(float(pieces[1])-mlat)
 	    if distance < minDistance:
@@ -58,21 +54,21 @@ def genFdloc(outputName, site, mlon, mlat, cordfileName):
 
 def genFaultList(outputName, site, erf_id, rsqsim):
     '''Copies the functionality of gen_faultlist.csh:  it serves as a wrapper to CreateFaultList.java, which queries the database to generate a list of ruptures which are applicable for the given site.'''
-    print "Generating fault list for %s.\n" % site
+    print("Generating fault list for %s.\n" % site)
     #command = 'java -classpath .:%s:%s/faultlist/mysql-connector-java-5.0.5-bin.jar faultlist/CreateFaultList %s %s %s %s' % (sys.path[0], sys.path[0], site, erf_id, PATH_TO_RUPTURE_VARIATIONS, outputName)
     rsqsim_str = ""
     if rsqsim:
-	rsqsim_str = "-rsqsim"
-    command = '%s/faultlist_py/CreateFaultList.py %s %s %s %s %s' % (sys.path[0], site, erf_id, PATH_TO_RUPTURE_GEOMETRIES, outputName, rsqsim_str)
-    print command
+        rsqsim_str = "--rsqsim"
+    command = '%s/faultlist_py/CreateFaultList.py --site %s --erf_id %s --rup_path %s --output %s --server %s %s' % (sys.path[0], site, erf_id, PATH_TO_RUPTURE_GEOMETRIES, outputName, server, rsqsim_str)
+    print(command)
     returnCode = os.system(command)
     if returnCode!=0:
-	sys.exit((returnCode >> 8) & 0xFF)
+        sys.exit((returnCode >> 8) & 0xFF)
 
 def genRadiusFile(radiusfile):
 	'''Duplicates the functionality of part of gen_sgtgrid.csh:  it writes the adaptive mesh info to a radius file as part of generating the cordfile.'''
 
-	print "Generating %s.\n" % radiusfile
+	print("Generating %s.\n" % radiusfile)
 	#magic constants for the adaptive mesh
 	RLEV = [10.0, 50.0, 100.0, 1000.0]
 	RINC = [10, 15, 25, 50]
@@ -106,7 +102,7 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 		HH = spacing
 	IX_MIN = 20
 	IX_MAX = ns[0]-20
-   	IY_MIN = 20
+	IY_MIN = 20
 	IY_MAX = ns[1]-20
 	IZ_START = 1
 	IZ_MAX = ns[2]-20
@@ -114,12 +110,12 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 	#outfile = '../../data/SgtInfo/SgtCords/%s.cordfile' % site
 	#faultlist = '../../data/SgtInfo/FaultList/%s.faultlist' % site
 
-	print "Generating %s.cordfile.\n" % site
+	print("Generating %s.cordfile.\n" % site)
 
 	#split into subfiles
 	MPI_CMD = config.getProperty('MPI_CMD')
 
-        if (MPI_CMD == "mpirun"):
+	if (MPI_CMD == "mpirun"):
                 try:
                         node_file = os.environ["PBS_NODEFILE"]
                         num_nodes = 0
@@ -129,13 +125,13 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
                         MPI_CMD = "%s -np %d -machinefile %s" % \
 			    (MPI_CMD, num_nodes, node_file)
                 except:
-                        print "Unable to read nodefile %s" % (node_file) 
+                        print("Unable to read nodefile %s" % (node_file))
                         sys.exit(1)
-        elif (MPI_CMD == "aprun"):
+	elif (MPI_CMD == "aprun"):
 		np = int(os.environ["PBS_NUM_NODES"])*4
 		#No more than 32 cores)
 		np = min(np, 32)
-                MPI_CMD = "%s -n %d -N 4" % (MPI_CMD, np)
+		MPI_CMD = "%s -n %d -N 4" % (MPI_CMD, np)
 	elif (MPI_CMD == "jsrun"):
 		num_res_sets = int(os.environ['LSB_DJOB_NUMPROC'])-1
 		#No more than 32 cores
@@ -146,44 +142,55 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 	#cmdFile.write(command)
 	#cmdFile.flush()
 	#cmdFile.close()
-	print command
+	print(command)
 	startTime = time.time()
 	returnCode = os.system(command)
-	print "Elapsed time: %f\n" % (time.time()-startTime)
+	print("Elapsed time: %f\n" % (time.time()-startTime))
 	if returnCode!=0:
 		sys.exit((returnCode >> 8) & 0xFF)
 
 RUPTURE_ROOT = config.getProperty('RUPTURE_ROOT')
 
-if len(sys.argv) < 11:
-    print 'Usage: ./presgt.py <site> <erf_id> <modelbox> <gridout> <model_coords> <fdloc> <faultlist> <radiusfile> <sgtcords> <spacing> [frequency] [rsqsim]'
-    print 'Example: ./presgt.py USC 33 USC.modelbox gridout_USC model_coords_GC_USC USC.fdloc USC.faultlist USC.radiusfile USC.cordfile 200.0 0.1'
-    sys.exit(1)
+parser = optparse.OptionParser()
+parser.add_option("--site", dest="site", action="store", help="Site name")
+parser.add_option("--erf_id", dest="erf_id", action="store", type="int", help="ERF ID")
+parser.add_option("--modelbox", dest="modelbox", action="store", help="Path to modelbox file (input)")
+parser.add_option("--gridout", dest="gridout", action="store", help="Path to gridout file (input)")
+parser.add_option("--coordfile", dest="coordsfile", action="store", help="Path to model_coords file (input)")
+parser.add_option("--fdloc", dest="fdlocfile", action="store", help="Path to fdloc file (output)")
+parser.add_option("--faultlist", dest="faultlistfile", action="store", help="Path to faultlist file (otuput)")
+parser.add_option("--radiusfile", dest="radiusfile", action="store", help="Path to radiusfile (output)")
+parser.add_option("--sgtcords", dest="sgtcordsfile", action="store", help="Path to SGT coords file (output)")
+parser.add_option("--spacing", dest="spacing", action="store", type="float", help="Mesh spacing, in km")
+parser.add_option("--frequency", dest="frequency", action="store", default=0.5, type="float", help="Override default frequency of 0.5 Hz")
+parser.add_option("--rsqsim", dest="rsqsim", action="store_true", default=False, help="Assumes RSQSim-formatted rupture geometry files.  Default is false.")
+parser.add_option("--server", dest="server", action="store", default="moment.usc.edu", help="Path to server (default is moment.usc.edu).  Can specify SQLite file with sqlite://<file>")
 
-site = sys.argv[1]
-modelbox = sys.argv[3]
-gridout = sys.argv[4]
-cordfileName = sys.argv[5]
+(option, args) = parser.parse_args()
 
-fdlocFileName = sys.argv[6]
-faultlistFileName = sys.argv[7]
-radiusFileName = sys.argv[8]
-sgtcordFileName = sys.argv[9]
+site = option.site
+erf_id = option.erf_id
+modelbox = option.modelbox
+gridout = option.gridout
+cordfileName = option.coordsfile
 
-spacing = float(sys.argv[10])
-rsqsim = False
+fdlocFileName = option.fdlocfile
+faultlistFileName = option.faultlistfile
+radiusFileName = option.radiusfile
+sgtcordFileName = option.sgtcordsfile
 
-frequency = 0.5
-if len(sys.argv)>=12:
-	frequency = float(sys.argv[11])
+spacing = option.spacing
 
-if len(sys.argv)>=13:
-	if "rsqsim" in sys.argv[12:]:
-		rsqsim = True
+if (site==None or erf_id==None or modelbox==None or gridout==None or cordfileName==None or fdlocFileName==None or faultlistFileName==None or radiusFileName==None or sgtcordFileName==None or spacing==None):
+	print("All of site, erf_id, modelbox, gridout, coordfile, floc, faultlist, radiusfile, sgtcords, and spacing must be specified.")
+	parser.print_help()
+	sys.exit(1)
+
+rsqsim = option.rsqsim
+frequency = option.frequency
+
+server = option.server
 	
-
-erf_id = sys.argv[2]
-
 PATH_TO_RUPTURE_GEOMETRIES = "%s/Ruptures_erf%s" % (RUPTURE_ROOT, erf_id)
 
 input = open(modelbox)
@@ -191,8 +198,7 @@ modelboxContents = input.readlines()
 input.close()
 site = modelboxContents[0].strip()
 
-siteCoords = getSiteCoords(site)
-print siteCoords
+siteCoords = getSiteCoords(site, server)
 siteLat = float(siteCoords[0])
 siteLon = float(siteCoords[1])
 
