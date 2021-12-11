@@ -1,4 +1,4 @@
-TARGETS = get_num_rvs generate_hypos
+TARGETS = get_num_rvs generate_hypos get_hypo
 
 CC = gcc
 CFLAGS = -O3
@@ -18,3 +18,5 @@ get_num_rvs: get_num_rvs.c
 generate_hypos: generate_hypos.c
 	$(CC) $(CFLAGS) -o generate_hypos generate_hypos.c $(INC) $(LIBS)
 
+get_hypo: get_hypo.c
+	$(CC) $(CFLAGS) -o get_hypo get_hypo.c $(INC) $(LIBS)
