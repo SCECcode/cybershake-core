@@ -103,7 +103,7 @@ int rupgen_genslip_with_params(char* rup_geom_file, int slip, int hypo, rg_stats
         sprintf(srf_out_file, "%s_s%d_h%d.srf", basename(rup_geom_file), slip, hypo);
 
         /* Create pseudo-program args */
-	int MAX_ARGS = 30;
+	int MAX_ARGS = 100;
 	int index = 0;
         rgargc = MAX_ARGS;
         rgargv = malloc(rgargc * sizeof(char*));
@@ -124,7 +124,10 @@ int rupgen_genslip_with_params(char* rup_geom_file, int slip, int hypo, rg_stats
         } else if (hypo_dist==RUPGEN_UNIFORM_HYPO) {
                 sprintf(rgargv[7], "uniformgrid_hypo=1");
                 sprintf(rgargv[8], "random_hypo=0");
-        } else {
+        } else if (hypo_dist==RUPGEN_PROVIDE_HYPO) { 
+				sprintf(rgargv[7], "uniformgrid_hypo=0");
+				sprintf(rgargv[8], "random_hypo=0");
+		} else {
                 fprintf(stderr, "Error, did not specify a valid hypocenter location distribution, aborting.\n");
                 exit(2);
         }
