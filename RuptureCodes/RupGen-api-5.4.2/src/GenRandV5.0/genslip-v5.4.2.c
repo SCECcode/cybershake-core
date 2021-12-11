@@ -1303,9 +1303,8 @@ if target_hypo_spacing ~= 4.5, then nrup_scale_fac ~= 0.5
 
       nh = 1;
       }
-   else
+   else if (calc_shypo==1)
       {
-      calc_shypo = 1;
       shypo = -1.0e+15;
       dhypo = -1.0e+15;
 
@@ -2049,6 +2048,8 @@ fprintf(stderr,"ratio (negative rt)/(positive rt)= %f\n",neg_sum/(rt1_avg+neg_su
             }
 	 rf = vmod.vs[k];
 
+        //fprintf(stderr, "psrc[j*nstk].dep=%f, dmax1=%f, dmin2=%f, dmax2=%f\n", psrc[j*nstk].dep, dmax1, dmin2, dmax2);
+
          if(psrc[j*nstk].dep <= dmin1)
             {
 	    rf = rf*rvfrac*shal_vrup;
@@ -2088,14 +2089,16 @@ fprintf(stderr,"ratio (negative rt)/(positive rt)= %f\n",neg_sum/(rt1_avg+neg_su
 
             if(sabs > (float)(0.0))
                {
+				//fprintf(stderr, "%d) snum=%f, sf=%f, sabs=%f, rtime1_r=%f, rt1_avg=%f\n", ip, snum, sf, sabs, rtime1_r[ip], rt1_avg);
                snum = snum + sf*sabs*sqrt(rtime1_r[ip]/rt1_avg);
                sden = sden + sabs;
                }
             }
          }
 
+      //fprintf(stderr, "snum=%f, sden=%f\n", snum, sden);
       stfparams.rt_scalefac = snum/sden;
-      fprintf(stderr,"rt_scalefac= %f\n",stfparams.rt_scalefac);
+      //fprintf(stderr,"rt_scalefac= %f\n",stfparams.rt_scalefac);
       }
 
 /* end rtime1 */
