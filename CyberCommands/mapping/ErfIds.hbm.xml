@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.ErfIds" table="ERF_IDs" catalog="CyberShake">
+        <comment></comment>
+        <id name="erfId" type="int">
+            <column name="ERF_ID" />
+            <generator class="assigned" />
+        </id>
+        <property name="erfName" type="string">
+            <column name="ERF_Name" length="50" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="erfDescription" type="string">
+            <column name="ERF_Description" length="150">
+                <comment></comment>
+            </column>
+        </property>
+        <set name="ruptureses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.Ruptures" />
+        </set>
+        <set name="erfMetadatas" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.ErfMetadata" />
+        </set>
+        <set name="cyberShakeSiteRegionses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.CyberShakeSiteRegions" />
+        </set>
+        <set name="peakAmplitudeses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.PeakAmplitudes" />
+        </set>
+        <set name="pointses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.Points" />
+        </set>
+        <set name="ruptureVariationses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.RuptureVariations" />
+        </set>
+        <set name="ruptureVariationScenarioIdses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.RuptureVariationScenarioIds" />
+        </set>
+        <set name="sgtVariationIdses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.SgtVariationIds" />
+        </set>
+        <set name="cyberShakeSiteRuptureses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.CyberShakeSiteRuptures" />
+        </set>
+    </class>
+</hibernate-mapping>

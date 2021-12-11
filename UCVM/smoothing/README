@@ -1,0 +1,10 @@
+This directory contains a number of executables and scripts designed to smooth a velocity mesh made up of multiple models.  These codes assume that the interface between models is perpendicular to the surface; that is, the interface goes straight down and does not vary with depth.
+
+The steps involved in constructing a smoothed mesh are:
+
+1) Make your mesh in your usual way.
+2) Run determine_surface_model to create a file describing which model was used at each point along the surface.  From this, we can find the model interfaces.
+3) Run determine_smoothing_points.py to translate the model surface file into a series of grid coordinates which require smoothing.
+4) Run smooth, which takes the list of points, and the mesh, and applies the smoothing.
+
+run_smoothing_mpi.py combines all these steps into a single executable.

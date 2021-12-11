@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#PBS -l walltime=48:00:00,nodes=1:ppn=1
+#PBS -o rupVarGen.o -e rupVarGen.e
+#PBS -V
+#PBS -q largemem
+
+cd /home/rcf-104/CyberShake2007/ruptures/ruptureCodes
+./RuptureVariationGenerator.sh &> rupVarGen.out
+

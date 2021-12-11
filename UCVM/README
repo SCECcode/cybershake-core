@@ -1,0 +1,33 @@
+Modification to proj4 for Blue Waters
+--------------------------------------
+
+For some reason, if the input longitude is equal to the origin longitude in the aeqd projection, errno is being set to 33 (out of domain error) somewhere between pj_fwd() and the call to forward() for the aeqd projection.  This results in pj_fwd flagging that an error has occurred, and it sets xy.x=xy.y = inf.  This makes its way back to UCVM, which interprets it as no map data, which leads to failing acceptance tests since there should be map data for lon=-120.0.  I don't know if this is a compiler-related issue or not.  I compiled on Blue Waters with PrgEnv-gnu and CC set to `which gcc`.
+
+To fix this, I have changed pj_fwd starting in line 28 to:
+
+                if (pj_errno || (pj_errno = errno) && errno!=33) {
+                        xy.x = xy.y = HUGE_VAL;
+                /* adjust for major axis and easting/northings */
+                } else {
+                        xy.x = P->fr_meter * (P->a * xy.x + P->x0);
+                        xy.y = P->fr_meter * (P->a * xy.y + P->y0);
+                }
+                if (pj_errno==33 && errno==33) {
+                        pj_errno = errno = 0;
+                }
+
+If it picks up a domain error it ignores it, basically.
+
+
+UCVM for CyberShake
+---------------------
+
+The SVN repository contains the CyberShake-specific query code and the UCVM
+install.  In addition, you'll need:
+
+CVM-H 11.2
+CVM-S4 
+
+You may also need proj4 if it's not already installed on the target system.
+
+You'll need to compile and install all 5 elements before using the code.

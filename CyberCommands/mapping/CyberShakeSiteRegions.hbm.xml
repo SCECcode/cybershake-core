@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.CyberShakeSiteRegions" table="CyberShake_Site_Regions" catalog="CyberShake">
+        <comment></comment>
+        <composite-id name="id" class="mapping.CyberShakeSiteRegionsId">
+            <key-property name="csSiteId" type="int">
+                <column name="CS_Site_ID" />
+            </key-property>
+            <key-property name="erfId" type="int">
+                <column name="ERF_ID" />
+            </key-property>
+            <key-property name="cutoffDist" type="double">
+                <column name="Cutoff_Dist" precision="22" scale="0" />
+            </key-property>
+        </composite-id>
+        <many-to-one name="erfIds" class="mapping.ErfIds" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="cyberShakeSites" class="mapping.CyberShakeSites" update="false" insert="false" fetch="select">
+            <column name="CS_Site_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <property name="maxLat" type="double">
+            <column name="Max_Lat" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="maxLatSourceId" type="int">
+            <column name="Max_Lat_Source_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="maxLatRuptureId" type="int">
+            <column name="Max_Lat_Rupture_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="maxLon" type="double">
+            <column name="Max_Lon" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="maxLonSourceId" type="int">
+            <column name="Max_Lon_Source_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="maxLonRuptureId" type="int">
+            <column name="Max_Lon_Rupture_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="minLat" type="double">
+            <column name="Min_Lat" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="minLatSourceId" type="int">
+            <column name="Min_Lat_Source_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="minLatRuptureId" type="int">
+            <column name="Min_Lat_Rupture_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="minLon" type="double">
+            <column name="Min_Lon" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="minLonSourceId" type="int">
+            <column name="Min_Lon_Source_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="minLonRuptureId" type="int">
+            <column name="Min_Lon_Rupture_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <set name="cyberShakeSiteRuptureses" inverse="true">
+            <key>
+                <column name="CS_Site_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Cutoff_Dist" precision="22" scale="0" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.CyberShakeSiteRuptures" />
+        </set>
+    </class>
+</hibernate-mapping>

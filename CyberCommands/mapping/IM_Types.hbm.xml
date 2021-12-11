@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<hibernate-mapping>
+    <class name="mapping.IM_Types" table="IM_Types" catalog="CyberShake">
+        <comment></comment>
+        <id name="IM_Type_ID" type="int">
+            <column name="IM_Type_ID" />
+            <generator class="assigned" />
+        </id>
+        <property name="IM_Type_Measure" type="string">
+            <column name="IM_Type_Measure" length="50" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="IM_Type_Value" type="double">
+            <column name="IM_Type_Value" precision="22" scale="0">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="Units" type="string">
+            <column name="Units" length="50" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>

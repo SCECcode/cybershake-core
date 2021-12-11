@@ -1,0 +1,151 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.Ruptures" table="Ruptures" catalog="CyberShake">
+        <comment></comment>
+        <composite-id name="id" class="mapping.RupturesId">
+            <key-property name="erfId" type="int">
+                <column name="ERF_ID" />
+            </key-property>
+            <key-property name="sourceId" type="int">
+                <column name="Source_ID" />
+            </key-property>
+            <key-property name="ruptureId" type="int">
+                <column name="Rupture_ID" />
+            </key-property>
+        </composite-id>
+        <many-to-one name="erfIds" class="mapping.ErfIds" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <property name="sourceName" type="string">
+            <column name="Source_Name" length="100" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="sourceType" type="string">
+            <column name="Source_Type" length="20">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="mag" type="double">
+            <column name="Mag" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="prob" type="double">
+            <column name="Prob" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="gridSpacing" type="double">
+            <column name="Grid_Spacing" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="numRows" type="int">
+            <column name="Num_Rows" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="numColumns" type="int">
+            <column name="Num_Columns" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="numPoints" type="int">
+            <column name="Num_Points" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="startLat" type="double">
+            <column name="Start_Lat" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="startLon" type="double">
+            <column name="Start_Lon" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="startDepth" type="double">
+            <column name="Start_Depth" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="endLat" type="double">
+            <column name="End_Lat" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="endLon" type="double">
+            <column name="End_Lon" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="endDepth" type="double">
+            <column name="End_Depth" precision="22" scale="0" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <set name="ruptureVariationses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Source_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Rupture_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.RuptureVariations" />
+        </set>
+        <set name="peakAmplitudeses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Source_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Rupture_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.PeakAmplitudes" />
+        </set>
+        <set name="pointses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Source_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Rupture_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.Points" />
+        </set>
+        <set name="cyberShakeSiteRuptureses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Source_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Rupture_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.CyberShakeSiteRuptures" />
+        </set>
+    </class>
+</hibernate-mapping>

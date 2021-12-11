@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.RuptureVariations" table="Rupture_Variations" catalog="CyberShake">
+        <comment></comment>
+        <composite-id name="id" class="mapping.RuptureVariationsId">
+            <key-property name="erfId" type="int">
+                <column name="ERF_ID" />
+            </key-property>
+            <key-property name="sourceId" type="int">
+                <column name="Source_ID" />
+            </key-property>
+            <key-property name="ruptureId" type="int">
+                <column name="Rupture_ID" />
+            </key-property>
+            <key-property name="rupVarId" type="long">
+                <column name="Rup_Var_ID" />
+            </key-property>
+            <key-property name="rupVarScenarioId" type="int">
+                <column name="Rup_Var_Scenario_ID" />
+            </key-property>
+        </composite-id>
+        <many-to-one name="ruptureVariationScenarioIds" class="mapping.RuptureVariationScenarioIds" update="false" insert="false" fetch="select">
+            <column name="Rup_Var_Scenario_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="erfIds" class="mapping.ErfIds" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <many-to-one name="ruptures" class="mapping.Ruptures" update="false" insert="false" fetch="select">
+            <column name="ERF_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Source_ID" not-null="true">
+                <comment></comment>
+            </column>
+            <column name="Rupture_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <property name="rupVarLfn" type="string">
+            <column name="Rup_Var_LFN" length="50" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <set name="peakAmplitudeses" inverse="true">
+            <key>
+                <column name="ERF_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Source_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Rupture_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Rup_Var_ID" not-null="true">
+                    <comment></comment>
+                </column>
+                <column name="Rup_Var_Scenario_ID" not-null="true">
+                    <comment></comment>
+                </column>
+            </key>
+            <one-to-many class="mapping.PeakAmplitudes" />
+        </set>
+    </class>
+</hibernate-mapping>

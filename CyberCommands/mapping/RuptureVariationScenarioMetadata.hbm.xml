@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+<!-- Generated Aug 9, 2007 9:53:51 PM by Hibernate Tools 3.2.0.b9 -->
+<hibernate-mapping>
+    <class name="mapping.RuptureVariationScenarioMetadata" table="Rupture_Variation_Scenario_Metadata" catalog="CyberShake">
+        <comment></comment>
+        <composite-id name="id" class="mapping.RuptureVariationScenarioMetadataId">
+            <key-property name="rupVarScenarioId" type="int">
+                <column name="Rup_Var_Scenario_ID" />
+            </key-property>
+            <key-property name="rupVarScenarioAttrName" type="string">
+                <column name="Rup_Var_Scenario_Attr_Name" length="50" />
+            </key-property>
+            <key-property name="rupVarScenarioAttrValue" type="string">
+                <column name="Rup_Var_Scenario_Attr_Value" length="50" />
+            </key-property>
+        </composite-id>
+        <many-to-one name="ruptureVariationScenarioIds" class="mapping.RuptureVariationScenarioIds" update="false" insert="false" fetch="select">
+            <column name="Rup_Var_Scenario_ID" not-null="true">
+                <comment></comment>
+            </column>
+        </many-to-one>
+        <property name="rupVarScenarioAttrType" type="string">
+            <column name="Rup_Var_Scenario_Attr_Type" length="20" not-null="true">
+                <comment></comment>
+            </column>
+        </property>
+        <property name="rupVarScenarioAttrUnits" type="string">
+            <column name="Rup_Var_Scenario_Attr_Units" length="20">
+                <comment></comment>
+            </column>
+        </property>
+    </class>
+</hibernate-mapping>

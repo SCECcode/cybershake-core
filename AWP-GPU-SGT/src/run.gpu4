@@ -1,0 +1,12 @@
+#!/bin/bash
+echo "STARTING" `date` >> O.tmp
+mpiexec -np 4 ./pmcl3d --NX 224 --NY 224 -Z 1024 -x 2 -y 2 \
+  --TMAX 20.0 --DH 200.0 --DT 0.01 \
+  --NSRC 1 --NST 91 \
+  --MEDIASTART 1 --READ_STEP 91 \
+  --NTISKP 2000 --WRITE_STEP 1 \
+  --FL 0.005 --FH 5.0 --FP 2.5 \
+  --NEDZ 1 --INSRC FAULTPOW --INVEL mesh256 \
+  --NSKPX 2 --NSKPY 2 \
+>> O.tmp
+echo "ENDING" `date` >> O.tmp
