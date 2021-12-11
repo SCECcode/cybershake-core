@@ -9,6 +9,7 @@ int set_memcached_server(char* memcached_server);
 
 #define RUPGEN_RANDOM_HYPO 0
 #define RUPGEN_UNIFORM_HYPO 1
+#define RUPGEN_PROVIDE_HYPO 2
 
 /* Rupture generation statistics */
 typedef struct rg_stats_t {
