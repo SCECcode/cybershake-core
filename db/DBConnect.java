@@ -199,7 +199,7 @@ public class DBConnect
 //    String drivers = "org.gjt.mm.mysql.Driver";
     String drivers = "com.mysql.jdbc.Driver";
     //System.out.println("dbname is:"+dbName);
-    String url = "jdbc:mysql://"+hostName+":"+port+"/"+dbName;
+    String url = "jdbc:mysql://"+hostName+":"+port+"/"+dbName+"?serverTimezone=America/Los_Angeles";
     String username = "scottcal";
     String password = "CyberShake2007";
     if (isSQLite) {
