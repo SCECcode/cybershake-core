@@ -24,8 +24,12 @@ public class RunID {
 	private final String PASS = "CyberShake2007";
 	
 	public RunID(int runID, String server) {
-		HOSTNAME = server;
-		if (HOSTNAME.indexOf("sqlite:")==0) {
+		if (server.equals("moment")) {
+			HOSTNAME = "moment.usc.edu";
+		} else if (server.equals("focal")) {
+			HOSTNAME = "focal.usc.edu";
+		} else if (server.indexOf("sqlite:")==0) {
+			HOSTNAME = server;
 			isSQLite = true;
 		}
 		this.runID = runID;
@@ -59,6 +63,7 @@ public class RunID {
 			String drivers = "com.mysql.cj.jdbc.Driver";
 			//Have to add serverTimezone now; assume 
 			String url = "jdbc:mysql://"+HOSTNAME+":"+PORT+"/"+DB_NAME + "?serverTimezone=America/Los_Angeles";
+			//System.out.println("Connecing with url " + url);
 			if (isSQLite) {
 				//Use SQLite drivers
 				url = "jdbc:" + HOSTNAME;
