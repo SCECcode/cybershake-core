@@ -23,10 +23,9 @@ parser.add_argument("-fd", "--fdloc", help="Path to fdloc file with site coordin
 parser.add_argument("-go", "--gridout", help="Path to gridout file")
 parser.add_argument("-s", "--server", help="Database server to use")
 parser.add_argument("-r", "--run_id", help="Run ID")
-parser.add_argument("-pf", "--password_file", help="File with username:password for write access to CyberShake database.")
 
 args = parser.parse_args()
-if args.latitude==None or args.longitude==None or args.models==None or args.velocity_mesh==None or args.gridout==None or args.fdloc==None or args.run_id==None or args.password_file==None:
+if args.latitude==None or args.longitude==None or args.models==None or args.velocity_mesh==None or args.gridout==None or args.fdloc==None or args.run_id==None:
 	print("Missing required arguments.")
 	parser.print_help()
 	sys.exit(1)
@@ -73,11 +72,8 @@ with open(mesh_output_file, "r") as fp_in:
 	[mesh_vp, mesh_vs, mesh_rho] = [float(i) for i in fp_in.readline().split()]
 	fp_in.close()
 
-with open(args.password_file, "r") as fp_in:
-    pieces = fp_in.readline().split(":")
-    username = pieces[0]
-    passwd = pieces[1]
-    fp_in.close()
+username = config.getProperty("DB_WR_USER")
+username = config.getProperty("DB_WR_PASS")
 
 conn = pymysql.connect(host=server, db="CyberShake", user=username, passwd=passwd)
 cur = conn.cursor()
