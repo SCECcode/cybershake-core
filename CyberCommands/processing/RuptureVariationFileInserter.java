@@ -619,8 +619,8 @@ public class RuptureVariationFileInserter {
 		try {
 			if (conn==null) {
 				Properties props = new Properties();
-				props.put("user", "cybershk");
-				props.put("password", "re@lStil1");
+				props.put("user", "placeholder_username");
+				props.put("password", "placeholder_password");
 				conn = DriverManager.getConnection("jdbc:mysql://focal.usc.edu:3306/CyberShake", props);
 			}
 			Statement stmt = conn.createStatement();
