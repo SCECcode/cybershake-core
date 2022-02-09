@@ -72,7 +72,17 @@ with open(mesh_output_file, "r") as fp_in:
 	[mesh_vp, mesh_vs, mesh_rho] = [float(i) for i in fp_in.readline().split()]
 	fp_in.close()
 
+<<<<<<< HEAD
 conn = pymysql.connect(host=server, db="CyberShake", user="cybershk", passwd='re@lStil1')
+=======
+with open(args.password_file, "r") as fp_in:
+    pieces = fp_in.readline().split(":")
+    username = pieces[0]
+    passwd = pieces[1]
+    fp_in.close()
+
+conn = pymysql.connect(host=server, db="CyberShake", user=username, passwd=passwd)
+>>>>>>> c27aacadfa2ae8283058f6863a97383aaeefc65f
 cur = conn.cursor()
 update = "update CyberShake_Runs set Model_Vs30=%f, Mesh_Vsitop=%f, Z1_0=%f, Z2_5=%f where Run_ID=%d" % (model_vs30, mesh_vs, model_z10, model_z25, int(args.run_id))
 print(update)
