@@ -2,8 +2,8 @@ CUDA_HOME = $(subst bin/nvcc,,$(shell which nvcc))
 MPI_HOME=$(dir $(shell which mpicc))../
 
 CC      = mpicc
-#CFLAGS = -O3
-CFLAGS  = -g -O0
+CFLAGS = -O3 -g
+#CFLAGS  = -g -O0
 #GFLAGS  = $(CUDA_HOME)bin/nvcc -use_fast_math -arch=sm_70 -O3 -lineinfo -Xptxas -v
 #GFLAGS = $(CUDA_HOME)bin/nvcc -use_fast_math -O3
 GFLAGS = $(CUDA_HOME)bin/nvcc -O0
@@ -14,6 +14,7 @@ LIB     = -L$(CUDA_HOME)/lib64 -L$(MPI_HOME)/lib -ldl -lcudart -lmpi_ibm -lm -lp
 #LIB = -L$(CUDA_HOME)/lib64 -lcudart -lm
 
 pmcl3d:	$(OBJECTS)
+	[ -d bin ] || mkdir -p bin
 	$(CC) $(CFLAGS) $(INCDIR) -o	pmcl3d	$(OBJECTS)	$(LIB)
 	cp pmcl3d ../bin/
 
