@@ -28,7 +28,7 @@ Graves, R., Jordan, T.H., Callaghan, S. et al. CyberShake: A Physics-Based Seism
 Graves, R., Jordan, T.H., Callaghan, S. et al. CyberShake: A Physics-Based Seismic Hazard Model for Southern California. Pure Appl. Geophys. 168, 367–381 (2010). https://doi.org/10.1007/s00024-010-0161-6 SCEC Contribution 1354 
 
 ## Selected Publications:
-*Baker, J. W., & Chen, Y. (2022, 07). Spatial correlation analysis of CyberShake simulations, considering multiple ruptures. Oral Presentation at 12th National Conference on Earthquake Engineering. SCEC Contribution 11718 
+* Baker, J. W., & Chen, Y. (2022, 07). Spatial correlation analysis of CyberShake simulations, considering multiple ruptures. Oral Presentation at 12th National Conference on Earthquake Engineering. SCEC Contribution 11718 
 * Lee, Y., Goulet, C. A., Hu, Z., & Eguchi, R. T. (2022, 02). Impact of CyberShake on Risk Assessments for Distributed Infrastructure Systems. Oral Presentation at ASCE Lifelines Conference 2021-2022.     SCEC Contribution 11027     
 * Azar, Sarah & Dabaghi, Mayssa. (2021). Simulation-Based Seismic Hazard Assessment Using Monte-Carlo Earthquake Catalogs: Application to CyberShake. Bulletin of the Seismological Society of America. 111. 1481-1493. https://doi.org/10.1785/0120200375
 * Fayaz, J., Rezaeian, S., Zareian, F. (2021) Evaluation of simulated ground motions using probabilistic seismic demand analysis: CyberShake (ver. 15.12) simulations for Ordinary Standard Bridges, Soil Dynamics and Earthquake Engineering,Volume 141,2021,106533, ISSN 0267-7261, https://doi.org/10.1016/j.soildyn.2020.106533.
