@@ -27,3 +27,6 @@ filter_vel : filter_vel.c ${BBP_OBJS}
 
 interpolate_momrate : interpolate_momrate.c 
 	$(CC) -o interpolate_momrate interpolate_momrate.c -lm
+
+compare_sgts : compare_sgts.c
+	$(CC) -o compare_sgts compare_sgts.c -lm
