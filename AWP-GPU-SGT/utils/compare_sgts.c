@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 	double tot_percent_diff;
 	double tot_abs_per_diff;
 	long long percent_num_vals = 0;
-	float PERCENT_CUTOFF = 1e-6;
+	float PERCENT_CUTOFF = 1e-10;
 	//histogram of abs percent differences
 	int num_bins = 11;
 	float cutoffs[10] = {0.0001, 0.001, 0.01, 0.1, 0.3, 1, 3, 10, 100, 1000};
