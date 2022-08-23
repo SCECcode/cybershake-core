@@ -17,10 +17,10 @@
 HOSTNAME = $(shell hostname -f)
 
 ifeq (summit,$(findstring summit, $(HOSTNAME)))
-	MY_CC = xlc
-	MY_FC = xlf
+	MY_CC = gcc
+	MY_FC = gfortran
 	MY_MPICC = mpicc
-	MY_FC77 = xlf
+	MY_FC77 = gfortran
 	MY_MPIFC = mpif77
 	FLAG = 1
 endif
