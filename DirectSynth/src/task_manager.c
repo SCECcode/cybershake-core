@@ -303,7 +303,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 			}
 		}
 
-		//Want to make sure we're not exceeding permitted memory per task
+		//Want to make sure we're not exceeding 1.8 GB per task
 		long long full_sgt_data = (long long)num_points*(3*sizeof(float)*N_SGTvars*nt + sizeof(struct sgtheader));
 		long long sgt_size = full_sgt_data;
 		if (sgt_size>MAX_BUFFER_SIZE) {
@@ -336,31 +336,43 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		float shifted_mag = mag - 5.35;
 		float mem_per_pt = CONST_A*shifted_mag*shifted_mag*shifted_mag + CONST_B*shifted_mag*shifted_mag + CONST_C*shifted_mag + CONST_D;
 		long long single_rv_size = (long long)(mem_per_pt * num_points * DT_SCALE_FAC * 1.1);
-		//Need to include this for compatibility, even though it's trivial for V3.3.1
+		//Need to include for compatibility
 		long long generation_size = 0;
 		printf("shifted_mag=%f, mem_per_pt=%f, single RV size for src %d rup %d is %ld.\n", shifted_mag, mem_per_pt, source_id, rupture_id, single_rv_size);
 		#else
-		//For v5.4.2; assumes dtout=0.05.  size = 6.491 * num_points ^ 1.314 * 1.1 (tolerance)
+		//For v5.2.3; assumes dtout=0.05.  size = 6.491 * num_points ^ 1.314 * 1.1 (tolerance)
 		long long single_rv_size = (long long)(6.491*pow(num_points, 1.314)*1.1);
 		//Cap at 120 MB
 		if (single_rv_size > 120*1024*1024) {
 			single_rv_size = 120*1024*1024;
 		}
 		//Also need to include space for rough_c, tsfac2_c, rtime2_c arrays, used when generating ruptures
-		//Each of these has size sizeof(struct complex)*(3.3*nstk)^2, plus 10% slop
-		//hard-coding for test
+        //Each of these has size sizeof(struct complex)*(3.3*nstk)^2, plus 10% slop
 		int size_struct_complex = 8;
-		long long generation_size = 3*size_struct_complex*10.89*num_cols*num_cols*1.1;
+		int nstk = num_cols;
+		if (num_rows>num_cols) {
+			nstk = num_rows;
+		}
+        long long generation_size = 3*size_struct_complex*10.89*nstk*nstk*1.1;
 		#endif
 		//Do not permit more than this amount to be used
 		//Usage is rupture variations, SGTs, memcached (32 MB/core), and gfmech; everything else is tiny
-		long long MAX_ALLOWED = (long long)(3.0 * 1024.0 * 1024.0 * 1024.0);
+		//Summit has 3.04 GB per hardware thread, or 12.16 GB per core
+		long long MAX_ALLOWED = (long long)(4.0 * 1024.0 * 1024.0 * 1024.0);
 		int memcached = 32*1024*1024;
 		//gfmech uses 1st power of 2 larger than 4*nt
 		int power = ceil(log2(nt))+2;
 		int gfmech_size = (int)(3.0*12.0*sizeof(float)*pow(2, power));
 		//printf("MAX_ALLOWED = %ld\n", MAX_ALLOWED);
 		int num_vars_per_task = (MAX_ALLOWED - sgt_size - memcached - generation_size)/(single_rv_size + gfmech_size);
+		if (num_vars_per_task<1) {
+			if (debug) {
+				char buf[256];
+				sprintf(buf, "num vars per task is %d, adjusting to minimum of 1.", num_vars_per_task);
+				write_log(buf);
+			}
+			num_vars_per_task = 1;
+		}
 		//int num_vars_per_task = (MAX_ALLOWED - sgt_size)/single_rv_size;
 		//Change for debugging
 		//num_vars_per_task = 2;
