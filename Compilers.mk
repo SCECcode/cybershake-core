@@ -16,6 +16,16 @@
 # Get the hostname we are running on
 HOSTNAME = $(shell hostname -f)
 
+ifeq (summit,$(findstring summit, $(HOSTNAME)))
+	MY_CC = xlc
+	MY_FC = xlf
+	MY_MPICC = mpicc
+	MY_FC77 = xlf
+	MY_MPIFC = mpif77
+	FLAG = 1
+endif
+
+
 # PSC BigBen  (Cray XT3)
 # Note: For this to work you need to have your environment set
 #       up with the gcc compilers, not the PG compilers. On
@@ -31,6 +41,7 @@ ifeq (bigben,$(findstring bigben, $(HOSTNAME)))
         MY_MPIFC = ftn 
         MY_CFLAGS = 
         MY_FFLAGS = -ffixed-line-length-132
+	FLAG = 1
 endif
 
 # NICS kraken  (Cray XT5)
@@ -48,6 +59,8 @@ ifeq (kraken,$(findstring kraken, $(HOSTNAME)))
         MY_MPIFC = ftn
         MY_CFLAGS =
         MY_FFLAGS = -ffixed-line-length-132
+	FLAG = 1
+endif
 
 # Default (gcc)
 # Note: For this to work you need to make sure that your
@@ -60,7 +73,7 @@ ifeq (kraken,$(findstring kraken, $(HOSTNAME)))
 #       or something similar to that. Of course, it is going
 #       to work best if the mpi you choose uses the interconnect
 #       supported by the site (infiniband, myrinet, etc.).
-else
+ifeq ($(FLAG), 0)
         MY_CC = gcc
         MY_FC = g77
         MY_FC77 = g77
