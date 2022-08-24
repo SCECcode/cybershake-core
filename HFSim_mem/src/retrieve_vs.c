@@ -86,7 +86,7 @@ void initialize_ucvm(char* model) {
 
 //Retrieve discrete slowness-averaged Vs depth value from UCVM
 //Applies Vs=500 m/s floor
-float ucvm_vs_discrete(float lon, float lat, char* model, int depth, int step_size) {
+float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, int depth, int step_size) {
 	//The algorithm is:
 	//VsDiscrete@depth = (depth/step_size) / (0.5/Vs(Z=0) + 1/Vs(Z=1*step_size)
 	//	+ 1/Vs(Z=2*step_size) + ... + 0.5/Vs(Z=depth)
@@ -95,15 +95,19 @@ float ucvm_vs_discrete(float lon, float lat, char* model, int depth, int step_si
 		ucvm_initialized = 1;
 	}
 
-        ucvm_point_t query_pt;
-        query_pt.coord[0] = lon;
-        query_pt.coord[1] = lat;
-        ucvm_data_t query_data;
-        int i;
-        double vs_sum = 0.0;
+    ucvm_point_t query_pt;
+    query_pt.coord[0] = lon;
+    query_pt.coord[1] = lat;
+    ucvm_data_t query_data;
+    int i;
+    double vs_sum = 0.0;
 	int steps = depth/step_size;
 	for (i=0; i<=steps; i++) {
-		query_pt.coord[2] = i*step_size;
+		if (i==0) {
+			query_pt.coord[2] = surface_depth;
+		} else {
+			query_pt.coord[2] = i*step_size;
+		}
                 if (ucvm_query(1, &query_pt, &query_data)!=UCVM_CODE_SUCCESS) {
                         fprintf(stderr, "UCVM query failed.\n");
                         exit(-3);
@@ -111,6 +115,7 @@ float ucvm_vs_discrete(float lon, float lat, char* model, int depth, int step_si
 		if (query_data.cmb.vs<MIN_VS) {
 			query_data.cmb.vs = MIN_VS;
 		}
+		printf("%f: %f\n", query_pt.coord[2], query_data.cmb.vs);
 		if (i==0 || i==steps) {
 			vs_sum += 0.5/query_data.cmb.vs;
 		} else {
@@ -143,7 +148,7 @@ float ucvm_vsD(float lon, float lat, char* model, int depth) {
 			fprintf(stderr, "UCVM query failed.\n");
 			exit(-3);
 		}
-		//printf("%d: %f\n", i, query_data.cmb.vs);
+		//printf("%f: %f\n", query_pt.coord[2], query_data.cmb.vs);
 		vs_sum += 1.0/query_data.cmb.vs;
 	}
 	float vs = ((float)depth)/vs_sum;
@@ -178,19 +183,20 @@ float vs_at_site(float lon, float lat, char* model) {
 //VsD5H = discrete average over increments of H.
 //So VsD500 = 5/(0.5/Vs(Z=0) + 1/Vs(Z=100) + ... + 1/Vs(Z=400) + 0.5/Vs(Z=500))
 int main(int argc, char** argv) {
-	if (argc<6) {
-		printf("Usage: %s <lon> <lat> <model> <gridspacing (m)> <out filename>\n", argv[0]);
+	if (argc<7) {
+		printf("Usage: %s <lon> <lat> <model> <gridspacing (m)> <depth to query for surface mesh point (m)> <out filename>\n", argv[0]);
 		return 1;
 	}
 	float lon = atof(argv[1]);
 	float lat = atof(argv[2]);
 	char* model = argv[3];
 	int gridspacing = atoi(argv[4]);
-	char* filename = argv[5];
+	float surface_depth = atof(argv[5]);
+	char* filename = argv[6];
 
 	float vs30 = ucvm_vsD(lon, lat, model, 30);
 	float vs5H = ucvm_vsD(lon, lat, model, 5*gridspacing);
-	float vsD5H = ucvm_vs_discrete(lon, lat, model, 5*gridspacing, gridspacing);
+	float vsD5H = ucvm_vs_discrete(lon, lat, model, surface_depth, 5*gridspacing, gridspacing);
 	FILE* fp_out = fopen(filename, "w");
 	fprintf(fp_out, "Vs30 = %.1f\nVs%d = %.1f\nVsD%d = %.1f\n", vs30, 5*gridspacing, vs5H, 5*gridspacing, vsD5H);
 	fflush(fp_out);
