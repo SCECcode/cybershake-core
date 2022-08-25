@@ -72,8 +72,11 @@ with open(mesh_output_file, "r") as fp_in:
 	[mesh_vp, mesh_vs, mesh_rho] = [float(i) for i in fp_in.readline().split()]
 	fp_in.close()
 
-username = config.getProperty("DB_WR_USER")
-password = config.getProperty("DB_WR_PASS")
+db_file = config.getProperty("DB_WR_FILE")
+with open(db_file, "r") as fp_in:
+    username = fp_in.readline().strip()
+    password = fp_in.readline().strip()
+    fp_in.close()
 
 conn = pymysql.connect(host=server, db="CyberShake", user=username, passwd=passwd)
 
