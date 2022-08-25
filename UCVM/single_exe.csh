@@ -104,9 +104,9 @@ endif
 #Add to LD_LIBRARY_PATH
 #setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
 
-set UCVM_HOME = /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0
-setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-4/lib:${UCVM_HOME}/model/cvms426/lib:${UCVM_HOME}/model/cencal/lib:${UCVM_HOME}/model/cvms5/lib:${UCVM_HOME}/model/cca/lib:$LD_LIBRARY_PATH
-setenv PROJ_LIB /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/lib/proj-4/share/proj
+set UCVM_HOME = /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0
+setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-5/lib:${UCVM_HOME}/model/cvmsi/lib:${UCVM_HOME}/model/cencal/lib:${UCVM_HOME}/model/cvms5/lib:${UCVM_HOME}/model/cca/lib:$LD_LIBRARY_PATH
+setenv PROJ_LIB /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/lib/proj-5/share/proj
 
 #source /lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/setup.csh
 echo $LD_LIBRARY_PATH

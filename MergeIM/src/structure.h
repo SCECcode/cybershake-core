@@ -178,6 +178,8 @@ struct rotD_record {
 #define X_COMP 0
 #define Y_COMP 1
 
+#define NUM_DURATION_MEASURES 9
+
 struct duration_record {
   int type;
   int type_value;

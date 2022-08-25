@@ -73,7 +73,7 @@ mpi_cmd = config.getProperty("MPI_CMD")
 job_id = config.getJobID()
 
 #if cca is one of the models, check to see if GTL is on
-with open('%s/UCVM/ucvm-18.5.0_01302019/model/cca/data/config' % cs_path, 'r') as fp_in:
+with open('%s/UCVM/ucvm-22.7.0/model/cca/data/config' % cs_path, 'r') as fp_in:
 	data = fp_in.readlines()
 	for line in data:
 		if line.find('gtl')>-1:
