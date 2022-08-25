@@ -40,7 +40,7 @@ void create_surface(ucvm_point_t* points, char* model_coords, int starting_strip
 }
 
 void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models, int num_local_points) {
-	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to setup ucvm.\n");
                 exit(-1);
         }
@@ -131,10 +131,17 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
                            fprintf(stderr, "Error retrieving CCA 1D model.\n");
                            fflush(stderr);
 			   exit(-2);
-                         }
+						}
+                } else if (strcmp(velocity_models, "cvmh")==0) {
+					printf("Adding CVM-H.\n");
+					if (ucvm_add_model(UCVM_MODEL_CVMH)!=UCVM_CODE_SUCCESS) {
+                           fprintf(stderr, "Error retrieving CVM-H model.\n");
+                               fflush(stderr);
+                               exit(-2);
+                        }
+				}
 		}
 
-	}
         /*char label_test[64];
         ucvm_model_label(1, label_test, 64);
         printf("ID 1 goes with label %s.\n", label_test);

@@ -7,7 +7,7 @@
 int ucvm_initialized = 0;
 
 void initialize_ucvm(char* model) {
-	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Failed to init UCVM, aborting.");
                 exit(3);
         }
@@ -31,6 +31,8 @@ void initialize_ucvm(char* model) {
 			model_string = UCVM_MODEL_BBP1D;
 		} else if (strcmp(model, "cca")==0) {
 			model_string = "cca";
+		} else if (strcmp(model, "bbp1d")==0) {
+			model_string = "bbp1d";
 		} else {
 			printf("Model string %s didn't match any known models, aborting.", model_string);
 			exit(2);
