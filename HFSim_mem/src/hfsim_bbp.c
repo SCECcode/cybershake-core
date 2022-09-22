@@ -75,7 +75,7 @@ void write_grm_head(FILE* fp_out, float** seis, struct seisheader* header, int n
     }
 }
 
-void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, FILE* pga_output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, float vref, float vpga, int seed, int debug) {
+void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, FILE* pga_output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, float vref, float vpga, int seed, float rvfrac, int debug) {
 	//parse cmd-line args
 	int stat_len;
 	int local_vmod_len;
@@ -155,12 +155,16 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	free(tmp_tr);
 	free(tmp_ti);
 
-	//Determine rvfac
-	//double mean_rvfac = 0.8;
-	//double range_rvfac = 0.05;
-	double mean_rvfac = 0.775;
-	double range_rvfac = 0.1;
-	sfile->rvfac = get_rvfac(mean_rvfac, range_rvfac, seed);
+	//Determine rvfac, if not provided
+	if (rvfrac<0) {
+		//double mean_rvfac = 0.8;
+		//double range_rvfac = 0.05;
+		double mean_rvfac = 0.775;
+		double range_rvfac = 0.1;
+		sfile->rvfac = get_rvfac(mean_rvfac, range_rvfac, seed);
+	} else {
+		sfile->rvfac = rvfrac;
+	}
 	if (debug) printf("rvfac = %f\n", sfile->rvfac);
 
 	//Generate high-frequency seismogram
@@ -169,7 +173,7 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	local_vmod_len = 256;
 	output_len = 256;
 	velfile_len = 256;*/
-	if (debug) printf("stat len=%d, local_vmod_len=%d, local_vmod=%s, output_len=%d, velfile_len=%d\n", stat_len, local_vmod_len, local_vmod, output_len, velfile_len);
+	//if (debug) printf("stat len=%d, local_vmod_len=%d, local_vmod=%s, output_len=%d, velfile_len=%d\n", stat_len, local_vmod_len, local_vmod, output_len, velfile_len);
 	//extern void hb_high_(char* stat, float* slon, float* slat, char* local_vmod, char* outfile, float* tlen, float* dt, float* seis, int* nseg, float* elon, float* elat, float* targ_mag, int* nx, int* ny, float* dx, float* dy, float* strike, float* dip, float* ravg, float* dtop, float* shypo, float* dhypo, float* sp, float* tr, float* ti, float* qfexp, float* stress_average, int* msite, int stat_len, int local_vmod_len, int outfile_len);
 	//Initializes a bunch of hb_high variables to their CyberShake values
 	cs_params_();
