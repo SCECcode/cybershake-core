@@ -8,7 +8,7 @@ const float MIN_VS = 500.0;
 
 void initialize_ucvm(char* model) {
 	printf("Initializing UCVM.\n");
-	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0_01302019/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to init UCVM, aborting.");
         exit(3);
     }
