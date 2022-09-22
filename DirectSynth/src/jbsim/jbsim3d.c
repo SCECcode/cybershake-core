@@ -8,11 +8,40 @@ const int X_COMP_FLAG = 1;
 const int Y_COMP_FLAG = 2;
 const int Z_COMP_FLAG = 4;
 
+int find_index(int source_id, int rupture_id, int rv_id, int num_rv_infos, rv_info* rvinfo_array) {
+	//Should be sorted by (source id, rupture id, rv id)
+	//Binary search
+	int start_index = 0;
+    int end_index = num_rv_infos-1;
+    int mid_index = (start_index + end_index) / 2;
+    while(end_index>start_index+1) {
+        mid_index = (start_index + end_index) / 2;
+        if (source_id>rvinfo_array[mid_index].source_id || (source_id==rvinfo_array[mid_index].source_id && rupture_id>rvinfo_array[mid_index].rupture_id) || (source_id==rvinfo_array[mid_index].source_id && rupture_id==rvinfo_array[mid_index].rupture_id && rv_id>rvinfo_array[mid_index].rup_var_id)) {
+            start_index = mid_index;
+        } else if (source_id<rvinfo_array[mid_index].source_id || (source_id==rvinfo_array[mid_index].source_id && rupture_id<rvinfo_array[mid_index].rupture_id) || (source_id==rvinfo_array[mid_index].source_id && rupture_id==rvinfo_array[mid_index].rupture_id && rv_id<rvinfo_array[mid_index].rup_var_id)) {
+            end_index = mid_index;
+        } else {
+			//Found it!
+			return mid_index;
+        }
+    }
+}
+
+int find_rvfrac(int source_id, int rupture_id, int rv_id, int num_rv_infos, rv_info* rvinfo_array) {
+    int index = find_index(source_id, rupture_id, rv_id, num_rv_infos, rvinfo_array);
+    return rvinfo_array[index].rvfrac;
+}
+
+int find_seed(int source_id, int rupture_id, int rv_id, int num_rv_infos, rv_info* rvinfo_array) {
+	int index = find_index(source_id, rupture_id, rv_id, num_rv_infos, rvinfo_array);
+	return rvinfo_array[index].seed;
+}
+
 float** jbsim3d_synth(float*** seis_return, struct seisheader* header, char stat[], float slon, float slat,
 		int ntout, char seis_file[], char rup_geom_file[], struct sgtfileparams* sfp,
 		struct sgtparams* sgtparms, struct sgtmaster sgtmast, struct sgtindex* sgtindx,
 		struct geoprojection geop, long long* indx_master, int num_sgts, long long** sgts_by_handler, int* num_sgts_by_handler,
-		int num_sgt_handlers, int num_rup_vars, struct rupture_variation* rup_vars, int my_id)
+		int num_sgt_handlers, int num_rup_vars, struct rupture_variation* rup_vars, int num_rv_infos, rv_info* rvinfo_array, int my_id)
 {
 FILE *fopfile(), *fpr;
 struct sgtfileparams sgtextract;
@@ -163,6 +192,13 @@ if (rvfrac>0.0) {
 //Generate all ruptures
 for (i=0; i<num_rup_vars; i++) {
 	//printf("Generating rupture from file %s, slip %d, hypo %d, spacing %d, dtout %f\n", rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, rupture_spacing, dtout);
+	if (num_rv_infos>0 && rvinfo_array!=NULL) {
+		//Look for seed and rvfrac in rvinfo structure
+		int seed = find_seed(header->source_id, header->rupture_id, rup_vars[i].rup_var_id, num_rv_infos, rvinfo_array);
+		int rvfrac = find_rvfrac(header->source_id, header->rupture_id, rup_vars[i].rup_var_id, num_rv_infos, rvinfo_array);
+		params_flag = 1;
+		sprintf(params, "%s seed=%d rvfrac=%f", params, seed, rvfrac);
+	}
 	if (params_flag==1) {
 		rupgen_genslip_with_params(rup_geom_file, rup_vars[i].slip_id, rup_vars[i].hypo_id, &stats, &(srf[i]), rupture_spacing, dtout, params);
 	} else {

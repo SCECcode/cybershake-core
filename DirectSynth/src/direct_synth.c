@@ -101,11 +101,13 @@ int main(int argc, char** argv) {
 		write_log(buf);
 	}
 
-	MPI_Comm sgt_handler_comm, sgt_readers_comm;
+	MPI_Comm sgt_handler_comm, sgt_readers_comm, manager_plus_workers_comm;
 	//Includes ranks 0 through num_sgt_handlers - 1
         constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm);
 	//Includes ranks 1 through num_sgt_handlers - 1, for reading in SGT files
 	constructSGTReaderComm(num_sgt_handlers, &sgt_readers_comm);
+    //Includes ranks num_sgt_handlers through num_procs-1, for broadcasting the rvfrac and seed info
+    constructManagerPlusWorkersComm(num_sgt_handlers, num_procs, &manager_plus_workers_comm);
 
 	if (my_id<num_sgt_handlers) {
 		if (my_id==0) {
@@ -153,7 +155,7 @@ int main(int argc, char** argv) {
 
 		if (my_id==num_sgt_handlers) {
 			if (debug) write_log("Entering task manager.");
-			task_manager(num_sgt_handlers, num_workers, num_procs, MAX_BUFFER_SIZE, rupture_spacing, my_id);
+			task_manager(num_sgt_handlers, num_workers, num_procs, MAX_BUFFER_SIZE, rupture_spacing, &manager_plus_workers_comm, my_id);
 		} else if (my_id<num_procs){
 			//Output options
 			int ntout;
@@ -161,7 +163,7 @@ int main(int argc, char** argv) {
 			mstpar("ntout","d",&ntout);
 
 			if (debug) write_log("Entering worker.");
-			worker(argc, argv, num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, my_id);
+			worker(argc, argv, num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, &manager_plus_workers_comm, my_id);
 		}
 	}
 

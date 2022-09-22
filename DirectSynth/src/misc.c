@@ -98,3 +98,21 @@ void construct_worker_message_datatype(MPI_Datatype* worker_message_type) {
     MPI_Type_commit(worker_message_type);
 }
 
+void construct_rvinfo_datatype(MPI_Datatype* rvinfo_type) {
+    /*
+ * typedef struct rv_info {
+        int source_id;
+        int rupture_id;
+        int rup_var_id;
+        float rvfrac;
+        int seed;
+    } rv_info; */
+    int lengths[5] = {1, 1, 1, 1, 1};
+    int si = sizeof(int);
+    int sf = sizeof(float);
+    MPI_Aint offsets[5] = {0, si, 2*si, 3*si, 3*si+sf};
+    MPI_Datatype types[5] = {MPI_INT, MPI_INT, MPI_INT, MPI_FLOAT, MPI_INT};
+    MPI_Type_struct(5, lengths, offsets, types, rvinfo_type);
+    MPI_Type_commit(rvinfo_type);
+}
+
