@@ -1,7 +1,7 @@
 #!/bin/csh
 
-if ($# != 13 && $# != 14) then
-  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> <surface_cvm_depth> [min vs]"
+if ($# != 15 && $# != 16) then
+  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> <surface_cvm_depth> <ely_taper> <taper_depth> [min vs]"
   exit 1
 endif
 
@@ -18,9 +18,11 @@ set MPI_CMD = $10
 set JOB_ID = $11
 set FORMAT = $12
 set SURF_CVM_DEPTH = $13
+set ELY_TAPER = $14
+set TAPER_DEPTH = $15
 
-if ($# == 14) then
-	set VSMIN = $14
+if ($# == 16) then
+	set VSMIN = $16
 	if ($VSMIN == 900.0) then
 		set VPMIN = 1800.0
 		set DENMIN = 2000.0
@@ -115,9 +117,9 @@ echo $LD_LIBRARY_PATH
 #On Summit, must unload darshan-runtime module or will hang on MPI_Finalize
 module unload darshan-runtime
 
-echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH}"
+echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH} ely_taper=${ELY_TAPER} ely_transition_depth=${TAPER_DEPTH}"
 
-${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH}
+${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH} ely_taper=${ELY_TAPER} ely_transition_depth=${TAPER_DEPTH}
 
 set RC = $?
 

@@ -21,6 +21,8 @@ parser.add_option("--frequency", dest="frequency", type="float", action="store",
 parser.add_option("--spacing", dest="spacing", type="float", action="store", help="Override default spacing with this value (km)")
 parser.add_option("--min_vs", dest="min_vs", type="float", action="store", help="Override minimum Vs value.  Minimum Vp and minimum density will be 3.4 times this value.")
 parser.add_option("--h_fraction", dest="h_frac", type="float", action="store", help="Depth, in fractions of a grid point, to query UCVM at when populating the surface points.")
+parser.add_option("--ely-taper", dest="ely_taper", type="str", action="store", help="Type of Ely taper to use.  Choices are 'none' (the default), 'all' (apply the taper to all points), or 'ifless' (apply the taper at all points for which the taper has a lower Vs)")
+parser.add_option("--taper-depth", dest="taper_depth", type="float", action="store", help="Transition depth in meters for the Ely taper, if it's being applied.  Default is 700m.")
 
 (option, args) = parser.parse_args()
 
@@ -43,6 +45,17 @@ if option.spacing is not None:
 	zstep = option.spacing*1000.0
 else:
 	zstep = 100.0/frequency
+
+if option.ely_taper is not None:
+    ely_taper = option.ely_taper
+else:
+    ely_taper = "none"
+
+if option.taper_depth is not None:
+    taper_depth = option.taper_depth
+else:
+    taper_depth = 700.0
+
 
 #Depth to query UCVM at for surface points, in m
 surface_cvm_depth = 0.0
@@ -88,9 +101,9 @@ with open('%s/UCVM/ucvm-22.7.0/model/cca/data/config' % cs_path, 'r') as fp_in:
 	fp_in.close()
 
 if option.min_vs is not None:
-        command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, option.min_vs)
+        command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %s %f %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, ely_taper, taper_depth, option.min_vs)
 else:
-	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth)
+	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %s %f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, ely_taper, taper_depth)
 print(command)
 exitcode = os.system(command)
 sys.exit((exitcode >> 8) & 0xFF)
