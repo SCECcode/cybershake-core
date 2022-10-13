@@ -39,7 +39,7 @@ model_output_file = "ucvm_data.txt"
 UCVM_HOME = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0"
 ld_lib_path="%s/lib/euclid3/lib:%s/lib/proj-5/lib:%s/model/cvmsi/lib:%s/model/cencal/lib:%s/model/cvms5/lib:%s/model/cca/lib:%s/model/cvms/lib" % (UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME)
 proj_lib_path="/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/lib/proj-5/share/proj"
-cmd = "export PROJ_LIB=%s; export LD_LIBRARY_PATH=%s:LD_LIBRARY_PATH; %s/UCVM/bin/get_model_info_for_db %f %f %s %s" % (proj_lib_path, ld_lib_path, config.getProperty("CS_PATH"), args.latitude, args.longitude, args.models, model_output_file)
+cmd = "export PROJ_LIB=%s; export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH; %s/UCVM/bin/get_model_info_for_db %f %f %s %s" % (proj_lib_path, ld_lib_path, config.getProperty("CS_PATH"), args.latitude, args.longitude, args.models, model_output_file)
 print(cmd)
 os.system(cmd)
 
