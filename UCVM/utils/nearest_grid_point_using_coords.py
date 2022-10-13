@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
@@ -6,7 +6,7 @@ from pyproj import Proj
 import math
 
 if len(sys.argv)<5:
-	print "Usage: %s <lat> <lon> <model coords file> <utm zone>" % (sys.argv[0])
+	print("Usage: %s <lat> <lon> <model coords file> <utm zone>" % (sys.argv[0]))
 	sys.exit(1)
 
 point_lat = float(sys.argv[1])
@@ -29,7 +29,7 @@ with open(model_coords_file, "r") as fp_in:
 	for line in data:
 		counter += 1
 		if counter%100000==0:
-			print "%d of %d" % (counter, len(data))
+			print("%d of %d" % (counter, len(data)))
 		(test_lon_str, test_lat_str) = line.split()[0:2]
 		test_lat = float(test_lat_str)
 		if math.fabs(point_lat-test_lat)>0.005:
@@ -48,5 +48,5 @@ with open(model_coords_file, "r") as fp_in:
 			closest_y = int(line.split()[3])
 	fp_in.close()
 
-print "Closest point to (%f, %f) is (%f, %f), %f m away, with X=%d, Y=%d" % (point_lat, point_lon, closest_lat, closest_lon, math.sqrt(closest_dist), closest_x, closest_y)
+print("Closest point to (%f, %f) is (%f, %f), %f m away, with X=%d, Y=%d" % (point_lat, point_lon, closest_lat, closest_lon, math.sqrt(closest_dist), closest_x, closest_y))
 
