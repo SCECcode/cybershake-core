@@ -5,7 +5,7 @@
 
 void read_srf(struct standrupformat *srf,char *file,int bflag)
 {
-FILE *fpr, *fopfile();
+FILE *fpr, *_fopfile();
 struct srf_prectsegments *prseg_ptr;
 struct srf_apointvalues *apval_ptr;
 char *sptr, str[MAXLINE];
@@ -24,57 +24,57 @@ if(bflag)
    if(strcmp(file,"stdin") == 0)
       fdr = STDIN_FILENO;
    else
-      fdr = opfile_ro(file);
+      fdr = __opfile_ro(file);
 
-   reed(fdr,srf->version,sizeof(srf->version));
+   _reed(fdr,srf->version,sizeof(srf->version));
 
-   reed(fdr,pword,sizeof(pword));
+   _reed(fdr,pword,sizeof(pword));
    if(strcmp(pword,"PLANE") == 0)
       {
       sprintf(srf->type,"PLANE");
 
-      reed(fdr,&(srf[0].srf_prect.nseg),sizeof(int));
-      srf[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+      _reed(fdr,&(srf[0].srf_prect.nseg),sizeof(int));
+      srf[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
       prseg_ptr = srf[0].srf_prect.prectseg;
 
-      reed(fdr,prseg_ptr,(srf[0].srf_prect.nseg)*sizeof(struct srf_prectsegments));
+      _reed(fdr,prseg_ptr,(srf[0].srf_prect.nseg)*sizeof(struct srf_prectsegments));
 
       while(strncmp(pword,"POINTS",6) != 0)
-         reed(fdr,pword,sizeof(pword));
+         _reed(fdr,pword,sizeof(pword));
       }
 
    if(strncmp(pword,"POINTS",6) == 0)
       {
-      reed(fdr,&(srf[0].srf_apnts.np),sizeof(int));
-      srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+      _reed(fdr,&(srf[0].srf_apnts.np),sizeof(int));
+      srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 
       apval_ptr = srf[0].srf_apnts.apntvals;
 
       for(i=0;i<srf[0].srf_apnts.np;i++)
          {
-         reed(fdr,&(apval_ptr[i].lon),sizeof(float));
-         reed(fdr,&(apval_ptr[i].lat),sizeof(float));
-         reed(fdr,&(apval_ptr[i].dep),sizeof(float));
-         reed(fdr,&(apval_ptr[i].stk),sizeof(float));
-         reed(fdr,&(apval_ptr[i].dip),sizeof(float));
-         reed(fdr,&(apval_ptr[i].area),sizeof(float));
-         reed(fdr,&(apval_ptr[i].tinit),sizeof(float));
-         reed(fdr,&(apval_ptr[i].dt),sizeof(float));
-         reed(fdr,&(apval_ptr[i].rake),sizeof(float));
-         reed(fdr,&(apval_ptr[i].slip1),sizeof(float));
-         reed(fdr,&(apval_ptr[i].nt1),sizeof(int));
-         reed(fdr,&(apval_ptr[i].slip2),sizeof(float));
-         reed(fdr,&(apval_ptr[i].nt2),sizeof(int));
-         reed(fdr,&(apval_ptr[i].slip3),sizeof(float));
-         reed(fdr,&(apval_ptr[i].nt3),sizeof(int));
+         _reed(fdr,&(apval_ptr[i].lon),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].lat),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].dep),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].stk),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].dip),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].area),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].tinit),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].dt),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].rake),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].slip1),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].nt1),sizeof(int));
+         _reed(fdr,&(apval_ptr[i].slip2),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].nt2),sizeof(int));
+         _reed(fdr,&(apval_ptr[i].slip3),sizeof(float));
+         _reed(fdr,&(apval_ptr[i].nt3),sizeof(int));
 
-         apval_ptr[i].stf1 = (float *)check_malloc((apval_ptr[i].nt1)*sizeof(float));
-         apval_ptr[i].stf2 = (float *)check_malloc((apval_ptr[i].nt2)*sizeof(float));
-         apval_ptr[i].stf3 = (float *)check_malloc((apval_ptr[i].nt3)*sizeof(float));
+         apval_ptr[i].stf1 = (float *)_check_malloc((apval_ptr[i].nt1)*sizeof(float));
+         apval_ptr[i].stf2 = (float *)_check_malloc((apval_ptr[i].nt2)*sizeof(float));
+         apval_ptr[i].stf3 = (float *)_check_malloc((apval_ptr[i].nt3)*sizeof(float));
 
-         reed(fdr,apval_ptr[i].stf1,(apval_ptr[i].nt1)*sizeof(float));
-         reed(fdr,apval_ptr[i].stf2,(apval_ptr[i].nt2)*sizeof(float));
-         reed(fdr,apval_ptr[i].stf3,(apval_ptr[i].nt3)*sizeof(float));
+         _reed(fdr,apval_ptr[i].stf1,(apval_ptr[i].nt1)*sizeof(float));
+         _reed(fdr,apval_ptr[i].stf2,(apval_ptr[i].nt2)*sizeof(float));
+         _reed(fdr,apval_ptr[i].stf3,(apval_ptr[i].nt3)*sizeof(float));
          }
       }
    close(fdr);
@@ -84,14 +84,14 @@ else
    if(strcmp(file,"stdin") == 0)
       fpr = stdin;
    else
-      fpr = fopfile(file,"r");
+      fpr = _fopfile(file,"r");
 
    fgets(str,MAXLINE,fpr);
    sscanf(str,"%s",srf[0].version);
 
    /* reserve first 3 lines for writing out command that generated SRF */
    srf[0].srf_hcmnt.nline = 3;
-   srf[0].srf_hcmnt.cbuf = (char *)check_malloc((srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+   srf[0].srf_hcmnt.cbuf = (char *)_check_malloc((srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
 
    /* initialize first 3 lines with NULL, if not reset, won't print out */
    srf[0].srf_hcmnt.cbuf[0] = '\0';
@@ -102,7 +102,7 @@ else
    while(str[0] == '#')
       {
       srf[0].srf_hcmnt.nline++;
-      srf[0].srf_hcmnt.cbuf = (char *)check_realloc(srf[0].srf_hcmnt.cbuf,(srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+      srf[0].srf_hcmnt.cbuf = (char *)_check_realloc(srf[0].srf_hcmnt.cbuf,(srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
 
       /* get rid of annoying newline */
       i = 0;
@@ -126,7 +126,7 @@ else
       {
       sscanf(str,"%s %d",srf[0].type,&(srf[0].srf_prect.nseg));
 
-      srf[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+      srf[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
       prseg_ptr = srf[0].srf_prect.prectseg;
 
       for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
@@ -153,7 +153,7 @@ else
       while(str[0] == '#')
          {
          srf[0].srf_hcmnt.nline++;
-         srf[0].srf_hcmnt.cbuf = (char *)check_realloc(srf[0].srf_hcmnt.cbuf,(srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+         srf[0].srf_hcmnt.cbuf = (char *)_check_realloc(srf[0].srf_hcmnt.cbuf,(srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
 
          sptr = srf[0].srf_hcmnt.cbuf + (srf[0].srf_hcmnt.nline-1)*MAXLINE;
          sprintf(sptr,"%s",str);
@@ -180,13 +180,13 @@ else
       while(strncmp(pword,"POINTS",6) == 0)
          {
          srf[0].nseg++;
-         srf[0].np_seg = (int *)check_realloc(srf[0].np_seg,(srf[0].nseg)*sizeof(int));
+         srf[0].np_seg = (int *)_check_realloc(srf[0].np_seg,(srf[0].nseg)*sizeof(int));
 
          sscanf(str,"%*s %d",&np_seg);
 
 	 np_tot = np_seg + srf[0].srf_apnts.np;
 
-         srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_realloc(srf[0].srf_apnts.apntvals,np_tot*sizeof(struct srf_apointvalues));
+         srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_realloc(srf[0].srf_apnts.apntvals,np_tot*sizeof(struct srf_apointvalues));
 
          npread = 0;
          for(i=0;i<np_seg;i++)
@@ -246,7 +246,7 @@ else
                                         &(apval_ptr->nt3));
 
 	       if(apval_ptr->nt1)
-                  apval_ptr->stf1 = (float *)check_malloc((apval_ptr->nt1)*sizeof(float));
+                  apval_ptr->stf1 = (float *)_check_malloc((apval_ptr->nt1)*sizeof(float));
 	       else
                   apval_ptr->stf1 = NULL;
 
@@ -256,7 +256,7 @@ else
                   fscanf(fpr,"%f",&stf[it]);
 
 	       if(apval_ptr->nt2)
-                  apval_ptr->stf2 = (float *)check_malloc((apval_ptr->nt2)*sizeof(float));
+                  apval_ptr->stf2 = (float *)_check_malloc((apval_ptr->nt2)*sizeof(float));
 	       else
                   apval_ptr->stf2 = NULL;
 
@@ -266,7 +266,7 @@ else
                   fscanf(fpr,"%f",&stf[it]);
 
 	       if(apval_ptr->nt3)
-                  apval_ptr->stf3 = (float *)check_malloc((apval_ptr->nt3)*sizeof(float));
+                  apval_ptr->stf3 = (float *)_check_malloc((apval_ptr->nt3)*sizeof(float));
 	       else
                   apval_ptr->stf3 = NULL;
 
@@ -300,7 +300,7 @@ else
          }
 
       if(np_tot > srf[0].srf_apnts.np)
-         srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_realloc(srf[0].srf_apnts.apntvals,(srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+         srf[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_realloc(srf[0].srf_apnts.apntvals,(srf[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
       }
    else
       {
@@ -323,7 +323,7 @@ else if(atof(srf->version) >= 2.0)
 
 void write_srf1(struct standrupformat *srf,char *file,int bflag)
 {
-FILE *fpw, *fopfile();
+FILE *fpw, *_fopfile();
 struct srf_planerectangle *prect_ptr;
 struct srf_prectsegments *prseg_ptr;
 struct srf_allpoints *apnts_ptr;
@@ -346,41 +346,41 @@ if(bflag)
    if(strcmp(file,"stdout") == 0)
       fdw = STDOUT_FILENO;
    else
-      fdw = croptrfile(file);
+      fdw = _croptrfile(file);
 
-   rite(fdw,srf->version,sizeof(srf->version));
+   _rite(fdw,srf->version,sizeof(srf->version));
 
    if(strcmp(srf->type,"PLANE") == 0)
       {
-      rite(fdw,srf->type,sizeof(srf->type));
-      rite(fdw,&(prect_ptr->nseg),sizeof(prect_ptr->nseg));
-      rite(fdw,prseg_ptr,(prect_ptr->nseg)*sizeof(struct srf_prectsegments));
+      _rite(fdw,srf->type,sizeof(srf->type));
+      _rite(fdw,&(prect_ptr->nseg),sizeof(prect_ptr->nseg));
+      _rite(fdw,prseg_ptr,(prect_ptr->nseg)*sizeof(struct srf_prectsegments));
       }
 
    sprintf(pword,"POINTS");
-   rite(fdw,pword,sizeof(pword));
-   rite(fdw,&(apnts_ptr->np),sizeof(apnts_ptr->np));
+   _rite(fdw,pword,sizeof(pword));
+   _rite(fdw,&(apnts_ptr->np),sizeof(apnts_ptr->np));
    for(i=0;i<apnts_ptr->np;i++)
       {
-      rite(fdw,&(apval_ptr[i].lon),sizeof(float));
-      rite(fdw,&(apval_ptr[i].lat),sizeof(float));
-      rite(fdw,&(apval_ptr[i].dep),sizeof(float));
-      rite(fdw,&(apval_ptr[i].stk),sizeof(float));
-      rite(fdw,&(apval_ptr[i].dip),sizeof(float));
-      rite(fdw,&(apval_ptr[i].area),sizeof(float));
-      rite(fdw,&(apval_ptr[i].tinit),sizeof(float));
-      rite(fdw,&(apval_ptr[i].dt),sizeof(float));
-      rite(fdw,&(apval_ptr[i].rake),sizeof(float));
-      rite(fdw,&(apval_ptr[i].slip1),sizeof(float));
-      rite(fdw,&(apval_ptr[i].nt1),sizeof(int));
-      rite(fdw,&(apval_ptr[i].slip2),sizeof(float));
-      rite(fdw,&(apval_ptr[i].nt2),sizeof(int));
-      rite(fdw,&(apval_ptr[i].slip3),sizeof(float));
-      rite(fdw,&(apval_ptr[i].nt3),sizeof(int));
+      _rite(fdw,&(apval_ptr[i].lon),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].lat),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dep),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].stk),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dip),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].area),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].tinit),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dt),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].rake),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].slip1),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt1),sizeof(int));
+      _rite(fdw,&(apval_ptr[i].slip2),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt2),sizeof(int));
+      _rite(fdw,&(apval_ptr[i].slip3),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt3),sizeof(int));
 
-      rite(fdw,apval_ptr[i].stf1,(apval_ptr[i].nt1)*sizeof(float));
-      rite(fdw,apval_ptr[i].stf2,(apval_ptr[i].nt2)*sizeof(float));
-      rite(fdw,apval_ptr[i].stf3,(apval_ptr[i].nt3)*sizeof(float));
+      _rite(fdw,apval_ptr[i].stf1,(apval_ptr[i].nt1)*sizeof(float));
+      _rite(fdw,apval_ptr[i].stf2,(apval_ptr[i].nt2)*sizeof(float));
+      _rite(fdw,apval_ptr[i].stf3,(apval_ptr[i].nt3)*sizeof(float));
       }
    close(fdw);
    }
@@ -389,7 +389,7 @@ else
    if(strcmp(file,"stdout") == 0)
       fpw = stdout;
    else
-      fpw = fopfile(file,"w");
+      fpw = _fopfile(file,"w");
 
    fprintf(fpw,"%s\n",srf->version);
 
@@ -499,7 +499,7 @@ else
 
 void write_srf2(struct standrupformat *srf,char *file,int bflag)
 {
-FILE *fpw, *fopfile();
+FILE *fpw, *_fopfile();
 struct srf_planerectangle *prect_ptr;
 struct srf_prectsegments *prseg_ptr;
 struct srf_allpoints *apnts_ptr;
@@ -512,7 +512,7 @@ int i, j, k, nt6, it, ig;
 char *sptr, pword[32];
 int fdw;
 
-int ip, nprite;
+int ip, np_rite;
 
 prect_ptr = &(srf->srf_prect);
 prseg_ptr = prect_ptr->prectseg;
@@ -524,41 +524,41 @@ if(bflag)
    if(strcmp(file,"stdout") == 0)
       fdw = STDOUT_FILENO;
    else
-      fdw = croptrfile(file);
+      fdw = _croptrfile(file);
 
-   rite(fdw,srf->version,sizeof(srf->version));
+   _rite(fdw,srf->version,sizeof(srf->version));
 
    if(strcmp(srf->type,"PLANE") == 0)
       {
-      rite(fdw,srf->type,sizeof(srf->type));
-      rite(fdw,&(prect_ptr->nseg),sizeof(prect_ptr->nseg));
-      rite(fdw,prseg_ptr,(prect_ptr->nseg)*sizeof(struct srf_prectsegments));
+      _rite(fdw,srf->type,sizeof(srf->type));
+      _rite(fdw,&(prect_ptr->nseg),sizeof(prect_ptr->nseg));
+      _rite(fdw,prseg_ptr,(prect_ptr->nseg)*sizeof(struct srf_prectsegments));
       }
 
    sprintf(pword,"POINTS");
-   rite(fdw,pword,sizeof(pword));
-   rite(fdw,&(apnts_ptr->np),sizeof(apnts_ptr->np));
+   _rite(fdw,pword,sizeof(pword));
+   _rite(fdw,&(apnts_ptr->np),sizeof(apnts_ptr->np));
    for(i=0;i<apnts_ptr->np;i++)
       {
-      rite(fdw,&(apval_ptr[i].lon),sizeof(float));
-      rite(fdw,&(apval_ptr[i].lat),sizeof(float));
-      rite(fdw,&(apval_ptr[i].dep),sizeof(float));
-      rite(fdw,&(apval_ptr[i].stk),sizeof(float));
-      rite(fdw,&(apval_ptr[i].dip),sizeof(float));
-      rite(fdw,&(apval_ptr[i].area),sizeof(float));
-      rite(fdw,&(apval_ptr[i].tinit),sizeof(float));
-      rite(fdw,&(apval_ptr[i].dt),sizeof(float));
-      rite(fdw,&(apval_ptr[i].rake),sizeof(float));
-      rite(fdw,&(apval_ptr[i].slip1),sizeof(float));
-      rite(fdw,&(apval_ptr[i].nt1),sizeof(int));
-      rite(fdw,&(apval_ptr[i].slip2),sizeof(float));
-      rite(fdw,&(apval_ptr[i].nt2),sizeof(int));
-      rite(fdw,&(apval_ptr[i].slip3),sizeof(float));
-      rite(fdw,&(apval_ptr[i].nt3),sizeof(int));
+      _rite(fdw,&(apval_ptr[i].lon),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].lat),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dep),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].stk),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dip),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].area),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].tinit),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].dt),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].rake),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].slip1),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt1),sizeof(int));
+      _rite(fdw,&(apval_ptr[i].slip2),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt2),sizeof(int));
+      _rite(fdw,&(apval_ptr[i].slip3),sizeof(float));
+      _rite(fdw,&(apval_ptr[i].nt3),sizeof(int));
 
-      rite(fdw,apval_ptr[i].stf1,(apval_ptr[i].nt1)*sizeof(float));
-      rite(fdw,apval_ptr[i].stf2,(apval_ptr[i].nt2)*sizeof(float));
-      rite(fdw,apval_ptr[i].stf3,(apval_ptr[i].nt3)*sizeof(float));
+      _rite(fdw,apval_ptr[i].stf1,(apval_ptr[i].nt1)*sizeof(float));
+      _rite(fdw,apval_ptr[i].stf2,(apval_ptr[i].nt2)*sizeof(float));
+      _rite(fdw,apval_ptr[i].stf3,(apval_ptr[i].nt3)*sizeof(float));
       }
    close(fdw);
    }
@@ -567,7 +567,7 @@ else
    if(strcmp(file,"stdout") == 0)
       fpw = stdout;
    else
-      fpw = fopfile(file,"w");
+      fpw = _fopfile(file,"w");
 
    fprintf(fpw,"%s\n",srf->version);
 
@@ -597,13 +597,13 @@ else
          }
       }
 
-   nprite = 0;
+   np_rite = 0;
    for(ig=0;ig<srf->nseg;ig++)
       {
       fprintf(fpw,"POINTS %d\n",srf->np_seg[ig]);
       for(ip=0;ip<srf->np_seg[ig];ip++)
          {
-         i = ip + nprite;
+         i = ip + np_rite;
 
          fprintf(fpw,"%12.6f %11.6f %12.5e %4.0f %4.0f %12.5e %13.6e %12.5e %13.5e %13.5e\n",
                                               apval_ptr[i].lon,
@@ -686,7 +686,7 @@ else
             fprintf(fpw,"\n");
             }
          }
-      nprite = nprite + srf->np_seg[ig];
+      np_rite = np_rite + srf->np_seg[ig];
       }
 
    fclose(fpw);
@@ -737,7 +737,7 @@ if(strncmp(srf0[0].type,"PLANE",5) == 0)
    strcpy(srf2[0].type,srf0[0].type);
    srf2[0].srf_prect.nseg = srf0[0].srf_prect.nseg;
 
-   srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+   srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
 
    prseg_ptr0 = srf0[0].srf_prect.prectseg;
    prseg_ptr2 = srf2[0].srf_prect.prectseg;
@@ -759,7 +759,7 @@ if(strncmp(srf0[0].type,"PLANE",5) == 0)
    }
 
 srf2[0].srf_apnts.np = srf0[0].srf_apnts.np;
-srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 
 for(i=0;i<srf2[0].srf_apnts.np;i++)
    {
@@ -830,7 +830,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
 
 	 if(newnt > apval_ptr[2]->nt1)
 	    {
-            apval_ptr[2]->stf1 = (float *)check_realloc(apval_ptr[2]->stf1,newnt*sizeof(float));
+            apval_ptr[2]->stf1 = (float *)_check_realloc(apval_ptr[2]->stf1,newnt*sizeof(float));
             stf1 = apval_ptr[2]->stf1;
 
             for(it=(apval_ptr[2]->nt1);it<newnt;it++)
@@ -841,7 +841,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
 
 	 if(newnt > apval_ptr[2]->nt2)
 	    {
-            apval_ptr[2]->stf2 = (float *)check_realloc(apval_ptr[2]->stf2,newnt*sizeof(float));
+            apval_ptr[2]->stf2 = (float *)_check_realloc(apval_ptr[2]->stf2,newnt*sizeof(float));
             stf2 = apval_ptr[2]->stf2;
 
             for(it=(apval_ptr[2]->nt2);it<newnt;it++)
@@ -864,7 +864,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
 
 	 if(newnt > apval_ptr[2]->nt1)
 	    {
-            apval_ptr[2]->stf1 = (float *)check_realloc(apval_ptr[2]->stf1,newnt*sizeof(float));
+            apval_ptr[2]->stf1 = (float *)_check_realloc(apval_ptr[2]->stf1,newnt*sizeof(float));
             stf1 = apval_ptr[2]->stf1;
 
             for(it=(apval_ptr[2]->nt1);it<newnt;it++)
@@ -875,7 +875,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
 
 	 if(newnt > apval_ptr[2]->nt2)
 	    {
-            apval_ptr[2]->stf2 = (float *)check_realloc(apval_ptr[2]->stf2,newnt*sizeof(float));
+            apval_ptr[2]->stf2 = (float *)_check_realloc(apval_ptr[2]->stf2,newnt*sizeof(float));
             stf2 = apval_ptr[2]->stf2;
 
             for(it=(apval_ptr[2]->nt2);it<newnt;it++)
@@ -898,7 +898,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
 
 	 if(newnt > apval_ptr[2]->nt3)
 	    {
-            apval_ptr[2]->stf3 = (float *)check_realloc(apval_ptr[2]->stf3,newnt*sizeof(float));
+            apval_ptr[2]->stf3 = (float *)_check_realloc(apval_ptr[2]->stf3,newnt*sizeof(float));
             stf3 = apval_ptr[2]->stf3;
 
             for(it=(apval_ptr[2]->nt3);it<newnt;it++)
@@ -948,7 +948,7 @@ if(atof(srf2->version) < 2.0)
       strcpy(srf2[0].type,srf0[0].type);
 
       srf2[0].srf_prect.nseg = srf0[0].srf_prect.nseg + srf1[0].srf_prect.nseg;
-      srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+      srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
 
       prseg_out = srf2[0].srf_prect.prectseg;
       for(ig=0;ig<srf2[0].srf_prect.nseg;ig++)
@@ -979,7 +979,7 @@ if(atof(srf2->version) < 2.0)
       }
 
    srf2[0].srf_apnts.np = srf0[0].srf_apnts.np + srf1[0].srf_apnts.np;
-   srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+   srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 
    for(i=0;i<srf2[0].srf_apnts.np;i++)
       {
@@ -1012,7 +1012,7 @@ if(atof(srf2->version) < 2.0)
 
       if(apval_out->nt1)
          {
-         apval_out->stf1 = (float *)check_realloc(apval_out->stf1,(apval_out->nt1)*sizeof(float));
+         apval_out->stf1 = (float *)_check_realloc(apval_out->stf1,(apval_out->nt1)*sizeof(float));
 
          stfin = apval_in->stf1;
          stfout = apval_out->stf1;
@@ -1027,7 +1027,7 @@ if(atof(srf2->version) < 2.0)
 
       if(apval_out->nt2)
          {
-         apval_out->stf2 = (float *)check_realloc(apval_out->stf2,(apval_out->nt2)*sizeof(float));
+         apval_out->stf2 = (float *)_check_realloc(apval_out->stf2,(apval_out->nt2)*sizeof(float));
 
          stfin = apval_in->stf2;
          stfout = apval_out->stf2;
@@ -1042,7 +1042,7 @@ if(atof(srf2->version) < 2.0)
 
       if(apval_out->nt3)
          {
-         apval_out->stf3 = (float *)check_realloc(apval_out->stf3,(apval_out->nt3)*sizeof(float));
+         apval_out->stf3 = (float *)_check_realloc(apval_out->stf3,(apval_out->nt3)*sizeof(float));
 
          stfin = apval_in->stf3;
          stfout = apval_out->stf3;
@@ -1056,7 +1056,7 @@ if(atof(srf2->version) < 2.0)
 else if(atof(srf2->version) >= 2.0)
    {
    srf2[0].srf_hcmnt.nline = srf0[0].srf_hcmnt.nline + srf1[0].srf_hcmnt.nline;
-   srf2[0].srf_hcmnt.cbuf = (char *)check_malloc((srf2[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+   srf2[0].srf_hcmnt.cbuf = (char *)_check_malloc((srf2[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
 
    for(i=0;i<srf2[0].srf_hcmnt.nline;i++)
       {
@@ -1081,7 +1081,7 @@ else if(atof(srf2->version) >= 2.0)
       strcpy(srf2[0].type,srf0[0].type);
 
       srf2[0].srf_prect.nseg = srf0[0].srf_prect.nseg + srf1[0].srf_prect.nseg;
-      srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+      srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
 
       prseg_out = srf2[0].srf_prect.prectseg;
       for(ig=0;ig<srf2[0].srf_prect.nseg;ig++)
@@ -1112,10 +1112,10 @@ else if(atof(srf2->version) >= 2.0)
       }
 
    srf2[0].srf_apnts.np = srf0[0].srf_apnts.np + srf1[0].srf_apnts.np;
-   srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+   srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 
    srf2[0].nseg = srf0[0].nseg + srf1[0].nseg;
-   srf2[0].np_seg = (int *)check_malloc((srf2[0].nseg)*sizeof(int));
+   srf2[0].np_seg = (int *)_check_malloc((srf2[0].nseg)*sizeof(int));
 
    npoff_out = 0;
    for(ig=0;ig<srf2[0].nseg;ig++)
@@ -1173,7 +1173,7 @@ else if(atof(srf2->version) >= 2.0)
 
          if(apval_out->nt1)
             {
-            apval_out->stf1 = (float *)check_realloc(apval_out->stf1,(apval_out->nt1)*sizeof(float));
+            apval_out->stf1 = (float *)_check_realloc(apval_out->stf1,(apval_out->nt1)*sizeof(float));
 
             stfin = apval_in->stf1;
             stfout = apval_out->stf1;
@@ -1188,7 +1188,7 @@ else if(atof(srf2->version) >= 2.0)
 
          if(apval_out->nt2)
             {
-            apval_out->stf2 = (float *)check_realloc(apval_out->stf2,(apval_out->nt2)*sizeof(float));
+            apval_out->stf2 = (float *)_check_realloc(apval_out->stf2,(apval_out->nt2)*sizeof(float));
 
             stfin = apval_in->stf2;
             stfout = apval_out->stf2;
@@ -1203,7 +1203,7 @@ else if(atof(srf2->version) >= 2.0)
 
          if(apval_out->nt3)
             {
-            apval_out->stf3 = (float *)check_realloc(apval_out->stf3,(apval_out->nt3)*sizeof(float));
+            apval_out->stf3 = (float *)_check_realloc(apval_out->stf3,(apval_out->nt3)*sizeof(float));
 
             stfin = apval_in->stf3;
             stfout = apval_out->stf3;
@@ -1233,7 +1233,7 @@ if(strncmp(srf0[0].type,"PLANE",5) == 0)
    strcpy(srf1[0].type,srf0[0].type);
 
    srf1[0].srf_prect.nseg = srf0[0].srf_prect.nseg;
-   srf1[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf1[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+   srf1[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf1[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
 
    prseg_in = srf0[0].srf_prect.prectseg;
    prseg_out = srf1[0].srf_prect.prectseg;
@@ -1253,7 +1253,7 @@ if(strncmp(srf0[0].type,"PLANE",5) == 0)
       }
    }
 
-srf1[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf0[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+srf1[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf0[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 
 ip = 0;
 for(i=0;i<srf0[0].srf_apnts.np;i++)
@@ -1282,7 +1282,7 @@ for(i=0;i<srf0[0].srf_apnts.np;i++)
 
       if(apval_out->nt1)
          {
-         apval_out->stf1 = (float *)check_realloc(apval_out->stf1,(apval_out->nt1)*sizeof(float));
+         apval_out->stf1 = (float *)_check_realloc(apval_out->stf1,(apval_out->nt1)*sizeof(float));
 
          stfin = apval_in->stf1;
          stfout = apval_out->stf1;
@@ -1297,7 +1297,7 @@ for(i=0;i<srf0[0].srf_apnts.np;i++)
 
       if(apval_out->nt2)
          {
-         apval_out->stf2 = (float *)check_realloc(apval_out->stf2,(apval_out->nt2)*sizeof(float));
+         apval_out->stf2 = (float *)_check_realloc(apval_out->stf2,(apval_out->nt2)*sizeof(float));
 
          stfin = apval_in->stf2;
          stfout = apval_out->stf2;
@@ -1312,7 +1312,7 @@ for(i=0;i<srf0[0].srf_apnts.np;i++)
 
       if(apval_out->nt3)
          {
-         apval_out->stf3 = (float *)check_realloc(apval_out->stf3,(apval_out->nt3)*sizeof(float));
+         apval_out->stf3 = (float *)_check_realloc(apval_out->stf3,(apval_out->nt3)*sizeof(float));
 
          stfin = apval_in->stf3;
          stfout = apval_out->stf3;
@@ -1348,7 +1348,7 @@ if(strncmp(srf1[0].type,"PLANE",5) == 0)
    strcpy(srf2[0].type,srf1[0].type);
    srf2[0].srf_prect.nseg = srf1[0].srf_prect.nseg;
 
-   srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+   srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
 
    prseg_ptr1 = srf1[0].srf_prect.prectseg;
    prseg_ptr2 = srf2[0].srf_prect.prectseg;
@@ -1370,7 +1370,7 @@ if(strncmp(srf1[0].type,"PLANE",5) == 0)
    }
 
 srf2[0].srf_apnts.np = srf1[0].srf_apnts.np;
-srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 
 for(i=0;i<srf2[0].srf_apnts.np;i++)
    {
@@ -1395,7 +1395,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
 
    if(apval_ptr[1]->nt1)
       {
-      apval_ptr[1]->stf1 = (float *)check_realloc(apval_ptr[1]->stf1,apval_ptr[1]->nt1*sizeof(float));
+      apval_ptr[1]->stf1 = (float *)_check_realloc(apval_ptr[1]->stf1,apval_ptr[1]->nt1*sizeof(float));
       stfp1 = apval_ptr[0]->stf1;
       stfp2 = apval_ptr[1]->stf1;
       for(it=0;it<apval_ptr[1]->nt1;it++)
@@ -1408,7 +1408,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
 
    if(apval_ptr[1]->nt2)
       {
-      apval_ptr[1]->stf2 = (float *)check_realloc(apval_ptr[1]->stf2,apval_ptr[1]->nt2*sizeof(float));
+      apval_ptr[1]->stf2 = (float *)_check_realloc(apval_ptr[1]->stf2,apval_ptr[1]->nt2*sizeof(float));
       stfp1 = apval_ptr[0]->stf2;
       stfp2 = apval_ptr[1]->stf2;
       for(it=0;it<apval_ptr[1]->nt2;it++)
@@ -1421,7 +1421,7 @@ for(i=0;i<srf2[0].srf_apnts.np;i++)
 
    if(apval_ptr[1]->nt3)
       {
-      apval_ptr[1]->stf3 = (float *)check_realloc(apval_ptr[1]->stf3,apval_ptr[1]->nt3*sizeof(float));
+      apval_ptr[1]->stf3 = (float *)_check_realloc(apval_ptr[1]->stf3,apval_ptr[1]->nt3*sizeof(float));
       stfp1 = apval_ptr[0]->stf3;
       stfp2 = apval_ptr[1]->stf3;
       for(it=0;it<apval_ptr[1]->nt3;it++)
@@ -1443,7 +1443,7 @@ if(atof(srf2->version) < 2.0)
 else if(atof(srf2->version) >= 2.0)
    {
    srf2[0].srf_hcmnt.nline = srf1[0].srf_hcmnt.nline;
-   srf2[0].srf_hcmnt.cbuf = (char *)check_malloc((srf2[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+   srf2[0].srf_hcmnt.cbuf = (char *)_check_malloc((srf2[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
 
    for(i=0;i<srf2[0].srf_hcmnt.nline;i++)
       {
@@ -1467,7 +1467,7 @@ int npoff;
 strcpy(srf2[0].version,srf0[0].version);
 
    srf2[0].srf_hcmnt.nline = srf0[0].srf_hcmnt.nline;
-   srf2[0].srf_hcmnt.cbuf = (char *)check_malloc((srf2[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+   srf2[0].srf_hcmnt.cbuf = (char *)_check_malloc((srf2[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
 
    for(i=0;i<srf2[0].srf_hcmnt.nline;i++)
       {
@@ -1482,7 +1482,7 @@ strcpy(srf2[0].version,srf0[0].version);
       strcpy(srf2[0].type,srf0[0].type);
 
       srf2[0].srf_prect.nseg = srf0[0].srf_prect.nseg;
-      srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
+      srf2[0].srf_prect.prectseg = (struct srf_prectsegments *)_check_malloc(srf2[0].srf_prect.nseg*sizeof(struct srf_prectsegments));
 
       prseg_in0 = srf0[0].srf_prect.prectseg;
       prseg_in1 = srf1[0].srf_prect.prectseg;
@@ -1504,10 +1504,10 @@ strcpy(srf2[0].version,srf0[0].version);
       }
 
    srf2[0].srf_apnts.np = srf0[0].srf_apnts.np;
-   srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
+   srf2[0].srf_apnts.apntvals = (struct srf_apointvalues *)_check_malloc((srf2[0].srf_apnts.np)*sizeof(struct srf_apointvalues));
 
    srf2[0].nseg = srf0[0].nseg;
-   srf2[0].np_seg = (int *)check_malloc((srf2[0].nseg)*sizeof(int));
+   srf2[0].np_seg = (int *)_check_malloc((srf2[0].nseg)*sizeof(int));
 
    npoff = 0;
    for(ig=0;ig<srf2[0].nseg;ig++)
@@ -1543,7 +1543,7 @@ strcpy(srf2[0].version,srf0[0].version);
 
          if(apval_out->nt1)
             {
-            apval_out->stf1 = (float *)check_realloc(apval_out->stf1,(apval_out->nt1)*sizeof(float));
+            apval_out->stf1 = (float *)_check_realloc(apval_out->stf1,(apval_out->nt1)*sizeof(float));
 
             stfin = apval_in0->stf1;
             stfout = apval_out->stf1;
@@ -1558,7 +1558,7 @@ strcpy(srf2[0].version,srf0[0].version);
 
          if(apval_out->nt2)
             {
-            apval_out->stf2 = (float *)check_realloc(apval_out->stf2,(apval_out->nt2)*sizeof(float));
+            apval_out->stf2 = (float *)_check_realloc(apval_out->stf2,(apval_out->nt2)*sizeof(float));
 
             stfin = apval_in0->stf2;
             stfout = apval_out->stf2;
@@ -1573,7 +1573,7 @@ strcpy(srf2[0].version,srf0[0].version);
 
          if(apval_out->nt3)
             {
-            apval_out->stf3 = (float *)check_realloc(apval_out->stf3,(apval_out->nt3)*sizeof(float));
+            apval_out->stf3 = (float *)_check_realloc(apval_out->stf3,(apval_out->nt3)*sizeof(float));
 
             stfin = apval_in0->stf3;
             stfout = apval_out->stf3;
@@ -1594,12 +1594,12 @@ char *sptr1, *sptr2;
 
 if(srf[0].srf_hcmnt.nline == 0)
    {
-   srf[0].srf_hcmnt.cbuf = (char *)check_malloc(2*MAXLINE*sizeof(char));
+   srf[0].srf_hcmnt.cbuf = (char *)_check_malloc(2*MAXLINE*sizeof(char));
    srf[0].srf_hcmnt.nline = 2;
    }
 else
    {
-   srf[0].srf_hcmnt.cbuf = (char *)check_realloc(srf[0].srf_hcmnt.cbuf,(2+srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+   srf[0].srf_hcmnt.cbuf = (char *)_check_realloc(srf[0].srf_hcmnt.cbuf,(2+srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
 
    for(i=srf[0].srf_hcmnt.nline-1;i>=0;i--)
       {
@@ -1631,14 +1631,14 @@ char *sptr1;
 
 if(srf[0].srf_hcmnt.nline == 0)
    {
-   srf[0].srf_hcmnt.cbuf = (char *)check_malloc(2*MAXLINE*sizeof(char));
+   srf[0].srf_hcmnt.cbuf = (char *)_check_malloc(2*MAXLINE*sizeof(char));
    srf[0].srf_hcmnt.nline = 3;
    }
 else
    {
    srf[0].srf_hcmnt.nline = srf[0].srf_hcmnt.nline + 3;
 
-   srf[0].srf_hcmnt.cbuf = (char *)check_realloc(srf[0].srf_hcmnt.cbuf,(srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
+   srf[0].srf_hcmnt.cbuf = (char *)_check_realloc(srf[0].srf_hcmnt.cbuf,(srf[0].srf_hcmnt.nline)*MAXLINE*sizeof(char));
    }
 
 sptr1 = srf[0].srf_hcmnt.cbuf + (srf[0].srf_hcmnt.nline-3)*MAXLINE;

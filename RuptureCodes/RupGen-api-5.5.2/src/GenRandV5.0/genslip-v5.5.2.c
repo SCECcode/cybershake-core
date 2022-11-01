@@ -412,6 +412,8 @@ long seed = 0;
 long starting_seed;
 int dump_last_seed = 0;
 char seedfile[1024];
+//Used to bypass iterating over slips to get to the 'right' seed
+int use_unmodified_seed = 0;
 
 int kmodel = MAI_FLAG;   /* default is mai */
 int circular_average = DEFAULT_CIRCULAR_AVERAGE;
@@ -434,7 +436,7 @@ float shypo = -1.0e+15;
 float dhypo = -1.0e+15;
 
 int nrup_min = 10;
-float target_hypo_spacing = 3.0;
+float target_hypo_spacing = 4.0;
 float hypo_s0, hypo_d0, hypo_ds, hypo_dd;
 int ih_scnt, ih_dcnt, nhypo_s, nhypo_d;
 
@@ -910,6 +912,7 @@ getpar("modified_corners","d",&modified_corners);
 getpar("circular_average","d",&circular_average);
 getpar("stretch_kcorner","d",&stretch_kcorner);
 getpar("seed","d",&seed);
+getpar("use_unmodified_seed","d",&use_unmodified_seed);
 getpar("side_taper","f",&side_taper);
 getpar("bot_taper","f",&bot_taper);
 getpar("top_taper","f",&top_taper);
@@ -985,9 +988,9 @@ if(seg_delay == 1)
       {
       nseg_bounds = nseg - 1;
 
-      rvfac_seg = (float *)check_malloc(nseg_bounds*sizeof(float));
-      gbnd = (float *)check_malloc(nseg_bounds*sizeof(float));
-      gwid = (float *)check_malloc(nseg_bounds*sizeof(float));
+      rvfac_seg = (float *)_check_malloc(nseg_bounds*sizeof(float));
+      gbnd = (float *)_check_malloc(nseg_bounds*sizeof(float));
+      gwid = (float *)_check_malloc(nseg_bounds*sizeof(float));
 
       for(ig=0;ig<nseg_bounds;ig++)
          {
@@ -1022,7 +1025,7 @@ gslip.spar = (struct slippars *)NULL;
 
 if(read_erf == 1)
 #ifdef _USE_MEMCACHED
-	psrc_orig = _mc_read_ruppars(infile,psrc_orig,&mag,&nstk,&ndip,&dstk,&ddip,&dtop,&avgstk,&avgdip,&elon,&elat);
+	psrc_orig = _mc_read_ruppars(infile,psrc_orig,&mag,&nstk,&ndip,&dstk,&ddip,&dtop,&avgstk,&avgdip,&elon,&elat,memcached_server);
 #else
    psrc_orig = _read_ruppars(infile,psrc_orig,&mag,&nstk,&ndip,&dstk,&ddip,&dtop,&avgstk,&avgdip,&elon,&elat);
 #endif
@@ -1031,7 +1034,7 @@ else if(read_gsf == 1)
 else
    psrc_orig = set_ruppars(psrc_orig,&mag,&nstk,&ndip,&dstk,&ddip,&dtop,&avgstk,&avgdip,&rake,&elon,&elat);
 
-psrc = (struct pointsource *)check_malloc((nstk)*(ndip)*sizeof(struct pointsource));
+psrc = (struct pointsource *)_check_malloc((nstk)*(ndip)*sizeof(struct pointsource));
 
 flen = nstk*dstk;
 fwid = ndip*ddip;
@@ -1074,7 +1077,7 @@ mag_med = mag_area_Acoef + mag_area_Bcoef*log(flen*fwid)/bigM;
 if(mag < 0.0 || use_median_mag)
    mag = mag_med;
 
-init_plane_srf(srf,&gslip,&elon,&elat,nstk,ndip,&flen,&fwid,&dstk,&ddip,&avgstk,&avgdip,&dtop,&shypo,&dhypo);
+_init_plane_srf(srf,&gslip,&elon,&elat,nstk,ndip,&flen,&fwid,&dstk,&ddip,&avgstk,&avgdip,&dtop,&shypo,&dhypo);
 
 if(seg_delay == 1)
    {
@@ -1263,27 +1266,27 @@ dkd3 = 1.0/(ndip3*ddip3);
 
 fprintf(stderr,"approx. memory= %.3f MB\n",10.0e-06*(nstk*ndip*sizeof(float)) + 4.0e-06*(nstk2*ndip2*sizeof(struct complex)) + 3.0e-06*(nstk3*ndip3*sizeof(struct complex)) + 1.0e-06*(nstk*ndip*sizeof(struct pointsource)));
 
-slip_c = (struct complex *) check_malloc (nstk2*ndip2*sizeof(struct complex));
-rake_c = (struct complex *) check_malloc (nstk2*ndip2*sizeof(struct complex));
-tsfac1_c = (struct complex *) check_malloc (nstk2*ndip2*sizeof(struct complex));
-rtime1_c = (struct complex *) check_malloc (nstk2*ndip2*sizeof(struct complex));
+slip_c = (struct complex *) _check_malloc (nstk2*ndip2*sizeof(struct complex));
+rake_c = (struct complex *) _check_malloc (nstk2*ndip2*sizeof(struct complex));
+tsfac1_c = (struct complex *) _check_malloc (nstk2*ndip2*sizeof(struct complex));
+rtime1_c = (struct complex *) _check_malloc (nstk2*ndip2*sizeof(struct complex));
 
-rough_c = (struct complex *) check_malloc (nstk3*ndip3*sizeof(struct complex));
-tsfac2_c = (struct complex *) check_malloc (nstk3*ndip3*sizeof(struct complex));
-rtime2_c = (struct complex *) check_malloc (nstk3*ndip3*sizeof(struct complex));
+rough_c = (struct complex *) _check_malloc (nstk3*ndip3*sizeof(struct complex));
+tsfac2_c = (struct complex *) _check_malloc (nstk3*ndip3*sizeof(struct complex));
+rtime2_c = (struct complex *) _check_malloc (nstk3*ndip3*sizeof(struct complex));
 
-slip_r = (float *) check_malloc (nstk*ndip*sizeof(float));
-rake_r = (float *) check_malloc (nstk*ndip*sizeof(float));
-tsfac1_r = (float *) check_malloc (nstk*ndip*sizeof(float));
-rtime1_r = (float *) check_malloc (nstk*ndip*sizeof(float));
+slip_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
+rake_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
+tsfac1_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
+rtime1_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
 
-rough_r = (float *) check_malloc (nstk*ndip*sizeof(float));
-tsfac2_r = (float *) check_malloc (nstk*ndip*sizeof(float));
-rtime2_r = (float *) check_malloc (nstk*ndip*sizeof(float));
-stk_r = (float *) check_malloc (nstk*ndip*sizeof(float));
-dip_r = (float *) check_malloc (nstk*ndip*sizeof(float));
+rough_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
+tsfac2_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
+rtime2_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
+stk_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
+dip_r = (float *) _check_malloc (nstk*ndip*sizeof(float));
 
-psrc_rake = (float *) check_malloc (nstk*ndip*sizeof(float));
+psrc_rake = (float *) _check_malloc (nstk*ndip*sizeof(float));
 
 if(set_rake > -900.0)
    {
@@ -1457,7 +1460,7 @@ if(fdrup_time == 1)
    dh = dstk;
    nsring = 2;
 
-   rspd = (float *)check_malloc(nstk*ndip*sizeof(float));
+   rspd = (float *)_check_malloc(nstk*ndip*sizeof(float));
 
    rslw = NULL;
    fdrt = NULL;
@@ -1490,8 +1493,10 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
 */
 
    seed = starting_seed;
-   for(k=0;k<10*js;k++)
-      sval = sfrand(&seed);
+   if (use_unmodified_seed==0) {
+	   for(k=0;k<10*js;k++)
+	      sval = _sfrand(&seed);
+   }
 
    fprintf(stderr,"js= %d seed= %d ran= %10.6f\n",js,seed,sval);
 
@@ -1510,6 +1515,12 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
          dhypo = rhypo1_lintaper(&seed,&hpar_dd);
 	 }
       }
+
+//Initialize multithreaded fftw
+/*   if (fftwf_init_threads()==0) {
+		printf("Error initializing fftw threads, aborting.\n");
+		exit(-2);
+   }*/
 
 /* do slip */
 
@@ -2442,7 +2453,7 @@ fprintf(stderr,"ratio (negative rt)/(positive rt)= %f\n",neg_sum/(nstk*ndip));
 
    if(roughnessfile[0] != '\0')
       {
-      fpr = fopfile(roughnessfile,"w");
+      fpr = _fopfile(roughnessfile,"w");
 
       for(j=0;j<ndip;j++)
          {
@@ -2650,9 +2661,9 @@ fprintf(stderr,"ratio (negative rt)/(positive rt)= %f\n",neg_sum/(nstk*ndip));
 /* end rtime2 */
 
    if(write_srf)
-      load_slip_srf_dd4(srf,&stfparams,psrc,rtime1_r,rtime2_r,&vmod);
+      _load_slip_srf_dd4(srf,&stfparams,psrc,rtime1_r,rtime2_r,&vmod);
       /*
-      load_slip_srf_dd3(&srf,&stfparams,psrc,rtime1_r,&vmod);
+      _load_slip_srf_dd3(&srf,&stfparams,psrc,rtime1_r,&vmod);
       */
 
    for(ih=0;ih<nh;ih++)    /* loop over hypocenter realizations */
@@ -2727,10 +2738,10 @@ fprintf(stderr,"ixs= %d iys= %d\n",ixs,iys);
 
          ntot = nstk_fd*ndip_fd;
 
-         rslw = (double *)check_realloc(rslw,ntot*sizeof(double));
-         fdrt = (double *)check_realloc(fdrt,ntot*sizeof(double));
-         fspace = (double *)check_realloc(fspace,(nstk_fd+ndip_fd)*sizeof(double));
-         ispace = (int *)check_realloc(ispace,(nstk_fd+ndip_fd)*sizeof(int));
+         rslw = (double *)_check_realloc(rslw,ntot*sizeof(double));
+         fdrt = (double *)_check_realloc(fdrt,ntot*sizeof(double));
+         fspace = (double *)_check_realloc(fspace,(nstk_fd+ndip_fd)*sizeof(double));
+         ispace = (int *)_check_realloc(ispace,(nstk_fd+ndip_fd)*sizeof(int));
 
          get_rslow_stretch(rspd,nstk,ndip,rslw,nstk_fd,ndip_fd,istk_off,idip_off,&rvel_rand,&seed);
 	 wfront2d_(&nstk_fd,&ndip_fd,&ixs,&iys,&dh,&nsring,fdrt,rslw,&ntot,fspace,ispace);
@@ -2743,8 +2754,8 @@ fprintf(stderr,"ixs= %d iys= %d\n",ixs,iys);
 	  float half_dstk_minus_half_flen = 0.5*dstk - 0.5*flen;
 	  float half_flen_plus_shypo = 0.5*flen + shypo;
 	  y0 = (deep_vrdep1-dtop)/sin(avgdip*rperd);
-	  float deep_alpha = 1.0 + (deep_vrdep1-deep_rup*deep_vrdep1)/(deep_vrdep2-deep_vrdep1);
-	  float deep_const = (deep_rup - 1.0)/(deep_vrdep2-deep_vrdep1);
+	  float deep_alpha = 1.0 + (deep_vrdep1-deep_vrup*deep_vrdep1)/(deep_vrdep2-deep_vrdep1);
+	  float deep_const = (deep_vrup - 1.0)/(deep_vrdep2-deep_vrdep1);
       for(j=0;j<ndip;j++)
          {
          //yy = (j + 0.5)*ddip;
@@ -2863,10 +2874,11 @@ fprintf(stderr,"tsmin= %.5f\n",tsmin);
 	    continue;
 	  }
 
+	printf("shypo=%f, dhypo=%f\n", shypo, dhypo);
 /* RWG 2014-02-20 randomized hypocenter */
       if(write_srf)
 	 {
-         load_rupt_srf(srf,psrc,&shypo,&dhypo);
+         _load_rupt_srf(srf,psrc,&shypo,&dhypo);
 
          if(strcmp(outfile,"stdout") == 0)
             sprintf(str,"stdout");
@@ -2883,10 +2895,10 @@ fprintf(stderr,"tsmin= %.5f\n",tsmin);
          else
             sprintf(str,"%s.srf",outfile);
 
-         if(print_command && atof(srf.version) >= 2.0)
+         if(print_command && atof(srf->version) >= 2.0)
             load_command_srf(srf,ac,av);
 
-         if(print_seed && atof(srf.version) >= 2.0)
+         if(print_seed && atof(srf->version) >= 2.0)
             load_seed_srf(srf,starting_seed,seed);
 
          //write2srf(&srf,str,outbin);
@@ -2907,7 +2919,7 @@ fprintf(stderr,"tsmin= %.5f\n",tsmin);
 
 if(dump_last_seed == 1)
    {
-   fpr = fopfile(seedfile,"w");
+   fpr = _fopfile(seedfile,"w");
    fprintf(fpr,"%lld\n",seed);
    fclose(fpr);
    }
@@ -2949,6 +2961,7 @@ free(rslw);
 free(fdrt);
 free(fspace);
 free(ispace);
+//fftwf_cleanup_threads();
 fftwf_cleanup();
 
 return 0;

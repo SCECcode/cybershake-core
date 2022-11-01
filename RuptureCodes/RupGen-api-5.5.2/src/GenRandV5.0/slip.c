@@ -32,7 +32,7 @@ if(file[0] == '\0')
    }
 else
    {
-   fpr = fopfile(file,"r");
+   fpr = _fopfile(file,"r");
 
    while(fgets(str,1024,fpr) != NULL)
       {
@@ -612,7 +612,7 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       if(kflag == SOMERVILLE_FLAG)      /* somerville scaling */
          fac = amp0/sqrt(1.0 + amp*amp);
 
-      phs = pi*sfrand(seed);
+      phs = pi*_sfrand(seed);
 
       fac1 = sqrt(s0[ip].re*s0[ip].re + s0[ip].im*s0[ip].im);
 
@@ -649,8 +649,8 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
 /*
 wtD = 0.0;
 wtS = 20.0;
-s0[ip].re = fac*gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
-s0[ip].im = fac*gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
+s0[ip].re = fac*_gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
+s0[ip].im = fac*_gaus_rand(&wtS,&wtD,seed)/sqrt(2.0*wtS*wtS);
 */
 
 /*
@@ -784,12 +784,12 @@ float normf;
 
 normf = (*d1)*(*d2);
 
-space = (float *) check_malloc (2*(n1+n2)*sizeof(float));
+space = (float *) _check_malloc (2*(n1+n2)*sizeof(float));
 
 for(j=0;j<n2;j++)
    fourg_(xc+j*n1,&n1,&isgn,space);
 
-xtc = (struct complex *) check_malloc (n2*sizeof(struct complex));
+xtc = (struct complex *) _check_malloc (n2*sizeof(struct complex));
 
 for(i=0;i<n1;i++)
    {
@@ -827,8 +827,11 @@ float normf;
 
 normf = (*d1)*(*d2);
 
+//Multithreaded version
+/*printf("FFTW will use %d threads.\n", omp_get_max_threads());
+fftwf_plan_with_nthreads(omp_get_max_threads());*/
 fftwf_plan plan;
-fftwf_complex *arr = check_malloc(sizeof(fftwf_complex)*n1);
+fftwf_complex *arr = _check_malloc(sizeof(fftwf_complex)*n1);
 
 if (isgn==-1) {
         plan = fftwf_plan_dft_1d(n1, arr, arr, FFTW_FORWARD, FFTW_ESTIMATE);
@@ -848,7 +851,7 @@ for(j=0;j<n2;j++) {
    }
 }
 fftwf_destroy_plan(plan);
-arr = check_realloc(arr, n2*sizeof(fftwf_complex));
+arr = _check_realloc(arr, n2*sizeof(fftwf_complex));
 
 if (isgn==-1) {
         plan = fftwf_plan_dft_1d(n2, arr, arr, FFTW_FORWARD, FFTW_ESTIMATE);
@@ -975,7 +978,7 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       if(kflag == SOMERVILLE_FLAG)      /* somerville scaling */
          fac = amp0/sqrt(1.0 + amp*amp);
 
-      phs = pi*sfrand(seed);
+      phs = pi*_sfrand(seed);
 
       fac1 = sqrt(s0[ip].re*s0[ip].re + s0[ip].im*s0[ip].im);
 
@@ -1137,7 +1140,7 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       if(kflag == SOMERVILLE_FLAG)      /* somerville scaling */
          fac = amp0/sqrt(1.0 + amp*amp);
 
-      phs = pi*sfrand(seed);
+      phs = pi*_sfrand(seed);
 
       fac1 = sqrt(s0[ip].re*s0[ip].re + s0[ip].im*s0[ip].im);
 
@@ -1269,8 +1272,8 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
             fac = amp0*exp(-0.5*beta2*log(amp));
 	 }
 
-      fre = fnorm*gaus_rand(&fone,&fzero,seed);
-      fim = fnorm*gaus_rand(&fone,&fzero,seed);
+      fre = fnorm*_gaus_rand(&fone,&fzero,seed);
+      fim = fnorm*_gaus_rand(&fone,&fzero,seed);
 
       s0[ip].re = fac*fre;
       s0[ip].im = fac*fim;
@@ -1371,7 +1374,7 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       if(kflag == SOMERVILLE_FLAG)      /* somerville scaling */
          fac = amp0/sqrt(1.0 + amp*amp);
 
-      phs = pi*sfrand(seed);
+      phs = pi*_sfrand(seed);
 
       wtS = 1.0 - wtD;
 
@@ -1446,6 +1449,23 @@ beta2 = *hcoef + 1.0;
 lmax2 = (*lambda_max)*(*lambda_max);
 lmin2 = (*lambda_min)*(*lambda_min);
 
+//New constants
+float lmin2_ord = pow(lmin2, ord);
+float lmax2_neg_ord = pow(lmax2, -1.0*ord);
+float k2_ord;
+
+//Optimizations depend on ord==4 and beta==2
+//Check this
+if (ord!=4) {
+        fprintf(stderr, "The optimized calculation of amp in kfilt_beta2 depends on ord=4.  Ord is actually %d, so we are aborting and you should change this calculation back to the unoptimized version.\n", ord);
+        exit(5);
+}
+
+if (fabs(beta2-2.0)>0.000001) {
+        fprintf(stderr, "The optimized calculation of amp in kfilt_beta2 depends on beta2 = 2.  beta2 is actually %d, so we are aborting and you should change this calculation.\n", beta2);
+        exit(6);
+}
+
 for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
    {
    if(j <= ny0/2)
@@ -1460,16 +1480,20 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       else
          kx = (i - nx0)*(*dkx);
 
-      fre = fnorm*gaus_rand(&fone,&fzero,seed);
-      fim = fnorm*gaus_rand(&fone,&fzero,seed);
+      fre = fnorm*_gaus_rand(&fone,&fzero,seed);
+      fim = fnorm*_gaus_rand(&fone,&fzero,seed);
 
       if(i == 0 && j == 0)
          amp = 0.0;
       else
          {
          k2 = kx*kx + ky*ky;
-         fac = 1.0/((1.0 + exp(ord*log(k2*lmin2)))*(1.0 + exp(-ord*log(k2*lmax2))));
-         amp = fac*exp(-0.5*beta2*log(k2));
+		 //Manipulation to reduce number of opts
+		 k2_ord = k2*k2*k2*k2;
+		 fac = 1.0/((1.0+k2_ord*lmin2_ord)*(1.0+1.0/k2_ord*lmax2_neg_ord));
+		 amp = fac*1.0/k2;
+         //fac = 1.0/((1.0 + exp(ord*log(k2*lmin2)))*(1.0 + exp(-ord*log(k2*lmax2))));
+         //amp = fac*exp(-0.5*beta2*log(k2));
 	 }
 
 
@@ -1604,8 +1628,8 @@ for(j=0;j<=ny0/2;j++)  /* only do positive half, then use symmetry */
       if(k2 > 0.0)
          fac = fac/((1.0 + exp(ord*log(k2*lmin2)))*(1.0 + exp(-ord*log(k2*lmax2))));
 
-      fre = fnorm*gaus_rand(&fone,&fzero,seed);
-      fim = fnorm*gaus_rand(&fone,&fzero,seed);
+      fre = fnorm*_gaus_rand(&fone,&fzero,seed);
+      fim = fnorm*_gaus_rand(&fone,&fzero,seed);
 
       s0[ip].re = fac*fre;
       s0[ip].im = fac*fim;
@@ -1835,8 +1859,8 @@ if(amp > 1.0e+20)
          if(k2 > 0.0)
             fac = fac/((1.0 + exp(ord*log(k2*lmin2)))*(1.0 + exp(-ord*log(k2*lmax2))));
 
-         fre = fnorm*gaus_rand(&fone,&fzero,seed);
-         fim = fnorm*gaus_rand(&fone,&fzero,seed);
+         fre = fnorm*_gaus_rand(&fone,&fzero,seed);
+         fim = fnorm*_gaus_rand(&fone,&fzero,seed);
 
          s0[ip].re = fac*fre;
          s0[ip].im = fac*fim;

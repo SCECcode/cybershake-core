@@ -3,14 +3,14 @@
 
 #include "structure.h"
 
-void *check_malloc(size_t);
-void *check_realloc(void *,size_t);
-FILE *fopfile(char*, char*);
-int opfile_ro(char *);
-int opfile(char *);
-int croptrfile(char *);
-int reed(int, void *, int);
-int rite(int, void *, int);
+void *_check_malloc(size_t);
+void *_check_realloc(void *,size_t);
+FILE *_fopfile(char*, char*);
+int __opfile_ro(char *);
+int _opfile(char *);
+int _croptrfile(char *);
+int _reed(int, void *, int);
+int _rite(int, void *, int);
 
 void fft2d(struct complex *, int, int, int,float *,float *);
 void fft2d_fftw(struct complex *,int,int,int,float *,float *);
@@ -52,19 +52,19 @@ void conv2vrup_dd2(struct velmodel *,struct velmodel *,float *,float *,float *,f
 void load_vsden(struct pointsource *ps,struct velmodel *vm,int nstk,int ndip);
 
 double frand(void);
-double sfrand(long *);
-double gaus_rand(float *,float *,long *);
+double _sfrand(long *);
+double _gaus_rand(float *,float *,long *);
 
-int gen_brune_stf(float *,float *,float *,int,float *);
+int _gen_brune_stf(float *,float *,float *,int,float *);
 int gen_ucsb_stf(float *,float *,float *,int,float *);
 int gen_Mliu_stf(float *,float *,float *,int,float *);
 int gen_MliuP_stf(float *,float *,float *,float *,int,float *);
 int gen_Oliu_stf(float *,float *,float *,int,float *);
 int gen_OliuP_stf(float *,float *,float *,float *,int,float *);
 int gen_tri_stf(float *,float *,float *,int,float *);
-int gen_2tri_stf(float *,float *,float *,int,float *,float *);
+int _gen_2tri_stf(float *,float *,float *,int,float *,float *);
 
-void set_ll(float *,float *,float *,float *,float *,float *);
+void _set_ll(float *,float *,float *,float *,float *,float *);
 void swap_in_place(int,char *);
 
 struct pointsource *_read_ruppars(char *,struct pointsource *,float *,int *,int *,float *,float *,float *,float *,float *,float *,float *);
@@ -72,14 +72,14 @@ struct pointsource *read_gsfpars(char *,struct pointsource *,struct generic_slip
 struct pointsource *read_gsfpars_vsden(char *,struct pointsource *,struct generic_slip *,float *,float *,float *,float *,int);
 struct pointsource *set_ruppars(struct pointsource *,float *,int *,int *,float *,float *,float *,float *,float *,float *,float *,float *);
 
-void init_plane_srf(struct standrupformat *,struct generic_slip *,float *,float *,int,int,float *,float *,float *,float *,float *,float *,float *,float *,float *);
-void load_slip_srf(struct standrupformat *,struct stfpar *,struct pointsource *);
-void load_slip_srf_dd2(struct standrupformat *,struct stfpar2 *,struct pointsource *,long *,struct velmodel *);
-void load_slip_srf_dd3(struct standrupformat *,struct stfpar2 *,struct pointsource *,float *,struct velmodel *);
-void load_slip_srf_dd4(struct standrupformat *,struct stfpar2 *,struct pointsource *,float *,float *,struct velmodel *);
-void load_slip_srf_dd4_vsden(struct standrupformat *,struct stfpar2 *,struct pointsource *,float *,float *);
+void _init_plane_srf(struct standrupformat *,struct generic_slip *,float *,float *,int,int,float *,float *,float *,float *,float *,float *,float *,float *,float *);
+void _load_slip_srf(struct standrupformat *,struct stfpar *,struct pointsource *);
+void _load_slip_srf_dd2(struct standrupformat *,struct stfpar2 *,struct pointsource *,long *,struct velmodel *);
+void _load_slip_srf_dd3(struct standrupformat *,struct stfpar2 *,struct pointsource *,float *,struct velmodel *);
+void _load_slip_srf_dd4(struct standrupformat *,struct stfpar2 *,struct pointsource *,float *,float *,struct velmodel *);
+void _load_slip_srf_dd4_vsden(struct standrupformat *,struct stfpar2 *,struct pointsource *,float *,float *);
 void load_vsden_srf(struct standrupformat *srf,struct velmodel *vmod);
-void load_rupt_srf(struct standrupformat *,struct pointsource *,float *,float *);
+void _load_rupt_srf(struct standrupformat *,struct pointsource *,float *,float *);
 void write_srf(struct standrupformat *,char *,int);
 void write2gsf(struct generic_slip *,struct pointsource *,char *,char *);
 void write2srf(struct standrupformat *,char *,int);
@@ -102,7 +102,7 @@ void gen_matrices(double *,double *,float *,float *,float *);
 void latlon2km(float *,float *,float *,float *,float *);
 void set_g2(float *,float *);
 void geocen(float *,double);
-void zapit(float *, int);
+void _zapit(float *, int);
 
 int get_seg_bounds(struct standrupformat *,float *);
 void get_rsegdelay(float *,int,int,double *,int,float *,float *,float *);
@@ -114,10 +114,13 @@ void copy_psrc(struct pointsource *,struct pointsource *,int,int);
 
 void shift_phase(struct complex *,int,int,float *,float *,double *,double *);
 void get_rupt(struct velmodel* vm, float* h, float* srcd, float* recd, float* srcr, float* recr, double* p, double* rad, float* tt);
-void zapit(float* s,int n);
+void _zapit(float* s,int n);
 
 void write_srf1(struct standrupformat *srf,char *file,int bflag);
 void write_srf2(struct standrupformat *srf,char *file,int bflag);
+
+void load_command_srf(struct standrupformat *srf,int ac,char **av);
+void load_seed_srf(struct standrupformat *srf,int starting_seed,int ending_seed);
 
 #ifdef _USE_MEMCACHED
 int mc_genslip(int ac,char **av, rg_stats_t *stats, struct standrupformat* srf, int state, char* mc_server);

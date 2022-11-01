@@ -5,11 +5,11 @@
 
 void write_field(char *file,struct pointsource *ps,char *type,int nx,int ny,float *dx,float *dy)
 {
-FILE *fpw, *fopfile();
+FILE *fpw, *_fopfile();
 float xx, yy;
 int i, j;
 
-fpw = fopfile(file,"w");
+fpw = _fopfile(file,"w");
 for(j=0;j<ny;j++)
    {
    yy = (j + 0.5)*(*dy);
@@ -40,7 +40,7 @@ yl2 = (*yl)*(*yl);
 
 fft2d_fftw(slip,nx,ny,-1,dx,dy);
 
-fpw = fopfile(file,"w");
+fpw = _fopfile(file,"w");
 
 /* this will normalize max spectrum to one */
 amp0 = sqrt(slip[0].re*slip[0].re + slip[0].im*slip[0].im);
@@ -100,7 +100,7 @@ int i, j, ip;
 
 fac = 1.0/(float)(ns);
 
-fpw = fopfile(file,"w");
+fpw = _fopfile(file,"w");
 
 for(j=0;j<=ny/2;j++)
    {
@@ -116,7 +116,7 @@ for(j=0;j<=ny/2;j++)
 fclose(fpw);
 }
 
-FILE *fopfile(char *name,char *mode)
+FILE *_fopfile(char *name,char *mode)
 {
 FILE *fp;
 
@@ -128,7 +128,7 @@ if((fp = fopen(name,mode)) == NULL)
 return(fp);
 }
 
-int opfile_ro(char *name)
+int __opfile_ro(char *name)
 {
 int fd;
 if ((fd = open (name, RDONLY_FLAGS, 0444)) == -1)
@@ -136,7 +136,7 @@ if ((fd = open (name, RDONLY_FLAGS, 0444)) == -1)
 return (fd);
 }
 
-int opfile(char *name)
+int _opfile(char *name)
 {
 int fd;
 if ((fd = open (name, RDWR_FLAGS, 0664)) == -1)
@@ -144,7 +144,7 @@ if ((fd = open (name, RDWR_FLAGS, 0664)) == -1)
 return (fd);
 }
 
-int croptrfile(char *name)
+int _croptrfile(char *name)
 {
 int fd;
 if ((fd = open (name, CROPTR_FLAGS, 0664)) == -1)
@@ -152,7 +152,7 @@ if ((fd = open (name, CROPTR_FLAGS, 0664)) == -1)
 return (fd);
 }
 
-int reed(int fd, void *pntr, int length)
+int _reed(int fd, void *pntr, int length)
 {
 int temp;
 if ((temp = read(fd, pntr, length)) < length)
@@ -164,7 +164,7 @@ if ((temp = read(fd, pntr, length)) < length)
 return(temp);
 }
 
-int rite(int fd, void *pntr, int length)
+int _rite(int fd, void *pntr, int length)
 {
 int temp;
 if ((temp = write(fd, pntr, length)) < length)
@@ -178,7 +178,7 @@ return(temp);
 
 struct pointsource *_read_ruppars(char *file,struct pointsource *psrc,float *mag,int *nx,int *ny,float *dx,float *dy,float *dtop,float *stk,float *dip,float *elon,float *elat)
 {
-FILE *fpr, *fopfile();
+FILE *fpr, *_fopfile();
 float area;
 int i, nn;
 char str[1024];
@@ -194,7 +194,7 @@ double rperd = 0.017453293;
 if(strcmp(file,"stdin") == 0)
    fpr = stdin;
 else
-   fpr = fopfile(file,"r");
+   fpr = _fopfile(file,"r");
 
 fgets(str,1024,fpr);   /* Probability = <float> */
 
@@ -221,7 +221,7 @@ sscanf(str,"%*s %*s %d",nx);
 
 fgets(str,1024,fpr);   /* header comment */
 
-psrc = (struct pointsource *)check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
+psrc = (struct pointsource *)_check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
 
 area = (*dx)*(*dy)*1.0e+10;  /* km -> cm */
 
@@ -280,7 +280,7 @@ int i, j, ip;
 
 double rperd = 0.017453293;
 
-psrc = (struct pointsource *)check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
+psrc = (struct pointsource *)_check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
 
 area = (*dx)*(*dy)*1.0e+10;  /* km -> cm */
 flen = (*nx)*(*dx);
@@ -303,7 +303,7 @@ for(j=0;j<(*ny);j++)
 
       se = xx*sinA + yy*cosA;
       sn = xx*cosA - yy*sinA;
-      set_ll(elon,elat,&psrc[ip].lon,&psrc[ip].lat,&sn,&se);
+      _set_ll(elon,elat,&psrc[ip].lon,&psrc[ip].lat,&sn,&se);
 
       psrc[ip].dep = zz;
       psrc[ip].stk = (*stk);
@@ -318,7 +318,7 @@ return(psrc);
 
 struct pointsource *read_gsfpars(char *file,struct pointsource *psrc,struct generic_slip *gslip,float *dx,float *dy,float *dtop,float *dip)
 {
-FILE *fpr, *fopfile();
+FILE *fpr, *_fopfile();
 int i, nn;
 char str[1024];
 struct slippars *spar;
@@ -336,7 +336,7 @@ double rperd = 0.017453293;
 if(strcmp(file,"stdin") == 0)
    fpr = stdin;
 else
-   fpr = fopfile(file,"r");
+   fpr = _fopfile(file,"r");
 
 fgets(str,1024,fpr);
 while(strncmp(str,"#",1) == 0)
@@ -344,8 +344,8 @@ while(strncmp(str,"#",1) == 0)
 
 sscanf(str,"%d",&gslip->np);
 
-psrc = (struct pointsource *)check_realloc(psrc,gslip->np*sizeof(struct pointsource));
-gslip->spar = (struct slippars *)check_realloc(gslip->spar,gslip->np*sizeof(struct slippars));
+psrc = (struct pointsource *)_check_realloc(psrc,gslip->np*sizeof(struct pointsource));
+gslip->spar = (struct slippars *)_check_realloc(gslip->spar,gslip->np*sizeof(struct slippars));
 spar = gslip->spar;
 
 i = 0;
@@ -406,7 +406,7 @@ return(psrc);
 
 struct pointsource *read_gsfpars_vsden(char *file,struct pointsource *psrc,struct generic_slip *gslip,float *dx,float *dy,float *dtop,float *dip,int read_vsden)
 {
-FILE *fpr, *fopfile();
+FILE *fpr, *_fopfile();
 int i, nn;
 char str[1024];
 struct slippars *spar;
@@ -424,7 +424,7 @@ double rperd = 0.017453293;
 if(strcmp(file,"stdin") == 0)
    fpr = stdin;
 else
-   fpr = fopfile(file,"r");
+   fpr = _fopfile(file,"r");
 
 fgets(str,1024,fpr);
 while(strncmp(str,"#",1) == 0)
@@ -432,8 +432,8 @@ while(strncmp(str,"#",1) == 0)
 
 sscanf(str,"%d",&gslip->np);
 
-psrc = (struct pointsource *)check_realloc(psrc,gslip->np*sizeof(struct pointsource));
-gslip->spar = (struct slippars *)check_realloc(gslip->spar,gslip->np*sizeof(struct slippars));
+psrc = (struct pointsource *)_check_realloc(psrc,gslip->np*sizeof(struct pointsource));
+gslip->spar = (struct slippars *)_check_realloc(gslip->spar,gslip->np*sizeof(struct slippars));
 spar = gslip->spar;
 
 i = 0;
@@ -523,12 +523,12 @@ void _mc_add_file(char* filename, char** file_buffer, memcached_st* mst) {
         memcached_return ret;
         uint32_t flags = 0;
 
-        FILE* fpr = fopfile(filename, "rb");
+        FILE* fpr = _fopfile(filename, "rb");
         //Get file size so we know how big to make the file buffer
         fseek(fpr, 0, SEEK_END);
         long file_length = ftell(fpr);
         fseek(fpr, 0, SEEK_SET);
-        *file_buffer = check_malloc(sizeof(char) * (file_length+1));
+        *file_buffer = _check_malloc(sizeof(char) * (file_length+1));
         memset(*file_buffer, '\0', file_length+1);
         int part_id = 0;
         long read = fread(*file_buffer, 1, file_length, fpr);
@@ -536,7 +536,7 @@ void _mc_add_file(char* filename, char** file_buffer, memcached_st* mst) {
                 fprintf(stderr, "READ ERROR - %ld attempted %ld read.\n", file_length, read);
                 exit(1);
         }
-        char* file_key = check_malloc(sizeof(char) * (strlen(filename) + 4));
+        char* file_key = _check_malloc(sizeof(char) * (strlen(filename) + 4));
         char buffer[1000*1000];
         //Memcached thinks this is 1 MB
         int ONE_MB = 1000*1000;
@@ -560,7 +560,7 @@ void _mc_add_file(char* filename, char** file_buffer, memcached_st* mst) {
         }
         //Commit number of parts
         int num_parts = i;
-        char* parts_key = check_malloc(sizeof(char) * (strlen(filename) + 1));
+        char* parts_key = _check_malloc(sizeof(char) * (strlen(filename) + 1));
         strcpy(parts_key, filename);
         ret = memcached_set(mst, parts_key, strlen(parts_key), (char*)(&num_parts), sizeof(int), 0, flags);
         if (ret!=MEMCACHED_SUCCESS) {
@@ -574,7 +574,7 @@ void _mc_add_file(char* filename, char** file_buffer, memcached_st* mst) {
 
 struct pointsource* _mc_read_ruppars(char *file,struct pointsource *psrc,float *mag,int *nx,int *ny,float *dx,float *dy,float *dtop,float *stk,float *dip,float *elon,float *elat, char* mc_server)
 {
-       FILE *fpr, *fopfile();
+       FILE *fpr, *_fopfile();
        float area;
        int i, nn;
        char str[1024];
@@ -606,7 +606,7 @@ struct pointsource* _mc_read_ruppars(char *file,struct pointsource *psrc,float *
 
         //See if file parts is in cache
         //key is filename + "_" + part
-        char* parts_key = check_malloc(sizeof(char) * (strlen(file) + 1));
+        char* parts_key = _check_malloc(sizeof(char) * (strlen(file) + 1));
         strcpy(parts_key, file);
 
         size_t incoming_size;
@@ -618,9 +618,9 @@ struct pointsource* _mc_read_ruppars(char *file,struct pointsource *psrc,float *
                 printf("Found key %s, num parts is %d.\n", parts_key, *num_parts);
                 printf("Looking for parts.\n");
                 //See if all the parts are actually around
-                file_data = check_malloc(sizeof(char) * (ONE_MB * *num_parts + 1));
+                file_data = _check_malloc(sizeof(char) * (ONE_MB * *num_parts + 1));
                 memset(file_data, '\0', ONE_MB* *num_parts + 1);
-                char* file_key = check_malloc(sizeof(char) * (strlen(file) + 4));
+                char* file_key = _check_malloc(sizeof(char) * (strlen(file) + 4));
                 size_t incoming;
                 for (i=0; i<*num_parts; i++) {
                         sprintf(file_key, "%s.%d", file, i);
@@ -667,7 +667,7 @@ struct pointsource* _mc_read_ruppars(char *file,struct pointsource *psrc,float *
         sscanf(tok,"%*s %*s %d",nx);
 
         tok = strtok(NULL, "\n");/* header comment */
-        psrc = (struct pointsource *)check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
+        psrc = (struct pointsource *)_check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
 
         area = (*dx)*(*dy)*1.0e+10;  /* km -> cm */
 
