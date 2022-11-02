@@ -4,7 +4,7 @@ GETPARINCL = ${GETPAR}/include
 
 GENSLIP = GenRandV5.0
 
-GENSLIP_OBJS = ${GENSLIP}/ruptime.o ${GENSLIP}/iofunc.o ${GENSLIP}/srf_subs.o ${GENSLIP}/misc.o ${GENSLIP}/slip.o ${GENSLIP}/gslip_srf_subs.o ${GENSLIP}/geoproj_subs.o ${GENSLIP}/gslip_sliprate_subs.o ${GENSLIP}/wafront2d-rwg.o ${GENSLIP}/fourg.o
+GENSLIP_OBJS = ${GENSLIP}/ruptime.o ${GENSLIP}/iofunc.o ${GENSLIP}/srf_subs.o ${GENSLIP}/misc.o ${GENSLIP}/slip.o ${GENSLIP}/gslip_srf_subs.o ${GENSLIP}/geoproj_subs.o ${GENSLIP}/gslip_sliprate_subs.o ${GENSLIP}/wafront2d-rwg.o ${GENSLIP}/fourg.o ${GENSLIP}/genslip-v5.5.2.o
 
 # General compiler/linker flags
 include ../../../Compilers.mk
@@ -33,8 +33,8 @@ all: $(TARGETS)
 
 #librupgen.a: rupgen_api.o ${GENSLIP}/genslip-v3.3.1.o ${GENSLIP}/fourg.o ${GENSLIP}/slip.o ${GENSLIP}/ruptime.o ${GENSLIP}/iofunc.o ${GENSLIP}/srf_subs.o ${GENSLIP}/misc.o
 librupgen.a: rupgen_api.o ${GENSLIP_OBJS}
-#	cd ${GENSLIP} && $(MAKE)
-	$(AR) rcs $@ $^ ${GENSLIP}/genslip-v5.5.2.o ${GENSLIP_OBJS}
+	#cd ${GENSLIP} && $(MAKE)
+	$(AR) rcs $@ $^ ${GENSLIP_OBJS}
 	cp librupgen.a ../lib/
 	cp rupgen_api.h ../include/
 	cp structure.h ../include/
