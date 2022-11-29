@@ -52,7 +52,7 @@ int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long
 	get_point_mapping(num_sgt_handlers);
 
     //See if rvfrac and the rv seed are provided
-    char* rv_info_file[256];
+    char rv_info_file[256];
     rv_info_file[0] = '\0';
     getpar("rv_info_file","s",rv_info_file);
     rv_info* rvinfo_array = NULL;
@@ -375,7 +375,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		//Do not permit more than this amount to be used
 		//Usage is rupture variations, SGTs, memcached (32 MB/core), and gfmech; everything else is tiny
 		//Summit has 3.04 GB per hardware thread, or 12.16 GB per core
-		long long MAX_ALLOWED = (long long)(4.0 * 1024.0 * 1024.0 * 1024.0);
+		long long MAX_ALLOWED = (long long)(1.5 * 1024.0 * 1024.0 * 1024.0);
 		int memcached = 32*1024*1024;
 		//gfmech uses 1st power of 2 larger than 4*nt
 		int power = ceil(log2(nt))+2;
