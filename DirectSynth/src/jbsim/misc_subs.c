@@ -80,7 +80,8 @@ void get_master_list_opt(struct sgtparams *sgtp, int np, long long* mindx, int* 
 		}
 	}
 	*nm = mcnt;
-	cfuhash_destroy(hash_table);
+	//Free individual hash entries allocated earlier
+	cfuhash_destroy_with_free_fn(hash_table, free);
 	cfuhash_destroy(index_hash_table);
 	free(mcnt_indexes);
 }

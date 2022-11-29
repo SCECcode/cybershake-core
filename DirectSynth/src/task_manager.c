@@ -320,7 +320,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 			}
 		}
 
-		//Want to make sure we're not exceeding 1.8 GB per task
+		//Want to make sure we're not exceeding permitted memory per task
 		long long full_sgt_data = (long long)num_points*(3*sizeof(float)*N_SGTvars*nt + sizeof(struct sgtheader));
 		long long sgt_size = full_sgt_data;
 		if (sgt_size>MAX_BUFFER_SIZE) {
@@ -353,11 +353,11 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		float shifted_mag = mag - 5.35;
 		float mem_per_pt = CONST_A*shifted_mag*shifted_mag*shifted_mag + CONST_B*shifted_mag*shifted_mag + CONST_C*shifted_mag + CONST_D;
 		long long single_rv_size = (long long)(mem_per_pt * num_points * DT_SCALE_FAC * 1.1);
-		//Need to include for compatibility
+		//Need to include this for compatibility, even though it's trivial for V3.3.1
 		long long generation_size = 0;
 		printf("shifted_mag=%f, mem_per_pt=%f, single RV size for src %d rup %d is %ld.\n", shifted_mag, mem_per_pt, source_id, rupture_id, single_rv_size);
 		#else
-		//For v5.2.3; assumes dtout=0.05.  size = 6.491 * num_points ^ 1.314 * 1.1 (tolerance)
+		//For v5.4.2; assumes dtout=0.05.  size = 6.491 * num_points ^ 1.314 * 1.1 (tolerance)
 		long long single_rv_size = (long long)(6.491*pow(num_points, 1.314)*1.1);
 		//Cap at 120 MB
 		if (single_rv_size > 120*1024*1024) {
@@ -390,10 +390,6 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 			}
 			num_vars_per_task = 1;
 		}
-		//int num_vars_per_task = (MAX_ALLOWED - sgt_size)/single_rv_size;
-		//Change for debugging
-		//num_vars_per_task = 2;
-		printf("MAX_ALLOWED=%ld, sgt_size=%ld, single_rv_size=%ld\n", MAX_ALLOWED, sgt_size, single_rv_size);
 		printf("num_vars_per_task = %d\n", num_vars_per_task);
 		int num_vars = num_slips * num_hypos;
 		int tasks_for_rupture = ceil(((float)num_vars)/((float)num_vars_per_task));
