@@ -3,6 +3,7 @@
 #include "structure.h"
 #include "rupgen_api.h"
 #include "function.h"
+#include <omp.h>
 
 const int X_COMP_FLAG = 1;
 const int Y_COMP_FLAG = 2;
@@ -271,11 +272,11 @@ while (num_sgts_by_handler[request_from_handler_id]==0 && request_from_handler_i
 sgtbuf = check_malloc((long long)18*max_points_per_request*sgtmast.nt*sizeof(float));
 sgthead = check_malloc(max_points_per_request*sizeof(struct sgtheader));
 
-gfmech = NULL;
-space = NULL;
+//gfmech = NULL;
+//space = NULL;
 seis = NULL;
-subseis = NULL;
-stf = NULL;
+//subseis = NULL;
+//stf = NULL;
 //Which ones were used for 1 particular SRF - will either use for setting up sgthead and sgtbuf pointers, or copying splits over for later
 int sgt_used_offset[4];
 //Which SRF indices we should process this cycle
@@ -429,7 +430,8 @@ while (1) {
 		}
 	}
 
-	if (gfmech==NULL) {
+	//if (gfmech==NULL) {
+	if (seis==NULL) {
 		maxnt = sgthead[0].nt;
 		mindt = sgthead[0].dt;
 
@@ -455,19 +457,19 @@ while (1) {
 		mechpar.flag[1] = 0;
 		mechpar.flag[2] = 0;
 
-		gfmech = check_malloc(sizeof(float*) * num_rup_vars);
-		space = check_malloc(sizeof(float*) * num_rup_vars);
+		//gfmech = check_malloc(sizeof(float*) * num_rup_vars);
+		//space = check_malloc(sizeof(float*) * num_rup_vars);
 		seis = check_malloc(sizeof(float*) * num_rup_vars);
-		subseis = check_malloc(sizeof(float*) * num_rup_vars);
-		stf = check_malloc(sizeof(float*) * num_rup_vars);
+		//subseis = check_malloc(sizeof(float*) * num_rup_vars);
+		//stf = check_malloc(sizeof(float*) * num_rup_vars);
 
 		for (i=0; i<num_rup_vars; i++) {
-			gfmech[i] = (float *) check_malloc (maxmech*12*ntsum*sizeof(float));
-			space[i] = (float *) check_malloc (2*ntsum*sizeof(float));
+			//gfmech[i] = (float *) check_malloc (maxmech*12*ntsum*sizeof(float));
+			//space[i] = (float *) check_malloc (2*ntsum*sizeof(float));
 
 			seis[i] = (float *) check_malloc (3*ntout*sizeof(float));
-			subseis[i] = (float *) check_malloc (maxmech*3*ntout*sizeof(float));
-			stf[i] = (float *) check_malloc (ntout*sizeof(float));
+			//subseis[i] = (float *) check_malloc (maxmech*3*ntout*sizeof(float));
+			//stf[i] = (float *) check_malloc (ntout*sizeof(float));
 
 			zapit(seis[i],3*ntout);
 			ptol = print_tol;
@@ -476,7 +478,23 @@ while (1) {
 	}
 
 	//fprintf(stderr, "Found %d srf points, processing them.\n", num_srf_pts_found);
-
+	#pragma omp parallel private(ip, scale, rt, vslip, i, j) firstprivate(mechpar)
+	{
+		int my_thread = omp_get_thread_num();
+        float** subseis = check_malloc(sizeof(float*) * num_rup_vars);
+        float** gfmech = check_malloc(sizeof(float*) * num_rup_vars);
+        float** stf = check_malloc(sizeof(float*) * num_rup_vars);
+        float** space = check_malloc(sizeof(float*) * num_rup_vars);
+        float** tmp_seis = check_malloc(sizeof(float*) * num_rup_vars);
+		for (i=0; i<num_rup_vars; i++) {
+            subseis[i] = (float *) check_malloc (maxmech*3*ntout*sizeof(float));
+            gfmech[i] = (float *) check_malloc (maxmech*12*ntsum*sizeof(float));
+            stf[i] = (float *) check_malloc (ntout*sizeof(float));
+            space[i] = (float *) check_malloc (2*ntsum*sizeof(float));
+            tmp_seis[i] = (float*) check_malloc (3*ntout*sizeof(float));
+            zapit(tmp_seis[i], 3*ntout);
+        }
+	#pragma omp for
 	for(ip=0; ip<num_srf_pts_found; ip++) {
 		int srf_index = srf_indices_to_process[ip];
 		//printf("Processing SRF index %d\n", srf_index);
@@ -502,6 +520,7 @@ while (1) {
 			scale = slip_conv*apval_ptr[i][srf_index].area;
 	                //if (i==test_rv) fprintf(stderr, "Scale = %e, vslip = %e\n", scale, vslip);
 			mech_sgt(gfmech[i],&sgtparms[srf_index],ntsum,mechpar,&scale);
+			#pragma omp critical
 			tmom[i] = tmom[i] + vslip*scale;
                    	//if (i==test_rv) fprintf(stderr, "tmom = %e, scale = %e\n", tmom[i], scale);
                    	/*if (i==test_rv) {
@@ -516,7 +535,7 @@ while (1) {
 	                        }
 			}*/
 
-			srf_stf(&(srf[i]),apv_off[i],srf_index,seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
+			srf_stf(&(srf[i]),apv_off[i],srf_index,tmp_seis[i],subseis[i],stf[i],ntout,&dtout,mechpar,space[i]);
 			//int j;
 			/*if (i==test_rv) {
 				for (j=ntout+1240; j<ntout+1250; j++) {
@@ -525,11 +544,45 @@ while (1) {
 			}*/
 		}
 	}
+    #pragma omp critical
+    for (i=0; i<num_rup_vars; i++) {
+            for (j=0; j<3*ntout; j++) {
+                seis[i][j] += tmp_seis[i][j];
+            }
+        }
+
+	starting_index = ending_index;
+    for (i=0; i<num_rup_vars; i++) {
+    	free(subseis[i]);
+        free(gfmech[i]);
+        free(stf[i]);
+        free(space[i]);
+        free(tmp_seis[i]);
+    }
+    free(subseis);
+    free(gfmech);
+    free(stf);
+    free(space);
+    free(tmp_seis);
+	} //Close omp
 
 }
 //Once we've finished the while loop, iterate over all the points we rolled over
 num_srf_pts_found = 0;
 //fprintf(stderr, "%d split points to process.\n", num_srfs_split);
+if (num_srfs_split>0) {
+	//Re-allocate everything to handle split points
+    subseis = check_malloc(sizeof(float*) * num_rup_vars);
+    gfmech = check_malloc(sizeof(float*) * num_rup_vars);
+    stf = check_malloc(sizeof(float*) * num_rup_vars);
+    space = check_malloc(sizeof(float*) * num_rup_vars);
+    for (i=0; i<num_rup_vars; i++) {
+            subseis[i] = (float *) check_malloc (maxmech*3*ntout*sizeof(float));
+            gfmech[i] = (float *) check_malloc (maxmech*12*ntsum*sizeof(float));
+            stf[i] = (float *) check_malloc (ntout*sizeof(float));
+            space[i] = (float *) check_malloc (2*ntsum*sizeof(float));
+    }
+}
 for (ip=0; ip<num_srfs_split; ip++) {
 	int srf_index = srf_indices_split[ip];
 	srf_pts_used[srf_index] = 1;
@@ -539,6 +592,8 @@ for (ip=0; ip<num_srfs_split; ip++) {
 	//Find these points - can't assume any order in the split buffers, so linear search
 	//The split buffers should be very small anyway
 	for (i=0; i<sgtparms[srf_index].nsgt; i++) {
+		//Need to reallocate the data structures, since they were freed after the OMP section
+
 		//populate sgt_used_offset
 		for (j=0; j<num_data_pts_split; j++) {
 			if (sgt_heads_split[j].indx == sgtparms[srf_index].indx[i]) {
@@ -575,6 +630,21 @@ for (ip=0; ip<num_srfs_split; ip++) {
                 }*/
 	}
 }
+
+if (num_srfs_split>0) {
+	//Free everything, since we allocated everything to handle the split points
+    for (i=0; i<num_rup_vars; i++) {
+        free(subseis[i]);
+        free(gfmech[i]);
+        free(stf[i]);
+        free(space[i]);
+    }
+    free(subseis);
+    free(gfmech);
+    free(stf);
+    free(space);
+}
+
 int all_points_processed = 1;
 /*for (ip=0; ip<srf[0].srf_apnts.np; ip++) {
 	if (srf_pts_used[ip]==0) {
@@ -599,7 +669,7 @@ free(sgtbuf_split);
 free(sgtbuf);
 free(sgthead);
 //free(indx_master);
-for (i=0; i<num_rup_vars; i++) {
+/*for (i=0; i<num_rup_vars; i++) {
 	free(gfmech[i]);
 	free(space[i]);
 	free(subseis[i]);
@@ -608,7 +678,7 @@ for (i=0; i<num_rup_vars; i++) {
 free(gfmech);
 free(space);
 free(subseis);
-free(stf);
+free(stf);*/
 
 //*seis_return = seis;
 
