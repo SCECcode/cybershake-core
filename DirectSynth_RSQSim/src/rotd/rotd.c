@@ -63,7 +63,7 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 		vel_data[i] = seis_data[i]*cm2g;
 	}
 	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), vel_data, vel_data+header->nt, rotD100+NUM_INTERP*num_periods, rD100ang+NUM_INTERP*num_periods, rotD50+NUM_INTERP*num_periods, &num_pgv_periods, pgv_period);
-	printf("PGV:%f\n", rotD50[NUM_INTERP*num_periods]);
+	//printf("PGV:%f\n", rotD50[NUM_INTERP*num_periods]);
 
 	//Add PGV to output data structure
     rotD_records[num_periods].period = pgv_period[0];
@@ -77,6 +77,7 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	free(rotD50);
 	free(rD100ang);
 	free(acc);
+	free(vel_data);
 
 	return 0;
 }
