@@ -214,6 +214,8 @@ int main(int argc, char** argv) {
 		mstpar("srf_seed", "d", &srf_seed);
 		rup_vars = check_malloc(sizeof(struct rupture_variation)*num_rup_vars);
         rup_vars[0].rup_var_id = rup_var_id;
+		//Force calculation of rvfrac in hfsims
+		rup_vars[0].rvfrac = -1.0;
 	} else {
 		printf("Error: must specify either rup_geom_file or infile.  Aborting.\n");
 		exit(2);
@@ -257,10 +259,10 @@ int main(int argc, char** argv) {
 				if (debug) {
 					char srf_filename[128];
 					sprintf(srf_filename, "%s.srf", rup_geom_file);
-					write_srf(&srf, srf_filename, 0);
+					_write_srf(&srf, srf_filename, 0);
 				}
 			} else if (mode==SRF_MODE) {
-				read_srf(&srf, infile, 0);
+				_read_srf(&srf, infile, 0);
 			}
 	
 		    struct slipfile sfile;
