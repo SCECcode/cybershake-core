@@ -61,6 +61,7 @@ int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sg
     int num_rv_infos = 0;
     if (rv_info_file[0]!='\0') {
         //Receive rvinfo data from task manager
+        if (debug) write_log("Receiving rvinfo from task manager.");
         check_bcast(&num_rv_infos, 1, MPI_INT, 0, *manager_plus_workers_comm, "Error receiving length of rvinfo data, aborting.", my_id);
         rvinfo_array = check_malloc(sizeof(rv_info)*num_rv_infos);
         MPI_Datatype rvinfo_type;
