@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
 		while (!feof(pga_fp_in)) {
 			fscanf(pga_fp_in, "%d %f %f %f\n", &(pga_entries[pga_rv_count].rup_var_id), &(pga_entries[pga_rv_count].pga[0]), &(pga_entries[pga_rv_count].pga[1]), &(pga_entries[pga_rv_count].pga[2]));
 			pga_rv_count += 1;
-			if (pga_rv_count>max_num_rvs) {
+			if (pga_rv_count>=max_num_rvs) {
 				max_num_rvs *= 2;
 				pga_entries = check_realloc(pga_entries, sizeof(struct pga_entry)*max_num_rvs);
 			}
