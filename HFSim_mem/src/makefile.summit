@@ -6,7 +6,7 @@ HF_SYNTH_OBJS = srf2stoch.o ${HFSIM_OBJS} hfsim.o get_vs30.o
 SITEAMP_OBJS = iofunc.o misc.o fft1d.o
 
 GETPAR_DIR = ../../Getpar/getpar
-RUPGEN_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/RuptureCodes/RupGen-api-5.4.2
+RUPGEN_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/RuptureCodes/RupGen-api-5.5.2
 MEMCACHED_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/utils/libmemcached_1.0.18
 
 UCVM_HOME = /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0
@@ -20,14 +20,14 @@ CCA_HOME = ${UCVM_HOME}/model/cca
 CENCAL_HOME = ${UCVM_HOME}/model/cencal
 
 #For integration with BBP
-BBP_DIR = /gpfs/alpine/scratch/callag/geo112/bbp/bbp
+BBP_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-dev/bbp
 GP_DIR = ${BBP_DIR}/src/gp
 SRF2STOCH_DIR = ${GP_DIR}/StandRupFormat
 WCC_DIR = ${GP_DIR}/WccFormat/Progs
 HB_HIGH_DIR = ${GP_DIR}/StochSim/V6.0
 
 HF_SYNTH_BBP_OBJS = hfsim_bbp.o ${SRF2STOCH_DIR}/srf2stoch_sub.o get_vs30.o
-HFSIM_BBP_OBJS = ${WCC_DIR}/wcc_getpeak_sub.o ${WCC_DIR}/wcc_siteamp14_sub.o ${HB_HIGH_DIR}/hb_high_v6.0.5_sub.o misc.o iofunc.o ${WCC_DIR}/fft1d.o ${WCC_DIR}/integ_diff_sub.o ${WCC_DIR}/wcc_tfilter_sub.o
+HFSIM_BBP_OBJS = ${WCC_DIR}/wcc_getpeak_sub.o ${WCC_DIR}/wcc_siteamp14_sub.o ${HB_HIGH_DIR}/hb_high_v6.1.1_sub.o misc.o iofunc.o ${WCC_DIR}/fft1d.o ${WCC_DIR}/integ_diff_sub.o ${WCC_DIR}/wcc_tfilter_sub.o
 BBP_INC = -I${GP_DIR}
 
 UCVMLIBS = -L${UCVM_HOME}/lib -lucvm -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi  -L${CENCAL_HOME}/lib -lcencalvm -L${PROJ4_HOME}/lib -lproj -L${ETREE_HOME}/lib -letree -L${UCVM_HOME}/lib -lucvm -lstdc++ -ldl 

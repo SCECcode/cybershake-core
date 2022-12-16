@@ -156,7 +156,7 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	free(tmp_ti);
 
 	//Determine rvfac, if not provided
-	if (rvfrac<0) {
+	if (rvfrac<=0) {
 		//double mean_rvfac = 0.8;
 		//double range_rvfac = 0.05;
 		double mean_rvfac = 0.775;
@@ -299,7 +299,7 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	}
 	if (strlen(pga_string)>0) {
 		//Write PGA string to file
-		fprintf(pga_output_fp, "%d %s", header->rup_var_id, pga_string);
+		fprintf(pga_output_fp, "%d %s\n", header->rup_var_id, pga_string);
 	}
 	//remember seisC is 000, 090, ver
 	//so must rotate so that X has heading 90 + modelrot to get to CyberShake
