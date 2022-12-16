@@ -876,12 +876,12 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
                   yls,  yre, rank);
          //update source input
         //**Below was added in 2021 as part of BBP verification work**
-		if (IFAULT==5) {
+		/*if (IFAULT==5) {
                 CUCHK(cudaDeviceSynchronize());
                 addkinsrc_H(cur_step, maxdim, d_tpsrc, npsrc, stream_i, d_mu,
             d_taxx, d_tayy, d_tazz, d_taxz, d_tayz, d_taxy,
             d_xx, d_yy, d_zz, d_xy, d_yz, d_xz, d_mom);
-		}
+		}*/
 
          if(rank==srcproc && cur_step<NST && IFAULT<4)
          {
