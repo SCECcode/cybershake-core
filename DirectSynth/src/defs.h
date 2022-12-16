@@ -56,8 +56,8 @@ extern const int Z_COMP_FLAG;
 //MAXPERIODS as defined in surfseis_rspectra
 #define MAXPERIODS 305
 
-//num periods as defined in rotd.c
-#define NUM_ROTD_PERIODS 22
+//num periods as defined in rotd.c + PGV period
+#define NUM_ROTD_PERIODS 26
 
 //Checkpoint filename
 #define CHECKPOINT_FILE "checkpoint.out"

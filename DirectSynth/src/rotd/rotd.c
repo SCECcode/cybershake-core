@@ -44,13 +44,32 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	int* rD100ang = check_malloc(sizeof(float*) * NUM_INTERP * MAX_PERIODS);
 
 	//Added periods for 1 Hz	
-	int num_periods = 22;
-	float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0};
+	int num_periods = 25;
+	float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0, 12.0, 15.0, 20.0};
+    //For PGV
+    int num_pgv_periods = 1;
+    float pgv_period[] = {1e-5};
 
 	calc_acc(acc, seis_data, num_comps, header->nt, header->dt);
 	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), acc, acc+header->nt, rotD100, rD100ang, rotD50, &num_periods, periods);
 //	write_result(fp_out, header, rotD100, rD100ang, rotD50, num_periods, periods, inter_flag);
 	copy_result(rotD_records, rotD100, rD100ang, rotD50, num_periods, periods, inter_flag);
+
+    //Calculate PGV using velocity seismogram
+    //Convert to g first
+    const float cm2g = 1.0/980.665;
+    float* vel_data = check_malloc(sizeof(float)*header->nt*num_comps);
+    for (i=0; i<num_comps*header->nt; i++) {
+        vel_data[i] = seis_data[i]*cm2g;
+    }
+    calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), vel_data, vel_data+header->nt, rotD100+NUM_INTERP*num_periods, rD100ang+NUM_INTERP*num_periods, rotD50+NUM_INTERP*num_periods, &num_pgv_periods, pgv_period);
+    //printf("PGV:%f\n", rotD50[NUM_INTERP*num_periods]);
+
+    //Add PGV to output data structure
+    rotD_records[num_periods].period = pgv_period[0];
+    rotD_records[num_periods].rotD100 = rotD100[num_periods*NUM_INTERP + (inter_flag-1)];
+    rotD_records[num_periods].rotD100_angle = rD100ang[num_periods*NUM_INTERP + (inter_flag-1)];
+    rotD_records[num_periods].rotD50 = rotD50[num_periods*NUM_INTERP + (inter_flag-1)];
 
 //	fflush(stderr);
 //	fflush(stdout);
@@ -58,6 +77,7 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	free(rotD50);
 	free(rD100ang);
 	free(acc);
+	free(vel_data);
 
 	return 0;
 }
