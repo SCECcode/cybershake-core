@@ -356,3 +356,4 @@ void get_point_mapping(int num_sgt_readers) {
 
 	free(proc_points);
 }
+

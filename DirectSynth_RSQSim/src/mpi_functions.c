@@ -52,7 +52,6 @@ void constructSGTReaderComm(int sgt_handlers, MPI_Comm* sgt_readers_comm) {
 	free(sgt_reader_ranks);
 }
 
-
 void check_bcast(void* buf, int num_items, MPI_Datatype type, int root, MPI_Comm comm, char* error_msg, int my_id) {
     /*if (my_id==root) {
 	printf("%d) sending %d items from location %ld.\n", my_id, num_items, buf);
