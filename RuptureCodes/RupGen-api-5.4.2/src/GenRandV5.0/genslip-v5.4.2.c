@@ -412,6 +412,8 @@ long seed = 0;
 long starting_seed;
 int dump_last_seed = 0;
 char seedfile[1024];
+//Used to bypass iterating over slips to get to the 'right' seed
+int use_unmodified_seed = 0;
 
 int kmodel = MAI_FLAG;   /* default is mai */
 int circular_average = DEFAULT_CIRCULAR_AVERAGE;
@@ -634,6 +636,8 @@ velfile[0] = '\0';
 init_slip_file[0] = '\0';
 roughnessfile[0] = '\0';
 
+printf("Running genslip-v5.4.2.\n");
+
 sprintf(infile,"stdin");
 sprintf(outfile,"stdout");
 
@@ -678,7 +682,8 @@ shal_vrup = 0.60;
 deep_vrup = 0.60;
 
 slip_sigma = 0.75;
-risetime_coef = 1.6;
+//risetime_coef = 1.6;
+risetime_coef = 2.3;
 
 tsfac1_sigma = 1.0;
 tsfac1_scor = 0.8;
@@ -876,6 +881,7 @@ getpar("modified_corners","d",&modified_corners);
 getpar("circular_average","d",&circular_average);
 getpar("stretch_kcorner","d",&stretch_kcorner);
 getpar("seed","d",&seed);
+getpar("use_unmodified_seed","d",&use_unmodified_seed);
 getpar("side_taper","f",&side_taper);
 getpar("bot_taper","f",&bot_taper);
 getpar("top_taper","f",&top_taper);
@@ -1244,6 +1250,7 @@ if(generate_seed == 1)
    gseed(&seed,psrc_orig,&flen,&fwid,&dtop,&mag);
 
 /* RWG 2014-03-21 set starting seed */
+printf("Using seed %ld.\n", seed);
 starting_seed = seed;
 
 if(random_hypo == 1)
@@ -1427,11 +1434,12 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
    RWG 2014-03-21 set initial seed using increments of starting seed.
    Allows reproducability of ruptures without having to generate entire set.
 */
-
+	printf("Using seed %ld\n", seed);
    seed = starting_seed;
-   for(k=0;k<10*js;k++)
-      sval =  _sfrand(&seed);
- 
+   if (use_unmodified_seed==0) {
+	   for(k=0;k<10*js;k++)
+    	  sval =  _sfrand(&seed);
+   }
 
    fprintf(stderr,"js= %d seed= %d ran= %10.6f\n",js,seed,sval);
 

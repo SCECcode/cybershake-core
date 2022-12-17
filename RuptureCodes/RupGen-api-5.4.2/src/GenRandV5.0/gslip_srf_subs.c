@@ -164,7 +164,7 @@ else
    prseg_ptr[0].shyp = *sh;
    prseg_ptr[0].dhyp = *dh;
    }
-
+printf("prseg_ptr[0].shyp=%f\n", prseg_ptr[0].shyp);
 srf[0].srf_apnts.np = 0;
 for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
    srf[0].srf_apnts.np = srf[0].srf_apnts.np + (prseg_ptr[ig].nstk)*(prseg_ptr[ig].ndip);
