@@ -6,7 +6,7 @@
 void *_check_malloc(size_t);
 void *_check_realloc(void *,size_t);
 FILE *_fopfile(char*, char*);
-int __opfile_ro(char *);
+int _opfile_ro(char *);
 int _opfile(char *);
 int _croptrfile(char *);
 int _reed(int, void *, int);
@@ -65,7 +65,7 @@ int gen_tri_stf(float *,float *,float *,int,float *);
 int _gen_2tri_stf(float *,float *,float *,int,float *,float *);
 
 void _set_ll(float *,float *,float *,float *,float *,float *);
-void swap_in_place(int,char *);
+void _swap_in_place(int,char *);
 
 struct pointsource *_read_ruppars(char *,struct pointsource *,float *,int *,int *,float *,float *,float *,float *,float *,float *,float *);
 struct pointsource *read_gsfpars(char *,struct pointsource *,struct generic_slip *,float *,float *,float *,float *);
@@ -80,7 +80,7 @@ void _load_slip_srf_dd4(struct standrupformat *,struct stfpar2 *,struct pointsou
 void _load_slip_srf_dd4_vsden(struct standrupformat *,struct stfpar2 *,struct pointsource *,float *,float *);
 void load_vsden_srf(struct standrupformat *srf,struct velmodel *vmod);
 void _load_rupt_srf(struct standrupformat *,struct pointsource *,float *,float *);
-void write_srf(struct standrupformat *,char *,int);
+void _write_srf(struct standrupformat *,char *,int);
 void write2gsf(struct generic_slip *,struct pointsource *,char *,char *);
 void write2srf(struct standrupformat *,char *,int);
 
@@ -116,8 +116,8 @@ void shift_phase(struct complex *,int,int,float *,float *,double *,double *);
 void get_rupt(struct velmodel* vm, float* h, float* srcd, float* recd, float* srcr, float* recr, double* p, double* rad, float* tt);
 void _zapit(float* s,int n);
 
-void write_srf1(struct standrupformat *srf,char *file,int bflag);
-void write_srf2(struct standrupformat *srf,char *file,int bflag);
+void _write_srf1(struct standrupformat *srf,char *file,int bflag);
+void _write_srf2(struct standrupformat *srf,char *file,int bflag);
 
 void load_command_srf(struct standrupformat *srf,int ac,char **av);
 void load_seed_srf(struct standrupformat *srf,int starting_seed,int ending_seed);
