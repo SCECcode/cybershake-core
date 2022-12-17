@@ -576,7 +576,7 @@ int kord = 4;
    risetime_coef = 1.6
 */
 
-float risetime_coef = 1.6;
+float risetime_coef = 2.3;
 float deep_risetimedep_saved, deep_vrup_dep_saved;
 float dmin1, dmax1, rtfac1, dmin2, dmax2, rtfac2;
 
@@ -648,6 +648,8 @@ float rvel_rand = 0.0;
 velfile[0] = '\0';
 init_slip_file[0] = '\0';
 roughnessfile[0] = '\0';
+
+printf("Genslip v5.5.2\n");
 
 sprintf(infile,"stdin");
 sprintf(outfile,"stdout");

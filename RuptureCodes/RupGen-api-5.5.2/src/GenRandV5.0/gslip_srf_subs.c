@@ -16,8 +16,6 @@ double dbllon, dbllat, dbldlen, dbldwid, dblstk, dbldip;
 
 float rperd = 0.017453293;
 
-printf("sh=%f, dh=%f\n", *sh, *dh);
-
 sprintf(srf[0].type,"PLANE");
 
 if(gslip->np > 0)
@@ -181,7 +179,6 @@ else
    prseg_ptr[0].shyp = *sh;
    prseg_ptr[0].dhyp = *dh;
    }
-printf("prseg_ptr[0].shyp=%f\n", prseg_ptr[0].shyp);
 srf[0].srf_apnts.np = 0;
 for(ig=0;ig<srf[0].srf_prect.nseg;ig++)
    srf[0].srf_apnts.np = srf[0].srf_apnts.np + (prseg_ptr[ig].nstk)*(prseg_ptr[ig].ndip);
@@ -580,7 +577,7 @@ fclose(fpw);
 
 void write2srf(struct standrupformat *srf,char *str,int outbin)
 {
-write_srf(srf,str,outbin);
+_write_srf(srf,str,outbin);
 }
 
 void _load_slip_srf_dd2(struct standrupformat *srf,struct stfpar2 *spar,struct pointsource *ps,long *seed,struct velmodel *vmod)

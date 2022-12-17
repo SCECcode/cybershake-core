@@ -127,7 +127,7 @@ kperd_n = rperd*radius*(sqrt(1.0 + g2*sinA*sinA*(2.0 + g2)))*den*den*den;
 *slon = (*se)/kperd_e + *elon;
 }
 
-void swap_in_place(int n,char *cbuf)
+void _swap_in_place(int n,char *cbuf)
 {
 char cv;
 

@@ -3,7 +3,7 @@
 #include "function.h"
 #include "defs.h"
 
-void read_srf(struct standrupformat *srf,char *file,int bflag)
+void _read_srf(struct standrupformat *srf,char *file,int bflag)
 {
 FILE *fpr, *_fopfile();
 struct srf_prectsegments *prseg_ptr;
@@ -24,7 +24,7 @@ if(bflag)
    if(strcmp(file,"stdin") == 0)
       fdr = STDIN_FILENO;
    else
-      fdr = __opfile_ro(file);
+      fdr = _opfile_ro(file);
 
    _reed(fdr,srf->version,sizeof(srf->version));
 
@@ -313,15 +313,15 @@ else
    }
 }
 
-void write_srf(struct standrupformat *srf,char *file,int bflag)
+void _write_srf(struct standrupformat *srf,char *file,int bflag)
 {
 if(atof(srf->version) < 2.0)
-   write_srf1(srf,file,bflag);
+   _write_srf1(srf,file,bflag);
 else if(atof(srf->version) >= 2.0)
-   write_srf2(srf,file,bflag);
+   _write_srf2(srf,file,bflag);
 }
 
-void write_srf1(struct standrupformat *srf,char *file,int bflag)
+void _write_srf1(struct standrupformat *srf,char *file,int bflag)
 {
 FILE *fpw, *_fopfile();
 struct srf_planerectangle *prect_ptr;
@@ -497,7 +497,7 @@ else
    }
 }
 
-void write_srf2(struct standrupformat *srf,char *file,int bflag)
+void _write_srf2(struct standrupformat *srf,char *file,int bflag)
 {
 FILE *fpw, *_fopfile();
 struct srf_planerectangle *prect_ptr;

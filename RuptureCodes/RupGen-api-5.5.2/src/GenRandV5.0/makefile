@@ -22,7 +22,7 @@ LDLIBS = ${OBJS} ${LIBS} ${FFTW_INCFLAGS} ${FFTW_LIBFLAGS} -lfftw3 -lfftw3f
 # use following for large file capability
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 #LF_FLAGS = 
-UFLAGS = -O3
+UFLAGS = -O3 
 
 CC = gcc
 FC = gfortran
@@ -37,7 +37,7 @@ LDLIBS := ${LDLIBS} -L${MEMC}/lib -lmemcached
 
 ##### make options
 
-all : genslip-v5.5.2
+all : genslip-v5.5.2.o
 
 genslip-v5.5.2.o : genslip-v5.5.2.c ${OBJS}
 	${CC} ${CFLAGS} -c -o genslip-v5.5.2.o genslip-v5.5.2.c ${LDLIBS}

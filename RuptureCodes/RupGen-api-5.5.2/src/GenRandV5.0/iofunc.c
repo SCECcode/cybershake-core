@@ -128,7 +128,7 @@ if((fp = fopen(name,mode)) == NULL)
 return(fp);
 }
 
-int __opfile_ro(char *name)
+int _opfile_ro(char *name)
 {
 int fd;
 if ((fd = open (name, RDONLY_FLAGS, 0444)) == -1)

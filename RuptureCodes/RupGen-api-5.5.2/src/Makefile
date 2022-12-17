@@ -10,12 +10,14 @@ GENSLIP_OBJS = ${GENSLIP}/ruptime.o ${GENSLIP}/iofunc.o ${GENSLIP}/srf_subs.o ${
 include ../../../Compilers.mk
 CC=gcc
 FC=gfortran
+UFLAGS = -O3 -g
 CFLAGS = -I${GETPARINCL} \
 	-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE \
-	-D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS -O3 -g
+	-D_FILE_OFFSET_BITS=64 -DUSE_IOBUF_MACROS ${UFLAGS}
 
 LIBS = -L${GETPARLIB} -lget -lgfortran -lm
 LDFLAGS = -static
+FFLAGS = ${UFLAGS} -ffixed-line-length-none
 
 # Uncomment for memcached support
 MEMC = ../../../../utils/libmemcached_1.0.18

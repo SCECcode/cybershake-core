@@ -7,7 +7,7 @@
 #define NP 500
 
 //This structure contains the output from srf2stoch                           
-struct slipfile
+/*struct slipfile
 {
   int nseg;
   float elon[LV];
@@ -26,7 +26,7 @@ struct slipfile
   float* tr;
   float* ti;
   float qfexp;
-};
+};*/
 
 struct stfparOLD
    {
