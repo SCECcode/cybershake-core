@@ -698,11 +698,14 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	       }
 
 		//Check for min Vp, Vs, Rho
+		if (props[i].cmb.vs<min_vs) {
+			//Calculate Vp/Vs ratio, and scale Vp to preserve ratio
+			float vpvs_ratio=props[i].cmb.vp/props[i].cmb.vs;
+            props[i].cmb.vs = min_vs;
+			props[i].cmb.vp = min_vs*vpvs_ratio;
+        }
 		if (props[i].cmb.vp<min_vp) {
 			props[i].cmb.vp = min_vp;
-		}
-		if (props[i].cmb.vs<min_vs) {
-			props[i].cmb.vs = min_vs;
 		}
 		if (props[i].cmb.rho<min_rho) {
 			props[i].cmb.rho = min_rho;
