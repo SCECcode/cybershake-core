@@ -254,11 +254,21 @@ int main(int argc, char** argv) {
 	
 			if (mode==RUP_GEOM_MODE) {
 				rg_stats_t stats;
-				int rupture_seed = rupgen_get_rupture_seed(header.source_id, header.rupture_id);
-				rupgen_genslip_seed(rup_geom_file, rv, 0, &stats, &srf, RUPGEN_UNIFORM_HYPO, 0.05, rupture_seed);
+				if (rvfrac_seed==1) {
+					//Use rvfrac and seed from arguments
+					int seed = rup_vars[rv].seed;
+					float rvfrac = rup_vars[rv].rvfrac;
+					char params[256];
+					sprintf(params, "seed=%d rvfrac=%f use_unmodified_seed=1", seed, rvfrac);
+					rupgen_genslip_with_params(rup_geom_file, rup_vars[rv].slip_id, rup_vars[rv].hypo_id, &stats, &srf, RUPGEN_UNIFORM_HYPO, 0.05, params);
+				} else {
+					//No seed/rvfrac passed
+					int rupture_seed = rupgen_get_rupture_seed(header.source_id, header.rupture_id);
+					rupgen_genslip_seed(rup_geom_file, rup_vars[rv].slip_id, rup_vars[rv].hypo_id, &stats, &srf, RUPGEN_UNIFORM_HYPO, 0.05, rupture_seed);
+				}
 				if (debug) {
-					char srf_filename[128];
-					sprintf(srf_filename, "%s.srf", rup_geom_file);
+					char srf_filename[256];
+					sprintf(srf_filename, "%s.%d.srf", rup_geom_file, rup_vars[rv].rup_var_id);
 					_write_srf(&srf, srf_filename, 0);
 				}
 			} else if (mode==SRF_MODE) {

@@ -32,8 +32,8 @@ rc = os.system(cmd)
 if rc!=0:
         print("Error launching memcached.  Will continue with DirectSynth anyway.")
 
-#Launch direct_synth
-ds_path = "%s/bin/direct_synth %s" % (sys.path[0], " ".join(sys.argv[1:]))
+#Launch direct_synth_omp
+ds_path = "%s/bin/direct_synth_omp %s" % (sys.path[0], " ".join(sys.argv[1:]))
 if MPI_CMD=="aprun":
 	cmd = "export MPICH_MPIIO_HINTS=*:romio_cb_read=disable; export APRUN_BALANCED_INJECTION=64; ulimit -c unlimited; export ATP_ENABLED=1; aprun -n %d -N %d %s" % (num_nodes*ppn, ppn, ds_path)
 elif MPI_CMD=="jsrun":
