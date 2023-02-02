@@ -666,6 +666,7 @@ struct pointsource* _mc_read_ruppars(char *file,struct pointsource *psrc,float *
         tok = strtok(NULL, "\n");   /* NumCols = <int> */
         sscanf(tok,"%*s %*s %d",nx);
 
+		printf("nx=%d, ny=%d\n", *nx, *ny);
         tok = strtok(NULL, "\n");/* header comment */
         psrc = (struct pointsource *)_check_realloc(psrc,(*nx)*(*ny)*sizeof(struct pointsource));
 
@@ -680,7 +681,6 @@ struct pointsource* _mc_read_ruppars(char *file,struct pointsource *psrc,float *
                                           &psrc[i].rak,
                                           &psrc[i].dip,
                                           &psrc[i].stk);
-
            psrc[i].area = area;
 
            if(psrc[i].dep < *dtop)

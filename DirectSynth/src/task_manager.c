@@ -364,7 +364,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 			single_rv_size = 120*1024*1024;
 		}
 		//Also need to include space for rough_c, tsfac2_c, rtime2_c arrays, used when generating ruptures
-        //Each of these has size sizeof(struct complex)*(3.3*nstk)^2, plus 10% slop
+		//Each of these has size sizeof(struct complex)*(3.3*nstk)^2, plus 10% slop
 		int size_struct_complex = 8;
 		int nstk = num_cols;
 		if (num_rows>num_cols) {
@@ -374,8 +374,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		#endif
 		//Do not permit more than this amount to be used
 		//Usage is rupture variations, SGTs, memcached (32 MB/core), and gfmech; everything else is tiny
-		//Summit has 3.04 GB per hardware thread, or 12.16 GB per core
-		long long MAX_ALLOWED = (long long)(1.5 * 1024.0 * 1024.0 * 1024.0);
+		long long MAX_ALLOWED = (long long)(2.5 * 1024.0 * 1024.0 * 1024.0);
 		int memcached = 32*1024*1024;
 		//gfmech uses 1st power of 2 larger than 4*nt
 		int power = ceil(log2(nt))+2;
@@ -385,7 +384,7 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		if (num_vars_per_task<1) {
 			if (debug) {
 				char buf[256];
-				sprintf(buf, "num vars per task is %d, adjusting to minimum of 1.", num_vars_per_task);
+				sprintf(buf, "Calculation resulted in %d num_vars_per_task, adjusting to minimum of 1.", num_vars_per_task);
 				write_log(buf);
 			}
 			num_vars_per_task = 1;

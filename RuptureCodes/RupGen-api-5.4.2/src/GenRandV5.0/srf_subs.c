@@ -301,6 +301,7 @@ else
 
 void write_srf(struct standrupformat *srf,char *file,int bflag)
 {
+printf("Writing SRF file with version %s.\n", srf->version);
 if(atof(srf->version) < 2.0)
    write_srf1(srf,file,bflag);
 else if(atof(srf->version) >= 2.0)
