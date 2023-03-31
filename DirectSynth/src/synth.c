@@ -43,7 +43,6 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, int num
     struct rup_geom_point* rg_points;
     int num_srf_pts = parse_rup_geom(t_info->task->rupture_filename, &rg_points);
 
-    //This is freed inside jbsim3d
     struct sgtparams* sgtparms = (struct sgtparams *) check_malloc ((num_srf_pts)*sizeof(struct sgtparams));
 
     int ptol = print_tol;

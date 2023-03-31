@@ -62,6 +62,15 @@ ifeq (kraken,$(findstring kraken, $(HOSTNAME)))
 	FLAG = 1
 endif
 
+ifeq (frontera,$(findstring frontera, $(HOSTNAME)))
+    MY_CC = icc
+    MY_FC = ifort
+    MY_FC77 = ifort
+    MY_MPICC = mpicc
+    MY_MPIFC = mpif90
+	FLAG = 1
+endif
+
 # Default (gcc)
 # Note: For this to work you need to make sure that your
 #       environment is set up to use the version of mpicc

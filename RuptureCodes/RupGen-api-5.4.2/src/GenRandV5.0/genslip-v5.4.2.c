@@ -989,6 +989,7 @@ else if(read_gsf == 1)
 else
    psrc_orig = set_ruppars(psrc_orig,&mag,&nstk,&ndip,&dstk,&ddip,&dtop,&avgstk,&avgdip,&rake,&elon,&elat);
 
+
 psrc = (struct pointsource *)_check_malloc((nstk)*(ndip)*sizeof(struct pointsource));
 
 flen = nstk*dstk;
@@ -2688,7 +2689,6 @@ fprintf(stderr,"tsmin= %.5f\n",tsmin);
             sprintf(str,"%s.srf",outfile);
 
 	 }
-
       else if(gslip.np > 0 && write_gsf)
          {
          if(strcmp(outfile,"stdout") == 0)
@@ -2700,7 +2700,7 @@ fprintf(stderr,"tsmin= %.5f\n",tsmin);
 	 }
       }
 
-   //free_srf_stf(&srf);
+	//free_srf_stf(&srf);
    }
 
 if(dump_last_seed == 1)
