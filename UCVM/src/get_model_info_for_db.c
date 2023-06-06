@@ -231,7 +231,7 @@ float ucvm_zvalue(float lon, float lat, float vs_value) {
 	int flag = 0;
 	int crossing_num = 0;
 	for (i=0; i<num_pts; i++) {
-		//printf("depth = %f, Vs = %lf\n", (i*resolution), vs_results[i]);
+		printf("depth = %f, Vs = %lf\n", (i*resolution), vs_results[i]);
 		if (crossing_num==2) {
 			//We have found the 2nd crossing, stop looking
 			break;
