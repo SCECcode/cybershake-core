@@ -46,8 +46,8 @@ elif MPI_CMD=="jsrun":
 	cmd = "which jsrun; module list; %s" % (cmd)
 elif MPI_CMD=="ibrun":
 	#cmd = "export IBRUN_TASKS_PER_NODE=56; ibrun %s" % ds_path
-    cmd = "export LD_LIBRARY_PATH=/work2/00349/scottcal/frontera/CyberShake/utils/libmemcached_1.0.18/lib:$LD_LIBRARY_PATH; remora ibrun %s" % ds_path
-print cmd
+    cmd = "export LD_LIBRARY_PATH=/work2/00349/scottcal/frontera/CyberShake/utils/libmemcached_1.0.18/lib:$LD_LIBRARY_PATH; ibrun %s" % ds_path
+print(cmd)
 rc = os.system(cmd)
 sys.exit((rc >> 8) & 0xFF)
 
