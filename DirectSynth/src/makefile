@@ -12,23 +12,23 @@ TEST_DURATION_OBJS = ${DURATION_OBJS} iofunc.o
 
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
-BASE_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake
+BASE_DIR = /work2/00349/scottcal/frontera/CyberShake
 GETPAR = ../../Getpar/getpar
 LIBCFU = ${BASE_DIR}/utils/libcfu_0.03
 CUR_RG_LIB = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-5.5.2/lib
 V5_4_2_RG_LIB = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-5.4.2/lib
 V3_3_1_RG_LIB = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-3.3.1/lib
-LDLIBS = -lrupgen -L${GETPAR}/lib -lget -L${BASE_DIR}/utils/libmemcached_1.0.18/lib -lmemcached -L${LIBCFU}/lib -lcfu -lm -L${OLCF_FFTW_ROOT}/lib -lfftw3f
+LDLIBS = -lrupgen -L${GETPAR}/lib -lget -L${BASE_DIR}/utils/libmemcached_1.0.18/lib -lmemcached -L${LIBCFU}/lib -lcfu -lm -L${TACC_FFTW3_LIB} -lfftw3f
 CUR_RG_INC = -I${BASE_DIR}/software/RuptureCodes/RupGen-api-5.5.2/include
 V5_4_2_RG_INC = -I${BASE_DIR}/software/RuptureCodes/RupGen-api-5.4.2/include
 V3_3_1_RG_INC = -I${BASE_DIR}/software/RuptureCodes/RupGen-api-3.3.1/include
 IFLAGS = -I${GETPAR}/include -I${BASE_DIR}/utils/libmemcached_1.0.18/include -I${LIBCFU}/include 
 
 #UFLAGS = -O3 -Wuninitialized -dynamic -g
-UFLAGS = -O3 -g 
+UFLAGS = -O3 -g -mkl 
 
 CFLAGS = ${UFLAGS} ${IFLAGS}
-FFLAGS = ${UFLAGS} -ffixed-line-length-132
+FFLAGS = ${UFLAGS} -132 -nofor-main
 #FFLAGS = ${UFLAGS} -qfixed=132
 
 CC = mpicc

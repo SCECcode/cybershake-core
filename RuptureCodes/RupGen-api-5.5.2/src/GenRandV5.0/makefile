@@ -4,8 +4,8 @@ OBJS = iofunc.o misc.o slip.o ruptime.o srf_subs.o gslip_srf_subs.o geoproj_subs
 GETPAR = ../../../../Getpar/getpar/lib
 INCPAR = -I ../../../../Getpar/getpar/include
 
-FFTW_INCDIR = ${OLCF_FFTW_ROOT}/include
-FFTW_LIBDIR = ${OLCF_FFTW_ROOT}/lib
+FFTW_INCDIR = ${TACC_FFTW3_INC}
+FFTW_LIBDIR = ${TACC_FFTW3_LIB}
 ifdef FFTW_INCDIR
 FFTW_INCFLAGS = -I${FFTW_INCDIR}
 endif
