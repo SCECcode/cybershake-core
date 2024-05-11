@@ -36,10 +36,10 @@ if args.server is not None:
 
 #Call get_model_info_for_db to get model Vs30, Z1.0, Z2.5
 model_output_file = "ucvm_data.txt"
-UCVM_HOME = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0"
-ld_lib_path="%s/lib/euclid3/lib:%s/lib/proj-4/lib:%s/model/cvms426/lib:%s/model/cencal/lib:%s/model/cvms5/lib:%s/model/cca/lib" % (UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME)
-proj_lib_path="/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/lib/proj-4/share/proj"
-cmd = "export PROJ_LIB=%s; export LD_LIBRARY_PATH=%s:LD_LIBRARY_PATH; %s/UCVM/bin/get_model_info_for_db %f %f %s %s" % (proj_lib_path, ld_lib_path, config.getProperty("CS_PATH"), args.latitude, args.longitude, args.models, model_output_file)
+UCVM_HOME = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0"
+ld_lib_path="%s/lib/euclid3/lib:%s/lib/proj-5/lib:%s/model/cvmsi/lib:%s/model/cencal/lib:%s/model/cvms5/lib:%s/model/cca/lib:%s/model/cvms/lib" % (UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME)
+proj_lib_path="/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/lib/proj-5/share/proj"
+cmd = "export PROJ_LIB=%s; export LD_LIBRARY_PATH=%s:$LD_LIBRARY_PATH; %s/UCVM/bin/get_model_info_for_db %f %f %s %s" % (proj_lib_path, ld_lib_path, config.getProperty("CS_PATH"), args.latitude, args.longitude, args.models, model_output_file)
 print(cmd)
 os.system(cmd)
 
@@ -71,11 +71,14 @@ with open(model_output_file, "r") as fp_in:
 with open(mesh_output_file, "r") as fp_in:
 	[mesh_vp, mesh_vs, mesh_rho] = [float(i) for i in fp_in.readline().split()]
 	fp_in.close()
+	
+db_file = config.getProperty("DB_WR_FILE")
+with open(db_file, "r") as fp_in:
+    username = fp_in.readline().strip()
+    password = fp_in.readline().strip()
+    fp_in.close()
 
-username = config.getProperty("DB_WR_USER")
-password = config.getProperty("DB_WR_PASS")
-
-conn = pymysql.connect(host=server, db="CyberShake", user=username, passwd=passwd)
+conn = pymysql.connect(host=server, db="CyberShake", user=username, passwd=password)
 
 cur = conn.cursor()
 update = "update CyberShake_Runs set Model_Vs30=%f, Mesh_Vsitop=%f, Z1_0=%f, Z2_5=%f where Run_ID=%d" % (model_vs30, mesh_vs, model_z10, model_z25, int(args.run_id))
