@@ -1,7 +1,7 @@
 #!/bin/csh
 
-if ($# != 15 && $# != 16) then
-  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> <surface_cvm_depth> <ely_taper> <taper_depth> [min vs]"
+if ($# != 16 && $# != 17) then
+  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> <surface_cvm_depth> <ely_taper> <taper_depth> <taper models> [min vs]"
   exit 1
 endif
 
@@ -20,9 +20,10 @@ set FORMAT = $12
 set SURF_CVM_DEPTH = $13
 set ELY_TAPER = $14
 set TAPER_DEPTH = $15
+set TAPER_MODELS = $16
 
-if ($# == 16) then
-	set VSMIN = $16
+if ($# == 17) then
+	set VSMIN = $17
 	if ($VSMIN == 900.0) then
 		set VPMIN = 1800.0
 		set DENMIN = 2000.0
@@ -97,6 +98,14 @@ else if ($MPI_CMD == "jsrun") then
 	#-r 42: 42 resource sets per node
 	set MPI_CMD = "${MPI_CMD} -n $NUM_RESOURCE_SETS -a 1 -c 1 -r 42 -l CPU-CPU"
 	echo "LSB_DJOB_NUMPROC=$LSB_DJOB_NUMPROC, NP=$NP, NNODES=$NNODES, NUM_RESOURCE_SETS=$NUM_RESOURCE_SETS"
+else if ($MPI_CMD == 'srun') then
+	#Running on Frontier
+	echo "SLURM_JOB_NUM_NODES = $SLURM_JOB_NUM_NODES"
+	echo "SLURM_CPUS_ON_NODE = $SLURM_CPUS_ON_NODE"
+	@ NNODES = $SLURM_JOB_NUM_NODES
+	@ TASKS_PER_NODE = $SLURM_CPUS_ON_NODE
+	@ NP = $NNODES * $TASKS_PER_NODE
+	set MPI_CMD = "${MPI_CMD} -N $NNODES -n $NP -c 1 --ntasks-per-node $TASKS_PER_NODE"
 endif
 
 #set VPMIN = 1700.0
@@ -106,9 +115,9 @@ endif
 #Add to LD_LIBRARY_PATH
 #setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
 
-set UCVM_HOME = /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0
-setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-5/lib:${UCVM_HOME}/model/cvmsi/lib:${UCVM_HOME}/model/cencal/lib:${UCVM_HOME}/model/cvms5/lib:${UCVM_HOME}/model/cca/lib:$LD_LIBRARY_PATH
-setenv PROJ_LIB /gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/lib/proj-5/share/proj
+set UCVM_HOME = /lustre/orion/proj-shared/geo156/CyberShake/software/UCVM/ucvm_22.7.0_withSFCVM
+setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-5/lib:${UCVM_HOME}/model/cvmsi/lib:${UCVM_HOME}/model/cca/lib:$LD_LIBRARY_PATH
+setenv PROJ_LIB /lustre/orion/proj-shared/geo156/CyberShake/software/UCVM/ucvm_22.7.0_withSFCVM/lib/proj/share/proj
 
 #source /lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/setup.csh
 echo $LD_LIBRARY_PATH
@@ -117,9 +126,18 @@ echo $LD_LIBRARY_PATH
 #On Summit, must unload darshan-runtime module or will hang on MPI_Finalize
 module unload darshan-runtime
 
-echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH} ely_taper=${ELY_TAPER} ely_transition_depth=${TAPER_DEPTH}"
+if (${ELY_TAPER} == "none") then
+	#Omit the rest of the taper arguments
+	set TAPER_ARGS = ""
+else
+	set TAPER_ARGS = "ely_transition_depth=${TAPER_DEPTH} ely_taper_models=${TAPER_MODELS}"
+endif
 
-${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH} ely_taper=${ELY_TAPER} ely_transition_depth=${TAPER_DEPTH}
+echo "${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH} ely_taper=${ELY_TAPER} ${TAPER_ARGS}"
+
+set valgrind_path=/lustre/orion/geo156/proj-shared/CyberShake/utils/valgrind_3.22.0/bin/valgrind
+
+${MPI_CMD} ${BPATH}/${BPROG} nx=${NX} ny=${NY} nz=${NZ} cordfile=${MODELCORDS} depfile=${DEPFILE} modeldir=${MODELDIR} outfile=${OUTDIR}/${FILEROOT} models=${MODELS} min_vp=${VPMIN} min_vs=${VSMIN} min_rho=${DENMIN} format=${FORMAT} logdir=${LOGDIR} surface_cvm_depth=${SURF_CVM_DEPTH} ely_taper=${ELY_TAPER} ${TAPER_ARGS}
 
 set RC = $?
 
@@ -130,7 +148,7 @@ else
   exit 1
 endif
 
-if ($FORMAT == "awp") then
+if ($FORMAT == "awp" || $FORMAT == "awpz" ) then
 	#Move to awp.<site>.media if it's different
 	mv ${OUTDIR}/${FILEROOT} ${OUTDIR}/awp.${SITE}.media
 endif
