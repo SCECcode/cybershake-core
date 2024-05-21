@@ -40,7 +40,7 @@ void create_surface(ucvm_point_t* points, char* model_coords, int starting_strip
 }
 
 void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models, int num_local_points) {
-	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/lustre/orion/geo156/proj-shared/CyberShake/software/UCVM/ucvm_22.7.0_withSFCVM/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to setup ucvm.\n");
                 exit(-1);
         }
@@ -85,6 +85,13 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
                                         fflush(stderr);
                                         exit(-2);
                                 }
+			} else if (strcmp(tok, "sfcvm")==0) {
+				printf("Adding SFCVM.\n");
+				if (ucvm_add_model("sfcvm") != UCVM_CODE_SUCCESS) {
+                	fprintf(stderr, "Error retrieving SFCVM model.\n");
+                	fflush(stdout);
+					exit(-2);
+            	}
 			}
 			tok = strtok_r(NULL, ",", &save);
 		}
@@ -139,7 +146,14 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
                                fflush(stderr);
                                exit(-2);
                         }
-				}
+				} else if (strcmp(velocity_models, "sfcvm")==0) {
+					printf("Adding SFCVM.\n");
+                	if (ucvm_add_model("sfcvm") != UCVM_CODE_SUCCESS) {
+                    	fprintf(stderr, "Error retrieving SFCVM model.\n");
+                    	fflush(stdout);
+						exit(-2);
+					}
+                }
 		}
 
         /*char label_test[64];

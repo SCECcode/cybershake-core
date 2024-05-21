@@ -680,7 +680,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
  //Figure out which if any models are including the taper
  char taper_models_list[10][512];
  int num_taper_models = 0;
- if (strlen(ely_taper_models)>0) {  
+ if (strlen(ely_taper_models)>0 && strcmp(ely_taper_models, "none")!=0) {  
 	//Only supported with awpz format for now
 	if (format!=AWP_Z) {
 		printf("Using the taper with only some models is only supported when using the AWP_Z format, aborting.\n");
