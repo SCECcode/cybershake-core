@@ -1,13 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import matplotlib
-matplotlib.use("AGG", warn=False)
+matplotlib.use("AGG")
 from pylab import *
 import sys
 import os
 
 if len(sys.argv)<2:
-	print "Usage: %s <smoothing points>" % (sys.argv[0])
+	print("Usage: %s <smoothing points>" % (sys.argv[0]))
 	sys.exit(1)
 
 smoothing_file = sys.argv[1]
