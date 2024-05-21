@@ -13,7 +13,7 @@ const float MIN_VS = 500.0;
 
 void initialize_ucvm(char* model) {
 	printf("Initializing UCVM.\n");
-	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
+	if (ucvm_init("/lustre/orion/geo156/proj-shared/CyberShake/software/UCVM/ucvm_22.7.0_withSFCVM/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to init UCVM, aborting.");
         exit(3);
     }
@@ -46,7 +46,7 @@ void initialize_ucvm(char* model) {
                 exit(3);
             }
 
-            if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+            if (ucvm_setparam(UCVM_MODEL_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Set query mode by depth failed.\n");
                 exit(-2);
             }
@@ -83,7 +83,7 @@ void initialize_ucvm(char* model) {
 	            exit(3);
 	        }
 	
-	        if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+	        if (ucvm_setparam(UCVM_MODEL_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
 	        	fprintf(stderr, "Set query mode by depth failed.\n");
 	            exit(-2);
 	        }

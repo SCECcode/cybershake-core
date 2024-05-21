@@ -16,6 +16,14 @@
 # Get the hostname we are running on
 HOSTNAME = $(shell hostname -f)
 
+ifeq (frontier,$(findstring frontier, $(HOSTNAME)))
+	MY_CC = cc
+	MY_FC = ftn
+	MY_MPICC = cc
+	MY_FC77 = ftn
+	MY_MPIFC = ftn
+endif
+
 ifeq (summit,$(findstring summit, $(HOSTNAME)))
 	MY_CC = gcc
 	MY_FC = gfortran
