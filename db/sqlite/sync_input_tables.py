@@ -31,7 +31,7 @@ if force_update is None:
 my2lite_path = os.path.join(config.getProperty('CS_PATH'), "db/sqlite/mysql2sqlite/mysql2sqlite")
 
 #List of tables to update
-tables_to_sync = ['ERF_IDs', 'CyberShake_Sites', 'Ruptures', 'CyberShake_Site_Ruptures', 'Rupture_Variations', 'Rup_Var_Seeds']
+tables_to_sync = ['ERF_IDs', 'CyberShake_Sites', 'Ruptures', 'CyberShake_Site_Ruptures', 'Rupture_Variations', 'Rup_Var_Seeds', 'CyberShake_Runs']
 
 remote_conn = pymysql.connect(host=remote_db, user='cybershk_ro', passwd='CyberShake2007', db='CyberShake')
 local_conn = sqlite3.connect(local_db)
