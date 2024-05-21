@@ -625,7 +625,7 @@ while(n--)
       ninc = n-4 points.
 */
 
-absorb2(n,vo,vi,vim,medp,off,dtoh,stride,wvtype,iflag)
+void absorb2(n,vo,vi,vim,medp,off,dtoh,stride,wvtype,iflag)
 register float *vo, *vi, *vim;
 float *medp, *dtoh;
 int n, stride, wvtype, off, iflag;
