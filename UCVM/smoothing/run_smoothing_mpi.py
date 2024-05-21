@@ -12,6 +12,7 @@ import sys
 import os
 import optparse
 import math
+from timeit import default_timer
 
 full_path = os.path.abspath(sys.argv[0])
 path_add = os.path.dirname(os.path.dirname(os.path.dirname(full_path)))
@@ -37,6 +38,11 @@ def run_det_surf_model(gridout, coords, models):
 		prefix = "%s -a 1 -c 1 -r 42 -n %d" % (MPI_CMD, np)
 		#Add export of PROJ_LIB
 		prefix = "export PROJ_LIB=/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/lib/proj-4/share/proj; %s" % prefix
+	elif MPI_CMD=="srun":
+		num_nodes = int(os.environ["SLURM_JOB_NUM_NODES"])
+		proc_per_node = int(os.environ["SLURM_CPUS_ON_NODE"])
+		np = num_nodes * proc_per_node
+		prefix = "%s -N %d -n %d -c 1" % (MPI_CMD, num_nodes, np)
 	cmd = "/bin/date; %s %s/UCVM/bin/determine_surface_model_mpi %s %s %s %s" % (prefix, CS_PATH, gridout, coords, models, output_file)
 	print(cmd)
 	exitcode = os.system(cmd)
@@ -48,7 +54,7 @@ def run_det_surf_model(gridout, coords, models):
 def run_det_smooth_pts(surf_file, coords, nx, ny, smooth_dist):
 	'''Usage: %s  <surf file> <model coords file> <nx> <ny> <smoothing dist> <output file>'''
 	output_file = "smoothing_pts_mpi.txt"
-	cmd = "/bin/date; %s -n 1 %s/UCVM/smoothing/determine_smoothing_points.py %s %s %d %d %s %s" % (MPI_CMD, CS_PATH, surf_file, coords, nx, ny, smooth_dist, output_file)
+	cmd = "/bin/date; %s -N 1 -n 1 %s/UCVM/smoothing/determine_smoothing_points.py %s %s %d %d %s %s" % (MPI_CMD, CS_PATH, surf_file, coords, nx, ny, smooth_dist, output_file)
 	print(cmd)
 	exitcode = os.system(cmd)
 	if (exitcode!=0):
@@ -71,6 +77,12 @@ def run_smooth(input_mesh, smooth_pts, nx, ny, nz, smooth_dist, output_mesh):
 		num_resource_sets = min(nz/2, np)
 		#We leave out -r because then different numbers of ranks can be assigned to each processor
 		prefix = "%s -a 2 -c 1 -n %d" % (MPI_CMD, num_resource_sets)
+	elif MPI_CMD=='srun':
+		num_nodes = int(os.environ["SLURM_JOB_NUM_NODES"])
+		proc_per_node = int(os.environ["SLURM_CPUS_ON_NODE"])
+		#Can't run more parallelism than nz
+		np = min(nz, num_nodes * proc_per_node)
+		prefix = "%s -N %d -n %d -c 1" % (MPI_CMD, num_nodes, np)
 	cmd = "/bin/date; %s %s/UCVM/smoothing/smooth_mpi %s %s %d %d %d %s %s" % (prefix, CS_PATH, input_mesh, smooth_pts, nx, ny, nz, smooth_dist, output_mesh)
 	print(cmd)
 	exitcode = os.system(cmd)
@@ -118,11 +130,18 @@ with open(gridout, "r") as fp_in:
 
 #Set LD_LIBRARY_PATH to pick up UCVM libraries
 CS_PATH = config.getProperty("CS_PATH")
-UCVM_HOME = "%s/UCVM/ucvm-18.5.0" % CS_PATH
-os.environ["LD_LIBRARY_PATH"] = "%s/lib/euclid3/lib:%s/lib/proj-4/lib:%s/model/cvms426/lib:%s/model/cencal/lib:%s/model/cvms5/lib:%s/model/cca/lib:%s" % (UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, os.environ["LD_LIBRARY_PATH"])
+UCVM_HOME = "%s/UCVM/ucvm_22.7.0_withSFCVM" % CS_PATH
+os.environ["LD_LIBRARY_PATH"] = "%s/lib/euclid3/lib:%s/lib/proj/lib:%s/model/cvmsi/lib:%s/model/sfcvm/lib:%s/model/cvms5/lib:%s/model/cca/lib:%s" % (UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, os.environ["LD_LIBRARY_PATH"])
 print(os.environ["LD_LIBRARY_PATH"])
 
+start = default_timer()
 surf_model_file = run_det_surf_model(gridout, coords, models)
+det_surf_time = default_timer()
 smooth_pts_file = run_det_smooth_pts(surf_model_file, coords, nx, ny, smoothing_dist)
+det_smooth_pts_time = default_timer()
 run_smooth(mesh_in, smooth_pts_file, nx, ny, nz, smoothing_dist, mesh_out)
+run_smooth_time = default_timer()
 
+print("Det surf model took %f secs." % (det_surf_time-start))
+print("Det smooth pts took %f secs." % (det_smooth_pts_time - det_surf_time))
+print("Run smooth took %f secs." % (run_smooth_time - det_smooth_pts_time))
