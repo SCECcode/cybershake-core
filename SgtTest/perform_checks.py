@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 '''This performs a check of SGT size, then calls the nan check code.'''
 
@@ -14,7 +14,7 @@ sys.path.append(path_add)
 import config
 
 if len(sys.argv)<4:
-	print "Usage: %s <SGT file> <cordfile> <IN3D file>" % sys.argv[0]
+	print("Usage: %s <SGT file> <cordfile> <IN3D file>" % sys.argv[0])
 	sys.exit(1)
 
 sgt_filename = sys.argv[1]
@@ -53,7 +53,7 @@ SGT_COMPONENTS = 6
 expected_size = np*nt/timeskip*SGT_COMPONENTS*FLOAT_SIZE
 
 if expected_size!=sgt_filesize:
-	print "Error: cordfile %s leads us to expect %d points and IN3D file %s has nt=%d, for an SGT filesize of %d, but the SGT file actually has size %d.  Aborting." % (cordfile_name, np, in3d_filename, nt, expected_size, sgt_filesize)
+	print("Error: cordfile %s leads us to expect %d points and IN3D file %s has nt=%d, for an SGT filesize of %d, but the SGT file actually has size %d.  Aborting." % (cordfile_name, np, in3d_filename, nt, expected_size, sgt_filesize))
 	sys.exit(2)
 
 cs_path = config.getProperty("CS_PATH")
@@ -68,6 +68,6 @@ elif mpi_cmd=="mpirun":
 cmd = "%s %s/SgtTest/bin/check_for_nans %s" % (mpi_cmd, cs_path, sgt_filename)
 exitcode = os.system(cmd)
 if exitcode!=0:
-	print "Error when checking for NaNs, zeros."
+	print("Error when checking for NaNs, zeros.")
 	sys.exit(3)
 sys.exit(exitcode)
