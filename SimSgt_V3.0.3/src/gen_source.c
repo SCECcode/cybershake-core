@@ -1,8 +1,8 @@
 #include "include.h"
 
 int main(int argc, char** argv) {
-	int nt = 60000;
-	float dt = 0.005;
+	int nt = 50000;
+	float dt = 0.004;
 	struct pntsrcs srcs;
 	int nbounce = 1;
 	char stype[256] = "cos";
