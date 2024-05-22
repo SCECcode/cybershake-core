@@ -412,8 +412,6 @@ long seed = 0;
 long starting_seed;
 int dump_last_seed = 0;
 char seedfile[1024];
-//Used to bypass iterating over slips to get to the 'right' seed
-int use_unmodified_seed = 0;
 
 int kmodel = MAI_FLAG;   /* default is mai */
 int circular_average = DEFAULT_CIRCULAR_AVERAGE;
@@ -636,8 +634,6 @@ velfile[0] = '\0';
 init_slip_file[0] = '\0';
 roughnessfile[0] = '\0';
 
-printf("Running genslip-v5.4.2.\n");
-
 sprintf(infile,"stdin");
 sprintf(outfile,"stdout");
 
@@ -682,8 +678,7 @@ shal_vrup = 0.60;
 deep_vrup = 0.60;
 
 slip_sigma = 0.75;
-//risetime_coef = 1.6;
-risetime_coef = 2.3;
+risetime_coef = 1.6;
 
 tsfac1_sigma = 1.0;
 tsfac1_scor = 0.8;
@@ -881,7 +876,6 @@ getpar("modified_corners","d",&modified_corners);
 getpar("circular_average","d",&circular_average);
 getpar("stretch_kcorner","d",&stretch_kcorner);
 getpar("seed","d",&seed);
-getpar("use_unmodified_seed","d",&use_unmodified_seed);
 getpar("side_taper","f",&side_taper);
 getpar("bot_taper","f",&bot_taper);
 getpar("top_taper","f",&top_taper);
@@ -988,7 +982,6 @@ else if(read_gsf == 1)
    psrc_orig = read_gsfpars(infile,psrc_orig,&gslip,&dstk,&ddip,&dtop,&avgdip);
 else
    psrc_orig = set_ruppars(psrc_orig,&mag,&nstk,&ndip,&dstk,&ddip,&dtop,&avgstk,&avgdip,&rake,&elon,&elat);
-
 
 psrc = (struct pointsource *)_check_malloc((nstk)*(ndip)*sizeof(struct pointsource));
 
@@ -1251,7 +1244,6 @@ if(generate_seed == 1)
    gseed(&seed,psrc_orig,&flen,&fwid,&dtop,&mag);
 
 /* RWG 2014-03-21 set starting seed */
-printf("Using seed %ld.\n", seed);
 starting_seed = seed;
 
 if(random_hypo == 1)
@@ -1435,12 +1427,11 @@ for(js=0;js<ns;js++)    /* loop over slip/rupture realizations */
    RWG 2014-03-21 set initial seed using increments of starting seed.
    Allows reproducability of ruptures without having to generate entire set.
 */
-	printf("Using seed %ld\n", seed);
+
    seed = starting_seed;
-   if (use_unmodified_seed==0) {
-	   for(k=0;k<10*js;k++)
-    	  sval =  _sfrand(&seed);
-   }
+   for(k=0;k<10*js;k++)
+      sval =  _sfrand(&seed);
+ 
 
    fprintf(stderr,"js= %d seed= %d ran= %10.6f\n",js,seed,sval);
 
@@ -2689,6 +2680,7 @@ fprintf(stderr,"tsmin= %.5f\n",tsmin);
             sprintf(str,"%s.srf",outfile);
 
 	 }
+
       else if(gslip.np > 0 && write_gsf)
          {
          if(strcmp(outfile,"stdout") == 0)
@@ -2700,7 +2692,7 @@ fprintf(stderr,"tsmin= %.5f\n",tsmin);
 	 }
       }
 
-	//free_srf_stf(&srf);
+   //free_srf_stf(&srf);
    }
 
 if(dump_last_seed == 1)

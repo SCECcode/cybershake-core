@@ -191,7 +191,9 @@ public class RuptureVariationFileInserter {
 		} else if (fileMode==Mode.HEAD) {
 			insertRuptureVariationFilesWithHeader(sess);
 		} else if (fileMode==Mode.ROTD) {
-			insertRotDFiles(sess);
+			insertRotDFiles(sess, true);
+		} else if (fileMode==Mode.ROTD50) {
+			insertRotDFiles(sess, false);
 		} else if (fileMode==Mode.DURATION) {
 			insertDurationFiles(sess);
 		} else {
@@ -280,7 +282,7 @@ public class RuptureVariationFileInserter {
 	}
 		
 	
-	private void insertRotDFiles(Session sess) {
+	private void insertRotDFiles(Session sess, boolean rotD50_only) {
 		//Track time
 		long start, end;
 		long fileReading = 0;
@@ -338,7 +340,7 @@ public class RuptureVariationFileInserter {
 						fileReading += (end-start);
 						start = System.currentTimeMillis();
 //						insertRotdRuptureSQL(entries, head);
-						insertRotdRupture(entries, head, sess);
+						insertRotdRupture(entries, head, sess, rotD50_only);
 						end = System.currentTimeMillis();
 						insertionSetup += (end-start);
 					}
@@ -347,13 +349,13 @@ public class RuptureVariationFileInserter {
 				}
 				
 				//Do this more often because there are multiple inserts per file
-				if ((counter+1)%25==0) {
+				if ((counter+1)%50==0) {
 					start = System.currentTimeMillis();
 					System.gc();
 					end = System.currentTimeMillis();
 					garbageCollection += (end-start);
 				}
-				if ((counter+1)%25==0) {
+				if ((counter+1)%50==0) {
 				// flush a batch of inserts and release memory
 					start = System.currentTimeMillis();
 					sess.flush();
@@ -718,25 +720,27 @@ public class RuptureVariationFileInserter {
 	}
 	
 	
-	private void insertRotdRupture(ArrayList<RotDEntry> entries, BSAHeader head, Session sess) {
+	private void insertRotdRupture(ArrayList<RotDEntry> entries, BSAHeader head, Session sess, boolean rotd50_only) {
 		Session rotdSession = sessFactory.openSession();
 		
 		String rd100Prefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND IM_Type_Component = 'RotD100' AND ";
 		String rd50Prefix = "SELECT IM_Type_ID FROM IM_Types WHERE IM_Type_Measure = 'spectral acceleration' AND IM_Type_Component = 'RotD50' AND ";
 		
 		//Determine mapping from periods to IM_Type_IDs
-		if (rd100periodValueToIDMap==null) {
-			rd100periodValueToIDMap = new HashMap<Float, Integer>();
-			for (int i=0; i<desiredPeriods.size(); i++) {
-				//For PGA and PGV periods, use RotD50 only
-				if (desiredPeriods.get(i)==PGA_period || desiredPeriods.get(i)==PGV_period) {
-					continue;
+		if (rotd50_only==false) {
+			if (rd100periodValueToIDMap==null) {
+				rd100periodValueToIDMap = new HashMap<Float, Integer>();
+				for (int i=0; i<desiredPeriods.size(); i++) {
+					//For PGA and PGV periods, use RotD50 only
+					if (desiredPeriods.get(i)==PGA_period || desiredPeriods.get(i)==PGV_period) {
+						continue;
+					}
+					SQLQuery query = rotdSession.createSQLQuery(rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
+					System.out.println(query.getQueryString());
+					int typeID = (Integer)(query.list().get(0));
+					rd100periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
+					System.out.println("Adding IM_Type_ID " + typeID + " to list.");
 				}
-				SQLQuery query = rotdSession.createSQLQuery(rd100Prefix + "IM_Type_Value = " + desiredPeriods.get(i)).addScalar("IM_Type_ID", StandardBasicTypes.INTEGER);
-				System.out.println(query.getQueryString());
-				int typeID = (Integer)(query.list().get(0));
-				rd100periodValueToIDMap.put(desiredPeriods.get(i).floatValue(), typeID);
-				System.out.println("Adding IM_Type_ID " + typeID + " to list.");
 			}
 		}
 		if (rd50periodValueToIDMap==null) {
@@ -761,30 +765,32 @@ public class RuptureVariationFileInserter {
 		
 		//Look for entries with matching period
 		for (RotDEntry e: entries) {
-			if (rd100periodValueToIDMap.containsKey(e.period)) {
-//				System.out.println("Adding source " + head.source_id + ", rupture " + head.rupture_id + ", rup var " + head.rup_var_id + ", period " + e.period);
-				// Initialize PeakAmplitudes class
-				PeakAmplitude pa = new PeakAmplitude();
-				PeakAmplitudePK paPK = new PeakAmplitudePK();
-				// Set values for the PeakAmplitudes Class
-				paPK.setRun_ID(run_ID.getRunID());
-				paPK.setSource_ID(head.source_id);				
-				paPK.setRupture_ID(head.rupture_id);
-				paPK.setRup_Var_ID(head.rup_var_id);
-				paPK.setIM_Type_ID(rd100periodValueToIDMap.get(e.period));
-				pa.setPaPK(paPK);
-				float rd100 = e.rotD100;
-				if (convertGtoCM) {
-					rd100 = e.rotD100 * G_TO_CM_2;
-				}
-				pa.setIM_Value(rd100);
-				try {
-					sess.save(pa);
-//					sess.insert(pa);
-				} catch (NonUniqueObjectException nuoe) {
-					//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  Because of the Study 15.4 issues, abort if this happens.
-					System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Aborting.");
-					System.exit(2);
+			if (rotd50_only==false) {
+				if (rd100periodValueToIDMap.containsKey(e.period)) {
+//					System.out.println("Adding source " + head.source_id + ", rupture " + head.rupture_id + ", rup var " + head.rup_var_id + ", period " + e.period);
+					// Initialize PeakAmplitudes class
+					PeakAmplitude pa = new PeakAmplitude();
+					PeakAmplitudePK paPK = new PeakAmplitudePK();
+					// Set values for the PeakAmplitudes Class
+					paPK.setRun_ID(run_ID.getRunID());
+					paPK.setSource_ID(head.source_id);				
+					paPK.setRupture_ID(head.rupture_id);
+					paPK.setRup_Var_ID(head.rup_var_id);
+					paPK.setIM_Type_ID(rd100periodValueToIDMap.get(e.period));
+					pa.setPaPK(paPK);
+					float rd100 = e.rotD100;
+					if (convertGtoCM) {
+						rd100 = e.rotD100 * G_TO_CM_2;
+					}
+					pa.setIM_Value(rd100);
+					try {
+						sess.save(pa);
+//						sess.insert(pa);
+					} catch (NonUniqueObjectException nuoe) {
+						//Occurs if there's a duplicate entry in the PSA file, which can happen on rare occasions.  Because of the Study 15.4 issues, abort if this happens.
+						System.err.println("ERROR:  found duplicate entry in file for run_id " + paPK.getRun_ID() + ", source " + paPK.getSource_ID() + " rupture " + paPK.getRupture_ID() + " rup_var " + paPK.getRup_Var_ID() + " IM_Type " + paPK.getIM_Type_ID() + ".  Aborting.");
+						System.exit(2);
+					}
 				}
 			}
 			if (rd50periodValueToIDMap.containsKey(e.period)) {

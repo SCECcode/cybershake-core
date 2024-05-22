@@ -3,7 +3,7 @@
 
 #include "include.h"
 #include "structure.h"
-#include "WccFormat/Progs/function.h"
+#include "bbp_wcc_include.h"
 
 void *check_malloc(size_t len);
 void *check_realloc(void *ptr,size_t len);

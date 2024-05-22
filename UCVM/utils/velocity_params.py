@@ -83,7 +83,7 @@ with open(model_output_file, "r") as fp_in:
 with open(mesh_output_file, "r") as fp_in:
 	[mesh_vp, mesh_vs, mesh_rho] = [float(i) for i in fp_in.readline().split()]
 	fp_in.close()
-
+	
 db_file = config.getProperty("DB_WR_FILE")
 with open(db_file, "r") as fp_in:
     username = fp_in.readline().strip()

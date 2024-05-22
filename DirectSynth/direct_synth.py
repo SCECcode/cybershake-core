@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import sys
 import os
@@ -24,16 +24,13 @@ elif MPI_CMD=="jsrun":
 	#Start memcached once on each node
 	memcached_path = "/gpfs/alpine/proj-shared/geo112/CyberShake/utils/pegasus_wrappers/invoke_memcached.sh"
 	cmd = "jsrun -a 1 -c 1 -g 0 -r 1 -n %d %s" % (num_nodes, memcached_path)
-elif MPI_CMD=="ibrun":
-    memcached_path = "/work2/00349/scottcal/frontera/CyberShake/utils/pegasus_wrappers/invoke_memcached.sh"
-    cmd = "export IBRUN_TASKS_PER_NODE=1; ibrun %s &" % memcached_path
 else:
 	print("Don't know what to do with MPI_CMD=%s, aborting." % MPI_CMD)
 	sys.exit(1)
-print(cmd)
+print cmd
 rc = os.system(cmd)
 if rc!=0:
-        print("Error launching memcached.  Will continue with DirectSynth anyway.")
+        print "Error launching memcached.  Will continue with DirectSynth anyway."
 
 #Launch direct_synth
 ds_path = "%s/bin/direct_synth %s" % (sys.path[0], " ".join(sys.argv[1:]))
@@ -43,10 +40,6 @@ elif MPI_CMD=="jsrun":
 	#Can't have more than 42 resource sets/core
 	#cmd = "jsrun -n %d -a 4 -c 1 -g 0 -r 42 %s" % (num_res_sets, ds_path)
 	cmd = "jsrun -n %d -a 1 -c 1 -g 0 -r 42 %s" % (num_res_sets, ds_path)
-	cmd = "which jsrun; module list; %s" % (cmd)
-elif MPI_CMD=="ibrun":
-	#cmd = "export IBRUN_TASKS_PER_NODE=56; ibrun %s" % ds_path
-    cmd = "export LD_LIBRARY_PATH=/work2/00349/scottcal/frontera/CyberShake/utils/libmemcached_1.0.18/lib:$LD_LIBRARY_PATH; remora ibrun %s" % ds_path
 print cmd
 rc = os.system(cmd)
 sys.exit((rc >> 8) & 0xFF)

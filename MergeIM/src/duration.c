@@ -24,14 +24,10 @@ float intensity(float* seis, int nt, float dt, int acc_flag) {
         }
 	if (acc_flag) {
 		//Ia
-		float ia = cumulative_integral[nt-1]*3.14/(2*981.0);
-		free(cumulative_integral);
-		return ia;
+		return cumulative_integral[nt-1]*3.14/(2*981.0);
 	}
 	//Ie
-	float ie = cumulative_integral[nt-1];
-	free(cumulative_integral);
-	return ie;
+	return cumulative_integral[nt-1];
 }
 
 
@@ -66,7 +62,6 @@ float significant_duration(float* seis, float low, float high, int nt, float dt,
 		}
 	}
 	float duration = (high_bound_ts - low_bound_ts)*dt;
-	free(cumulative_integral);
 	return duration;
 }
 

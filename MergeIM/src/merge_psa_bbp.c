@@ -207,7 +207,7 @@ int main(int argc, char**argv) {
 	float** merged_seis = check_malloc(sizeof(float*)*num_comps);
 	for (i=0; i<num_comps; i++) {
 		merged_seis[i] = check_malloc(sizeof(float)*hf_headers[0].nt);
-		//printf("allocated ms addr: %x\n", merged_seis[i]);
+		printf("allocated ms addr: %x\n", merged_seis[i]);
 	}
 	float* seis = NULL;
 

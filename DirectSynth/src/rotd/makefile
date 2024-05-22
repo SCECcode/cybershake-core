@@ -1,6 +1,6 @@
 FC=gfortran
-FFLAGS = -O0 -ffixed-line-length-none
-CFLAGS = -O0
+FFLAGS = -O3 -ffixed-line-length-none
+CFLAGS = -O3
 HEADS = baseline.h
 OBJS = calcrsp.o fftsub.o ft_th.o sort.o spline.o splint.o
 TARGETS = rotd

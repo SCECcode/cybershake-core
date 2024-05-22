@@ -246,12 +246,4 @@ typedef struct task_info {
 	worker_task* task;
 } task_info;
 
-typedef struct rv_info {
-	int source_id;
-	int rupture_id;
-	int rup_var_id;
-	float rvfrac;
-	int seed;
-} rv_info;
-
 #endif /* STRUCTURE_H_ */

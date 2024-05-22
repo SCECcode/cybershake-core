@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
 			} else {
 				consecZeros = 0;
 			}
-			//for 1 Hz: 6 SGT components x 4000 timesteps each
+			//for 1 Hz
 			if (consecZeros>=24000) {
 				printf("Found %d consecutive values with an abs less than 1e-20, aborting, at byte offset %ld, index %ld.\n", consecZeros, (tot_read-floats_read+i)*sizeof(float), tot_read-floats_read+i);
 				return 3;

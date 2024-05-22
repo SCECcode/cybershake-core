@@ -47,6 +47,7 @@ if option.spacing is not None:
 else:
 	zstep = 100.0/frequency
 
+<<<<<<< HEAD
 if option.ely_taper is not None:
     ely_taper = option.ely_taper
 else:
@@ -65,6 +66,8 @@ else:
 	else:
 		taper_models = "none"
 
+=======
+>>>>>>> refs/remotes/origin/main
 #Depth to query UCVM at for surface points, in m
 surface_cvm_depth = 0.0
 if option.h_frac is not None:
@@ -94,7 +97,11 @@ mpi_cmd = config.getProperty("MPI_CMD")
 job_id = config.getJobID()
 
 #if cca is one of the models, check to see if GTL is on
+<<<<<<< HEAD
 with open('%s/UCVM/ucvm_22.7.0_withSFCVM/model/cca/data/config' % cs_path, 'r') as fp_in:
+=======
+with open('%s/UCVM/ucvm-18.5.0_01302019/model/cca/data/config' % cs_path, 'r') as fp_in:
+>>>>>>> refs/remotes/origin/main
 	data = fp_in.readlines()
 	for line in data:
 		if line.find('gtl')>-1:
@@ -109,9 +116,15 @@ with open('%s/UCVM/ucvm_22.7.0_withSFCVM/model/cca/data/config' % cs_path, 'r') 
 	fp_in.close()
 
 if option.min_vs is not None:
+<<<<<<< HEAD
         command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %s %f %s %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, ely_taper, taper_depth, taper_models, option.min_vs)
 else:
 	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %s %f %s' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, ely_taper, taper_depth, taper_models)
+=======
+        command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, option.min_vs)
+else:
+	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth)
+>>>>>>> refs/remotes/origin/main
 print(command)
 exitcode = os.system(command)
 sys.exit((exitcode >> 8) & 0xFF)

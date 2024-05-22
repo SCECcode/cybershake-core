@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import sys
 import os
@@ -27,10 +27,10 @@ elif MPI_CMD=="jsrun":
 else:
 	print("Don't know what to do with MPI_CMD=%s, aborting." % MPI_CMD)
 	sys.exit(2)
-print(cmd)
+print cmd
 rc = os.system(cmd)
 if rc!=0:
-	print("Error launching memcached.  Will continue with DirectSynth anyway.")
+	print "Error launching memcached.  Will continue with DirectSynth anyway."
 
 #Swap modules to load fftw/3.3.5
 module_cmd = "module swap xl gcc; module swap fftw/3.3.8 fftw/3.3.5"
@@ -48,6 +48,6 @@ else:
         print("Don't know what to do with MPI_CMD=%s, aborting." % MPI_CMD)
         sys.exit(2)
 
-print(cmd)
+print cmd
 rc = os.system(cmd)
 sys.exit((rc >> 8) & 0xFF)

@@ -40,8 +40,8 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 
 	float* acc = check_malloc(sizeof(float) * header->nt * num_comps);
 	float* rotD100 = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
-	float* rotD50 = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
-	int* rD100ang = check_malloc(sizeof(int) * NUM_INTERP * MAX_PERIODS);
+	float* rotD50 = check_malloc(sizeof(float*) * NUM_INTERP * MAX_PERIODS);
+	int* rD100ang = check_malloc(sizeof(float*) * NUM_INTERP * MAX_PERIODS);
 
 	//Added periods for 1 Hz
 	int num_periods = 22;
@@ -56,14 +56,7 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	copy_result(rotD_records, rotD100, rD100ang, rotD50, num_periods, periods, inter_flag);
 	
 	//Calculate PGV using velocity seismogram
-	//Convert to g first
-	const float cm2g = 1.0/980.665;
-	float* vel_data = check_malloc(sizeof(float)*header->nt*num_comps);
-	for (i=0; i<num_comps*header->nt; i++) {
-		vel_data[i] = seis_data[i]*cm2g;
-	}
-	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), vel_data, vel_data+header->nt, rotD100+NUM_INTERP*num_periods, rD100ang+NUM_INTERP*num_periods, rotD50+NUM_INTERP*num_periods, &num_pgv_periods, pgv_period);
-	//printf("PGV:%f\n", rotD50[NUM_INTERP*num_periods]);
+	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), seis_data, seis_data+header->nt, rotD100+NUM_INTERP*num_periods, rD100ang+NUM_INTERP*num_periods, rotD50+NUM_INTERP*num_periods, &num_pgv_periods, pgv_period);
 
 	//Add PGV to output data structure
     rotD_records[num_periods].period = pgv_period[0];
@@ -77,7 +70,6 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	free(rotD50);
 	free(rD100ang);
 	free(acc);
-	free(vel_data);
 
 	return 0;
 }

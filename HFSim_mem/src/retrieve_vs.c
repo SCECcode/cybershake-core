@@ -1,13 +1,8 @@
 #include "include.h"
 
 #include "ucvm.h"
-#include "ucvm_interp.h"
-#include "ucvm_model_elygtl.h"
 
 int ucvm_initialized = 0;
-int ifless_taper = 0;
-double taper_depth = 700.0;
-int ely_init = 0;
 
 const float MIN_VS = 500.0;
 
@@ -28,8 +23,6 @@ void initialize_ucvm(char* model) {
                 model_string = UCVM_MODEL_1D;
             } else if (strcmp(model, "cvmsi")==0) {
                 model_string = UCVM_MODEL_CVMSI;
-				//For now, turn on the ifless taper too
-				ifless_taper = 1;
             } else if (strcmp(model, "bbp1d")==0) {
                 model_string = UCVM_MODEL_BBP1D;
             } else if (strcmp(model, "usgs")==0) {
@@ -65,8 +58,6 @@ void initialize_ucvm(char* model) {
 	            model_string = UCVM_MODEL_1D;
 	        } else if (strcmp(tok, "cvmsi")==0) {
 	            model_string = UCVM_MODEL_CVMSI;
-				//for now, turn on the ifless taper
-				ifless_taper = 1;
 	        } else if (strcmp(tok, "bbp1d")==0) {
 	            model_string = UCVM_MODEL_BBP1D;
 	        } else if (strcmp(tok, "usgs")==0) {
@@ -95,7 +86,7 @@ void initialize_ucvm(char* model) {
 
 //Retrieve discrete slowness-averaged Vs depth value from UCVM
 //Applies Vs=500 m/s floor
-float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, int depth, int step_size) {
+float ucvm_vs_discrete(float lon, float lat, char* model, int depth, int step_size) {
 	//The algorithm is:
 	//VsDiscrete@depth = (depth/step_size) / (0.5/Vs(Z=0) + 1/Vs(Z=1*step_size)
 	//	+ 1/Vs(Z=2*step_size) + ... + 0.5/Vs(Z=depth)
@@ -104,85 +95,29 @@ float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, i
 		ucvm_initialized = 1;
 	}
 
-    int i;
-    double vs_sum = 0.0;
+        ucvm_point_t query_pt;
+        query_pt.coord[0] = lon;
+        query_pt.coord[1] = lat;
+        ucvm_data_t query_data;
+        int i;
+        double vs_sum = 0.0;
 	int steps = depth/step_size;
-	ucvm_point_t* query_pts = malloc(sizeof(ucvm_point_t)*(steps+1));
-	ucvm_data_t* query_data = malloc(sizeof(ucvm_data_t)*(steps+1));
-	double* vs_results = malloc(sizeof(double)*(steps+1));
 	for (i=0; i<=steps; i++) {
-		query_pts[i].coord[0] = lon;
-	    query_pts[i].coord[1] = lat;
-		if (i==0) {
-			query_pts[i].coord[2] = surface_depth;
-		} else {
-			query_pts[i].coord[2] = i*step_size;
+		query_pt.coord[2] = i*step_size;
+                if (ucvm_query(1, &query_pt, &query_data)!=UCVM_CODE_SUCCESS) {
+                        fprintf(stderr, "UCVM query failed.\n");
+                        exit(-3);
+                }
+		if (query_data.cmb.vs<MIN_VS) {
+			query_data.cmb.vs = MIN_VS;
 		}
-	}
-	if (ucvm_query(steps+1, query_pts, query_data)!=UCVM_CODE_SUCCESS) {
-	    fprintf(stderr, "UCVM query failed.\n");
-        exit(-3);
-    }
-
-	for (i=0; i<=steps; i++) {
-		vs_results[i] = query_data[i].cmb.vs;
-	}
-
-	if (ifless_taper!=0) {
-        printf("Using ifless taper.\n");
-        //If we're using the taper, we need to initialize Ely
-        //Similar code to that in ucvm-single_mpi.c
-        if (ely_init==0) {
-            ucvm_modelconf_t conf;
-            ucvm_elygtl_model_init(UCVM_MAX_MODELS-1, &conf);
-            ely_init = 1;
-        }
-        ucvm_data_t* ely_props = malloc(sizeof(ucvm_data_t)*(steps+1));
-        ucvm_point_t* ely_pts = malloc(sizeof(ucvm_point_t)*(steps+1));
-        memcpy(ely_props, query_data, sizeof(ucvm_data_t)*(steps+1));
-        memcpy(ely_pts, query_pts, sizeof(ucvm_point_t)*(steps+1));
-        for (i=0; i<=steps; i++) {
-            //Query this point, to get the crustal value at taper depth
-            ely_pts[i].coord[2] = taper_depth;
-        }
-        if(ucvm_query(steps+1, ely_pts, ely_props)!=UCVM_CODE_SUCCESS) {
-            fprintf(stderr, "UCVM query failed.");
-            exit(-3);
-        }
-        for (i=0; i<steps+1; i++) {
-            ely_props[i].domain = UCVM_DOMAIN_INTERP;
-            ely_props[i].depth = query_pts[i].coord[2];
-        }
-        ucvm_elygtl_model_query(UCVM_MAX_MODELS-1, UCVM_COORD_GEO_DEPTH, steps+1, ely_pts, ely_props);
-        for (i=0; i<=steps; i++) {
-            ucvm_interp_ely(0.0, taper_depth, UCVM_COORD_GEO_DEPTH, ely_pts+i, ely_props+i);
-        }
-        //Combine results
-        for (i=0; i<steps+1; i++) {
-            //printf("Ely prop value at depth %f = %f\n", ely_props[i].depth, ely_props[i].cmb.vs);
-            if (ely_props[i].cmb.vs<vs_results[i]) {
-                vs_results[i] = ely_props[i].cmb.vs;
-            }
-        }
-        free(ely_props);
-        free(ely_pts);
-    }
-
-	for (i=0; i<=steps; i++) {
-		if (vs_results[i]<MIN_VS) {
-			vs_results[i] = MIN_VS;
-		}
-		printf("%f: %f\n", query_pts[i].coord[2], vs_results[i]);
 		if (i==0 || i==steps) {
-			vs_sum += 0.5/vs_results[i];
+			vs_sum += 0.5/query_data.cmb.vs;
 		} else {
-			vs_sum += 1.0/vs_results[i];
+			vs_sum += 1.0/query_data.cmb.vs;
 		}
 	}
 	float vs = ((float)steps)/vs_sum;
-	free(query_pts);
-	free(query_data);
-	free(vs_results);
 	return vs;
 }
 
@@ -196,74 +131,22 @@ float ucvm_vsD(float lon, float lat, char* model, int depth) {
 		ucvm_initialized = 1;
 	}
 
-	//Query without taper	
-	ucvm_point_t* query_pts = malloc(sizeof(ucvm_point_t)*depth);
-	ucvm_data_t* query_data = malloc(sizeof(ucvm_data_t)*depth);
-	double* vs_results = malloc(sizeof(double)*depth);
+	ucvm_point_t query_pt;
+	query_pt.coord[0] = lon;
+	query_pt.coord[1] = lat;
+	ucvm_data_t query_data;
 	int i;
-	for (i=0; i<depth; i++) {
-		query_pts[i].coord[0] = lon;
-	    query_pts[i].coord[1] = lat;
-		query_pts[i].coord[2] = i+.5;
-	}
-	if (ucvm_query(depth, query_pts, query_data)!=UCVM_CODE_SUCCESS) {
-			fprintf(stderr, "UCVM query failed.\n");
-			exit(-3);
-	}
-	for (i=0; i<depth; i++) {
-		vs_results[i] = query_data[i].cmb.vs;
-		printf("%f: %f\n", query_pts[i].coord[2], query_data[i].cmb.vs);
-	}
-	//If we need to include the taper
-	if (ifless_taper!=0) {
-		printf("Using ifless taper.\n");
-	    //If we're using the taper, we need to initialize Ely
-    	//Similar code to that in ucvm-single_mpi.c
-    	if (ely_init==0) {
-    	    ucvm_modelconf_t conf;
-    	    ucvm_elygtl_model_init(UCVM_MAX_MODELS-1, &conf);
-    	    ely_init = 1;
-    	}
-		ucvm_data_t* ely_props = malloc(sizeof(ucvm_data_t)*depth);
-		ucvm_point_t* ely_pts = malloc(sizeof(ucvm_point_t)*depth);
-		memcpy(ely_props, query_data, sizeof(ucvm_data_t)*depth);
-		memcpy(ely_pts, query_pts, sizeof(ucvm_point_t)*depth);
-		for (i=0; i<depth; i++) {
-			//Query this point, to get the crustal value at taper depth
-			ely_pts[i].coord[2] = taper_depth;
-		}
-		if(ucvm_query(depth, ely_pts, ely_props)!=UCVM_CODE_SUCCESS) {
-			fprintf(stderr, "UCVM query failed.");
-			exit(-3);
-		}
-		for (i=0; i<depth; i++) {
-			ely_props[i].domain = UCVM_DOMAIN_INTERP;
-			ely_props[i].depth = query_pts[i].coord[2];
-		}
-		ucvm_elygtl_model_query(UCVM_MAX_MODELS-1, UCVM_COORD_GEO_DEPTH, depth, ely_pts, ely_props);
-		for (i=0; i<depth; i++) {
-			ucvm_interp_ely(0.0, taper_depth, UCVM_COORD_GEO_DEPTH, ely_pts+i, ely_props+i);
-		}
-		//Combine results
-		for (i=0; i<depth; i++) {
-			//printf("Ely prop value at depth %f = %f\n", ely_props[i].depth, ely_props[i].cmb.vs);
-			if (ely_props[i].cmb.vs<vs_results[i]) {
-				vs_results[i] = ely_props[i].cmb.vs;
-			}
-		}
-		free(ely_props);
-		free(ely_pts);
-	}
-	
-	//Slowness average
 	double vs_sum = 0.0;
 	for (i=0; i<depth; i++) {
-		vs_sum += 1.0/vs_results[i];
+		query_pt.coord[2] = i+.5;
+		if (ucvm_query(1, &query_pt, &query_data)!=UCVM_CODE_SUCCESS) {
+			fprintf(stderr, "UCVM query failed.\n");
+			exit(-3);
+		}
+		//printf("%d: %f\n", i, query_data.cmb.vs);
+		vs_sum += 1.0/query_data.cmb.vs;
 	}
 	float vs = ((float)depth)/vs_sum;
-	free(vs_results);
-	free(query_data);
-	free(query_pts);
 	return vs;
 }
 
@@ -295,20 +178,19 @@ float vs_at_site(float lon, float lat, char* model) {
 //VsD5H = discrete average over increments of H.
 //So VsD500 = 5/(0.5/Vs(Z=0) + 1/Vs(Z=100) + ... + 1/Vs(Z=400) + 0.5/Vs(Z=500))
 int main(int argc, char** argv) {
-	if (argc<7) {
-		printf("Usage: %s <lon> <lat> <model> <gridspacing (m)> <depth to query for surface mesh point (m)> <out filename>\n", argv[0]);
+	if (argc<6) {
+		printf("Usage: %s <lon> <lat> <model> <gridspacing (m)> <out filename>\n", argv[0]);
 		return 1;
 	}
 	float lon = atof(argv[1]);
 	float lat = atof(argv[2]);
 	char* model = argv[3];
 	int gridspacing = atoi(argv[4]);
-	float surface_depth = atof(argv[5]);
-	char* filename = argv[6];
+	char* filename = argv[5];
 
 	float vs30 = ucvm_vsD(lon, lat, model, 30);
 	float vs5H = ucvm_vsD(lon, lat, model, 5*gridspacing);
-	float vsD5H = ucvm_vs_discrete(lon, lat, model, surface_depth, 5*gridspacing, gridspacing);
+	float vsD5H = ucvm_vs_discrete(lon, lat, model, 5*gridspacing, gridspacing);
 	FILE* fp_out = fopen(filename, "w");
 	fprintf(fp_out, "Vs30 = %.1f\nVs%d = %.1f\nVsD%d = %.1f\n", vs30, 5*gridspacing, vs5H, 5*gridspacing, vsD5H);
 	fflush(fp_out);
