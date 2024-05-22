@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include "ucvm_dtypes.h"
 #include "ucvm_config.h"
+#include "ucvm_utils.h"
 
 /* Whitespace characters */
 const char *UCVM_WHITESPACE = " \t\n";
@@ -47,10 +49,15 @@ ucvm_config_t *ucvm_parse_config(const char *file)
 {
   FILE *fp;
   char line[UCVM_CONFIG_MAX_STR];
-  char *token;
+  char *name, *value;
   ucvm_config_t celem;
   ucvm_config_t *chead = NULL;
   ucvm_config_t *cnew;
+
+  if (!ucvm_is_file(file)) {
+    fprintf(stderr, "Config file %s is not a valid file\n", file);
+    return(NULL);
+  }
 
   fp = fopen(file, "r");
   if (fp == NULL) {
@@ -59,29 +66,61 @@ ucvm_config_t *ucvm_parse_config(const char *file)
   }
 
   while (!feof(fp)) {
-    fgets(line, UCVM_CONFIG_MAX_STR, fp);
-    if (strlen(line) > 0) {
-      token = strtok(line, "=");
-      if (token == NULL) {
+    if ((fgets(line, UCVM_CONFIG_MAX_STR, fp) != NULL) && 
+	(strlen(line) > 0)) {
+      memset(&celem, 0, sizeof(ucvm_config_t));
+      name = strtok(line, "=");
+      if (name == NULL) {
 	continue;
       }
-      strcpy(celem.name, token);
+      ucvm_strcpy(celem.name, name, UCVM_CONFIG_MAX_STR);
       ucvm_strip_whitespace(celem.name);
-      if (celem.name[0] == '#') {
+      if ((celem.name[0] == '#') || (strlen(celem.name) == 0)) {
+        continue;
+      }
+      value = name + strlen(name) + 1;
+      if (strlen(value) == 0) {
 	continue;
       }
-      strcpy(celem.value, &(line[strlen(token) + 1]));
+      ucvm_strcpy(celem.value, value, UCVM_CONFIG_MAX_STR);
       ucvm_strip_trailing_whitespace(celem.value);
       cnew = (ucvm_config_t *)malloc(sizeof(ucvm_config_t));
       memcpy(cnew, &celem, sizeof(ucvm_config_t));
       cnew->next = chead;
       chead = cnew;
     }
-
   }
 
   fclose(fp);
   return(chead);
+}
+
+/* add additional config entry 
+    -P sfcvm_param:SquashMinElev,-5000.0
+*/
+ucvm_config_t *ucvm_add_config(ucvm_config_t *head, char *line)
+{
+  char *name, *value;
+  ucvm_config_t celem;
+  ucvm_config_t *cnew;
+
+  memset(&celem, 0, sizeof(ucvm_config_t));
+
+//first one
+  name = strtok(line, ":"); 
+  ucvm_strcpy(celem.name, name, UCVM_CONFIG_MAX_STR);
+  ucvm_strip_whitespace(celem.name);
+
+//second part
+  value = name + strlen(name) + 1;
+  ucvm_strcpy(celem.value, value, UCVM_CONFIG_MAX_STR);
+  ucvm_strip_trailing_whitespace(celem.value);
+
+  cnew = (ucvm_config_t *)malloc(sizeof(ucvm_config_t));
+  memcpy(cnew, &celem, sizeof(ucvm_config_t));
+  cnew->next = head;
+
+  return cnew;
 }
 
 
@@ -102,6 +141,21 @@ ucvm_config_t *ucvm_find_name(ucvm_config_t *chead, const char *name)
 }
 
 
+/* Dump config to screen */
+int ucvm_dump_config(ucvm_config_t *chead)
+{
+  ucvm_config_t *cptr;
+
+  cptr = chead;
+  fprintf(stderr, "Parsed Config:\n");
+  while (cptr != NULL) {
+    fprintf(stderr, "\t%s : %s\n", cptr->name, cptr->value);
+    cptr = cptr->next;
+  }
+  return(UCVM_CODE_SUCCESS);
+}
+
+
 /* Free config list */
 int ucvm_free_config(ucvm_config_t *chead)
 {
@@ -115,6 +169,6 @@ int ucvm_free_config(ucvm_config_t *chead)
     free(ctmp);
   }
 
-  return(0);
+  return(UCVM_CODE_SUCCESS);
 }
 
