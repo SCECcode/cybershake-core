@@ -49,8 +49,8 @@ int rotd(struct seisheader* header, float* seis_data, FILE* fp_out) {
 	int* rD100ang = check_malloc(sizeof(int) * NUM_INTERP * MAX_PERIODS);
 	
 	//Period list taken from BBP
-	int num_periods = 67;
-	float periods[] = {PGA, 0.01, 0.011, 0.012, 0.013, 0.015, 0.017, 0.02, 0.022, 0.025, 0.029, 0.032, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.075, 0.085, 0.1, 0.11, 0.12, 0.13, 0.15, 0.17, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.75, 0.85, 1, 1.1, 1.2, 1.3, 1.5, 1.7, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 4.4, 5, 5.5, 6, 6.5, 7.5, 8.5, 10, 12, 15, 20};
+	int num_periods = 66;
+	float periods[] = {PGA, 0.01, 0.011, 0.012, 0.013, 0.015, 0.017, 0.02, 0.022, 0.025, 0.029, 0.032, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06, 0.065, 0.075, 0.085, 0.1, 0.11, 0.12, 0.13, 0.15, 0.17, 0.2, 0.22, 0.24, 0.26, 0.28, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.75, 0.85, 1, 1.1, 1.2, 1.3, 1.5, 1.7, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 4.4, 5, 5.5, 6, 6.5, 7.5, 8.5, 10, 12, 15, 20, PGV};
 	//int num_periods = 30;
 	//float periods[] = {0.1, 0.125, 0.1666667, 0.2, 0.25, 0.3333333, 0.5, 0.6666667, 1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0};
 
@@ -63,20 +63,11 @@ int rotd(struct seisheader* header, float* seis_data, FILE* fp_out) {
 	float* v_rotD100 = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
     float* v_rotD50 = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
 	int* v_rD100ang = check_malloc(sizeof(int) * NUM_INTERP * MAX_PERIODS);
-	//Convert to g
-	const float cm2g = 1.0/980.665;
-    float* vel_data = check_malloc(sizeof(float)*header->nt*num_comps);
-	for (i=0; i<num_comps*header->nt; i++) {
-        vel_data[i] = seis_data[i]*cm2g;
-    }
-
-	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), vel_data, vel_data+header->nt, v_rotD100, v_rD100ang, v_rotD50, &num_v_periods, v_periods);
+	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), seis_data, seis_data+header->nt, v_rotD100, v_rD100ang, v_rotD50, &num_v_periods, v_periods);
 	//Append PGV value to acceleration arrays
-	periods[num_periods] = v_periods[0];
-	rotD100[num_periods*NUM_INTERP] = v_rotD100[0];
-	rD100ang[num_periods*NUM_INTERP] = v_rD100ang[0];
-	rotD50[num_periods*NUM_INTERP] = v_rotD50[0];
-	//printf("period: %f, RD100 PGV: %f, RD100 ang: %d, RD50 PGV: %f\n",  v_periods[0], v_rotD100[0], v_rD100ang[0], v_rotD50[0]); 
+	rotD100[num_periods] = v_rotD100[0];
+	rD100ang[num_periods] = v_rD100ang[0];
+	rotD50[num_periods] = v_rotD50[0];
 	num_periods++;
 
 	write_result(fp_out, header, rotD100, rD100ang, rotD50, num_periods, periods, inter_flag);
@@ -89,7 +80,6 @@ int rotd(struct seisheader* header, float* seis_data, FILE* fp_out) {
 	free(v_rotD100);
 	free(v_rotD50);
 	free(v_rD100ang);
-	free(vel_data);
 	free(acc);
 
 	return 0;

@@ -3,10 +3,6 @@
 import sys
 import os
 
-if len(sys.argv)<3:
-    print("Usage: %s <rupture file> <rupture root>" % sys.argv[0])
-    sys.exit(1)
-
 rupture_file = sys.argv[1]
 rupture_root = sys.argv[2]
 

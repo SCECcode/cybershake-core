@@ -1,7 +1,12 @@
 #!/bin/csh
 
+<<<<<<< HEAD
 if ($# != 16 && $# != 17) then
   echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> <surface_cvm_depth> <ely_taper> <taper_depth> <taper models> [min vs]"
+=======
+if ($# != 13 && $# != 14) then
+  echo "Usage:  single_exe.csh <site> <model_cords file> <nx> <ny> <nz> <CS_PATH> <SCRATCH_PATH> <LOG_ROOT> <MODELS> <MPI_CMD> <JOB_ID> <format> <surface_cvm_depth> [min vs]"
+>>>>>>> refs/remotes/origin/main
   exit 1
 endif
 
@@ -18,12 +23,18 @@ set MPI_CMD = $10
 set JOB_ID = $11
 set FORMAT = $12
 set SURF_CVM_DEPTH = $13
+<<<<<<< HEAD
 set ELY_TAPER = $14
 set TAPER_DEPTH = $15
 set TAPER_MODELS = $16
 
 if ($# == 17) then
 	set VSMIN = $17
+=======
+
+if ($# == 14) then
+	set VSMIN = $14
+>>>>>>> refs/remotes/origin/main
 	if ($VSMIN == 900.0) then
 		set VPMIN = 1800.0
 		set DENMIN = 2000.0

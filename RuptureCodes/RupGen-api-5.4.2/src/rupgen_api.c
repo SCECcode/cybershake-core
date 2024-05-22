@@ -189,7 +189,7 @@ int rupgen_genslip_seed(char* rup_geom_file, int slip, int hypo, rg_stats_t *sta
 
 
 int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, struct standrupformat* srf, int hypo_dist, float dt) {
-	int write_srf_param = 1;
+	int write_srf = 1;
 
         int i, j, rgargc;
         char **rgargv = NULL;
@@ -215,7 +215,7 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
     sprintf(rgargv[1], "infile=%s", rup_geom_file);
 	sprintf(rgargv[2], "doslip=%d", slip);
 	sprintf(rgargv[3], "dohypo=%d", hypo);
-	sprintf(rgargv[4], "write_srf=%d", write_srf_param);
+	sprintf(rgargv[4], "write_srf=%d", write_srf);
 	sprintf(rgargv[5], "outfile=%s", srf_out_file);
 	sprintf(rgargv[6], "dt=%f", dt);
 	if (hypo_dist==RUPGEN_RANDOM_HYPO) {
@@ -227,10 +227,6 @@ int rupgen_genslip(char* rup_geom_file, int slip, int hypo, rg_stats_t *stats, s
 	} else {
 		fprintf(stderr, "Error, did not specify a valid hypocenter location distribution, aborting.\n");
 		exit(2);
-	}
-
-	for (i=0; i<9; i++) {
-		printf("rupgen arg %d: %s\n", i, rgargv[i]);
 	}
 
         /* Run rupture generator */

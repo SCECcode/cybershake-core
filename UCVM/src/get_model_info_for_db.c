@@ -100,6 +100,7 @@ int test_for_taper(float lon, float lat, char* taper_models) {
 	query_pt.coord[0] = lon;
 	query_pt.coord[1] = lat;
 	query_pt.coord[2] = 0.0;
+	query_pt.coord[2] = 0.0;
 	if (ucvm_query(1, &query_pt, &query_data)!=UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "UCVM query failed.\n");
         exit(-3);
@@ -199,7 +200,6 @@ float ucvm_zvalue(float lon, float lat, float vs_value, int taper_flag) {
 	int num_pts = (int)(max_depth/resolution)+1;
 	ucvm_point_t* query_pts = malloc(sizeof(ucvm_point_t)*num_pts);
 	ucvm_data_t* data_pts = malloc(sizeof(ucvm_data_t)*num_pts);
-	double* vs_results = malloc(sizeof(double)*num_pts);
 	int i;
 	for (i=0; i<num_pts; i++) {
 		query_pts[i].coord[0] = lon;
@@ -225,6 +225,7 @@ float ucvm_zvalue(float lon, float lat, float vs_value, int taper_flag) {
             ucvm_elygtl_model_init(UCVM_MAX_MODELS-1, &conf);
             ely_init = 1;
         }
+
 		//We only need to use the taper down to the taper cutoff
 		int num_taper_pts = (int)(taper_depth/resolution)+1;
 
@@ -259,27 +260,27 @@ float ucvm_zvalue(float lon, float lat, float vs_value, int taper_flag) {
         free(ely_pts);
     }
 
+
 	float depth = -1.0;
 	int flag = 0;
 	int crossing_num = 0;
 	for (i=0; i<num_pts; i++) {
-		printf("depth = %f, Vs = %lf\n", (i*resolution), vs_results[i]);
 		if (crossing_num==2) {
 			//We have found the 2nd crossing, stop looking
 			break;
 		}
-		if (flag==0 && vs_results[i]>=vs_value) {
-			depth = i*resolution;
+		if (flag==0 && data_pts[i].cmb.vs>=vs_value) {
+			depth = query_pts[i].coord[2];
 			flag = 1;
 			crossing_num++;
-		} else if (vs_results[i]<vs_value) {
+		} else if (data_pts[i].cmb.vs<vs_value) {
 			flag = 0;
 		}
 	}
 
 	free(query_pts);
 	free(data_pts);
-	free(vs_results);
+
 	return depth;
 }
 	

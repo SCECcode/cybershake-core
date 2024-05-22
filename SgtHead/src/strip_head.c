@@ -39,9 +39,6 @@ int main(int argc, char** argv) {
 	struct sgtheader sgthead;
 	float* sgt_data = malloc(sizeof(float)*6*mast.nt);
 	for (i=0; i<mast.globnp; i++) {
-		if (i%10000==0) {
-			printf("%d of %d points.\n", i, mast.globnp);
-		}
 		fread(&sgthead, sizeof(struct sgtheader), 1, fp_in);
 		fread(sgt_data, sizeof(float), 6*mast.nt, fp_in);
 		fwrite(&sgthead, sizeof(struct sgtheader), 1, head_out);

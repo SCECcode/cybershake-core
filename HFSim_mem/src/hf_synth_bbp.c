@@ -2,6 +2,7 @@
 #include "include.h"
 #include "function_bbp.h"
 #include "defs.h"
+#include "bbp_srf_include.h"
 
 #define         RPERD           0.017453293
 #define         DPERR           57.29577951
@@ -13,7 +14,7 @@ const int Z_COMP_FLAG = 4;
 const int RUP_GEOM_MODE = 1;
 const int SRF_MODE = 2;
 
-void parse_rup_vars(char* rup_var_string, int num_rup_vars, struct rupture_variation* rup_vars, int rvfrac_seed);
+void parse_rup_vars(char* rup_var_string, int num_rup_vars, struct rupture_variation* rup_vars);
 
 int add_param_reset(char** param_string, char* param, int reset) {
 	//getpar expects the arguments to start with the 1st parameter
@@ -111,7 +112,6 @@ int main(int argc, char** argv) {
 
 	int mode = RUP_GEOM_MODE;
 	int srf_seed;
-	int rvfrac_seed = 0;
 
 	param_string = check_malloc(sizeof(char*) * MAX_PARAMS);
 	for (i=0; i<MAX_PARAMS; i++) {
@@ -153,8 +153,6 @@ int main(int argc, char** argv) {
 	getpar("pga_outfile", "s", &pga_outfile);
 	getpar("target_dx", "f", &target_dx);
 	getpar("target_dy", "f", &target_dy);
-	//If we're specifying rvfrac and seed
-	getpar("rvfrac_seed_given", "d", &rvfrac_seed);
 
 	//If vs30 is not given, then use UCVM to determine it
 	if (vs30==-1.0) {
@@ -201,7 +199,7 @@ int main(int argc, char** argv) {
 					rup_vars[i].hypo_id = 0;
 				}
 			} else {
-				parse_rup_vars(rup_var_string, num_rup_vars, rup_vars, rvfrac_seed);
+				parse_rup_vars(rup_var_string, num_rup_vars, rup_vars);
 				set_memcached_server("localhost");
 			}
 		}
@@ -214,8 +212,6 @@ int main(int argc, char** argv) {
 		mstpar("srf_seed", "d", &srf_seed);
 		rup_vars = check_malloc(sizeof(struct rupture_variation)*num_rup_vars);
         rup_vars[0].rup_var_id = rup_var_id;
-		//Force calculation of rvfrac in hfsims
-		rup_vars[0].rvfrac = -1.0;
 	} else {
 		printf("Error: must specify either rup_geom_file or infile.  Aborting.\n");
 		exit(2);
@@ -254,25 +250,15 @@ int main(int argc, char** argv) {
 	
 			if (mode==RUP_GEOM_MODE) {
 				rg_stats_t stats;
-				if (rvfrac_seed==1) {
-					//Use rvfrac and seed from arguments
-					int seed = rup_vars[rv].seed;
-					float rvfrac = rup_vars[rv].rvfrac;
-					char params[256];
-					sprintf(params, "seed=%d rvfrac=%f use_unmodified_seed=1", seed, rvfrac);
-					rupgen_genslip_with_params(rup_geom_file, rup_vars[rv].slip_id, rup_vars[rv].hypo_id, &stats, &srf, RUPGEN_UNIFORM_HYPO, 0.05, params);
-				} else {
-					//No seed/rvfrac passed
-					int rupture_seed = rupgen_get_rupture_seed(header.source_id, header.rupture_id);
-					rupgen_genslip_seed(rup_geom_file, rup_vars[rv].slip_id, rup_vars[rv].hypo_id, &stats, &srf, RUPGEN_UNIFORM_HYPO, 0.05, rupture_seed);
-				}
+				int rupture_seed = rupgen_get_rupture_seed(header.source_id, header.rupture_id);
+				rupgen_genslip_seed(rup_geom_file, rv, 0, &stats, &srf, RUPGEN_UNIFORM_HYPO, 0.05, rupture_seed);
 				if (debug) {
-					char srf_filename[256];
-					sprintf(srf_filename, "%s.%d.srf", rup_geom_file, rup_vars[rv].rup_var_id);
-					_write_srf(&srf, srf_filename, 0);
+					char srf_filename[128];
+					sprintf(srf_filename, "%s.srf", rup_geom_file);
+					write_srf(&srf, srf_filename, 0);
 				}
 			} else if (mode==SRF_MODE) {
-				_read_srf(&srf, infile, 0);
+				read_srf(&srf, infile, 0);
 			}
 	
 		    struct slipfile sfile;
@@ -327,18 +313,13 @@ int main(int argc, char** argv) {
 		//Calculate the variation seed out here, since we have all the parameters
 		int variation_seed = 0;
 		if (mode==RUP_GEOM_MODE) {
-			//See if we have the seed already
-			if (rup_vars[rv].seed==-1) {
-				rg_stats_t stats;
-				variation_seed = rupgen_get_variation_seed(rup_geom_file, &stats, RUPGEN_UNIFORM_HYPO, header.source_id, header.rupture_id, rv, 0);
-			} else {
-				variation_seed = rup_vars[rv].seed;
-			}
+			rg_stats_t stats;
+			variation_seed = rupgen_get_variation_seed(rup_geom_file, &stats, RUPGEN_UNIFORM_HYPO, header.source_id, header.rupture_id, rv, 0);
 		} else if (mode==SRF_MODE) {
 			variation_seed = srf_seed;
 		}
 
-		hfsim(seis, stat, slon, slat, local_vmod, fp_out, pga_fp_out, vs30, &header, modelrot, &sfile, num_comps, do_site_response, vref, vpga, variation_seed, rup_vars[rv].rvfrac, debug);
+		hfsim(seis, stat, slon, slat, local_vmod, fp_out, pga_fp_out, vs30, &header, modelrot, &sfile, num_comps, do_site_response, vref, vpga, variation_seed, debug);
 
 		free(sfile.sp);
        	free(sfile.tr);
@@ -363,14 +344,13 @@ int main(int argc, char** argv) {
 	free(param_string);
 }
 
-void parse_rup_vars(char* rup_var_string, int num_rup_vars, struct rupture_variation* rup_vars, int rvfrac_seed) {
+void parse_rup_vars(char* rup_var_string, int num_rup_vars, struct rupture_variation* rup_vars) {
+        //rup_var_string is in form (<rv_id>,<slip_id>,<hypo_id>);(....)
         int i;
         char* tok, *inner_tok;
         char* outer_save, *inner_save;
-		if (rvfrac_seed==0) {
-			//rup_var_string is in form (<rv_id>,<slip_id>,<hypo_id>);(....)
-	        tok = strtok_r(rup_var_string, "(;)", &outer_save);
-	        for (i=0; i<num_rup_vars; i++) {
+        tok = strtok_r(rup_var_string, "(;)", &outer_save);
+        for (i=0; i<num_rup_vars; i++) {
                 //tok points to rv<rv_id>,s<slip_id>,h<hypo_id>
                 inner_tok = strtok_r(tok, ",", &inner_save);
                 //parse rv
@@ -381,34 +361,7 @@ void parse_rup_vars(char* rup_var_string, int num_rup_vars, struct rupture_varia
                 //parse hypo
                 inner_tok = strtok_r(NULL, ",", &inner_save);
                 rup_vars[i].hypo_id = atoi(inner_tok);
-                //Values not specified
-                rup_vars[i].rvfrac = -1.0;
-				rup_vars[i].seed = -1;
-				//Advance outer
+                //Advance outer
                 tok = strtok_r(NULL, "(;)", &outer_save);
-	        }
-		} else {
-			//rup_var_string is in form (<rv_id>,<slip_id>,<hypo_id>,<rvfrac>,<seed>);(....)
-			tok = strtok_r(rup_var_string, "(;)", &outer_save);
-			for (i=0; i<num_rup_vars; i++) {
-				//tok points to <rv_id>,<slip_id>,<hypo_id>,<rvfrac>,<seed>
-				inner_tok = strtok_r(tok, ",", &inner_save);
-				//parse rv
-				rup_vars[i].rup_var_id = atoi(inner_tok);
-				inner_tok = strtok_r(NULL, ",", &inner_save);
-				//slip
-				rup_vars[i].slip_id = atoi(inner_tok);
-				inner_tok = strtok_r(NULL, ",", &inner_save);
-				//hypo
-				rup_vars[i].hypo_id = atoi(inner_tok);
-				inner_tok = strtok_r(NULL, ",", &inner_save);
-				//rvfrac
-				rup_vars[i].rvfrac = atof(inner_tok);
-				inner_tok = strtok_r(NULL, ",", &inner_save);
-				//seed
-				rup_vars[i].seed = atoi(inner_tok);
-				//Advance outer
-				tok = strtok_r(NULL, "(;)", &outer_save);
-			}
-		}
-tok = strtok_r(NULL, "(;)", &outer_save);}
+        }
+}
