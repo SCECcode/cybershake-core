@@ -4,7 +4,7 @@ import sys
 import os
 import struct
 import matplotlib
-matplotlib.use("AGG", warn=False)
+matplotlib.use("AGG")
 from pylab import *
 
 if len(sys.argv)<9:
@@ -52,12 +52,12 @@ legend(loc="lower left")
 #minorticks_on()
 #grid(b=True, which='minor')
 gcf().set_size_inches(8, 10)
-savefig(output_filename, type="png")
+savefig(output_filename, format="png")
 #Second plot of top 2 km
 ylim(-2.0, 0)
 xlim(0, 6000)
 legend(loc='upper right')
-savefig("zoomed_%s" % output_filename, type="png")
+savefig("zoomed_%s" % output_filename, format="png")
 
 
 

@@ -2,14 +2,33 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "ucvm_utils.h"
-
 
 /* Region coord delimiter */
 #define REGION_DELIM ","
 
 /* List delimiter */
 #define LIST_DELIM ","
+
+
+/* Returns true if path is a file */
+int ucvm_is_file(const char *path)
+{
+  struct stat st;
+
+  if (stat(path, &st) == 0) {
+    if ((S_ISREG(st.st_mode)) && (!S_ISDIR(st.st_mode))) {
+      return(1);
+    } else {
+      return(0);
+    }
+  }
+
+  return(0);
+}
 
 
 /* Determine system endian */
@@ -38,23 +57,81 @@ float swap_endian_float(float f)
 }
 
 
-/* Parses string list into double array */
-int list_parse(char *lstr, int n, double *arr)
+/* Safe string copy */
+int ucvm_strcpy(char *str1, const char *str2, int str1len)
 {
-  char *token;
-  int i = 0;
-
-  if ((lstr == NULL) || (n <= 0) || (arr == NULL)) {
+  if (str1 == NULL) {
     return(UCVM_CODE_ERROR);
   }
 
-  token = strtok(lstr, LIST_DELIM);
-  while ((token != NULL) && (i < n)) {
-    arr[i] = atof(token);
-    i++;
+  if (str2 == NULL) {
+    strcpy(str1, "");
+    return(UCVM_CODE_ERROR);
+  }
+
+  if (snprintf(str1, str1len, "%s", str2) > str1len) {
+    fprintf(stderr, "Warning (ucvm_strcpy): String %s truncated to %s\n",
+	    str2, str1);
+  }
+  return(UCVM_CODE_SUCCESS);
+}
+
+
+/* Parses string list into double array */
+int list_parse(const char *lstr, int llen, double *arr, int an)
+{
+  char *token;
+  char *strbuf;
+  int i = 0;
+
+  if ((lstr == NULL) || (llen <= 0) || 
+      (arr == NULL) || (an <= 0)) {
+    return(UCVM_CODE_ERROR);
+  }
+
+  strbuf = (char *) malloc(llen);
+  if (strbuf == NULL) {
+    return(UCVM_CODE_ERROR);
+  }
+
+  ucvm_strcpy(strbuf, lstr, llen);
+  token = strtok((char *)lstr, LIST_DELIM);
+  while ((token != NULL) && (i < an)) {
+    arr[i++] = atof(token);
     token = strtok(NULL, LIST_DELIM);
   }
 
+  free(strbuf);
+  return(UCVM_CODE_SUCCESS);
+}
+
+
+/* Parses string list into string array */
+int list_parse_s(const char *lstr, int llen, 
+		 char **arr, int an, int alen)
+{
+  char *token;
+  char *strbuf;
+  int i = 0;
+
+  if ((lstr == NULL) || (llen <= 0) || 
+      (arr == NULL) || (an <= 0) || (alen <= 0)) {
+    return(UCVM_CODE_ERROR);
+  }
+
+  strbuf = (char *) malloc(llen);
+  if (strbuf == NULL) {
+    return(UCVM_CODE_ERROR);
+  }
+
+  ucvm_strcpy(strbuf, lstr, llen);
+  token = strtok(strbuf, LIST_DELIM);
+  while ((token != NULL) && (i < an)) {
+    ucvm_strcpy(arr[i++], token, alen);
+    token = strtok(NULL, LIST_DELIM);
+  }
+
+  free(strbuf);
   return(UCVM_CODE_SUCCESS);
 }
 
@@ -62,9 +139,6 @@ int list_parse(char *lstr, int n, double *arr)
 /* Returns true if region contains point p of coord type c */
 int region_contains(ucvm_region_t *r, ucvm_ctype_t c, ucvm_point_t *p)
 {
-  /* NOTE remove this */
-  return(1);
-
   if (c != r->cmode) {
     fprintf(stderr, "Coord type conversion not supported in region_contains().\n");
     return(0);
@@ -76,6 +150,13 @@ int region_contains(ucvm_region_t *r, ucvm_ctype_t c, ucvm_point_t *p)
   if ((p->coord[1] < r->p1[1]) || (p->coord[1] > r->p2[1])) {
     return(0);
   }
+  return(1);
+}
+
+
+/* Returns true */
+int region_contains_null(ucvm_region_t *r, ucvm_ctype_t c, ucvm_point_t *p)
+{
   return(1);
 }
 
@@ -113,6 +194,7 @@ int region_parse(char *rstr, ucvm_region_t *r)
   return(UCVM_CODE_ERROR);
 }
 
+
 /* Parses region structure into string*/
 int region_string(ucvm_region_t *r, char *rstr, int len)
 {
@@ -123,28 +205,24 @@ int region_string(ucvm_region_t *r, char *rstr, int len)
 
 
 /* Rotate point in 2d about origin by theta radians */
-int rot_point_2d(ucvm_point_t *p, ucvm_point_t *o, double theta)
+int rot_point_2d(ucvm_point_t *p, double theta)
 {
-  double x_offset, y_offset;
+  double x, y;
 
-  /* Compute offset from origin */
-  x_offset = p->coord[0] - o->coord[0];
-  y_offset = p->coord[1] - o->coord[1];
+  x = p->coord[0];
+  y = p->coord[1];
 
   /* Rotate this offset */
   //printf("x_offset=%lf, y_offset=%lf\n", x_offset, y_offset);
-  p->coord[0] = (x_offset) * cos(theta) - (y_offset) * sin(theta);
-  p->coord[1] = (x_offset) * sin(theta) + (y_offset) * cos(theta);
+  p->coord[0] = (x) * cos(theta) - (y) * sin(theta);
+  p->coord[1] = (x) * sin(theta) + (y) * cos(theta);
 
-  /* Add origin back in */
-  p->coord[0] = p->coord[0] + o->coord[0];
-  p->coord[1] = p->coord[1] + o->coord[1];
-
-  return(0);
+  return(UCVM_CODE_SUCCESS);
 }
 
+
 /* Interpolate point linearly between two 1d values */
-double interpolate_linear_1d(double v1, double v2, double ratio) 
+double interpolate_linear(double v1, double v2, double ratio) 
 {
   return(ratio*v2 + v1*(1-ratio));
 }
@@ -152,7 +230,7 @@ double interpolate_linear_1d(double v1, double v2, double ratio)
 
 
 /* Interpolate point bilinearly between four corners */
-double interpolate_bilinear_2d(double x, double y, 
+double interpolate_bilinear(double x, double y, 
 			       double x1, double y1, double x2, double y2, 
 			       double q11, double q21, double q12, double q22)
 {
@@ -167,21 +245,21 @@ double interpolate_bilinear_2d(double x, double y,
 
 /* Interpolate point tri-linearly between 8 cube corners.
    Points are indexed [ll,ur][x,y,z], q is indexed[z][y][x] */
-double interpolate_trilinear_1d(double x, double y, double z,
-			      double p[2][3], double q[2][2][2]) 
+double interpolate_trilinear(double x, double y, double z,
+			     double p[2][3], double q[2][2][2]) 
 {
   double c0, c1;
   double ratio;
 
   /* Top plane */
-  c0 = interpolate_bilinear_2d(x, y,
+  c0 = interpolate_bilinear(x, y,
 			       p[0][0], p[0][1],
 			       p[1][0], p[1][1],
 			       q[0][0][0], q[0][0][1], 
 			       q[0][1][0], q[0][1][1]);
 
   /* Bottom plane */
-  c1 = interpolate_bilinear_2d(x, y,
+  c1 = interpolate_bilinear(x, y,
 			       p[0][0], p[0][1],
 			       p[1][0], p[1][1],
 			       q[1][0][0], q[1][0][1], 
@@ -189,5 +267,33 @@ double interpolate_trilinear_1d(double x, double y, double z,
 
   /* Z axis */
   ratio = (z - p[0][2])/(p[1][2] - p[0][2]); 
-  return(interpolate_linear_1d(c0, c1, ratio));
+  return(interpolate_linear(c0, c1, ratio));
+}
+
+
+/* Density derived from Vp via Nafe-Drake curve, Brocher (2005) eqn 1. */
+double ucvm_nafe_drake_rho(double vp) 
+{
+  double rho;
+
+  /* Convert m to km */
+  vp = vp * 0.001;
+  rho = vp * (1.6612 - vp * (0.4721 - vp * (0.0671 - vp * (0.0043 - vp * 0.000106))));
+  if (rho < 1.0) {
+    rho = 1.0;
+  }
+  rho = rho * 1000.0;
+  return(rho);
+}
+
+
+/* Vp derived from Vs via Brocher (2005) eqn 9. */
+double ucvm_brocher_vp(double vs) 
+{
+  double vp;
+
+  vs = vs * 0.001;
+  vp = 0.9409 + vs * (2.0947 - vs * (0.8206 - vs * (0.2683 - vs * 0.0251)));
+  vp = vp * 1000.0;
+  return(vp);
 }
