@@ -16,9 +16,10 @@ rups_to_include = []
 with open(rup_infile, "r") as fp_in:
     data = fp_in.readlines()
     for line in data:
-        rups_to_include.append(line.split(',')[0:2])
+        rups_to_include.append(line.strip().split(',')[0:2])
     fp_in.close()
 
+print(rups_to_include)
 output_data = []
 
 with open(infile, 'r') as fp_in:
