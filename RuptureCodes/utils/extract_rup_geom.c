@@ -3,7 +3,7 @@
 
 #include "srf_structure.h"
 
-void read_srf(struct standrupformat *srf,char *file,int bflag);
+void _read_srf(struct standrupformat *srf,char *file,int bflag);
 
 int main(int argc, char** argv) {
 	if (argc<6) {
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 	FILE* fp_out = fopen(output_file, "w");
 
 	struct standrupformat srf;
-	read_srf(&srf, srf_file, bflag);
+	_read_srf(&srf, srf_file, bflag);
 
 	//Single-segment
 	if (srf.srf_prect.nseg==1) {
