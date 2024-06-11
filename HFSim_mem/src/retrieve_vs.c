@@ -13,7 +13,11 @@ const float MIN_VS = 500.0;
 
 void initialize_ucvm(char* model) {
 	printf("Initializing UCVM.\n");
-	if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
+	if (ucvm_initialized==1) {
+		printf("UCVM already initialized.\n");
+		return;
+	}
+	if (ucvm_init("/work2/00349/scottcal/frontera/CyberShake/software/UCVM/ucvm_23.4.0_withSFCVM/conf/ucvm.conf")!=UCVM_CODE_SUCCESS) {
 		fprintf(stderr, "Failed to init UCVM, aborting.");
         exit(3);
     }
@@ -29,13 +33,15 @@ void initialize_ucvm(char* model) {
             } else if (strcmp(model, "cvmsi")==0) {
                 model_string = UCVM_MODEL_CVMSI;
 				//For now, turn on the ifless taper too
-				ifless_taper = 1;
+				//ifless_taper = 1;
             } else if (strcmp(model, "bbp1d")==0) {
                 model_string = UCVM_MODEL_BBP1D;
             } else if (strcmp(model, "usgs")==0) {
                 model_string = UCVM_MODEL_CENCAL;
             } else if (strcmp(model, "cca")==0) {
                 model_string = "cca";
+			} else if (strcmp(model, "sfcvm")==0) {
+				model_string = "sfcvm";
             } else {
                 fprintf(stderr, "Don't recognize model %s.  Aborting.\n", model);
                 exit(1);
@@ -46,7 +52,7 @@ void initialize_ucvm(char* model) {
                 exit(3);
             }
 
-            if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+            if (ucvm_setparam(UCVM_MODEL_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Set query mode by depth failed.\n");
                 exit(-2);
             }
@@ -73,6 +79,8 @@ void initialize_ucvm(char* model) {
 				model_string = UCVM_MODEL_CENCAL;
 			} else if (strcmp(tok, "cca")==0) {
 				model_string = "cca";
+			} else if (strcmp(tok, "sfcvm")==0) {
+				model_string = "sfcvm";
 			} else {
 				fprintf(stderr, "Don't recognize model %s.  Aborting.\n", tok);
 				exit(1);
@@ -83,7 +91,7 @@ void initialize_ucvm(char* model) {
 	            exit(3);
 	        }
 	
-	        if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+	        if (ucvm_setparam(UCVM_MODEL_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
 	        	fprintf(stderr, "Set query mode by depth failed.\n");
 	            exit(-2);
 	        }
@@ -91,17 +99,44 @@ void initialize_ucvm(char* model) {
 		}
 	}
 	printf("Initialization complete.\n");
+	ucvm_initialized = 1;
 }
+
+
+int test_for_taper(float lon, float lat, char* taper_models) {
+    ucvm_point_t query_pt;
+    ucvm_data_t query_data;
+    query_pt.coord[0] = lon;
+    query_pt.coord[1] = lat;
+    query_pt.coord[2] = 0.0;
+    if (ucvm_query(1, &query_pt, &query_data)!=UCVM_CODE_SUCCESS) {
+        fprintf(stderr, "UCVM query failed.\n");
+        exit(-3);
+    }
+    char pt_label[64];
+    ucvm_model_label(query_data.crust.source, pt_label, 64);
+    char* tok = strtok(taper_models, ",");
+    char tmp[64];
+    while (tok!=NULL) {
+        strcpy(tmp, tok);
+        if (strcmp(tmp, pt_label)==0) {
+            //Yes, we will be needing the taper
+            return 1;
+        }
+        tok = strtok(NULL, ",");
+    }
+    return 0;
+}
+
 
 //Retrieve discrete slowness-averaged Vs depth value from UCVM
 //Applies Vs=500 m/s floor
-float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, int depth, int step_size) {
+float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, int depth, int step_size, int taper_flag) {
 	//The algorithm is:
 	//VsDiscrete@depth = (depth/step_size) / (0.5/Vs(Z=0) + 1/Vs(Z=1*step_size)
 	//	+ 1/Vs(Z=2*step_size) + ... + 0.5/Vs(Z=depth)
 	if (!ucvm_initialized) {
 		initialize_ucvm(model);
-		ucvm_initialized = 1;
 	}
 
     int i;
@@ -128,7 +163,7 @@ float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, i
 		vs_results[i] = query_data[i].cmb.vs;
 	}
 
-	if (ifless_taper!=0) {
+	if (taper_flag!=0) {
         printf("Using ifless taper.\n");
         //If we're using the taper, we need to initialize Ely
         //Similar code to that in ucvm-single_mpi.c
@@ -188,12 +223,11 @@ float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, i
 
 
 //Retrieve slowness-averaged Vs depth value from UCVM, for the given model.
-float ucvm_vsD(float lon, float lat, char* model, int depth) {
+float ucvm_vsD(float lon, float lat, char* model, int depth, int taper_flag) {
 	//The algorithm is:
 	//Vs30 = 30 / sum( 1 / (Vs sampled from [0.5, 29.5] at 1 meter increments, for 30 values) )
 	if (!ucvm_initialized) {
 		initialize_ucvm(model);
-		ucvm_initialized = 1;
 	}
 
 	//Query without taper	
@@ -215,7 +249,7 @@ float ucvm_vsD(float lon, float lat, char* model, int depth) {
 		printf("%f: %f\n", query_pts[i].coord[2], query_data[i].cmb.vs);
 	}
 	//If we need to include the taper
-	if (ifless_taper!=0) {
+	if (taper_flag!=0) {
 		printf("Using ifless taper.\n");
 	    //If we're using the taper, we need to initialize Ely
     	//Similar code to that in ucvm-single_mpi.c
@@ -267,7 +301,7 @@ float ucvm_vsD(float lon, float lat, char* model, int depth) {
 	return vs;
 }
 
-float vs_at_site(float lon, float lat, char* model) {
+/*float vs_at_site(float lon, float lat, char* model, int taper_flag) {
 	if (!ucvm_initialized) {
                 initialize_ucvm(model);
                 ucvm_initialized = 1;
@@ -286,7 +320,7 @@ float vs_at_site(float lon, float lat, char* model) {
 		vs = 500.0;
 	}
 	return vs;
-}
+}*/
 
 
 //Need Vs30, VsD5H, Vs5H
@@ -296,7 +330,7 @@ float vs_at_site(float lon, float lat, char* model) {
 //So VsD500 = 5/(0.5/Vs(Z=0) + 1/Vs(Z=100) + ... + 1/Vs(Z=400) + 0.5/Vs(Z=500))
 int main(int argc, char** argv) {
 	if (argc<7) {
-		printf("Usage: %s <lon> <lat> <model> <gridspacing (m)> <depth to query for surface mesh point (m)> <out filename>\n", argv[0]);
+		printf("Usage: %s <lon> <lat> <model> <gridspacing (m)> <depth to query for surface mesh point (m)> <out filename> [comma-separated taper string]\n", argv[0]);
 		return 1;
 	}
 	float lon = atof(argv[1]);
@@ -306,9 +340,20 @@ int main(int argc, char** argv) {
 	float surface_depth = atof(argv[5]);
 	char* filename = argv[6];
 
-	float vs30 = ucvm_vsD(lon, lat, model, 30);
-	float vs5H = ucvm_vsD(lon, lat, model, 5*gridspacing);
-	float vsD5H = ucvm_vs_discrete(lon, lat, model, surface_depth, 5*gridspacing, gridspacing);
+	initialize_ucvm(model);
+	
+    char* taper_models = NULL;
+    int taper_flag = 0;
+    if (argc>7) {
+        taper_models = argv[7];
+        //Since all the queries are for a single point, determine if this point is using a model that requires the taper
+        taper_flag = test_for_taper(lon, lat, taper_models);
+        printf("Taper flag = %d.\n", taper_flag);
+    }
+
+	float vs30 = ucvm_vsD(lon, lat, model, 30, taper_flag);
+	float vs5H = ucvm_vsD(lon, lat, model, 5*gridspacing, taper_flag);
+	float vsD5H = ucvm_vs_discrete(lon, lat, model, surface_depth, 5*gridspacing, gridspacing, taper_flag);
 	FILE* fp_out = fopen(filename, "w");
 	fprintf(fp_out, "Vs30 = %.1f\nVs%d = %.1f\nVsD%d = %.1f\n", vs30, 5*gridspacing, vs5H, 5*gridspacing, vsD5H);
 	fflush(fp_out);
