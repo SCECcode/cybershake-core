@@ -24,6 +24,9 @@ elif MPI_CMD=="jsrun":
 	#Start memcached once on each node
 	memcached_path = "/gpfs/alpine/proj-shared/geo112/CyberShake/utils/pegasus_wrappers/invoke_memcached.sh"
 	cmd = "jsrun -a 1 -c 1 -g 0 -r 1 -n %d %s" % (num_nodes, memcached_path)
+elif MPI_CMD=="ibrun":
+	memcached_path = "/work2/00349/scottcal/frontera/CyberShake/utils/pegasus_wrappers/invoke_memcached.sh"
+	cmd = "export IBRUN_TASKS_PER_NODE=1; ibrun %s &" % memcached_path
 print(cmd)
 rc = os.system(cmd)
 if rc!=0:
@@ -36,6 +39,10 @@ if MPI_CMD=="aprun":
 elif MPI_CMD=="jsrun":
 	module_cmd = "module swap xl gcc; module swap fftw/3.3.8 fftw/3.3.5"
 	cmd = "%s; jsrun -n %d -a 1 -c 1 -g 0 -r 42 %s" % (module_cmd, num_res_sets, ds_path)
+elif MPI_CMD=="ibrun":
+	#cmd = "export IBRUN_TASKS_PER_NODE=56; ibrun %s" % ds_path
+	cmd = "export LD_LIBRARY_PATH=/work2/00349/scottcal/frontera/CyberShake/utils/libmemcached_1.0.18/lib:$LD_LIBRARY_PATH; ibrun %s" % ds_path
+
 print(cmd)
 rc = os.system(cmd)
 sys.exit((rc >> 8) & 0xFF)
