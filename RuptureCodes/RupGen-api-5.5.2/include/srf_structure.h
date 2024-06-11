@@ -2,9 +2,9 @@
 #define SRF_STRUCT_H
 
 //for compatibility with params.h                                             
-#define LV 10
-#define NQ 2000
-#define NP 500
+//#define LV 10
+//#define NQ 2000
+//#define NP 500
 
 //This structure contains the output from srf2stoch                           
 /*struct slipfile
