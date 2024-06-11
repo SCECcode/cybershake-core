@@ -97,15 +97,29 @@ int main(int argc, char** argv) {
 	struct statdata sdata;
 	FILE* fp_out = fopen(seis_out_filename, "wb");
 	while (fread(&in_header, sizeof(struct seisheader), 1, fp_in)>0) {
-		float** seis = check_malloc(sizeof(float*)*2);
-		for(i=0; i<2; i++) {
+		//Determine number of components
+	    int x_flag = in_header.comps & 1;
+   		int y_flag = in_header.comps & 2;
+   		int z_flag = in_header.comps & 4;
+		int num_comps = 0;
+		if (x_flag!=0) {
+			num_comps++;
+		}
+		if (y_flag!=0) {
+			num_comps++;
+		}
+		if (z_flag!=0) {
+			num_comps++;
+		}
+		float** seis = check_malloc(sizeof(float*)*num_comps);
+		for(i=0; i<num_comps; i++) {
 			seis[i] = check_malloc(sizeof(float)*in_header.nt);
 			fread(seis[i], sizeof(float), in_header.nt, fp_in);
 		}
 		sdata.nt = in_header.nt;
 		sdata.dt = in_header.dt;
 	
-		for (i=0; i<2; i++) {
+		for (i=0; i<num_comps; i++) {
 			//to accel
 	        add_param_reset(param_string, "diff=1", 1);
 	        num_params = add_param(param_string, "integ=0");
@@ -155,11 +169,11 @@ int main(int argc, char** argv) {
 		}
 	
 		fwrite(&in_header, sizeof(struct seisheader), 1, fp_out);
-		for (i=0; i<2; i++) {
+		for (i=0; i<num_comps; i++) {
 			fwrite(seis[i], sizeof(float), in_header.nt, fp_out);
 		}
 		fflush(fp_out);
-		for(i=0; i<2; i++) {
+		for(i=0; i<num_comps; i++) {
                 	free(seis[i]);
         	}
 		free(seis);
