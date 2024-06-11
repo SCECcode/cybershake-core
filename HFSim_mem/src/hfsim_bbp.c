@@ -20,7 +20,7 @@ extern void hb_high_(char* stat, float* slon, float* slat, char* local_vmod, cha
 
 float get_rvfac(double mean_rvfac, double range_rvfac, int seed) {
 	//char* filename = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp/comps/hfsims_cfg.py";
-	char* filename = "/gpfs/alpine/scratch/callag/geo112/bbp/bbp/comps/hfsims_cfg.py";
+	char* filename = "/work2/00349/scottcal/frontera/CyberShake/software/bbp/bbp-22.4.0/bbp/comps/hfsims_cfg.py";
 	FILE* hfsims_cfg_fp = fopen(filename, "r");
 	Py_Initialize();
 	PyRun_SimpleFile(hfsims_cfg_fp, filename);
