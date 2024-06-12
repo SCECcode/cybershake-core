@@ -56,6 +56,7 @@ parser.add_option("--source-frequency", type=float, dest="source_freq", action="
 parser.add_option("--spacing", type=float, dest="spacing", action="store", default=None, help="Override default spacing, derived from frequency.")
 parser.add_option("--velocity-mesh", dest="vel_mesh", action="store", default=None, help="Provide path to velocity mesh.  If omitted, will assume mesh is named awp.<site>.media.")
 parser.add_option("--run_id", dest="run_id", type=int, action="store", help="Run ID.")
+parser.add_option("--z-component", dest="z_comp", action="store_true", default=False, help="Include Z component SGT calculations.")
 
 (option, args) = parser.parse_args()
 
@@ -93,6 +94,8 @@ if option.source_freq!=None:
 run_id = option.run_id
 
 awp_comps = ['x', 'y']
+if option.z_comp==True:
+	awp_comps.append('z')
 
 for c in awp_comps:
 	mkdir_p("comp_%s/input" % c)
