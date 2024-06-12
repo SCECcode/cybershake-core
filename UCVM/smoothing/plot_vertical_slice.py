@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import matplotlib
-matplotlib.use("AGG", warn=False)
+matplotlib.use("AGG")
 from pylab import *
 import sys
 import os
@@ -15,7 +15,7 @@ from mpl_toolkits.basemap import cm
 from operator import itemgetter
 
 if len(sys.argv)<10:
-	print("Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <grid spacing in km> <'x' or 'y' axis-parallel slice> <row or column value> <output file>" % sys.argv[0])
+	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <grid spacing in km> <'x' or 'y' axis-parallel slice> <row or column value> <output file>" % sys.argv[0]
 	sys.exit(1)
 
 
@@ -30,7 +30,7 @@ column = int(sys.argv[8])
 output_file = sys.argv[9]
 
 if comp!='x' and comp!='y':
-	print("Component must be x or y.")
+	print "Component must be x or y."
 	sys.exit(1)
 
 if comp=='x':
@@ -39,12 +39,12 @@ elif comp=='y':
 	not_comp = 'x'
 
 coords = []
-print("Reading model coods file.")
+print "Reading model coods file."
 with open(model_coords_file, "r") as fp_in:
 	for line in fp_in:
-                pieces = line.split()
+		pieces = line.split()
 		if comp=='x' and int(pieces[3])==column:
-	                coords.append([float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])])
+			coords.append([float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])])
 		elif comp=='y' and int(pieces[2])==column:
 			coords.append([float(pieces[0]), float(pieces[1]), int(pieces[2]), int(pieces[3])])
 	fp_in.close()
@@ -52,7 +52,7 @@ vs = []
 x_values = []
 y_values = []
 
-print("Reading velocity file.")
+print "Reading velocity file."
 with open(velocity_file, "rb") as fp_in:
 	for z in range(0, nz):
 		for c in coords:
@@ -68,19 +68,22 @@ with open(velocity_file, "rb") as fp_in:
 			y_values.append(-1.0*z*grid_spacing)
 
 #Plotting code taken from UCVM horizontal slice
-BOUNDS = [0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
-TICKS = [0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
+#BOUNDS = [0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
+BOUNDS = [400.0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 4000.0]
+#TICKS = [0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
+TICKS = [400, 500, 1000, 1500, 2000, 2500, 3000, 4000]
 
 #colormap = cm.RdBu
 colormap = basemap.cm.GMT_seis
-norm = mcolors.Normalize(vmin=BOUNDS[0],vmax=BOUNDS[len(BOUNDS) - 1])
+#norm = mcolors.Normalize(vmin=BOUNDS[0],vmax=BOUNDS[len(BOUNDS) - 1])
+norm = mcolors.LogNorm(vmin=BOUNDS[0],vmax=BOUNDS[len(BOUNDS) - 1])
 
 #plt.pcolormesh([a[0] for a in ordered_coords], [a[1] for a in ordered_coords], vs, cmap=colormap, norm=norm)
 #t = m.transform_scalar(vs_2d, x_coords, y_coords, len(x_coords), len(y_coords))
 #img = m.imshow(vs_2d, cmap=colormap, norm=norm, interpolation='nearest')
 plt.figure(figsize=(12,5.5))
 plt.clf()
-plt.scatter(x_values, y_values, c=vs, cmap=colormap, norm=norm, marker='s', s=2, edgecolors='')
+plt.scatter(x_values, y_values, c=vs, cmap=colormap, norm=norm, marker='s', s=2, edgecolors='none')
 plt.subplots_adjust(left=0.1, right=0.95, top=0.95, bottom=0.15)
 plt.xlabel("Distance (km) along %s=%d slice" % (not_comp, column))
 plt.ylabel("Depth (km)")
@@ -91,6 +94,12 @@ if comp=='x':
 elif comp=='y':
 	plt.xlim(0, ny*grid_spacing)
 cax = plt.axes([0.125, 0.05, 0.775, 0.02])
-cbar = plt.colorbar(cax=cax, orientation='horizontal', ticks=TICKS)
+cbar = plt.colorbar(cax=cax, orientation='horizontal', ticks=TICKS, format="%d")
 
-plt.savefig(output_file, type="png")
+plt.savefig(output_file, format="png")
+
+#Created zoomed version
+#plt.ylim(-10.0, 0)
+#plt.figure().canvas.draw()
+#plt.figure().canvas.flush_events()
+#plt.savefig("zoomed_%s" % output_file, format="png")

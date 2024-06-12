@@ -1,8 +1,16 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 import sys
 import os
 import optparse
+
+full_path = os.path.abspath(sys.argv[0])
+path_add = os.path.dirname(os.path.dirname(full_path))
+
+sys.path.append(path_add)
+
+import config
+
 
 parser = optparse.OptionParser()
 parser.add_option("--site", dest="site", action="store", help="Site name")
@@ -16,12 +24,12 @@ parser.add_option("--boundsfile", dest="boundsfile", action="store", help="Path 
 parser.add_option("--frequency", dest="frequency", action="store", type="float", help="Frequency")
 parser.add_option("--gpu", dest="gpu_arg", action="store_true", default=False, help="Use GPU box settings.")
 parser.add_option("--spacing", dest="spacing", action="store", type="float", help="Override default spacing with this value, in km.")
-parser.add_option("--server", dest="server", action="store", default="focal.usc.edu", help="Address of server to query in creating modelbox, default is focal.usc.edu. Can specify sqlite database with sqlite://<file>")
+parser.add_option("--server", dest="server", action="store", default="focal.usc.edu", help="Address of server to query in creating modelbox, default is focal.usc.edu. Can specify sqlite database with sqlite://<file>.  ***Note that if LOCAL_DB is defined in cybershake.cfg file, that value will be used instead of what is given here.***")
 parser.add_option("--bounding-box", dest="bbox", action="store_true", default=False, help="Assume (StartLat, StartLon) and (EndLat, EndLon) represent 2 corners of a box, all 4 corners of which must be inside the volume (as opposed to only requiring those 2 points)")
-parser.add_option("--tight-box", dest="tight", action="store_true", default=False, help="Use a box with 20 km padding (the default is 30 km)")
+parser.add_option("--tight-box", dest="tight", action="store_true", default=False, help="Use a box with 20 km padding (the default is 50 km)")
 parser.add_option("--depth", dest="depth", action="store", type="float", help="Override default depth with this value, in km")
 parser.add_option("--rotation", dest="rotation", action="store", type="float", help="Override default rotation with this value")
-parser.add_option("--padding", dest="padding", action="store", type="float", help="Override default padding of 30 km with this value, in km")
+parser.add_option("--padding", dest="padding", action="store", type="float", help="Override default padding of 50 km with this value, in km")
 
 (option, args) = parser.parse_args()
 
@@ -37,7 +45,7 @@ paramsfile = os.path.abspath(option.paramsfile)
 boundsfile = os.path.abspath(option.boundsfile)
 
 if site==None or erfID==None or modelbox==None or gridfile==None or gridout==None or coordsfile==None or paramsfile==None or boundsfile==None:
-	print "All of site, ERF ID, modelbox, gridfile, gridout, coordsfile, paramsfile, and boundsfile must be specified."
+	print("All of site, ERF ID, modelbox, gridfile, gridout, coordsfile, paramsfile, and boundsfile must be specified.")
 	parser.print_help()
 	sys.exit(-1)
 
@@ -65,17 +73,23 @@ padding = -1.0
 if option.padding is not None:
         padding = option.padding
 
-
 os.chdir(os.path.join(sys.path[0], "Modelbox"))
 gpu_arg = ""
 if use_gpu:
 	gpu_arg = "gpu"
+
+try:
+	local_db = config.getProperty('LOCAL_DB')
+	server = local_db
+except KeyError:
+	pass
 
 cmd = "./get_modelbox.py %s %s %s %f %s %f %s %s %s %s" % (site, erfID, modelbox, spacing, server, rotation, padding, gpu_arg, bbox_arg, tight_arg)
 print(cmd)
 exitcode = os.system(cmd)
 if exitcode!=0:
 	sys.exit((exitcode >> 8) & 0xFF)
+
 os.chdir("../GenGrid_py")
 cmd = "./gen_grid.py %s %s %s %s %s %s %f %f %s %f" % (modelbox, gridfile, gridout, coordsfile, paramsfile, boundsfile, frequency, spacing, gpu_arg, depth)
 print(cmd)

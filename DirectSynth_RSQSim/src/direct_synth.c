@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
 		write_log(buf);
 	}
 
-	MPI_Comm sgt_handler_comm, sgt_readers_comm, manager_plus_workers_comm;
+	MPI_Comm sgt_handler_comm, sgt_readers_comm;
 	//Includes ranks 0 through num_sgt_handlers - 1
         constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm);
 	//Includes ranks 1 through num_sgt_handlers - 1, for reading in SGT files

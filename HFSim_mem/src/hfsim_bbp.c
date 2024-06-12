@@ -9,6 +9,7 @@
 #include "structure.h"
 #include "function_bbp.h"
 #include "defs.h"
+#include "bbp_wcc_include.h"
 
 /* This code acts as a wrapper for Rob's high frequency code, integrator, and merged into
 * a single seismogram file in GRM format.
@@ -17,6 +18,11 @@
 extern void cs_params_();
 
 extern void hb_high_(char* stat, float* slon, float* slat, char* local_vmod, char* outfile, float* tlen, float* dt, float* seis, int* nseg, float* elon, float* elat, float* targ_mag, int* nlskip, int* nx, int* ny, float* dx, float* dy, float* strike, float* dip, float* ravg, float* dtop, float* shypo, float* dhypo, float* sp, float* tr, float* ti, float* qfexp, char* velfile, float* stress_average, float* rvfac, int* seed, int* msite, int stat_len, int local_vmod_len, int outfile_len, int velfile_len);
+
+float wcc_getpeak(int param_string_len, char** param_string, float* seis, struct statdata* head1);
+
+int wcc_siteamp09(float* seis, int nt, float dt, float pga, float vs30);
+int wcc_rotate(float seis[][mmv], int nt, float dt, float rot);
 
 float get_rvfac(double mean_rvfac, double range_rvfac, int seed) {
 	//char* filename = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp/comps/hfsims_cfg.py";
@@ -34,7 +40,6 @@ float get_rvfac(double mean_rvfac, double range_rvfac, int seed) {
 	PyObject* py_rvfac = PyObject_CallObject(expression, args);
 
 	double rvfac = PyFloat_AsDouble(py_rvfac);
-	Py_DECREF(args);
 	Py_Finalize();
 	printf("internal rvfac = %lf\n", rvfac);
 
@@ -75,7 +80,7 @@ void write_grm_head(FILE* fp_out, float** seis, struct seisheader* header, int n
     }
 }
 
-void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, FILE* pga_output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, float vref, float vpga, int seed, float rvfrac, int debug) {
+void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, FILE* pga_output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, float vref, float vpga, int seed, int debug) {
 	//parse cmd-line args
 	int stat_len;
 	int local_vmod_len;
@@ -155,16 +160,10 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	free(tmp_tr);
 	free(tmp_ti);
 
-	//Determine rvfac, if not provided
-	if (rvfrac<=0) {
-		//double mean_rvfac = 0.8;
-		//double range_rvfac = 0.05;
-		double mean_rvfac = 0.775;
-		double range_rvfac = 0.1;
-		sfile->rvfac = get_rvfac(mean_rvfac, range_rvfac, seed);
-	} else {
-		sfile->rvfac = rvfrac;
-	}
+	//Determine rvfac
+	double mean_rvfac = 0.8;
+	double range_rvfac = 0.05;
+	sfile->rvfac = get_rvfac(mean_rvfac, range_rvfac, seed);
 	if (debug) printf("rvfac = %f\n", sfile->rvfac);
 
 	//Generate high-frequency seismogram
@@ -173,7 +172,7 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	local_vmod_len = 256;
 	output_len = 256;
 	velfile_len = 256;*/
-	//if (debug) printf("stat len=%d, local_vmod_len=%d, local_vmod=%s, output_len=%d, velfile_len=%d\n", stat_len, local_vmod_len, local_vmod, output_len, velfile_len);
+	if (debug) printf("stat len=%d, local_vmod_len=%d, output_len=%d, velfile_len=%d\n", stat_len, local_vmod_len, output_len, velfile_len);
 	//extern void hb_high_(char* stat, float* slon, float* slat, char* local_vmod, char* outfile, float* tlen, float* dt, float* seis, int* nseg, float* elon, float* elat, float* targ_mag, int* nx, int* ny, float* dx, float* dy, float* strike, float* dip, float* ravg, float* dtop, float* shypo, float* dhypo, float* sp, float* tr, float* ti, float* qfexp, float* stress_average, int* msite, int stat_len, int local_vmod_len, int outfile_len);
 	//Initializes a bunch of hb_high variables to their CyberShake values
 	cs_params_();
@@ -259,21 +258,6 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 			for (k=0; k<num_params; k++) {
 				printf("Param %d: %s\n", k, param_string[k]);
 			}
-			//Add some rounding, since the temporary files in the BBP are written with 6 sig figs
-			for (j=0; j<head1.nt; j++) {
-				float tmp = seisC[i][j];
-				if (tmp==0) {
-					continue;
-				}
-				int ex = (int)floor(log10(fabs(tmp)));
-				int power = 4 - ex;
-				float fact = 1.0;
-				for (k=0; k<power; k++) {
-					fact *= 10.0;
-				}
-				seisC[i][j] = (float)(floor(fact*tmp+0.5)/fact);
-			}
-	
 			wcc_siteamp14(num_params, param_string, &(seisC[i]), &head1);
 			if (debug) {
 				char filename[256];
@@ -299,7 +283,7 @@ void hfsim(float** seisC, char* stat, float slon, float slat, char* local_vmod, 
 	}
 	if (strlen(pga_string)>0) {
 		//Write PGA string to file
-		fprintf(pga_output_fp, "%d %s\n", header->rup_var_id, pga_string);
+		fprintf(pga_output_fp, "%d %s", header->rup_var_id, pga_string);
 	}
 	//remember seisC is 000, 090, ver
 	//so must rotate so that X has heading 90 + modelrot to get to CyberShake

@@ -31,7 +31,7 @@ CFLAGS = ${UFLAGS} ${LF_FLAGS} ${FFTW_INCFLAGS}
 FFLAGS = ${UFLAGS} -ffixed-line-length-none
 
 # Uncomment for memcached support
-MEMC = ../../../../../utils/libmemcached_1.0.18
+MEMC = ../../../../../utils/libmemcached_1.1.4
 CFLAGS := $(CFLAGS) -I${MEMC}/include -D_USE_MEMCACHED
 LDLIBS := ${LDLIBS} -L${MEMC}/lib -lmemcached
 
@@ -40,7 +40,7 @@ LDLIBS := ${LDLIBS} -L${MEMC}/lib -lmemcached
 all : genslip-v5.5.2.o
 
 genslip-v5.5.2.o : genslip-v5.5.2.c ${OBJS}
-	${CC} ${CFLAGS} -c -o genslip-v5.5.2.o genslip-v5.5.2.c ${LDLIBS}
+	${CC} ${CFLAGS} -c -o genslip-v5.5.2.o genslip-v5.5.2.c ${LDLIBS} ${INCPAR}
 
 srf_gethypo : srf_gethypo.c
 	${CC} ${CFLAGS} -o srf_gethypo srf_gethypo.c ${LDLIBS} ${INCPAR} ${OBJS}

@@ -16,6 +16,14 @@
 # Get the hostname we are running on
 HOSTNAME = $(shell hostname -f)
 
+ifeq (frontier,$(findstring frontier, $(HOSTNAME)))
+	MY_CC = cc
+	MY_FC = ftn
+	MY_MPICC = cc
+	MY_FC77 = ftn
+	MY_MPIFC = ftn
+endif
+
 ifeq (summit,$(findstring summit, $(HOSTNAME)))
 	MY_CC = gcc
 	MY_FC = gfortran
@@ -41,7 +49,6 @@ ifeq (bigben,$(findstring bigben, $(HOSTNAME)))
         MY_MPIFC = ftn 
         MY_CFLAGS = 
         MY_FFLAGS = -ffixed-line-length-132
-	FLAG = 1
 endif
 
 # NICS kraken  (Cray XT5)
@@ -59,17 +66,6 @@ ifeq (kraken,$(findstring kraken, $(HOSTNAME)))
         MY_MPIFC = ftn
         MY_CFLAGS =
         MY_FFLAGS = -ffixed-line-length-132
-	FLAG = 1
-endif
-
-ifeq (frontera,$(findstring frontera, $(HOSTNAME)))
-    MY_CC = icc
-    MY_FC = ifort
-    MY_FC77 = ifort
-    MY_MPICC = mpicc
-    MY_MPIFC = mpif90
-	FLAG = 1
-endif
 
 # Default (gcc)
 # Note: For this to work you need to make sure that your
@@ -82,7 +78,7 @@ endif
 #       or something similar to that. Of course, it is going
 #       to work best if the mpi you choose uses the interconnect
 #       supported by the site (infiniband, myrinet, etc.).
-ifeq ($(FLAG), 0)
+else
         MY_CC = gcc
         MY_FC = g77
         MY_FC77 = g77

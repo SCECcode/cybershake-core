@@ -52,5 +52,5 @@ int wcc_siteamp09(float* seis, int nt, float dt, float pga, float vs30);
 int wcc_siteamp14(float* seis, int nt, float dt, float pga, float vs30);
 
 void srf2stoch(char* rup_geom_file, int slip_id, int hypo_id, char* srf_file, float dx, float dy, int inbin, float avgstk, struct slipfile* sfile, float dt, int debug);
-void hfsim(float seisC[3][mmv], char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, FILE* raw_output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, float rvfrac, int debug);
+void hfsim(float seisC[3][mmv], char* stat, float slon, float slat, char* local_vmod, FILE* output_fp, FILE* raw_output_fp, float vs30, struct seisheader* header, float modelrot, struct slipfile* sfile, int num_comps, int do_site_response, int debug);
 

@@ -11,7 +11,6 @@ void construct_sgtheader_datatype(MPI_Datatype* sgtheader_type);
 void construct_sgtdata_datatype(MPI_Datatype* sgtdata_type, int nt);
 void construct_worker_task_datatype(MPI_Datatype* worker_task_type);
 void construct_worker_message_datatype(MPI_Datatype* worker_message_type);
-void construct_rvinfo_datatype(MPI_Datatype* rvinfo_type);
 void *check_realloc(void *ptr,size_t len);
 
 //mpi_functions.c

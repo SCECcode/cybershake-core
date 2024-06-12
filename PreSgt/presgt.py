@@ -22,7 +22,7 @@ def getSiteCoords(site, host):
 	if host[0:9]=="sqlite://":
 		cursor = sqlite3.connect(host[9:]).cursor()
 	else:
-		cursor = pymysql.connect(host, user, passwd, db).cursor()
+		cursor = pymysql.connect(host=host, user=user, passwd=passwd, db=db).cursor()
 	sql_string = 'select CS_Site_Lat, CS_Site_Lon from CyberShake_Sites where CS_Short_Name="%s"' % site
 	cursor.execute(sql_string)
 	return cursor.fetchone()	
@@ -164,7 +164,7 @@ parser.add_option("--sgtcords", dest="sgtcordsfile", action="store", help="Path 
 parser.add_option("--spacing", dest="spacing", action="store", type="float", help="Mesh spacing, in km")
 parser.add_option("--frequency", dest="frequency", action="store", default=0.5, type="float", help="Override default frequency of 0.5 Hz")
 parser.add_option("--rsqsim", dest="rsqsim", action="store_true", default=False, help="Assumes RSQSim-formatted rupture geometry files.  Default is false.")
-parser.add_option("--server", dest="server", action="store", default="moment.usc.edu", help="Path to server (default is moment.usc.edu).  Can specify SQLite file with sqlite://<file>")
+parser.add_option("--server", dest="server", action="store", default="moment.usc.edu", help="Path to server (default is moment.usc.edu).  Can specify SQLite file with sqlite://<file> ***Note that this value is overridden if LOCAL_DB in cybershake.cfg is specified.***")
 
 (option, args) = parser.parse_args()
 
@@ -190,6 +190,12 @@ rsqsim = option.rsqsim
 frequency = option.frequency
 
 server = option.server
+try:
+	local_db = config.getProperty('LOCAL_DB')
+	print("Using %s for db, as specified in cybershake.cfg." % local_db)
+	server = local_db
+except KeyError:
+	pass
 	
 PATH_TO_RUPTURE_GEOMETRIES = "%s/Ruptures_erf%s" % (RUPTURE_ROOT, erf_id)
 

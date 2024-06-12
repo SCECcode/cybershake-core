@@ -109,9 +109,8 @@ def build_IN3D(site, gridout, awp_comp, frequency, proc, mesh_filename, run_id, 
 	#Change TMAX based on DT and NST
 	param["TMAX"] = param["NST"]*param["DT"]
 
-	#Read FP in from reference file, don't assign it here
-	#param["FP"] = 0.5
-        
+	#Talked to Kim and Rob, FP should remain 0.5
+	param["FP"] = 0.5
 	param["READ_STEP"] = param["NST"]
 	#Divide by 10 because WRITE_STEP is in units of # of steps being written, not total # of timesteps
 	#So if 20000 simulated timesteps and decimation of 10, WRITE_STEP = 2000

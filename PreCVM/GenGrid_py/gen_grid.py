@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -65,7 +65,7 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 	#Make sure it is evenly divisible, and nz is even
 	#Use ceil because we want the depth to be at least ZLEN
 	nz = int(math.ceil(ZLEN/SPACING))
-        print("Initial nz is %d\n" % nz)
+	print("Initial nz is %d\n" % nz)
 	if nz*SPACING!=ZLEN:
 		ZLEN = nz*SPACING
 	if nz%4!=0:
@@ -81,7 +81,7 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 	if sp>0:
 		SPACING = sp
 
-	print "SPACING = %f, freq = %f, sp= %f\n" % (SPACING, freq, sp)
+	print("SPACING = %f, freq = %f, sp= %f\n" % (SPACING, freq, sp))
 	modelboxInput = open(modelboxFile)
 	modelboxData = [line.strip() for line in modelboxInput.readlines()]
 	modelboxInput.close()
@@ -106,21 +106,26 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 		executable = "jsrun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))    
 	elif MPI_CMD=='ibrun':
 		executable = "ibrun %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
+	elif MPI_CMD=="srun":
+		executable = "srun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
+	else:
+		print("MPI_CMD %s not recognized, aborting." % MPI_CMD)
+		sys.exit(1)
 	parameters = "geoproj=1 gridfile=%s gridout=%s center_origin=1 do_coords=1 nzout=1 name=%s gzip=0 latfirst=0 modellon=%f modellat=%f modelrot=%f" % (gridfile, gridout, coordfile, model_lon, model_lat, model_rot)
 	pipe = "> " + paramfile
 	command = executable + " " + parameters + " " + pipe
 	exitcode = os.system(command)
-	print command
+	print(command)
 	if exitcode!=0:
-		print "Exit with code %d\n" % ((exitcode >> 8) & 0xFF)
+		print("Exit with code %d\n" % ((exitcode >> 8) & 0xFF))
 		sys.exit((exitcode >> 8) & 0xFF)
 	genBoundfile(gridout, coordfile, boundsfile)
 
 
 def main():
 	if len(sys.argv) < 9:
-		print "Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency> <spacing> [gpu] [depth]"
-		print "Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC 0.5"
+		print("Syntax: gen_grid.py <modelboxFile> <gridfile> <gridout> <coordfile> <paramfile> <boundsfile> <frequency> <spacing> [gpu] [depth]")
+		print("Example: gen_grid.py USC.modelbox ModelParams/USC/gridfile_USC ModelParams/USC/gridout_USC ModelParams/USC/model_coords_GC_USC ModelParams/USC/model_params_GC_USC ModelParams/USC/model_bounds_GC_USC 0.5")
 		sys.exit(1)
 	
 	modelboxFile = sys.argv[1]
