@@ -21,3 +21,4 @@
 #include <sys/syscall.h>
 
 #include "defs.h"
+#include "getpar.h"
