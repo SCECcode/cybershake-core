@@ -9,7 +9,7 @@
 
 #define         ERAD            6378.139
 #define         RPERD           0.017453292
-#define         BLOCK_SIZE      1000000
+#define         BLOCK_SIZE      5000000
 #define         BNDPAD          3
 
 #ifndef min
@@ -42,7 +42,7 @@ int compare_entry(const void* e1, const void* e2) {
 
 int main(int ac,char **av)
 {
-FILE *fopfile(), *fp, *fpr;
+FILE *fp, *fpr;
 float h, *rv, *dv;
 float y2, r;
 int *rinc, *dinc, nrad, ndep;
@@ -91,7 +91,8 @@ float ref_rad = ERAD;
 struct timeval tv;
 struct timeval new_tv;
 
-MPI_Init(&ac, &av);
+
+PI_Init(&ac, &av);
 
 radiusfile[0] = '\0';
 faultlist[0] = '\0';
@@ -128,8 +129,10 @@ getpar("izmax","d",&izmax);
 endpar();
 
 int num_procs = 1;
-MPI_Comm_rank(MPI_COMM_WORLD, &my_id);
-MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
+
+PI_Comm_rank(MPI_COMM_WORLD, &my_id);
+
+PI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
 gen_matrices(amat,ainv,&modelrot,&modellon,&modellat);
 
@@ -247,7 +250,7 @@ if(radiusfile[0] != '\0')
 		tmp_hashval.z = izlevel[iz];
 		//Changed the way this is built to allot more digits per dimension
 		tmp_hashval.index = (long long)tmp_hashval.x*(long long)1000000000000 + (long long)tmp_hashval.y*1000000 + (long long)tmp_hashval.z;
-	        sprintf(hashkey, "%ld", tmp_hashval.index);
+	        sprintf(hashkey, "%lld", tmp_hashval.index);
 
 		if (cfuhash_get(hash, hashkey)==NULL) {
                         //Add it
@@ -408,7 +411,7 @@ if(faultlist[0] != '\0')
 	 tmp_hashval.y = iyp;
 	 tmp_hashval.z = izp;
 	 tmp_hashval.index = (long long)ixp*(long long)1000000000000 + (long long)iyp*(long long)1000000 + izp;
-	 sprintf(hashkey, "%ld", tmp_hashval.index); 
+	 sprintf(hashkey, "%lld", tmp_hashval.index); 
 
 	 if(ixp >= BNDPAD && ixp < nx-BNDPAD && iyp >= BNDPAD && iyp < ny-BNDPAD && izp >= 1 && izp < nz-BNDPAD)
 	    {
@@ -422,6 +425,8 @@ if(faultlist[0] != '\0')
 			np++;
 			if (np > bcnt*BLOCK_SIZE) {
 				bcnt++;
+				printf("%d) Expanding hashvals.\n", my_id);
+				fflush(stdout);
 				hashvals = check_realloc(hashvals, sizeof(struct entry)*bcnt*BLOCK_SIZE);
 			}
 		}
@@ -498,7 +503,8 @@ if (my_id==0) {
 	recv_points = check_malloc(sizeof(struct entry)*(size_t)global_np);
 	//Gather points, put in hashmap, read back out
 }
-MPI_Datatype entry_type;
+
+PI_Datatype entry_type;
 int blen[5] = {1, 1, 1, 1, 1};
 //Can't sent an 8-byte LONG via mpi, so use 2 ints
 int x_offset, y_offset, z_offset, index_offset;
@@ -506,10 +512,14 @@ x_offset = offsetof(struct entry, x);
 y_offset = offsetof(struct entry, y);
 z_offset = offsetof(struct entry, z);
 index_offset = offsetof(struct entry, index);
-MPI_Aint disps[5] = {x_offset, y_offset, z_offset, index_offset, index_offset+sizeof(int)};
-MPI_Datatype types[5] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
-MPI_Type_create_struct(5, blen, disps, types, &entry_type);
-MPI_Type_commit(&entry_type);
+
+PI_Aint disps[5] = {x_offset, y_offset, z_offset, index_offset, index_offset+sizeof(int)};
+
+PI_Datatype types[5] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
+
+PI_Type_create_struct(5, blen, disps, types, &entry_type);
+
+PI_Type_commit(&entry_type);
 
 rc = MPI_Gatherv(hashvals, np, entry_type, recv_points, proc_nps, proc_disps, entry_type, 0, MPI_COMM_WORLD);
 if (rc!=MPI_SUCCESS) {
@@ -526,7 +536,7 @@ if (my_id==0) {
 		tmp_hashval.z = recv_points[ir].z;
 		tmp_hashval.index = recv_points[ir].index;
 
-		sprintf(hashkey, "%ld", tmp_hashval.index);
+		sprintf(hashkey, "%lld", tmp_hashval.index);
 		if (cfuhash_get(hash, hashkey)==NULL) {
 	        	//Add it
 	                hashvals[np].x = tmp_hashval.x;
@@ -634,7 +644,8 @@ free(proc_nps);
 free(proc_disps);
 free(hashvals);
 
-MPI_Finalize();
+
+PI_Finalize();
 return 0;
 }
 
