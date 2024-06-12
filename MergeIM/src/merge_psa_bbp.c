@@ -117,6 +117,15 @@ int main(int argc, char**argv) {
                 exit(11);
             }
          }
+		 //HF 3-component seismograms are in order 000,090,ver
+		 //LF 3-component seismograms are in order ver,000,090
+		 //If HF seismograms are 3-component, swap components to match LF
+		 if (num_comps==3) {
+			float* tmp = hf_seis[rv][2];
+			hf_seis[rv][2] = hf_seis[rv][1];
+			hf_seis[rv][1] = hf_seis[rv][0];
+			hf_seis[rv][0] = tmp;
+		}
 	}
 	fclose(lf_in);
 	fclose(hf_in);

@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 		exit(-1);
 	}
 
-	if (sgtfilepar.xfile[0] != '\0' && sgtfilepar.zfile[0] != '\0') {
+	if (sgtfilepar.xfile[0] != '\0' && sgtfilepar.zfile[0] != '\0' && sgtfilepar.yfile[0]=='\0') {
 		if (my_id==0) {
 			fprintf(stderr, "We don't support only X and Z components yet. Exiting.\n");
 		}
@@ -130,7 +130,7 @@ int main(int argc, char** argv) {
 		//Rupture variations
 		char rupture_spacing_string[20];
 		int rupture_spacing;
-		sprintf(rupture_spacing_string, "random");
+		sprintf(rupture_spacing_string, "uniform");
 		getpar("rupture_spacing", "s", rupture_spacing_string);
 		if (strcmp(rupture_spacing_string,"random")==0) {
 		        rupture_spacing = RUPGEN_RANDOM_HYPO;

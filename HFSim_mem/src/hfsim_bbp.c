@@ -25,7 +25,8 @@ int wcc_siteamp09(float* seis, int nt, float dt, float pga, float vs30);
 int wcc_rotate(float seis[][mmv], int nt, float dt, float rot);
 
 float get_rvfac(double mean_rvfac, double range_rvfac, int seed) {
-	char* filename = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp/comps/hfsims_cfg.py";
+	//char* filename = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp/comps/hfsims_cfg.py";
+	char* filename = "/work2/00349/scottcal/frontera/CyberShake/software/bbp/bbp-22.4.0/bbp/comps/hfsims_cfg.py";
 	FILE* hfsims_cfg_fp = fopen(filename, "r");
 	Py_Initialize();
 	PyRun_SimpleFile(hfsims_cfg_fp, filename);

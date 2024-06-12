@@ -104,6 +104,8 @@ def genGrid(modelboxFile, gridfile, gridout, coordfile, paramfile, boundsfile, f
 		executable = "aprun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
 	elif MPI_CMD=="jsrun":
 		executable = "jsrun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))    
+	elif MPI_CMD=='ibrun':
+		executable = "ibrun %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
 	elif MPI_CMD=="srun":
 		executable = "srun -n 1 %s/PreCVM/GenGrid_py/bin/gen_model_cords" % (config.getProperty("CS_PATH"))
 	else:

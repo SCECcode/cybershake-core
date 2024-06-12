@@ -38,8 +38,8 @@ int rotd(struct seisheader* header, float* seis_data, FILE* fp_out) {
 		return -1;
 	}
 
-	if (num_comps!=2) {
-		fprintf(stderr, "This RotD code must be used with two-component seismograms.\n");
+	if (num_comps<2) {
+		fprintf(stderr, "This RotD code must be used with two- or three-component seismograms.\n");
 		return 2;
 	}
 
@@ -55,7 +55,15 @@ int rotd(struct seisheader* header, float* seis_data, FILE* fp_out) {
 	//float periods[] = {0.1, 0.125, 0.1666667, 0.2, 0.25, 0.3333333, 0.5, 0.6666667, 1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0};
 
 	calc_acc(acc, seis_data, num_comps, header->nt, header->dt);
-	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), acc, acc+header->nt, rotD100, rD100ang, rotD50, &num_periods, periods);
+	float* acc_for_calc;
+    //If there are 3 components, the vertical component is the first; want to pass just horizontal components to RotD calculation
+    if (num_comps==3) {
+    	acc_for_calc = acc+header->nt;
+    } else {
+        acc_for_calc = acc;
+    }
+
+	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), acc_for_calc, acc_for_calc+header->nt, rotD100, rD100ang, rotD50, &num_periods, periods);
 
 	//Also calculate PGV by using velocity seismogram
 	int num_v_periods = 1;
@@ -63,7 +71,22 @@ int rotd(struct seisheader* header, float* seis_data, FILE* fp_out) {
 	float* v_rotD100 = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
     float* v_rotD50 = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
 	int* v_rD100ang = check_malloc(sizeof(int) * NUM_INTERP * MAX_PERIODS);
-	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), seis_data, seis_data+header->nt, v_rotD100, v_rD100ang, v_rotD50, &num_v_periods, v_periods);
+	//Convert to g
+	const float cm2g = 1.0/980.665;
+    float* vel_data = check_malloc(sizeof(float)*header->nt*num_comps);
+	for (i=0; i<num_comps*header->nt; i++) {
+        vel_data[i] = seis_data[i]*cm2g;
+    }
+
+    //Also need to only pass horizontal components for velocity calc
+    float* vel_for_calc;
+    if (num_comps==3) {
+        vel_for_calc = vel_data+header->nt;
+    } else {
+        vel_for_calc = vel_data;
+    }
+
+	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), vel_for_calc, vel_for_calc+header->nt, v_rotD100, v_rD100ang, v_rotD50, &num_v_periods, v_periods);
 	//Append PGV value to acceleration arrays
 	rotD100[num_periods] = v_rotD100[0];
 	rD100ang[num_periods] = v_rD100ang[0];

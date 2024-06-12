@@ -33,8 +33,8 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 		return -1;
 	}
 
-	if (num_comps!=2) {
-		fprintf(stderr, "This RotD code must be used with two-component seismograms.\n");
+	if (num_comps<2) {
+		fprintf(stderr, "This RotD code must be used with two- or three-component seismograms.\n");
 		return 2;
 	}
 
@@ -42,15 +42,45 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	float* rotD100 = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
 	float* rotD50 = check_malloc(sizeof(float*) * NUM_INTERP * MAX_PERIODS);
 	int* rD100ang = check_malloc(sizeof(float*) * NUM_INTERP * MAX_PERIODS);
+	float* acc_for_calc;
 
 	//Added periods for 1 Hz	
 	int num_periods = 22;
 	float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0};
 
 	calc_acc(acc, seis_data, num_comps, header->nt, header->dt);
-	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), acc, acc+header->nt, rotD100, rD100ang, rotD50, &num_periods, periods);
+	//If there are 3 components, the vertical component is the first; want to pass just horizontal components to RotD calculation
+	if (num_comps==3) {
+		acc_for_calc = acc+header->nt;
+	} else {
+		acc_for_calc = acc;
+	}
+	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), acc_for_calc, acc_for_calc+header->nt, rotD100, rD100ang, rotD50, &num_periods, periods);
 //	write_result(fp_out, header, rotD100, rD100ang, rotD50, num_periods, periods, inter_flag);
 	copy_result(rotD_records, rotD100, rD100ang, rotD50, num_periods, periods, inter_flag);
+
+    //Calculate PGV using velocity seismogram
+    //Convert to g first
+    const float cm2g = 1.0/980.665;
+    float* vel_data = check_malloc(sizeof(float)*header->nt*num_comps);
+    for (i=0; i<num_comps*header->nt; i++) {
+        vel_data[i] = seis_data[i]*cm2g;
+    }
+	//Also need to only pass horizontal components for velocity calc
+	float* vel_for_calc;
+	if (num_comps==3) {
+		vel_for_calc = vel_data+header->nt;
+	} else {
+		vel_for_calc = vel_data;
+	}
+    calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), vel_for_calc, vel_for_calc+header->nt, rotD100+NUM_INTERP*num_periods, rD100ang+NUM_INTERP*num_periods, rotD50+NUM_INTERP*num_periods, &num_pgv_periods, pgv_period);
+    //printf("PGV:%f\n", rotD50[NUM_INTERP*num_periods]);
+
+    //Add PGV to output data structure
+    rotD_records[num_periods].period = pgv_period[0];
+    rotD_records[num_periods].rotD100 = rotD100[num_periods*NUM_INTERP + (inter_flag-1)];
+    rotD_records[num_periods].rotD100_angle = rD100ang[num_periods*NUM_INTERP + (inter_flag-1)];
+    rotD_records[num_periods].rotD50 = rotD50[num_periods*NUM_INTERP + (inter_flag-1)];
 
 //	fflush(stderr);
 //	fflush(stdout);

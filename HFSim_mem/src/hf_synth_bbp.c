@@ -246,7 +246,8 @@ int main(int argc, char** argv) {
 		    header.stoch_max_freq = stoch_max_freq;
 			header.dt = dt;
 			header.nt = (int)(tlen/dt+0.5);
-			header.comps = X_COMP_FLAG | Y_COMP_FLAG;
+			//Since the HF code always produces 3 components, default to 3 here
+			header.comps = X_COMP_FLAG | Y_COMP_FLAG | Z_COMP_FLAG;
 	
 			if (mode==RUP_GEOM_MODE) {
 				rg_stats_t stats;
