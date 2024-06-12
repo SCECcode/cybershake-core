@@ -45,11 +45,8 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	float* acc_for_calc;
 
 	//Added periods for 1 Hz	
-	int num_periods = 25;
-	float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0, 12.0, 15.0, 20.0};
-    //For PGV
-    int num_pgv_periods = 1;
-    float pgv_period[] = {1e-5};
+	int num_periods = 22;
+	float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0};
 
 	calc_acc(acc, seis_data, num_comps, header->nt, header->dt);
 	//If there are 3 components, the vertical component is the first; want to pass just horizontal components to RotD calculation
@@ -91,7 +88,6 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	free(rotD50);
 	free(rD100ang);
 	free(acc);
-	free(vel_data);
 
 	return 0;
 }

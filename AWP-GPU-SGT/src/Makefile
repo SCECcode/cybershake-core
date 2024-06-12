@@ -14,7 +14,6 @@ LIB     = -L$(CUDA_HOME)/lib64 -L$(MPI_HOME)/lib -ldl -lcudart -lmpi_ibm -lm -lp
 #LIB = -L$(CUDA_HOME)/lib64 -lcudart -lm
 
 pmcl3d:	$(OBJECTS)
-	mkdir -p ../bin
 	$(CC) $(CFLAGS) $(INCDIR) -o	pmcl3d	$(OBJECTS)	$(LIB)
 	cp pmcl3d ../bin/
 

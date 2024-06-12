@@ -52,19 +52,6 @@ void constructSGTReaderComm(int sgt_handlers, MPI_Comm* sgt_readers_comm) {
 	free(sgt_reader_ranks);
 }
 
-void constructManagerPlusWorkersComm(int sgt_handlers, int num_procs, MPI_Comm* manager_plus_workers_comm) {
-    //Constructs a communicator with the task manager plus the workers (ranks #sgt_handlers - num_procs-1).  Used for broadcasting the rvfrac and seed info.
-    int* manager_plus_workers_ranks = check_malloc(sizeof(int)*(num_procs-sgt_handlers));
-    int i;
-    for (i=0; i<num_procs-sgt_handlers; i++) {
-        manager_plus_workers_ranks[i] = i+sgt_handlers;
-    }
-    MPI_Group world_group, m_p_w_group;
-    MPI_Comm_group(MPI_COMM_WORLD, &world_group);
-    MPI_Group_incl(world_group, num_procs-sgt_handlers, manager_plus_workers_ranks, &m_p_w_group);
-    MPI_Comm_create(MPI_COMM_WORLD, m_p_w_group, manager_plus_workers_comm);
-    free(manager_plus_workers_ranks);
-}
 
 void check_bcast(void* buf, int num_items, MPI_Datatype type, int root, MPI_Comm comm, char* error_msg, int my_id) {
     /*if (my_id==root) {

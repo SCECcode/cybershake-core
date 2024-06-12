@@ -1,6 +1,6 @@
 #include "include.h"
 
-add_src(stfp,nt,dt,pvptr,medptr,isrc,nx,nz,it,srcs,iflag)
+void add_src(stfp,nt,dt,pvptr,medptr,isrc,nx,nz,it,srcs,iflag)
 struct pntsrcs *srcs;
 register float *stfp, *dt, **pvptr, **medptr;
 int isrc, nx, it, nz, iflag, nt;
@@ -270,7 +270,7 @@ else if(iflag == PSRC)
    }
 }
 
-add_plane(st,pvptr,nx,nz,it,psrc)
+void add_plane(st,pvptr,nx,nz,it,psrc)
 struct planesrc *psrc;
 float *st, **pvptr;
 int nx, it, nz;

@@ -1,43 +1,53 @@
 #ifndef UCVM_H
 #define UCVM_H
 
+#include <stdarg.h>
 #include "ucvm_dtypes.h"
-
-/* Predefined models */
-#define UCVM_MODEL_CVMH "cvmh"
-#define UCVM_MODEL_CVMS "cvms"
-#define UCVM_MODEL_CENCAL "cencalvm"
-#define UCVM_MODEL_1D "1d"
-#define UCVM_MODEL_LINTHURBER "lin-thurber"
 
 
 /* Initializer */
 int ucvm_init(const char *config);
 
-
 /* Finalizer */
 int ucvm_finalize();
 
-
-/* Set query mode */
-int ucvm_query_mode(ucvm_ctype_t c);
-
-
-/* Enable specific model, by label or by ucvm_model_t */
+/* Enable specific model(s), by string list, by label, or 
+   by ucvm_model_t */
+int ucvm_add_model_list(const char *list);
 int ucvm_add_model(const char *label);
-int ucvm_add_user_model(ucvm_model_t *m);
+int ucvm_add_user_model(ucvm_model_t *m, ucvm_modelconf_t *mconf);
+int ucvm_add_model_config(char *line);
 
+/* Associate specific interp func with GTL model, by label 
+   or by ucvm_ifunc_t */
+int ucvm_assoc_ifunc(const char *mlabel, const char *ilabel);
+int ucvm_assoc_user_ifunc(const char *mlabel, ucvm_ifunc_t *ifunc);
+
+/* Use specific map (elev, vs30) by label */
+int ucvm_use_map(const char *label);
 
 /* Get label for a model */
 int ucvm_model_label(int m, char *label, int len);
 
+/* Get label for an interpolation function */
+int ucvm_ifunc_label(int f, char *label, int len);
 
 /* Get version for a model */
 int ucvm_model_version(int m, char *ver, int len);
 
+/* Get config for a model */
+int ucvm_model_config(int m, char **config, int *sz);
+
+/* Set interpolation floors */
+int ucvm_setfloor(double *llvals);
+
+/* Set parameters (see ucvm_dtypes.h for valid param flags) */
+int ucvm_setparam(ucvm_model_param_t param, ...);
 
 /* Query underlying models */
-int ucvm_query(int n, ucvm_point_t *pnt, ucvm_prop_t *prop);
+int ucvm_query(int n, ucvm_point_t *pnt, ucvm_data_t *data);
 
+/* Get installed feature information */
+int ucvm_get_resources(ucvm_resource_t *res, int *len);
 
 #endif

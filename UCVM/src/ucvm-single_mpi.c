@@ -3,8 +3,7 @@
 #include "function.h"
 #include "func_mpi.h"
 #include "ucvm.h"
-#include "ucvm_interp.h"
-#include "ucvm_model_elygtl.h"
+
 
 /* Vp/Vs ratio */
 #define MIN_V_RATIO 1.0
@@ -95,17 +94,6 @@ getpar("const_mantle_depth", "f", &const_mantle_depth);
 
 //When populating the surface points, use this depth in meters instead
 getpar("surface_cvm_depth", "f", &surface_cvm_depth);
-
-//Option for using the Ely taper:
-//'none': don't use (default)
-//'all': always use
-//'ifless': use which ever is smaller, down to transition depth
-char ely_taper[64];
-sprintf(ely_taper, "none");
-getpar("ely_taper", "s", ely_taper);
-//Transition depth for taper
-float ely_transition_depth = 700.0;
-getpar("ely_transition_depth", "f", &ely_transition_depth);
 
 endpar();
 
@@ -275,7 +263,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 				exit(-2);
 			}
 			if (!ucvm_initialized) {
-		                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+		                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
 		                   fprintf(stderr, "Failed to setup ucvm.\n");
 		                   fflush(stderr);
 		                   exit(-1);
@@ -303,7 +291,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	                }
 		} else if (strcmp(tok, "1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -317,7 +305,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			}
 		} else if (strcmp(tok, "cvmsi")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -331,7 +319,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
                 } else if (strcmp(tok, "scec1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -345,7 +333,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
 		} else if (strcmp(tok, "usgs")==0) {
 			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -359,7 +347,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         } 
 		} else if (strcmp(tok, "cvms5")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -393,7 +381,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                         }
 		} else if (strcmp(tok, "bbp1d")==0) {
 			if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -406,7 +394,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                          }
 		} else if (strcmp(tok, "cca1d")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -419,7 +407,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                          }
                 } else if (strcmp(tok, "cca")==0) {
                         if (!ucvm_initialized && !ucvm_no_gtl_initialized) {
-                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+                                if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                                    fprintf(stderr, "Failed to setup ucvm.\n");
                                    fflush(stderr);
                                    exit(-1);
@@ -446,7 +434,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		exit(-1);
 		}
 	} else {
-	     if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-22.7.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
+	     if (ucvm_init("/gpfs/alpine/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/conf/ucvm.conf") != UCVM_CODE_SUCCESS) {
                 fprintf(stderr, "Failed to setup ucvm.\n");
                 fflush(stderr);
                 exit(-1);
@@ -515,13 +503,48 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	     }
 	} else {
  	       fprintf(stderr, "Model %s didn't match any known models, aborting.\n", models);
-		   fflush(stderr);
-		   exit(-3);
+               fflush(stderr);
+               exit(-3);
         }
  }
 
- // Query by depth
- if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+ //Figure out which if any models are including the taper
+ char taper_models_list[10][512];
+ int num_taper_models = 0;
+ if (strlen(ely_taper_models)>0 && strcmp(ely_taper_models, "none")!=0) {  
+	//Only supported with awpz format for now
+	if (format!=AWP_Z) {
+		printf("Using the taper with only some models is only supported when using the AWP_Z format, aborting.\n");
+		exit(-4);
+	}
+    char* save;
+    char* tok = strtok_r(ely_taper_models, ",", &save);
+    while (tok!=NULL) {
+		if (my_id==0) {
+			printf("Adding %s to models list.", tok);
+			fflush(stdout);
+		}
+ 		strcpy(taper_models_list[num_taper_models], tok);
+		num_taper_models++;
+		tok = strtok_r(NULL, ",", &save);
+	}
+  } else {
+	if (my_id==0) {
+		printf("Model list contains %s.\n", ely_taper_models);
+		fflush(stdout);
+	}
+	if (strcmp(ely_taper_models, "all")==0) {
+		strcpy(taper_models_list[num_taper_models], "all");
+		num_taper_models = 1;
+	} else if (strcmp(ely_taper_models, "none")!=0) {
+		strcpy(taper_models_list[num_taper_models], ely_taper_models);
+		num_taper_models = 1;
+	}
+	//If ely_taper_models=="none", don't do anything
+  }
+
+ // Query by z-type selected earlier
+ if (ucvm_setparam(UCVM_MODEL_PARAM_QUERY_MODE, z_query_mode)!=UCVM_CODE_SUCCESS) {
    fprintf(stderr, "Set query mode by depth failed.\n");
    fflush(stderr);
    exit(-2);
@@ -534,13 +557,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
  int num_pts = local_np;
  ucvm_point_t* pts = check_malloc(sizeof(ucvm_point_t)*(size_t)num_pts);
  // To conserve memory, only allocate one stripe's worth of ucvm_data_t, but num_pts worth of velocity info
- ucvm_data_t* tmp_props = check_malloc(sizeof(ucvm_data_t)*pts_per_stripe);
- // props - final results after Ely taper processing stored here
- ucvm_data_t* props = NULL;
- ucvm_data_t* combine_props = NULL;
- ucvm_data_t* ely_props = NULL;
- 
- 
+ ucvm_data_t* props = check_malloc(sizeof(ucvm_data_t)*pts_per_stripe);
 
  //put the if statement out here, for easier optimization
  if (format==RWG) {
@@ -585,93 +602,26 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			int input_offset = j*nx + x_ind;
 			int output_offset = (s-starting_stripe)*ny + j;
 			pts[output_offset].coord[0] = mlon[input_offset];
-            pts[output_offset].coord[1] = mlat[input_offset];
-            pts[output_offset].coord[2] = z_value;
+                        pts[output_offset].coord[1] = mlat[input_offset];
+                        pts[output_offset].coord[2] = z_value;
 		}
 	}
  }
-
- int ely_init = 0;
-
+ 
  for (s=0; s<(ending_stripe-starting_stripe); s++) {
+	//if (ucvm_query(local_np, pts, props)!=UCVM_CODE_SUCCESS) {
 	fprintf(stderr, "[%d] Stripe %d of %d\n", my_id, s+1, (ending_stripe-starting_stripe));
 	struct rusage my_rusage;
 	getrusage(RUSAGE_SELF, &my_rusage);
 	fprintf(stderr, "[%d] Using %ld kbytes.\n", my_id, my_rusage.ru_maxrss);
-	if (ucvm_query(pts_per_stripe, pts+s*pts_per_stripe, tmp_props)!=UCVM_CODE_SUCCESS) {
+	if (ucvm_query(pts_per_stripe, pts+s*pts_per_stripe, props)!=UCVM_CODE_SUCCESS) {
  		fprintf(stderr, "Query UCVM failed.\n");
-    	exit(-2);
+        	exit(-2);
 	}
-
-	//Consider Ely taper
-	if (strcmp(ely_taper, "none")==0) {
-		//No taper here
-		props = tmp_props;
-	} else {
-		//Do need to consider taper
-		//Check depth of this stripe to see if we even need to worry about it
-		//Under both RWG and AWP, all points in a stripe have the same Z-depth; can just check the first one
-		if (pts[s*pts_per_stripe].coord[2]<=ely_transition_depth) {
-			if (ely_init==0) {
-				ucvm_modelconf_t conf;
-				ucvm_elygtl_model_init(UCVM_MAX_MODELS-1, &conf);
-				ely_init = 1;
-			}
-			//First, populate ely_props with ely taper data, down to and including transition_depth
-			if (ely_props==NULL) {
-				ely_props = check_malloc(sizeof(ucvm_data_t)*pts_per_stripe);
-			}
-			memcpy(ely_props, tmp_props, sizeof(ucvm_data_t)*pts_per_stripe);
-			double original_depth = pts[s*pts_per_stripe].coord[2];
-			//Change the z-depth to the transition depth.  This is because we need to re-query the crustal model at the transition depth for use with the taper.
-			for (i=0; i<pts_per_stripe; i++) {
-				pts[s*pts_per_stripe+i].coord[2] = ely_transition_depth;
-			}
-			//Query crustal model again, now that we have the transition depth set
-			if (ucvm_query(pts_per_stripe, pts+s*pts_per_stripe, ely_props)!=UCVM_CODE_SUCCESS) {
-				printf("Error querying UCVM.\n");
-				exit(-3);
-			}
-			//Set domain to UCVM_DOMAIN_INTERP for elygtl query, and depth back for interpolation
-			for (i=0; i<pts_per_stripe; i++) {
-				ely_props[i].domain = UCVM_DOMAIN_INTERP;
-				ely_props[i].depth = original_depth;
-			}
-			//printf("Before elygtl query, pt (%f, %f, %f), vs30=%lf, crust.vs=%f\n", pts[s*pts_per_stripe].coord[0], pts[s*pts_per_stripe].coord[1], pts[s*pts_per_stripe].coord[2], ely_props[0].vs30, ely_props[0].crust.vs);
-			ucvm_elygtl_model_query(UCVM_MAX_MODELS-1, UCVM_COORD_GEO_DEPTH, pts_per_stripe, pts+s*pts_per_stripe, ely_props);
-			//printf("pt (%f, %f, %f), vs30=%lf, GTL Vs=%f, Vs=%f\n", pts[s*pts_per_stripe].coord[0], pts[s*pts_per_stripe].coord[1], pts[s*pts_per_stripe].coord[2], ely_props[0].vs30, ely_props[0].gtl.vs, ely_props[0].cmb.vs);
-			//Now run interpolator
-			for (i=0; i<pts_per_stripe; i++) {
-                ucvm_interp_ely(0.0, ely_transition_depth, UCVM_COORD_GEO_DEPTH, pts+s*pts_per_stripe+i, ely_props+i);
-            }
-			//printf("After interpolator, pt (%f, %f, %f), vs30=%lf, GTL Vs=%f, Vs=%f\n", pts[s*pts_per_stripe].coord[0], pts[s*pts_per_stripe].coord[1], pts[s*pts_per_stripe].coord[2], ely_props[0].vs30, ely_props[0].gtl.vs, ely_props[0].cmb.vs);
-
-			//Decide which to use based on method
-			if (strcmp(ely_taper, "all")==0) {
-				//Always use the ely_taper value
-				props = ely_props;
-			} else if (strcmp(ely_taper, "ifless")==0) {
-				//Select the one which is smallest.  We already know this stripe is above or at the transition depth.
-				if (combine_props==NULL) {
-					combine_props = check_malloc(sizeof(ucvm_data_t)*pts_per_stripe);
-				}
-				for (i=0; i<pts_per_stripe; i++) {
-					if (tmp_props[i].cmb.vs<ely_props[i].cmb.vs) {
-						memcpy(combine_props+i, tmp_props+i, sizeof(ucvm_data_t));
-					} else {
-						memcpy(combine_props+i, ely_props+i, sizeof(ucvm_data_t));
-					}
-				}
-				props = combine_props;
-			} else {
-				fprintf(stderr, "Don't recognize Ely taper type '%s', aborting.\n", ely_taper);
-				exit(4); 
-			}
-		} else {
-			//This stripe is too deep to be affected by the Ely taper
-			props = tmp_props;
-		}
-	}
+	/*if (my_id==0) {
+		//Print the first point
+		printf("%d) Point 0 i(%f, %f, %f) has properties vp=%lf, vs=%lf, rho=%lf, crust vp=%lf, crust vs=%lf, crust rho=%lf\n", my_id, pts[0].coord[0], pts[0].coord[1], pts[0].coord[2], props[0].cmb.vp, props[0].cmb.vs, props[0].cmb.rho, props[0].crust.vp, props[0].crust.vs, props[0].crust.rho);
+	}*/
 
 	 /* perform sanity checks on the material properties */     
 
@@ -698,14 +648,11 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	       }
 
 		//Check for min Vp, Vs, Rho
-		if (props[i].cmb.vs<min_vs) {
-			//Calculate Vp/Vs ratio, and scale Vp to preserve ratio
-			float vpvs_ratio=props[i].cmb.vp/props[i].cmb.vs;
-            props[i].cmb.vs = min_vs;
-			props[i].cmb.vp = min_vs*vpvs_ratio;
-        }
 		if (props[i].cmb.vp<min_vp) {
 			props[i].cmb.vp = min_vp;
+		}
+		if (props[i].cmb.vs<min_vs) {
+			props[i].cmb.vs = min_vs;
 		}
 		if (props[i].cmb.rho<min_rho) {
 			props[i].cmb.rho = min_rho;
@@ -718,7 +665,6 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 			props[i].cmb.vs = props[i].cmb.vp/fac;
 		}
 
-
 		if (format==RWG) {
 		        vp_buf[s*pts_per_stripe+i] = meter2km*props[i].cmb.vp;
 	                vs_buf[s*pts_per_stripe+i] = meter2km*props[i].cmb.vs;
@@ -728,9 +674,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	                buf[3*(s*pts_per_stripe+i)+1] = props[i].cmb.vs;
 	                buf[3*(s*pts_per_stripe+i)+2] = props[i].cmb.rho;
 		}
-	
 	}
-
    }
 
   //Now, everyone opens and writes to the files
@@ -788,14 +732,7 @@ free(mlon);
 free(mdep);
 
 free(pts);
-//Don't need to free props, it always points somewhere else
-free(tmp_props);
-if (ely_props!=NULL) {
-	free(ely_props);
-}
-if (combine_props!=NULL) {
-	free(combine_props);
-}
+free(props);
 
 free(vs_buf);
 free(vp_buf);

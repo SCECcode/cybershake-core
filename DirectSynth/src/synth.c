@@ -25,7 +25,7 @@ int get_handler_for_sgt_index(long long indx, long long* sgt_cutoffs, int num_sg
 void send_data_file(struct seisheader* header, char data_filename[256], int src_id, int rup_id, void* buf, int data_size_bytes, int my_id);
 
 //This duplicates some of seis_psa.c
-int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, int num_rv_infos, rv_info* rvinfo_array, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id) {
+int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id) {
     struct geoprojection geop;
     struct sgtindex statindx;
     int ip, i;
@@ -43,6 +43,7 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, int num
     struct rup_geom_point* rg_points;
     int num_srf_pts = parse_rup_geom(t_info->task->rupture_filename, &rg_points);
 
+    //This is freed inside jbsim3d
     struct sgtparams* sgtparms = (struct sgtparams *) check_malloc ((num_srf_pts)*sizeof(struct sgtparams));
 
     int ptol = print_tol;
@@ -168,7 +169,7 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, int num
 	if (debug) write_log("Starting jbsim3d_synth.");
 	float** original_seis = jbsim3d_synth(&seis, &header, stat, slon, slat, ntout, seis_filename,
 			t_info->task->rupture_filename, t_info->sgtfilepar, sgtparms, *(t_info->sgtmast), t_info->sgtindx, geop, indx_master, nm, sgts_by_handler,
-			num_sgts_by_handler, num_sgt_handlers, num_rup_vars, rup_vars, num_rv_infos, rvinfo_array, my_id);
+			num_sgts_by_handler, num_sgt_handlers, num_rup_vars, rup_vars, my_id);
 
 	for(i=0; i<num_sgt_handlers; i++) {
 		free(sgts_by_handler[i]);

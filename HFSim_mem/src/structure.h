@@ -73,8 +73,6 @@ struct rupture_variation {
   int rup_var_id;
   int slip_id;
   int hypo_id;
-  float rvfrac;
-  int seed;
 };
 
 #endif

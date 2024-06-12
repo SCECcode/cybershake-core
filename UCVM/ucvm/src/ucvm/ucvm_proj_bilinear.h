@@ -12,13 +12,13 @@ typedef struct ucvm_bilinear_t
 
 
 /* Convert lon,lat to x,y */
-int bilinear_geo2xy(ucvm_bilinear_t *p,
-		    double lon, double lat, double *rx, double *ry);
+int ucvm_bilinear_geo2xy(ucvm_bilinear_t *par,
+			 ucvm_point_t *geo, ucvm_point_t *xy);
 
 
 /* Convert x,y to lon,lat */
-int bilinear_xy2geo(ucvm_bilinear_t *p,
-		    double x, double y, double *lon, double *lat);
+int ucvm_bilinear_xy2geo(ucvm_bilinear_t *p,
+			 ucvm_point_t *xy, ucvm_point_t *geo);
 
 
 

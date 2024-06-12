@@ -5,7 +5,7 @@ MERGE_OBJS = wcc_tfilter.o wcc_resamp_arbdt.o wcc_add.o merge.o
 ROTD_OBJS = rotd/calcrsp.o rotd/fftsub.o rotd/ft_th.o rotd/sort.o rotd/spline.o rotd/splint.o rotd/rotd.o rotd/rotd100.o
 
 #For integration with BBP
-BBP_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-dev/bbp
+BBP_DIR = /gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp
 GP_DIR = ${BBP_DIR}/src/gp
 WCC_DIR = ${GP_DIR}/WccFormat/Progs
 
@@ -14,9 +14,9 @@ BBP_OBJS = ${WCC_DIR}/wcc_tfilter_sub.o ${WCC_DIR}/wcc_add_sub.o ${WCC_DIR}/wcc_
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
 GETPAR = ../../Getpar/getpar
-LDLIBS = -lm ${GETPAR}/lib/libget.a -L${OLCF_FFTW_ROOT}/lib -lfftw3f -lfftw3
-BBP_INC = -I${BBP_DIR}/src/gp
-IFLAGS = -I${GETPAR}/include ${BBP_INC}
+LDLIBS = -lm ${GETPAR}/lib/libget.a
+IFLAGS = -I${GETPAR}/include
+BBP_INC = -I${WCC_DIR}
 
 UFLAGS = -g
 
@@ -47,7 +47,7 @@ merge_bbp.o : merge_bbp.c
 	${CC} ${CFLAGS} -c -o merge_bbp.o merge_bbp.c ${BBP_INC} ${IFLAGS}
 
 merge_psa_bbp : merge_psa_bbp.o merge_bbp.o ${OBJS} ${BBP_OBJS} ${ROTD_OBJS}
-	${FC} ${FFLAGS} -o merge_psa_bbp merge_psa_bbp.o merge_bbp.o ${OBJS} ${BBP_OBJS} ${ROTD_OBJS} ${LDLIBS} ${BBP_INC}
+	${FC} ${FFLAGS} -o merge_psa_bbp merge_psa_bbp.o merge_bbp.o ${OBJS} ${BBP_OBJS} ${ROTD_OBJS} ${LDLIBS}
 	cp merge_psa_bbp ../bin/
 
 
