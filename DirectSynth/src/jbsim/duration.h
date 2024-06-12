@@ -1,1 +1,1 @@
-../duration.h
+../duration/duration.h
