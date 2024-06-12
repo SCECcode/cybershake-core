@@ -137,12 +137,18 @@ def genSgtGrid(outputFile, site, ns, src, mlon, mlat, mrot, faultlist, radiusfil
 		#No more than 32 cores
 		num_res_sets = min(num_res_sets, 32)
 		MPI_CMD = "%s -a 1 -c 1 -r %d -n %d" % (MPI_CMD, num_res_sets, num_res_sets)
+	elif (MPI_CMD == "srun"):
+		num_nodes = int(os.environ['SLURM_JOB_NUM_NODES'])
+		cpus_per_node = int(os.environ['SLURM_CPUS_ON_NODE'])
+		np = min(num_nodes * cpus_per_node, 32)
+		MPI_CMD = "%s -N %d -n %d -c 1" % (MPI_CMD, num_nodes, np)
 	command = '%s %s/bin/gen_sgtgrid nx=%d ny=%d nz=%d h=%f xsrc=%d ysrc=%d ixmin=%d ixmax=%d iymin=%d iymax=%d izstart=%d izmax=%d radiusfile=%s outfile=%s modellon=%f modellat=%f modelrot=%f faultlist=%s' % (MPI_CMD, sys.path[0], ns[0], ns[1], ns[2], HH, src[0], src[1], IX_MIN, IX_MAX, IY_MIN, IY_MAX, IZ_START, IZ_MAX, radiusfile, outputFile, mlon, mlat, mrot, faultlist)
 	#cmdFile = open("command.txt", "w")
 	#cmdFile.write(command)
 	#cmdFile.flush()
 	#cmdFile.close()
 	print(command)
+	sys.stdout.flush()
 	startTime = time.time()
 	returnCode = os.system(command)
 	print("Elapsed time: %f\n" % (time.time()-startTime))
