@@ -1,28 +1,31 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="CyberShake/CyberCommands/cybercommands_SC.jar"/>
-    <options buildIfNeeded="true" compress="true" descriptionLocation="/CyberShake/CyberCommands/cybercommands_SC.jardesc" exportErrors="false" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <jar path="cybershake-core/CyberCommands/cybercommands_SC.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/cybershake-core/CyberCommands/cybercommands_SC.jardesc" exportErrors="false" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
-    <manifest generateManifest="false" mainClassHandleIdentifier="=CyberShake/CyberCommands&lt;commands{CyberLoadamps.java[CyberLoadamps" manifestLocation="/CyberShake/CyberCommands/CyberLoadAmps.mf" manifestVersion="1.0" reuseManifest="false" saveManifest="true" usesManifest="true">
+    <manifest generateManifest="false" mainClassHandleIdentifier="=cybershake-core/CyberCommands&lt;commands{CyberLoadamps.java[CyberLoadamps" manifestLocation="/cybershake-core/CyberCommands/CyberLoadAmps.mf" manifestVersion="1.0" reuseManifest="false" saveManifest="true" usesManifest="true">
         <sealing sealJar="false">
             <packagesToSeal/>
             <packagesToUnSeal/>
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <file path="/CyberShake/CyberCommands/focal.cfg.xml"/>
-        <javaElement handleIdentifier="=CyberShake/CyberCommands&lt;processing"/>
-        <file path="/CyberShake/CyberCommands/hibernate.reveng.foralltables.xml"/>
-        <javaElement handleIdentifier="=CyberShake/CyberCommands&lt;data"/>
-        <file path="/CyberShake/CyberCommands/intensity.cfg.xml"/>
-        <file path="/CyberShake/CyberCommands/hibernate.reveng.xml"/>
-        <file path="/CyberShake/CyberCommands/intensity.cfg.old.xml"/>
-        <javaElement handleIdentifier="=CyberShake/CyberCommands&lt;util"/>
-        <javaElement handleIdentifier="=CyberShake/CyberCommands&lt;commands"/>
-        <file path="/CyberShake/CyberCommands/surface.cfg.xml"/>
-        <javaElement handleIdentifier="=CyberShake/CyberCommands&lt;mapping"/>
-        <file path="/CyberShake/CyberCommands/hibernate.peakamplitudes.reveng.xml"/>
-        <file path="/CyberShake/CyberCommands/hibernate.cfg.xml"/>
+        <file path="/cybershake-core/CyberCommands/hibernate.reveng.foralltables.xml"/>
+        <file path="/cybershake-core/CyberCommands/moment_carc.cfg.xml"/>
+        <file path="/cybershake-core/CyberCommands/hibernate.peakamplitudes.reveng.xml"/>
+        <file path="/cybershake-core/CyberCommands/intensity.cfg.old.xml"/>
+        <file path="/cybershake-core/CyberCommands/sqlite.cfg.xml"/>
+        <file path="/cybershake-core/CyberCommands/moment.cfg.xml"/>
+        <javaElement handleIdentifier="=cybershake-core/CyberCommands&lt;data"/>
+        <javaElement handleIdentifier="=cybershake-core/CyberCommands&lt;util"/>
+        <javaElement handleIdentifier="=cybershake-core/CyberCommands&lt;processing"/>
+        <file path="/cybershake-core/CyberCommands/surface.cfg.xml"/>
+        <javaElement handleIdentifier="=cybershake-core/CyberCommands&lt;commands"/>
+        <file path="/cybershake-core/CyberCommands/intensity.cfg.xml"/>
+        <file path="/cybershake-core/CyberCommands/focal.cfg.xml"/>
+        <file path="/cybershake-core/CyberCommands/hibernate.cfg.xml"/>
+        <javaElement handleIdentifier="=cybershake-core/CyberCommands&lt;mapping"/>
+        <file path="/cybershake-core/CyberCommands/hibernate.reveng.xml"/>
     </selectedElements>
 </jardesc>
