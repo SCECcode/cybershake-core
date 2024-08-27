@@ -45,7 +45,8 @@ elif mpi_cmd=='jsrun':
 	exec_string = "jsrun -n %d -g 1 -a 1 -c 1 %s" % (nproc, suffix)
 elif mpi_cmd=='srun':
 	exec_string = "srun -n %d -c 1 --gpus-per-task=1 --gpu-bind=closest %s" % (nproc, suffix)
-	module_cmd = "module load PrgEnv-amd; module load rocm"
+	#module_cmd = "module load PrgEnv-amd; module swap amd/5.7.1 amd/5.4.3; module load rocm/5.4.3; module list"
+	module_cmd = "module load PrgEnv-amd; module load cray-mpich/8.1.27; module load amd/6.0.0; module load rocm/6.0.0; module swap libfabric/1.20.1 libfabric/1.15.2.0"
 
 #run exec_string
 print(module_cmd)
