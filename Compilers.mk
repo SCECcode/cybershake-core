@@ -16,6 +16,24 @@
 # Get the hostname we are running on
 HOSTNAME = $(shell hostname -f)
 
+ifeq (frontier,$(findstring frontier, $(HOSTNAME)))
+	MY_CC = cc
+	MY_FC = ftn
+	MY_MPICC = cc
+	MY_FC77 = ftn
+	MY_MPIFC = ftn
+endif
+
+ifeq (summit,$(findstring summit, $(HOSTNAME)))
+	MY_CC = gcc
+	MY_FC = gfortran
+	MY_MPICC = mpicc
+	MY_FC77 = gfortran
+	MY_MPIFC = mpif77
+	FLAG = 1
+endif
+
+
 # PSC BigBen  (Cray XT3)
 # Note: For this to work you need to have your environment set
 #       up with the gcc compilers, not the PG compilers. On

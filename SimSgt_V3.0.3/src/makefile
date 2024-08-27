@@ -9,8 +9,8 @@ GETPARLIB = ../..//Getpar/getpar/lib
 LDLIBS = -L${GETPARLIB} -lm -lget
 
 UFLAGS = -O3
-CC = mpicc
-FC = mpif77
+CC = cc
+FC = ftn
 #CC = gcc
 #FC = gfortran
 
@@ -33,7 +33,7 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
 # optimized
 CFLAGS = ${UFLAGS} ${LF_FLAGS}
-FFLAGS = ${UFLAGS} -ffixed-line-length-132
+FFLAGS = ${UFLAGS} -N 132
 
 ##### make options
 

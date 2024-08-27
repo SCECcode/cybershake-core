@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "string.h"
 
 #include "rupgen_api.h"
 #include "math.h"
@@ -36,14 +37,14 @@ int main(int argc, char** argv) {
 	} else if (strcmp(retrieval_type, "point")==0) {
 		average_method = 0;
 	} else {
-		printf("Don't recognize the retrieval type %s.  Needs to be one of 'average' or 'point', aborting.\n");
+		printf("Don't recognize the retrieval type %s.  Needs to be one of 'average' or 'point', aborting.\n", retrieval_type);
 		exit(2);
 	}
 
 	int i,j,k,m;
 
 	struct standrupformat srf;
-	read_srf(&srf, srf_filename, 0);
+	_read_srf(&srf, srf_filename, 0);
 
 	//Read model coords
 	printf("Reading model coords.\n");

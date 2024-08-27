@@ -23,8 +23,7 @@ def getProperty(property):
 	try:
 		propertyVal = vars[property]
 	except KeyError:
-		print "No %s found in cybershake.cfg.\n" % property
-		sys.exit(-1)
+		raise KeyError("No %s found in cybershake.cfg.\n" % property)
 	return propertyVal
 
 def getJobID():

@@ -11,9 +11,9 @@ boundaries for the simulation box.
 # because site startup file may drop imported modules from the env
 #
 import os
-filename = os.environ.get('PYTHONSTARTUP')
-if filename and os.path.isfile(filename):
-  execfile(filename)
+#filename = os.environ.get('PYTHONSTARTUP')
+#if filename and os.path.isfile(filename):
+#  execfile(filename)
 
 import os
 import sys
@@ -153,6 +153,7 @@ site_id = int(res[0][2])
 
 sql_string = "select distinct Ruptures.Source_ID,Ruptures.Rupture_ID,Source_Name,Mag,Prob,Start_Lat,Start_Lon,End_Lat,End_Lon from Ruptures,CyberShake_Site_Ruptures where Ruptures.ERF_ID=%s and Ruptures.ERF_ID=CyberShake_Site_Ruptures.ERF_ID and CyberShake_Site_Ruptures.CS_Site_ID=%s and CyberShake_Site_Ruptures.Source_ID=Ruptures.Source_ID and CyberShake_Site_Ruptures.Rupture_ID=Ruptures.Rupture_ID order by Mag desc"%(erf,site_id)
 try:
+  print(sql_string)
   cur.execute(sql_string)
 except pymysql.DatabaseError as e:
   print(e)
