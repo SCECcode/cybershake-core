@@ -30,7 +30,7 @@ public class BSAFileUtil {
 		} else if (fileMode==Mode.BSA || fileMode==Mode.HEAD){
 			//BSA or HEAD mode
 			createTotalFileListHelper(saFile);
-		} else if (fileMode==Mode.ROTD) {
+		} else if (fileMode==Mode.ROTD || fileMode==Mode.ROTD50) {
 			createTotalFileListRotd(saFile);
 		} else if (fileMode==Mode.DURATION) {
 			createTotalFileListDuration(saFile);
