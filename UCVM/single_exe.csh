@@ -18,7 +18,6 @@ set MPI_CMD = $10
 set JOB_ID = $11
 set FORMAT = $12
 set SURF_CVM_DEPTH = $13
-<<<<<<< HEAD
 set ELY_TAPER = $14
 set TAPER_DEPTH = $15
 set TAPER_MODELS = $16
