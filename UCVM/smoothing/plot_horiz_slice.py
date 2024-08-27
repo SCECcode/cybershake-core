@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import matplotlib
 matplotlib.use("AGG")
@@ -16,7 +16,7 @@ from mpl_toolkits.basemap import cm
 from operator import itemgetter
 
 if len(sys.argv)<8:
-	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <z-depth> <decimation> <output file> [vp|vs|rho]" % sys.argv[0]
+	print("Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <z-depth> <decimation> <output file> [vp|vs|rho]" % sys.argv[0])
 	sys.exit(1)
 
 
@@ -37,11 +37,11 @@ x_dim = int(math.ceil(float(nx)/float(decimation)))
 y_dim = int(math.ceil(float(ny)/float(decimation)))
 
 coords = []
-print "Reading model coods file."
+print("Reading model coods file.")
 with open(model_coords_file, "r") as fp_in:
 	data = fp_in.readlines()
 	for y in range(0, ny, decimation):
-		print "%d of %d y-points" % (y, ny)
+		print("%d of %d y-points" % (y, ny))
 		for x in range(0, nx, decimation):
 			line_index = x + y*nx
 			line = data[line_index]
@@ -51,7 +51,7 @@ with open(model_coords_file, "r") as fp_in:
 slice_floats = []
 vel_data = []
 
-print "Reading velocity file."
+print("Reading velocity file.")
 with open(velocity_file, "rb") as fp_in:
 	#Seek to z-slice
 	offset = zslice*12*nx*ny
@@ -59,7 +59,7 @@ with open(velocity_file, "rb") as fp_in:
 	slice_data = fp_in.read(nx*ny*3*4)
 	#Plot Vs
 	for i in range(0, nx, decimation):
-		print "%d of %d x-slices" % (i, nx)
+		print("%d of %d x-slices" % (i, nx))
 		offset = i*ny*3*4
 		slice_floats = (struct.unpack("%df" % 3*ny, slice_data[offset:offset+ny*3*4]))
 		if comp=="vp":
@@ -74,11 +74,11 @@ ordered_coords = sorted(coords, key=itemgetter(2,3))
 #Plotting code taken from UCVM horizontal slice
 #BOUNDS = [0.0, 200.0, 400.0, 600.0, 800.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
 #BOUNDS = [400.0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 4000.0]
-BOUNDS = [500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 4000.0, 5000.0]
+BOUNDS = [400.0, 500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 4000.0, 5000.0]
 #BOUNDS = [0, 3000.0]
 #TICKS = [500.0, 1000.0, 1500.0, 2000.0, 2500.0, 3000.0, 3500.0, 4000.0, 4500.0, 5000.0]
 #TICKS = [400, 500, 1000, 1500, 2000, 2500, 3000, 4000]
-TICKS = [500, 1000, 1500, 2000, 2500, 3000, 4000, 5000]
+TICKS = [400, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000]
 #TICKS = [0, 300.0, 600.0, 900.0, 1200.0, 1500.0, 1800.0, 2100.0, 2400.0, 2700.0, 3000.0]
 
 #colormap = cm.RdBu
@@ -93,10 +93,10 @@ norm = mcolors.LogNorm(vmin=BOUNDS[0],vmax=BOUNDS[len(BOUNDS)-1])
 #so cal: 31, 36, -121, -115
 #no cal: 33, 43, -127, -115
 
-min_lat=31
-max_lat=38
-min_lon=-123
-max_lon=-113
+min_lat=34
+max_lat=43
+min_lon=-127
+max_lon=-116
 
 m = basemap.Basemap(projection='cyl', llcrnrlat=min_lat, urcrnrlat=max_lat, llcrnrlon=min_lon, urcrnrlon=max_lon, resolution='f', anchor='C')
 #m = basemap.Basemap(projection='cyl', llcrnrlat=34, urcrnrlat=36, llcrnrlon=-123, urcrnrlon=-121, resolution='f', anchor='C')
