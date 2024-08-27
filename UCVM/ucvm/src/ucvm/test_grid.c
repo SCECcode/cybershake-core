@@ -9,7 +9,7 @@
 int main(int argc, char **argv)
 {
   int i, numpoints;
-  ucvm_proj_t iproj, oproj, fproj;
+  ucvm_projdef_t iproj, oproj, fproj;
   ucvm_trans_t trans;
   ucvm_point_t points[MAX_POINTS];
   ucvm_dim_t dims;

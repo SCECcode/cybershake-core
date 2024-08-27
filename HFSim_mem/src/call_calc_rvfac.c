@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
 	PyRun_SimpleString("foo += bar");
 	PyRun_SimpleString("print(foo)");
 	Py_Finalize();*/
-	char* filename = "/gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp/comps/hfsims_cfg.py";
+	char* filename = "/work2/00349/scottcal/frontera/CyberShake/software/bbp/bbp-22.4.0/bbp/comps/hfsims_cfg.py";
 	//char* filename = "test_hfsims_cfg.py";
 	FILE* hfsims_cfg_fp = fopen(filename, "r");
 	// = fopen("/gpfs/alpine/proj-shared/geo112/CyberShake/software/bbp/bbp-19.8.0-python3/bbp/comps/hfsims_cfg.py", "r")

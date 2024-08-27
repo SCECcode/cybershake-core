@@ -508,8 +508,43 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
         }
  }
 
- // Query by depth
- if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+ //Figure out which if any models are including the taper
+ char taper_models_list[10][512];
+ int num_taper_models = 0;
+ if (strlen(ely_taper_models)>0 && strcmp(ely_taper_models, "none")!=0) {  
+	//Only supported with awpz format for now
+	if (format!=AWP_Z) {
+		printf("Using the taper with only some models is only supported when using the AWP_Z format, aborting.\n");
+		exit(-4);
+	}
+    char* save;
+    char* tok = strtok_r(ely_taper_models, ",", &save);
+    while (tok!=NULL) {
+		if (my_id==0) {
+			printf("Adding %s to models list.", tok);
+			fflush(stdout);
+		}
+ 		strcpy(taper_models_list[num_taper_models], tok);
+		num_taper_models++;
+		tok = strtok_r(NULL, ",", &save);
+	}
+  } else {
+	if (my_id==0) {
+		printf("Model list contains %s.\n", ely_taper_models);
+		fflush(stdout);
+	}
+	if (strcmp(ely_taper_models, "all")==0) {
+		strcpy(taper_models_list[num_taper_models], "all");
+		num_taper_models = 1;
+	} else if (strcmp(ely_taper_models, "none")!=0) {
+		strcpy(taper_models_list[num_taper_models], ely_taper_models);
+		num_taper_models = 1;
+	}
+	//If ely_taper_models=="none", don't do anything
+  }
+
+ // Query by z-type selected earlier
+ if (ucvm_setparam(UCVM_MODEL_PARAM_QUERY_MODE, z_query_mode)!=UCVM_CODE_SUCCESS) {
    fprintf(stderr, "Set query mode by depth failed.\n");
    fflush(stderr);
    exit(-2);

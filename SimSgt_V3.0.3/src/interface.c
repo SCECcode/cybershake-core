@@ -2538,7 +2538,7 @@ while(fofp > tol2)
 
 /*
 */
-matherr(x)
+/*matherr(x)
 register struct exception *x;
 {
 switch (x->type)
@@ -2551,7 +2551,7 @@ switch (x->type)
       break;
    }
 return(0);
-}
+}*/
 
 bisect_p(ff,slay,sth,rlay,rth,p,eps,tol,rng,linc)
 struct finitefault *ff;

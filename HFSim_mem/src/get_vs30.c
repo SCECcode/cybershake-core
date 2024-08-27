@@ -31,7 +31,7 @@ float ucvm_vs30(float lon, float lat, char* model) {
 			exit(3);
 		}
 	
-		if (ucvm_setparam(UCVM_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
+		if (ucvm_setparam(UCVM_MODEL_PARAM_QUERY_MODE, UCVM_COORD_GEO_DEPTH)!=UCVM_CODE_SUCCESS) {
 	  		fprintf(stderr, "Set query mode by depth failed.\n");
 			exit(-2);
 		}

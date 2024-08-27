@@ -177,168 +177,180 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 	free(num_sgts_by_handler);
 	free(sgts_by_handler);
 
-	if (run_PSA==0) {
-		return 0;
-	} else {
-		printf("Calculating PSA.\n");
-	}
-
-	//psa
-	int nx, ny, npts;
-	float dt;
-	char seis_units[120];
-	char output_units[120];
-	char output_type[120];
-	char period[120];
-	float filter_high_hz;
-	char byteswap[120];
-	char input_file[256];
-	char output_file[256];
-	int seis_units_len, output_units_len, output_type_len, period_len, byteswap_len, input_file_len, output_file_len;
-
-	memset(seis_units, ' ', 120);
-	memset(output_units, ' ', 120);
-	memset(output_type, ' ', 120);
-	memset(period, ' ', 120);
-	memset(byteswap, ' ', 120);
-	memset(input_file, ' ', 256);
-	memset(output_file, ' ', 256);
-
-	//Put this back in b/c we called setpar and endpar in the rupture variation generator
-	setpar(t_info->argc, t_info->argv);
-	mstpar("simulation_out_pointsX","d",&nx);
-	mstpar("simulation_out_pointsY","d",&ny);
-	mstpar("simulation_out_timesamples","d",&npts);
-	mstpar("simulation_out_timeskip","f",&dt);
-	mstpar("surfseis_rspectra_seismogram_units","s",seis_units);
-	mstpar("surfseis_rspectra_output_units","s",output_units);
-	mstpar("surfseis_rspectra_output_type","s",output_type);
-	mstpar("surfseis_rspectra_period","s",period);
-	mstpar("surfseis_rspectra_apply_filter_highHZ","f",&filter_high_hz);
-	mstpar("surfseis_rspectra_apply_byteswap","s",byteswap);
-
-	//Make sure dt and dtout (from the header) are the same
-	if (fabs(dt-header.dt)>0.00001) {
-		fprintf(stderr, "%d) dt from 'simulation_out_timeskip' argument is %f, but dt from 'dtout' argument and used in seismogram header is %f.  These must match, aborting.\n", my_id, dt, header.dt);
-		MPI_Abort(MPI_COMM_WORLD, 7);
-		exit(7);
-	}
-
-//	mstpar("out","s",&output_file);
-	///Construct output filename
-	output_file_len = sprintf(output_file, "PeakVals_%s_%d_%d_%d.bsa", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
-	printf("%d) output_file = %s, len = %d\n", my_id, output_file, output_file_len);
-	char output_file_ext[256];
-	sprintf(output_file_ext, output_file);
-	printf("%d) output_file_ext = %s\n", my_id, output_file_ext);
-	
-	//replace null terminator with space
-	//fortran expects all the strings to be space-terminated
-	seis_units_len = strlen(seis_units);
-	seis_units[seis_units_len] = ' ';
-	output_units_len = strlen(output_units);
-	output_units[output_units_len] = ' ';
-	output_type_len = strlen(output_type);
-	output_type[output_type_len] = ' ';
-	period_len = strlen(period);
-	period[period_len] = ' ';
-	byteswap_len = strlen(byteswap);
-	byteswap[byteswap_len] = ' ';
-	input_file_len = strlen(input_file);
-	input_file[input_file_len] = ' ';
-	//output_file_len = strlen(output_file);
-	output_file[output_file_len] = ' ';
-	printf("%d) output_file_len = %d\n", my_id, output_file_len);
-
-	//This tells spectrad to just return the data, not to do the output itself
-	int output_option = 2;
-	//Supply an array to get the data1 back from spectrad
-	float* psa_data = check_malloc(sizeof(float)*MAXPERIODS);
-	//Accumulation array for writing to file
-	int psa_rv_file_size = sizeof(struct seisheader) + sizeof(float)*nx*ny*NUM_SCEC_PERIODS;
-	char* psa_file_buffer = check_malloc(psa_rv_file_size*num_rup_vars);
-	int rotd_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct rotD_record)*NUM_ROTD_PERIODS;
-	char* rotd_file_buffer = check_malloc(rotd_rv_file_size*num_rup_vars);
-	//Use nx*ny here to capture the number of components
-	int duration_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES;
-	char* duration_file_buffer = check_malloc(duration_rv_file_size*num_rup_vars);
-
-	if (MAXPERIODS<NUM_SCEC_PERIODS*nx*ny) {
-		fprintf(stderr, "%d) Error!  Need to increase MAXPERIODS in defs.h and maxperiods in surfseis_rspectra.f.  Aborting.", my_id);
-		MPI_Finalize();
-		exit(7);
-	}
-
+	int nx, ny;
 	int rv;
-	struct rotD_record* rotD_data = NULL;
-	struct duration_record* duration_data = NULL;
-	char rotd_filename[256];
-	char duration_filename[256];
-	for (rv=0; rv<num_rup_vars; rv++) {
-		if (debug) {
-			char buf[256];
-			sprintf(buf, "Performing PSA for rv %d.", rv);
-			write_log(buf);
-		}
-		header.rup_var_id = rup_vars[rv].rup_var_id;
-		//printf("Entering spectrad.\n");
-		       //printf("locations: %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld\n", &nx, &ny, &npts, &dt, seis_units, output_units, output_type, period, &filter_high_hz, byteswap, input_file, output_file, seis);
-//		fflush(stdout);
-		//spectrad_(&header, &nx, &ny, &npts, &dt, seis_units, seis_units_len, output_units, output_units_len, output_type, output_type_len, period, period_len, &filter_high_hz, byteswap, byteswap_len, input_file, input_file_len, output_file, output_file_len, seis, &using_pipe_forwarding);
-		spectrad_(&header, &nx, &ny, &npts, &dt, seis_units, output_units, output_type, period, &filter_high_hz, byteswap, input_file, output_file, seis[rv], &output_option, psa_data,
-					seis_units_len, output_units_len, output_type_len, period_len, byteswap_len, input_file_len, output_file_len);
-		//Replace null terminator so send_data_file doesn't have an issue
-		printf("%d) output_file: %s\n", my_id, output_file_ext);
-		memcpy(psa_file_buffer+rv*psa_rv_file_size, &header, sizeof(struct seisheader));
-		memcpy(psa_file_buffer+rv*psa_rv_file_size+sizeof(struct seisheader), psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float));
-		//send_data_file(&header, output_file_ext, t_info->task->source_id, t_info->task->rupture_id, psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float), my_id);
 
-		if (run_rotd) {
+	//Moved this outside of run_PSA if statement
+	//Matching endpar() is after duration code
+	setpar(t_info->argc, t_info->argv);
+	if (run_PSA==1) {
+		printf("Calculating PSA.\n");
+       
+		//psa
+		int npts;
+		float dt;
+		char seis_units[120];
+		char output_units[120];
+		char output_type[120];
+		char period[120];
+		float filter_high_hz;
+		char byteswap[120];
+		char input_file[256];
+		char output_file[256];
+		int seis_units_len, output_units_len, output_type_len, period_len, byteswap_len, input_file_len, output_file_len;
+	
+		memset(seis_units, ' ', 120);
+		memset(output_units, ' ', 120);
+		memset(output_type, ' ', 120);
+		memset(period, ' ', 120);
+		memset(byteswap, ' ', 120);
+		memset(input_file, ' ', 256);
+		memset(output_file, ' ', 256);
+	
+		//Put this back in b/c we called setpar and endpar in the rupture variation generator
+		//setpar(t_info->argc, t_info->argv);
+		mstpar("simulation_out_pointsX","d",&nx);
+		mstpar("simulation_out_pointsY","d",&ny);
+		mstpar("simulation_out_timesamples","d",&npts);
+		mstpar("simulation_out_timeskip","f",&dt);
+		mstpar("surfseis_rspectra_seismogram_units","s",seis_units);
+		mstpar("surfseis_rspectra_output_units","s",output_units);
+		mstpar("surfseis_rspectra_output_type","s",output_type);
+		mstpar("surfseis_rspectra_period","s",period);
+		mstpar("surfseis_rspectra_apply_filter_highHZ","f",&filter_high_hz);
+		mstpar("surfseis_rspectra_apply_byteswap","s",byteswap);
+		
+		//endpar();
+	
+		//Make sure dt and dtout (from the header) are the same
+		if (fabs(dt-header.dt)>0.00001) {
+			fprintf(stderr, "%d) dt from 'simulation_out_timeskip' argument is %f, but dt from 'dtout' argument and used in seismogram header is %f.  These must match, aborting.\n", my_id, dt, header.dt);
+			MPI_Abort(MPI_COMM_WORLD, 7);
+			exit(7);
+		}
+
+		///Construct output filename
+		output_file_len = sprintf(output_file, "PeakVals_%s_%d_%d_%d.bsa", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
+		printf("%d) output_file = %s, len = %d\n", my_id, output_file, output_file_len);
+		char output_file_ext[256];
+		sprintf(output_file_ext, output_file);
+		printf("%d) output_file_ext = %s\n", my_id, output_file_ext);
+		
+		//replace null terminator with space
+		//fortran expects all the strings to be space-terminated
+		seis_units_len = strlen(seis_units);
+		seis_units[seis_units_len] = ' ';
+		output_units_len = strlen(output_units);
+		output_units[output_units_len] = ' ';
+		output_type_len = strlen(output_type);
+		output_type[output_type_len] = ' ';
+		period_len = strlen(period);
+		period[period_len] = ' ';
+		byteswap_len = strlen(byteswap);
+		byteswap[byteswap_len] = ' ';
+		input_file_len = strlen(input_file);
+		input_file[input_file_len] = ' ';
+		//output_file_len = strlen(output_file);
+		output_file[output_file_len] = ' ';
+		printf("%d) output_file_len = %d\n", my_id, output_file_len);
+	
+		//This tells spectrad to just return the data, not to do the output itself
+		int output_option = 2;
+		//Supply an array to get the data1 back from spectrad
+		float* psa_data = check_malloc(sizeof(float)*MAXPERIODS);
+		//Accumulation array for writing to file
+		int psa_rv_file_size = sizeof(struct seisheader) + sizeof(float)*nx*ny*NUM_SCEC_PERIODS;
+		char* psa_file_buffer = check_malloc(psa_rv_file_size*num_rup_vars);
+	
+    	if (MAXPERIODS<NUM_SCEC_PERIODS*nx*ny) {
+        	fprintf(stderr, "%d) Error!  Need to increase MAXPERIODS in defs.h and maxperiods in surfseis_rspectra.f.  Aborting.", my_id);
+        	MPI_Finalize();
+        	exit(7);
+    	}
+
+        for (rv=0; rv<num_rup_vars; rv++) {
+            if (debug) {
+                char buf[256];
+                sprintf(buf, "Performing PSA for rv %d.", rv);
+                write_log(buf);
+            }
+	        header.rup_var_id = rup_vars[rv].rup_var_id;
+
+			spectrad_(&header, &nx, &ny, &npts, &dt, seis_units, output_units, output_type, period, &filter_high_hz, byteswap, input_file, output_file, seis[rv], &output_option, psa_data,
+                    seis_units_len, output_units_len, output_type_len, period_len, byteswap_len, input_file_len, output_file_len);
+			//Replace null terminator so send_data_file doesn't have an issue
+			//printf("%d) output_file: %s\n", my_id, output_file_ext);
+	        memcpy(psa_file_buffer+rv*psa_rv_file_size, &header, sizeof(struct seisheader));
+	        memcpy(psa_file_buffer+rv*psa_rv_file_size+sizeof(struct seisheader), psa_data, nx*ny*NUM_SCEC_PERIODS*sizeof(float));
+		}
+		send_data_cluster(output_file_ext, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, psa_file_buffer, num_rup_vars*psa_rv_file_size, my_id);
+	    free(psa_file_buffer);
+    	free(psa_data);
+	}
+
+	if (run_rotd) {
+		int rotd_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct rotD_record)*NUM_ROTD_PERIODS;
+		char* rotd_file_buffer = check_malloc(rotd_rv_file_size*num_rup_vars);
+
+	    struct rotD_record* rotD_data = check_malloc(sizeof(int) + sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
+	    char rotd_filename[256];
+
+    	for (rv=0; rv<num_rup_vars; rv++) {
 			if (debug) {
-				char buf[256];
-				sprintf(buf, "Performing RotD for rv %d.", rv);
-				write_log(buf);
-			}
-			if (rotD_data==NULL) {
-				rotD_data = check_malloc(sizeof(int) + sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
-			}
+                char buf[256];
+                sprintf(buf, "Performing RotD for rv %d.", rv);
+                write_log(buf);
+            }
+			header.rup_var_id = rup_vars[rv].rup_var_id;
 			//We offset by sizeof(int) because we'll put the # of periods into the first spot
-			char* start_ptr = ((char*)(rotD_data))+sizeof(int);
-			//printf("%d) rotD_data @ %ld, start_ptr @ %ld\n", my_id, rotD_data, start_ptr);
-			//if (rotD_data==NULL) {
-			//	rotD_data = check_malloc(sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
-			//}
+	        char* start_ptr = ((char*)(rotD_data))+sizeof(int);
 			int rc = rotd(&header, seis[rv], (struct rotD_record*)start_ptr);
-			//int rc = rotd(&header, seis[rv], rotD_data);
-			if (rc!=0) {
-				fprintf(stderr, "%d) Error in rotd code, aborting.\n", my_id);
-				if (debug) close_log();
-				MPI_Finalize();
-				exit(rc);
-			}
-			//Also need to send # of periods as part of the file
-			//Need to put it in an int for memcpy
-			int num_rotd_periods = NUM_ROTD_PERIODS;
-			//char* file_buffer = check_malloc(sizeof(int) + sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
-			//memcpy(file_buffer, &num_rotd_periods, sizeof(int));
-			//memcpy(file_buffer+sizeof(int), rotD_data, sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
-			memcpy(rotD_data, &num_rotd_periods, sizeof(int));
-			memcpy(rotd_file_buffer+rv*rotd_rv_file_size, &header, sizeof(struct seisheader));
-			memcpy(rotd_file_buffer+rv*rotd_rv_file_size+sizeof(struct seisheader), rotD_data, sizeof(int)+sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
-			//send_data_file(&header, rotd_filename, t_info->task->source_id, t_info->task->rupture_id, rotD_data, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
-			//send_data_file(&header, rotd_filename, file_buffer, sizeof(int)+NUM_ROTD_PERIODS*sizeof(struct rotD_record), my_id);
-			//free(file_buffer);
+            if (rc!=0) {
+                fprintf(stderr, "%d) Error in rotd code, aborting.\n", my_id);
+                if (debug) close_log();
+                MPI_Finalize();
+                exit(rc);
+            }
+            //Also need to send # of periods as part of the file
+            //Need to put it in an int for memcpy
+            int num_rotd_periods = NUM_ROTD_PERIODS;
+            memcpy(rotD_data, &num_rotd_periods, sizeof(int));
+            memcpy(rotd_file_buffer+rv*rotd_rv_file_size, &header, sizeof(struct seisheader));
+            memcpy(rotd_file_buffer+rv*rotd_rv_file_size+sizeof(struct seisheader), rotD_data, sizeof(int)+sizeof(struct rotD_record)*NUM_ROTD_PERIODS);
+		}
+		sprintf(rotd_filename, "RotD_%s_%d_%d_%d.rotd", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
+        send_data_cluster(rotd_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, rotd_file_buffer, num_rup_vars*rotd_rv_file_size, my_id);
+	    free(rotd_file_buffer);
+	    free(rotD_data);
+
+	}
+
+	if (run_duration) {
+		if (debug) {
+                char buf[256];
+                sprintf(buf, "Performing duration calculations for rv %d.", rv);
+                write_log(buf);
+        }
+
+		if (!run_PSA) {
+			//Get nx, ny
+			//setpar was called before run_PSA if statement
+	        //setpar(t_info->argc, t_info->argv);
+	        mstpar("simulation_out_pointsX","d",&nx);
+	        mstpar("simulation_out_pointsY","d",&ny);
+			//Endpar after duration check
+			//endpar();
 		}
 
-		if (run_duration) {
-			if (debug) {
-				char buf[256];
-				sprintf(buf, "Performing duration calculations for rv %d.", rv);
-				write_log(buf);
-			}
-			if (duration_data==NULL) {
-				duration_data = check_malloc(sizeof(int)+sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES);
-			}
+		//Use nx*ny here to capture the number of components
+		int duration_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES;
+		char* duration_file_buffer = check_malloc(duration_rv_file_size*num_rup_vars);
+
+		struct duration_record* duration_data = check_malloc(sizeof(int)+sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES);
+		char duration_filename[256];
+
+		for (rv=0; rv<num_rup_vars; rv++) {
+			header.rup_var_id = rup_vars[rv].rup_var_id;
 			//Put the # of measures into the first spot
 			int num_dur_measures = NUM_DURATION_MEASURES;
 			memcpy(duration_data, &num_dur_measures, sizeof(int));
@@ -356,29 +368,13 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 			//Add header info to the file buffer
 			memcpy(duration_file_buffer+rv*duration_rv_file_size, &header, sizeof(struct seisheader));
 			memcpy(duration_file_buffer+rv*duration_rv_file_size+sizeof(struct seisheader), duration_data, sizeof(int)+sizeof(struct duration_record)*nx*ny*NUM_DURATION_MEASURES);
-			//printf("Arias duration value in duration_file_buffer: %f\n", duration_file_buffer+rv*duration_rv_file_size+sizeof(struct seisheader)+sizeof(int)+76);
 		}			
-	}
-
-	if (run_PSA) {
-		send_data_cluster(output_file_ext, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, psa_file_buffer, num_rup_vars*psa_rv_file_size, my_id);
-	}
-	if (run_rotd) {
-		sprintf(rotd_filename, "RotD_%s_%d_%d_%d.rotd", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
-		send_data_cluster(rotd_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, rotd_file_buffer, num_rup_vars*rotd_rv_file_size, my_id);
-	}
-	if (run_duration) {
 		sprintf(duration_filename, "Duration_%s_%d_%d_%d.dur", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
 		send_data_cluster(duration_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, duration_file_buffer, num_rup_vars*duration_rv_file_size, my_id);
+	    free(duration_data);
+	    free(duration_file_buffer);
 	}
-
-	free(psa_file_buffer);
-	free(rotd_file_buffer);
-	free(duration_file_buffer);
-
-	free(psa_data);
-	free(rotD_data);
-	free(duration_data);
+	//endpar();
 	free(sgtparms);
 	free(indx_master);
 	free(rup_vars);

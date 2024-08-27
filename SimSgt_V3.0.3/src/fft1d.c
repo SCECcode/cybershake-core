@@ -1,4 +1,3 @@
-
 float sin_table[] =
    {
 	1.0000000e+00,	/* sin(pi/2) */
@@ -33,7 +32,11 @@ float sin_table[] =
  * the routine does no normalization
  */
 struct complex { float re; float im; };
-cfft(x,n,isign)
+
+void cfft_r(struct complex* x,int n,int isign);
+
+
+void cfft(x,n,isign)
 struct complex *x;
 int n,isign;
    {
@@ -217,9 +220,7 @@ int n, isign;
 	cfft_r(x,n/2,isign);
    }
 
-cfft_r(x,n,isign)
-struct complex *x;
-int n,isign;
+void cfft_r(struct complex* x,int n,int isign)
    {
 	register struct complex *px, *qx, *rx;
 	struct complex *limit, *qlimit, dtemp;

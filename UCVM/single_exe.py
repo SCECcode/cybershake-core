@@ -21,6 +21,9 @@ parser.add_option("--frequency", dest="frequency", type="float", action="store",
 parser.add_option("--spacing", dest="spacing", type="float", action="store", help="Override default spacing with this value (km)")
 parser.add_option("--min_vs", dest="min_vs", type="float", action="store", help="Override minimum Vs value.  Minimum Vp and minimum density will be 3.4 times this value.")
 parser.add_option("--h_fraction", dest="h_frac", type="float", action="store", help="Depth, in fractions of a grid point, to query UCVM at when populating the surface points.")
+parser.add_option("--ely-taper", dest="ely_taper", type="str", action="store", help="Type of Ely taper to use.  Choices are 'none' (the default), 'all' (apply the taper to all points), or 'ifless' (apply the taper at all points for which the taper has a lower Vs)")
+parser.add_option("--taper-depth", dest="taper_depth", type="float", action="store", help="Transition depth in meters for the Ely taper, if it's being applied.  Default is 700m.")
+parser.add_option("--taper-models", dest="taper_models", type="str", action="store", help="List of models to include Ely taper for, 'none', or 'all'.  Default is 'all' if ely_taper is not 'none', or 'none' if ely_taper is 'none'.");
 
 (option, args) = parser.parse_args()
 
@@ -43,6 +46,24 @@ if option.spacing is not None:
 	zstep = option.spacing*1000.0
 else:
 	zstep = 100.0/frequency
+
+if option.ely_taper is not None:
+    ely_taper = option.ely_taper
+else:
+    ely_taper = "none"
+
+if option.taper_depth is not None:
+    taper_depth = option.taper_depth
+else:
+    taper_depth = 700.0
+
+if option.taper_models is not None:
+	taper_models = option.taper_models
+else:
+	if ely_taper!="none":
+		taper_models = "all"
+	else:
+		taper_models = "none"
 
 #Depth to query UCVM at for surface points, in m
 surface_cvm_depth = 0.0
@@ -73,7 +94,7 @@ mpi_cmd = config.getProperty("MPI_CMD")
 job_id = config.getJobID()
 
 #if cca is one of the models, check to see if GTL is on
-with open('%s/UCVM/ucvm-18.5.0_01302019/model/cca/data/config' % cs_path, 'r') as fp_in:
+with open('%s/UCVM/ucvm_22.7.0_withSFCVM/model/cca/data/config' % cs_path, 'r') as fp_in:
 	data = fp_in.readlines()
 	for line in data:
 		if line.find('gtl')>-1:
@@ -88,9 +109,9 @@ with open('%s/UCVM/ucvm-18.5.0_01302019/model/cca/data/config' % cs_path, 'r') a
 	fp_in.close()
 
 if option.min_vs is not None:
-        command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, option.min_vs)
+	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %s %f %s %.01f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, ely_taper, taper_depth, taper_models, option.min_vs)
 else:
-	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth)
+	command = '%s/single_exe.csh %s %s %d %d %d %s %s %s %s %s %s %s %.1f %s %f %s' % (sys.path[0], site, modelcords, ns[0], ns[1], ns[2], cs_path, scratch_path, log_root, models, mpi_cmd, job_id, format, surface_cvm_depth, ely_taper, taper_depth, taper_models)
 print(command)
 exitcode = os.system(command)
 sys.exit((exitcode >> 8) & 0xFF)
