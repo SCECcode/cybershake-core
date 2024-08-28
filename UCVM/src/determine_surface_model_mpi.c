@@ -138,7 +138,6 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
                            fprintf(stderr, "Error retrieving CCA 1D model.\n");
                            fflush(stderr);
 			   exit(-2);
-<<<<<<< HEAD
 						}
                 } else if (strcmp(velocity_models, "cvmh")==0) {
 					printf("Adding CVM-H.\n");
@@ -155,11 +154,7 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
 						exit(-2);
 					}
                 }
-=======
-                         }
->>>>>>> refs/remotes/origin/main
-		}
-
+            }
 	}
         /*char label_test[64];
         ucvm_model_label(1, label_test, 64);
