@@ -12,7 +12,7 @@ seeds_file = sys.argv[1]
 erf_id = int(sys.argv[2])
 rup_var_scenario_id = int(sys.argv[3])
 
-conn = pymysql.connect(user='cybershk', passwd='***REMOVED***', db='CyberShake', host='moment.usc.edu')
+conn = pymysql.connect(user='cybershk', passwd='phy$ic@1St3ady', db='CyberShake', host='moment.usc.edu')
 cur = conn.cursor()
 
 with open(seeds_file, "r") as fp_in:

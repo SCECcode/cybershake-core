@@ -8,7 +8,7 @@ if len(sys.argv)<4:
     print("Usage: %s <rvfrac values file> <erf id> <rup var scenario id>" % sys.argv[0])
     sys.exit(1)
 
-conn = pymysql.connect(user='cybershk', passwd='***REMOVED***', db='CyberShake', host='moment.usc.edu')
+conn = pymysql.connect(user='cybershk', passwd='phy$ic@1St3ady', db='CyberShake', host='moment.usc.edu')
 cur = conn.cursor()
 
 rvfrac_file = sys.argv[1]
