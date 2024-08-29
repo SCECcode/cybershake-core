@@ -20,8 +20,8 @@ public class RunID {
 	private boolean isSQLite = false;
 	private final int PORT = 3306;
 	private final String DB_NAME = "CyberShake";
-	private final String USER = "cybershk";
-	private final String PASS = "phy$ic@1St3ady";
+	private final String USER = "cybershk_ro";
+	private final String PASS = "CyberShake2007";
 	
 	public RunID(int runID, String server) {
 		if (server.equals("moment")) {
