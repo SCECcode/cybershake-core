@@ -27,7 +27,7 @@ ETREE_HOME = ${UCVM_HOME}/lib/euclid3
 PROJ4_HOME = ${UCVM_HOME}/lib/proj-4
 
 #UCVMLIBS = -lucvm -L${UCVM_HOME}/lib -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/gctpc/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi -L${CENCAL_HOME}/lib -lcencalvm -L${ETREE_HOME}/lib -letree -L${PROJ4_HOME}/lib -lproj -lstdc++
-UCVMLIBS = -lucvm -L${UCVM_HOME}/lib -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi  -L${CENCAL_HOME}/lib -lcencalvm -L${PROJ4_HOME}/lib -L${CCA_HOME}/lib -lcca -L${CS173_HOME}/lib -lcs173 -L/${CVMS5_HOME}/lib -lcvms5 -lproj -L${ETREE_HOME}/lib -letree -lstdc++ -ldl
+UCVMLIBS = -lucvm -L${UCVM_HOME}/lib -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi  -L${CENCAL_HOME}/lib -lcencalvm -L${PROJ4_HOME}/lib -L${CCA_HOME}/lib -lcca -L${CS173_HOME}/lib -lcs173 -L/${CVMS5_HOME}/lib -lcvms5 -lproj -L${ETREE_HOME}/lib -letree -lstdc++ -ldl -L${CENCAL_HOME}/lib -lcencalvm
 UCVM_15_10_LIBS = -lucvm -L${UCVM_15_10_HOME}/lib -lvxapi -L${VX_15_10_HOME}/lib -lgeo -L${VX_15_10_HOME}/lib -L${CVMS_15_10_HOME}/lib -lcvms -L${CVMSI_15_10_HOME}/lib -lcvmsi  -L${CENCAL_15_10_HOME}/lib -lcencalvm -L${CCA_15_10_HOME}/lib -lcca -L${PROJ4_15_10_HOME}/lib -lproj -L${ETREE_15_10_HOME}/lib -letree -lstdc++ -ldl
 
 UCVMINC = -I${UCVM_HOME}/include -I${GETPAR_HOME}/include
