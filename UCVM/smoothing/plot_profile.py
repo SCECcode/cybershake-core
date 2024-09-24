@@ -54,7 +54,7 @@ for i in range(0, 3):
 	plot(profile[i], depths, label=labels[i])
 ylabel("Depth (km)")
 xlim(0, 8000)
-ymin = -50.0
+ymin = -3.0
 #print(profile[0])
 #ylim(-1.0*grid_spacing*nz, 0)
 ylim(ymin, 0.0)
