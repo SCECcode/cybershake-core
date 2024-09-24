@@ -131,7 +131,7 @@ with open(gridout, "r") as fp_in:
 #Set LD_LIBRARY_PATH to pick up UCVM libraries
 CS_PATH = config.getProperty("CS_PATH")
 UCVM_HOME = "%s/UCVM/ucvm_22.7.0_withSFCVM" % CS_PATH
-os.environ["LD_LIBRARY_PATH"] = "%s/lib/euclid3/lib:%s/lib/proj/lib:%s/model/cvmsi/lib:%s/model/sfcvm/lib:%s/model/cvms5/lib:%s/model/cca/lib:%s" % (UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, os.environ["LD_LIBRARY_PATH"])
+os.environ["LD_LIBRARY_PATH"] = "%s/lib/euclid3/lib:%s/lib/proj/lib:%s/model/cvmsi/lib:%s/model/sfcvm/lib:%s/model/cvms5/lib:%s/model/cca/lib:%s/model/cencal/lib:%s" % (UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, UCVM_HOME, os.environ["LD_LIBRARY_PATH"])
 print(os.environ["LD_LIBRARY_PATH"])
 
 start = default_timer()
