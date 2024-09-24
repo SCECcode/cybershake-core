@@ -121,6 +121,9 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
              //printf("%d) 0-0-0,1-10-3=%f, %f\n",rank,tmpta[0],tmpta[1+10*nxt+3*nxt*nyt]);
           }
           else{
+			MPI_Comm_rank(MCW,&rank);
+			//printf("%d) preparing to read mesh file %s.\n", rank, filename);
+			//fflush(stdout);
 		    rmtype[0]  = NZ;
     		    rmtype[1]  = NY;
     		    rmtype[2]  = NX*nvar;
@@ -130,13 +133,41 @@ void inimesh(int MEDIASTART, Grid3D d1, Grid3D mu, Grid3D lam, Grid3D qp, Grid3D
     		    roffset[0] = 0;
     		    roffset[1] = nyt*coords[1];
     		    roffset[2] = nxt*coords[0]*nvar;
+				//printf("rmtype={%d, %d, %d}, rptype={%d, %d, %d}, roffset={%d, %d, %d}\n", rmtype[0], rmtype[1], rmtype[2], rptype[0], rptype[1], rptype[2], roffset[0], roffset[1], roffset[2]);
     		    err = MPI_Type_create_subarray(3, rmtype, rptype, roffset, MPI_ORDER_C, MPI_FLOAT, &readtype);
+				if (err!=0) {
+					printf("Error on create subarray: %d\n", err);
+					fflush(stdout);
+					exit(2);
+				}
     		    err = MPI_Type_commit(&readtype);
+				if (err!=0) {
+                    printf("Error on type commit: %d\n", err);
+                    fflush(stdout);
+                    exit(2);
+                }
                     err = MPI_File_open(MCW,filename,MPI_MODE_RDONLY,MPI_INFO_NULL,&fh);
+				if (err!=0) {
+                    printf("Error on file open: %d\n", err);
+                    fflush(stdout);
+                    exit(2);
+                }
                     err = MPI_File_set_view(fh, 0, MPI_FLOAT, readtype, "native", MPI_INFO_NULL);
+				if (err!=0) {
+                    printf("Error on set view: %d\n", err);
+                    fflush(stdout);
+                    exit(2);
+                }
                     err = MPI_File_read_all(fh, tmpta, nvar*nxt*nyt*nzt, MPI_FLOAT, &filestatus);
+				if (err!=0) {
+                    printf("Error on read_all: %d\n", err);
+                    fflush(stdout);
+                    exit(2);
+                }
                     err = MPI_File_close(&fh);
           }
+		  //printf("%d) Copying file into parameters.\n", rank);
+		  //fflush(stdout);
           for(k=0;k<nzt;k++)
             for(j=0;j<nyt;j++)
               for(i=0;i<nxt;i++){
