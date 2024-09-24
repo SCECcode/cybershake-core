@@ -294,7 +294,7 @@ else
 #ifndef _V3_3_1
 void write_srf2(struct standrupformat *srf,char *file,int bflag)
 {
-FILE *fpw, *_f_opfile();
+FILE *fpw, *_fopfile();
 struct srf_planerectangle *prect_ptr;
 struct srf_prectsegments *prseg_ptr;
 struct srf_allpoints *apnts_ptr;
@@ -362,7 +362,7 @@ else
    if(strcmp(file,"stdout") == 0) {
       fpw = stdout;
    } else {
-      fpw = _f_opfile(file,"w");
+      fpw = _fopfile(file,"w");
    }
 
    fprintf(fpw,"%s\n",srf->version);
@@ -490,6 +490,7 @@ else
 #endif
 
 void write_srf(struct standrupformat *srf,char *file,int bflag) {
+	printf("Writing SRF to file %s, version %s.\n", file, srf->version);
 	if (strcmp(srf->version, "1.0")==0) {
 		write_srf1(srf, file, bflag);
 	}
