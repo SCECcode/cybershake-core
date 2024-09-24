@@ -1,8 +1,13 @@
 #include "include.h"
 
 #include "ucvm.h"
+#include "ucvm_interp.h"
+#include "ucvm_model_elygtl.h"
 
 int ucvm_initialized = 0;
+int ifless_taper = 0;
+double taper_depth = 700.0;
+int ely_init = 0;
 
 const float MIN_VS = 500.0;
 
@@ -66,6 +71,8 @@ void initialize_ucvm(char* model) {
 	            model_string = UCVM_MODEL_1D;
 	        } else if (strcmp(tok, "cvmsi")==0) {
 	            model_string = UCVM_MODEL_CVMSI;
+				//for now, turn on the ifless taper
+				ifless_taper = 1;
 	        } else if (strcmp(tok, "bbp1d")==0) {
 	            model_string = UCVM_MODEL_BBP1D;
 	        } else if (strcmp(tok, "usgs")==0) {
@@ -132,12 +139,8 @@ float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, i
 		initialize_ucvm(model);
 	}
 
-        ucvm_point_t query_pt;
-        query_pt.coord[0] = lon;
-        query_pt.coord[1] = lat;
-        ucvm_data_t query_data;
-        int i;
-        double vs_sum = 0.0;
+    int i;
+    double vs_sum = 0.0;
 	int steps = depth/step_size;
 	ucvm_point_t* query_pts = malloc(sizeof(ucvm_point_t)*(steps+1));
 	ucvm_data_t* query_data = malloc(sizeof(ucvm_data_t)*(steps+1));
@@ -201,21 +204,20 @@ float ucvm_vs_discrete(float lon, float lat, char* model, float surface_depth, i
     }
 
 	for (i=0; i<=steps; i++) {
-		query_pt.coord[2] = i*step_size;
-                if (ucvm_query(1, &query_pt, &query_data)!=UCVM_CODE_SUCCESS) {
-                        fprintf(stderr, "UCVM query failed.\n");
-                        exit(-3);
-                }
-		if (query_data.cmb.vs<MIN_VS) {
-			query_data.cmb.vs = MIN_VS;
+		if (vs_results[i]<MIN_VS) {
+			vs_results[i] = MIN_VS;
 		}
+		printf("%f: %f\n", query_pts[i].coord[2], vs_results[i]);
 		if (i==0 || i==steps) {
-			vs_sum += 0.5/query_data.cmb.vs;
+			vs_sum += 0.5/vs_results[i];
 		} else {
-			vs_sum += 1.0/query_data.cmb.vs;
+			vs_sum += 1.0/vs_results[i];
 		}
 	}
 	float vs = ((float)steps)/vs_sum;
+	free(query_pts);
+	free(query_data);
+	free(vs_results);
 	return vs;
 }
 
@@ -228,15 +230,17 @@ float ucvm_vsD(float lon, float lat, char* model, int depth, int taper_flag) {
 		initialize_ucvm(model);
 	}
 
-	ucvm_point_t query_pt;
-	query_pt.coord[0] = lon;
-	query_pt.coord[1] = lat;
-	ucvm_data_t query_data;
+	//Query without taper	
+	ucvm_point_t* query_pts = malloc(sizeof(ucvm_point_t)*depth);
+	ucvm_data_t* query_data = malloc(sizeof(ucvm_data_t)*depth);
+	double* vs_results = malloc(sizeof(double)*depth);
 	int i;
-	double vs_sum = 0.0;
 	for (i=0; i<depth; i++) {
-		query_pt.coord[2] = i+.5;
-		if (ucvm_query(1, &query_pt, &query_data)!=UCVM_CODE_SUCCESS) {
+		query_pts[i].coord[0] = lon;
+	    query_pts[i].coord[1] = lat;
+		query_pts[i].coord[2] = i+.5;
+	}
+	if (ucvm_query(depth, query_pts, query_data)!=UCVM_CODE_SUCCESS) {
 			fprintf(stderr, "UCVM query failed.\n");
 			exit(-3);
 	}
@@ -281,10 +285,19 @@ float ucvm_vsD(float lon, float lat, char* model, int depth, int taper_flag) {
 				vs_results[i] = ely_props[i].cmb.vs;
 			}
 		}
-		//printf("%d: %f\n", i, query_data.cmb.vs);
-		vs_sum += 1.0/query_data.cmb.vs;
+		free(ely_props);
+		free(ely_pts);
+	}
+	
+	//Slowness average
+	double vs_sum = 0.0;
+	for (i=0; i<depth; i++) {
+		vs_sum += 1.0/vs_results[i];
 	}
 	float vs = ((float)depth)/vs_sum;
+	free(vs_results);
+	free(query_data);
+	free(query_pts);
 	return vs;
 }
 
@@ -324,7 +337,8 @@ int main(int argc, char** argv) {
 	float lat = atof(argv[2]);
 	char* model = argv[3];
 	int gridspacing = atoi(argv[4]);
-	char* filename = argv[5];
+	float surface_depth = atof(argv[5]);
+	char* filename = argv[6];
 
 	initialize_ucvm(model);
 	
