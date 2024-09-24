@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 import math
 import os
@@ -6,7 +6,7 @@ import sys
 from pyproj import Proj
 
 if len(sys.argv)<10:
-	print "Usage: %s <lat to search> <lon to search> <center lat> <center lon> <center X index> <center Y index> <rotation angle (degrees CCW)> <grid spacing in m> <utm zone>" % (sys.argv[0])
+	print("Usage: %s <lat to search> <lon to search> <center lat> <center lon> <center X index> <center Y index> <rotation angle (degrees CCW)> <grid spacing in m> <utm zone>" % (sys.argv[0]))
 	sys.exit(1)
 
 point_lat = float(sys.argv[1])
