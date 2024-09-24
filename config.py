@@ -9,10 +9,10 @@ def readCfg():
 	try:
 		filename ='%s/cybershake.cfg' % os.path.dirname(__file__)
 		cfg = open(filename)
-        except IOError:
-                print "%s not found.\n" % filename
+	except IOError:
+		print("%s not found.\n" % filename)
 		sys.exit(-2)
-        cfgContents = cfg.readlines()
+	cfgContents = cfg.readlines()
 	for line in cfgContents:
         	pieces = line.split('=')
         	vars[pieces[0].strip()] = pieces[1].strip()
