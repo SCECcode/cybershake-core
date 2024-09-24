@@ -4,6 +4,7 @@ OBJS =  iofunc.o misc.o fourg.o surfseis_rspectra.o setparm180.o sub_bandpass.o 
 MERGE_OBJS = wcc_tfilter.o wcc_resamp_arbdt.o wcc_add.o merge.o
 ROTD_OBJS = rotd/calcrsp.o rotd/fftsub.o rotd/ft_th.o rotd/sort.o rotd/spline.o rotd/splint.o rotd/rotd.o rotd/rotd100.o
 
+
 #For integration with BBP
 BBP_DIR = /work2/00349/scottcal/frontera/CyberShake/software/bbp/bbp-22.4.0/bbp
 GP_DIR = ${BBP_DIR}/src/gp
@@ -22,7 +23,10 @@ UFLAGS = -g
 
 include ../../Compilers.mk
 
-CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS}
+PYTHON_LIB = -lpython3.6m
+PYTHON_INC = -I/usr/include/python3.6m/
+
+CFLAGS = ${UFLAGS} ${LF_FLAGS} ${IFLAGS} ${PYTHON_INC}
 FFLAGS = ${UFLAGS} -ffixed-line-length-132 -finit-local-zero
 #FFLAGS = ${UFLAGS} -132 -nofor-main
 
@@ -48,7 +52,7 @@ merge_bbp.o : merge_bbp.c
 	${CC} ${CFLAGS} -c -o merge_bbp.o merge_bbp.c ${BBP_INC} ${IFLAGS}
 
 merge_psa_bbp : merge_psa_bbp.o merge_bbp.o ${OBJS} ${BBP_OBJS} ${ROTD_OBJS}
-	${FC} ${FFLAGS} -o merge_psa_bbp merge_psa_bbp.o merge_bbp.o ${OBJS} ${BBP_OBJS} ${ROTD_OBJS} ${LDLIBS} ${BBP_INC}
+	${FC} ${FFLAGS} -o merge_psa_bbp merge_psa_bbp.o merge_bbp.o ${OBJS} ${BBP_OBJS} ${ROTD_OBJS} ${LDLIBS} ${BBP_INC} ${PYTHON_LIB}
 	cp merge_psa_bbp ../bin/
 
 
