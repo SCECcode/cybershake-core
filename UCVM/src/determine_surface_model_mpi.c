@@ -154,7 +154,6 @@ void query_model(ucvm_point_t* points, ucvm_data_t** data, char* velocity_models
 						exit(-2);
 					}
                 }
-            }
 	}
         /*char label_test[64];
         ucvm_model_label(1, label_test, 64);
