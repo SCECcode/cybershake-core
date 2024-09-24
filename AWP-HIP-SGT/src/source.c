@@ -85,6 +85,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
                 &tazz[i*READ_STEP+j], &taxz[i*READ_STEP+j],
                 &tayz[i*READ_STEP+j], &taxy[i*READ_STEP+j]);
               //printf("SOURCE VAL %d: %f,%f\n",j,taxx[j],tayy[j]);
+			  //fflush(stdout);
             }
           }
          fclose(file);
@@ -123,7 +124,8 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
                  tpsrcp[k*maxdim]   = tpsrc[i*maxdim]   - nbx - 1;
                  tpsrcp[k*maxdim+1] = tpsrc[i*maxdim+1] - nby - 1;
                  tpsrcp[k*maxdim+2] = tpsrc[i*maxdim+2] - nbz + 1;
-				printf("Source at coordinates tpsrcp[k*maxdim]=%d, tpsrcp[k*maxdim+1]=%d, tpsrcp[k*maxdim+2]=%d\n", tpsrcp[k*maxdim],  tpsrcp[k*maxdim+1], tpsrcp[k*maxdim+2]);
+				//printf("Source at coordinates tpsrcp[k*maxdim]=%d, tpsrcp[k*maxdim+1]=%d, tpsrcp[k*maxdim+2]=%d\n", tpsrcp[k*maxdim],  tpsrcp[k*maxdim+1], tpsrcp[k*maxdim+2]);
+				//fflush(stdout);
                  for(j=0;j<READ_STEP;j++)
                  {
                     taxxp[k*READ_STEP+j] = taxx[i*READ_STEP+j];
@@ -134,7 +136,7 @@ int inisource(int      rank,    int     IFAULT, int     NSRC,   int     READ_STE
                     taxyp[k*READ_STEP+j] = taxy[i*READ_STEP+j];
                   }
                   k++;
-               }
+               } 
           }
       }
       Delloc1D(taxx);
