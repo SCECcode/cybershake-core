@@ -116,7 +116,7 @@ endif
 #setenv LD_LIBRARY_PATH /work/00940/tera3d/CyberShake/software/UCVM/ucvm_12.2.0/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvmh_11.9.1/lib:/work/00940/tera3d/CyberShake/software/UCVM/cvms/lib:/work/00940/tera3d/CyberShake/software/UCVM/euclid3-1.3/libsrc:/work/00940/tera3d/CyberShake/software/UCVM/proj_4.7.0/lib
 
 set UCVM_HOME = /lustre/orion/proj-shared/geo156/CyberShake/software/UCVM/ucvm_22.7.0_withSFCVM
-setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-5/lib:${UCVM_HOME}/model/cvmsi/lib:${UCVM_HOME}/model/cca/lib:$LD_LIBRARY_PATH
+setenv LD_LIBRARY_PATH ${UCVM_HOME}/lib/euclid3/lib:${UCVM_HOME}/lib/proj-5/lib:${UCVM_HOME}/model/cvmsi/lib:${UCVM_HOME}/model/cca/lib:${UCVM_HOME}/model/cencal/lib:$LD_LIBRARY_PATH
 setenv PROJ_LIB /lustre/orion/proj-shared/geo156/CyberShake/software/UCVM/ucvm_22.7.0_withSFCVM/lib/proj/share/proj
 
 #source /lustre/atlas/proj-shared/geo112/CyberShake/software/UCVM/ucvm-18.5.0/setup.csh
