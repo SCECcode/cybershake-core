@@ -1,0 +1,100 @@
+TARGETS = ucvm-single-mpi determine_surface_model shear_modulus_from_srf
+GETPAR_HOME = ../../Getpar/getpar
+
+UCVM_HOME = /lustre/orion/geo156/proj-shared/CyberShake/software/UCVM/ucvm_22.7.0_withSFCVM
+VX_HOME = ${UCVM_HOME}/model/cvmh
+CVMS_HOME = ${UCVM_HOME}/model/cvms
+CVMSI_HOME = ${UCVM_HOME}/model/cvmsi
+#CVMS5_HOME = ${UCVM_HOME}/model/cvms5
+CCA_HOME = ${UCVM_HOME}/model/cca
+CENCAL_HOME = ${UCVM_HOME}/model/cencal
+ETREE_HOME = ${UCVM_HOME}/lib/euclid3
+PROJ_HOME = ${UCVM_HOME}/lib/proj
+
+#UCVMLIBS = -lucvm -L${UCVM_HOME}/lib -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi  -L${CENCAL_HOME}/lib -lcencalvm -L${PROJ_HOME}/lib -L${CCA_HOME}/lib -lcca -L/${CVMS5_HOME}/lib -lcvms5 -lproj -L${ETREE_HOME}/lib -letree -lstdc++ -ldl
+
+UCVMLIBS = -lucvm -L${UCVM_HOME}/lib -lvxapi -L${VX_HOME}/lib -lgeo -L${VX_HOME}/lib -L${CVMS_HOME}/lib -lcvms -L${CVMSI_HOME}/lib -lcvmsi -L${PROJ_HOME}/lib -L${CCA_HOME}/lib -lcca -lproj -L${ETREE_HOME}/lib -letree -lstdc++ -ldl -L${CENCAL_HOME}/lib -lcencalvm
+
+UCVMINC = -I${UCVM_HOME}/include -I${GETPAR_HOME}/include
+
+LDLIBS = -lm -L${GETPAR_HOME}/lib -lget -lgfortran
+
+include ../../Compilers.mk
+CC = cc
+
+
+##### If hardware and OS supports 64-bit use the following to
+#     enable option of opening large (>2**31 bytes) files
+#
+#     This option should be used for solaris 2.6 and later
+#
+#####LF_FLAGS = -D_FILE_OFFSET_BITS=64 `getconf LFS_LIBS` `getconf LFS_LDFLAGS` `getconf LFS_CFLAGS`
+LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 
+
+##### If hardware and OS DOES NOT support 64-bit, use the following to
+#     disable option of opening large (>2**31 bytes) files
+#
+#     This option should be used for solaris 2.5 and earlier
+#
+###LF_FLAGS = -D_FILE_OFFSET_BITS=32
+
+##### C options
+
+# optimized
+#CFLAGS = -O1 -compile-info -link-info ${VXINC}
+CFLAGS = -O3 -g
+FFLAGS = -O3 -ffixed-line-length-132 -finit-local-zero
+#FFLAGS = -O2
+
+##### make options
+
+all: $(TARGETS)
+	for TARGET in $(TARGETS); do \
+        	rm -rf ../bin/$$TARGET ; \
+        	cp $$TARGET ../bin/ ; \
+	done
+
+check_media : check_media.c iofunc.o
+	${CC} ${CFLAGS} -o check_media check_media.c iofunc.o ${LDLIBS}
+ucvm-mpi : ucvm-main_mpi.c subs_mpi.o iofunc.o
+	${CC} ${CFLAGS} -o ucvm-mpi ucvm-main_mpi.c subs_mpi.o iofunc.o ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+
+merge_cvm : merge_cvm.c subs_mpi.o iofunc.o
+	${CC} ${CFLAGS} -o merge_cvm merge_cvm.c subs_mpi.o iofunc.o ${LDLIBS}
+
+test_query : test_query.c
+	${CC} ${CFLAGS} -o test_query test_query.c ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+
+determine_surface_model : determine_surface_model.c
+	${CC} ${CFLAGS} -o determine_surface_model determine_surface_model.c ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+	cp determine_surface_model ../bin/
+
+determine_surface_model_mpi : determine_surface_model_mpi.c
+	${CC} ${CFLAGS} -o determine_surface_model_mpi determine_surface_model_mpi.c ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+	cp determine_surface_model_mpi ../bin/
+
+shear_modulus_from_srf : shear_modulus_from_srf.c
+	${CC} ${CFLAGS} -o shear_modulus_from_srf shear_modulus_from_srf.c ${LDLIBS} -lm -I../../RuptureCodes/RupGen-api-5.4.2/include -lrupgen -L../../RuptureCodes/RupGen-api-5.5.2/lib -lmemcached -L/lustre/orion/geo112/proj-shared/CyberShake/utils/libmemcached_1.1.4/lib64 -lstdc++ -L${FFTW_DIR} -lfftw3f
+	cp shear_modulus_from_srf ../bin/
+
+ucvm-single-mpi : ucvm-single_mpi.c subs_mpi.o iofunc.o
+	${CC} ${CFLAGS} -o ucvm-single-mpi ucvm-single_mpi.c subs_mpi.o iofunc.o ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+	cp ucvm-single-mpi ../bin/
+
+get_model_info_for_db: get_model_info_for_db.c
+	${CC} ${CFLAGS} -o get_model_info_for_db get_model_info_for_db.c ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+	cp get_model_info_for_db ../bin/
+
+retrieve_ucvm_value: retrieve_ucvm_value.c
+	${CC} ${CFLAGS} -o retrieve_ucvm_value retrieve_ucvm_value.c ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+	cp retrieve_ucvm_value ../bin/ 
+
+simple_sfcvm: simple_sfcvm.c
+	${CC} ${CFLAGS} -o simple_sfcvm simple_sfcvm.c ${UCVMINC} ${LDLIBS} ${UCVMLIBS}
+	cp simple_sfcvm ../bin/
+
+%.o : %.c
+	${CC} ${CLFAGS} -c $< -o $@ -I${GETPAR_HOME}/include
+
+clean :
+	-rm -f *.o ${TARGETS}
