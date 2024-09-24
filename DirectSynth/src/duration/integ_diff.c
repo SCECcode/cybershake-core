@@ -1,8 +1,8 @@
-#include "include.h"
-#include "defs.h"
-#include "structure.h"
-#include "duration.h"
-#include "functions.h"
+#include "../include.h"
+#include "../defs.h"
+#include "../structure.h"
+#include "../duration.h"
+#include "../functions.h"
 
 int integrate(float* s,int nt,float* dt,float* iv);
 int differ(float* s,int nt,float* dt,float* iv);
