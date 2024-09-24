@@ -7,7 +7,6 @@
 #include "defs.h"
 #include "include.h"
 
-#include "bbp_wcc_include.h"
 /* 1) Filter LF seismogram
 *  2) Resample LF to HF dt
 *  3) Add seismograms together
