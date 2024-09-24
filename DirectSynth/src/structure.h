@@ -176,6 +176,11 @@ struct rotD_record {
   float rotD50;
 };
 
+struct vertical_rsp_record {
+  float period;
+  float rsp;
+};
+
 struct rup_geom_point {
   float lon;
   float lat;
@@ -245,5 +250,13 @@ typedef struct task_info {
 	struct sgtfileparams* sgtfilepar;
 	worker_task* task;
 } task_info;
+
+typedef struct rv_info {
+	int source_id;
+	int rupture_id;
+	int rup_var_id;
+	float rvfrac;
+	int seed;
+} rv_info;
 
 #endif /* STRUCTURE_H_ */
