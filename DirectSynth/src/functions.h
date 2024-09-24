@@ -1,7 +1,7 @@
-int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd, int run_duration);
+int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vertical_rsp);
 int sgt_handler(struct sgtfileparams* sgtfilepar, int num_comps, MPI_Comm* sgt_handler_comm, int num_sgt_handlers, MPI_Comm* sgt_readers_comm, int my_id);
-int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, int my_id);
-int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id);
+int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, MPI_Comm* manager_plus_workers_comm, int my_id);
+int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp, MPI_Comm* manager_plus_workers_comm, int my_id);
 
 //misc.c
 void init_sgtfileparams(struct sgtfileparams* sfp);
@@ -11,12 +11,14 @@ void construct_sgtheader_datatype(MPI_Datatype* sgtheader_type);
 void construct_sgtdata_datatype(MPI_Datatype* sgtdata_type, int nt);
 void construct_worker_task_datatype(MPI_Datatype* worker_task_type);
 void construct_worker_message_datatype(MPI_Datatype* worker_message_type);
+void construct_rvinfo_datatype(MPI_Datatype* rvinfo_type);
 void *check_realloc(void *ptr,size_t len);
 
 //mpi_functions.c
 void getMPIInfo(int *my_id, int* num_procs);
 void constructSGTHandlerComm(int sgt_readers, MPI_Comm* sgt_handler_comm);
 void constructSGTReaderComm(int sgt_readers, MPI_Comm* sgt_readers_comm);
+void constructManagerPlusWorkersComm(int sgt_handlers, int num_procs, MPI_Comm* manager_plus_workers_comm);
 void check_bcast(void* buf, int num_items, MPI_Datatype type, int root, MPI_Comm comm, char* error_msg, int my_id);
 void check_send(void* buf, int num_items, MPI_Datatype type, int dest, int tag, MPI_Comm comm, char* error_msg, int my_id);
 void check_recv(void* buf, int num_items, MPI_Datatype type, int src, int tag, MPI_Comm comm, char* error_msg, int my_id);
@@ -44,12 +46,12 @@ void write_log(char* string);
 void close_log();
 
 //synth.c
-int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id);
+int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, int num_rv_infos, rv_info* rvinfo_array, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp, int my_id);
 void request_sgt(struct sgtheader* sgthead, float* sgtbuf, int num_comps, int request_from_handler_id, long long** sgts_by_handler, int starting_index, int ending_index, int nt, int my_id);
 void send_data_cluster(char data_filename[256], int src_id, int rup_id, int start_rv, int end_rv, void* data, int data_size_bytes, int my_id);
 
 //jbsim3d.c
-float** jbsim3d_synth(float*** seis_return, struct seisheader* header, char stat[], float slon, float slat, int ntout, char seis_file[], char rup_geom_file[], struct sgtfileparams* sfp, struct sgtparams* sgtparms, struct sgtmaster sgtmast, struct sgtindex* sgtindx, struct geoprojection geop, long long* indx_master, int num_sgts, long long** sgts_by_handler, int* num_sgts_by_handler, int num_sgt_handlers, int num_rup_vars, struct rupture_variation* rup_vars, int my_id);
+float** jbsim3d_synth(float*** seis_return, struct seisheader* header, char stat[], float slon, float slat, int ntout, char seis_file[], char rup_geom_file[], struct sgtfileparams* sfp, struct sgtparams* sgtparms, struct sgtmaster sgtmast, struct sgtindex* sgtindx, struct geoprojection geop, long long* indx_master, int num_sgts, long long** sgts_by_handler, int* num_sgts_by_handler, int num_sgt_handlers, int num_rup_vars, struct rupture_variation* rup_vars, int num_rv_infos, rv_info* rvinfo_array, int my_id);
 
 //misc_subs.c
 double sfrand(int *seed);
@@ -70,10 +72,13 @@ void set_geoproj(struct sgtmaster *sgtmast,struct geoprojection *geop);
 
 //rotd.c
 int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_records);
+int vert_rsp(struct seisheader* header, float* seis_data, struct vertical_rsp_record* rsp_records);
 
 //duration.c
 #include "duration.h"
 int duration(struct seisheader* header, float* full_seis, struct duration_record* out);
+int period_durations(struct seisheader* header, float* full_seis, struct period_duration_record* out);
+void python_finalize();
 
 //integ_diff.c
 void integ_diff(int integ_notdiff, float* seis, int nt, float dt);

@@ -27,8 +27,10 @@ void manager_listen(int num_workers, worker_task* task_list, int num_tasks, int 
 int handle_work_request(manager_msg msg, worker_task* task_list, int* current_task, int num_tasks, MPI_Datatype worker_msg_type, int my_id);
 int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long long MAX_BUFFER_SIZE, float dtout, int nt, int globnp, int rup_var_spacing, int my_id);
 void get_point_mapping(int num_sgt_readers);
+int parse_rv_info(char* rv_info_file, rv_info** rvinfo_array);
+int cmp_rvinfo(const void* a, const void* b);
 
-int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, int my_id) {
+int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long MAX_BUFFER_SIZE, int rup_var_spacing, MPI_Comm* manager_plus_workers_comm, int my_id) {
 	//Construct MPI datatype
 	MPI_Datatype sgtmast_type, sgtindx_type;
 	construct_sgtmast_datatype(&sgtmast_type);
@@ -48,6 +50,21 @@ int task_manager(int num_sgt_handlers, int num_workers, int num_procs, long long
 	check_bcast(sgtindx, sgtmast.globnp, sgtindx_type, 0, MPI_COMM_WORLD, "Error receiving sgtindx, aborting.", my_id);
 
 	get_point_mapping(num_sgt_handlers);
+
+    //See if rvfrac and the rv seed are provided
+    char rv_info_file[256];
+    rv_info_file[0] = '\0';
+    getpar("rv_info_file","s",rv_info_file);
+    rv_info* rvinfo_array = NULL;
+    if (rv_info_file[0]!='\0') {
+        if (debug) write_log("Parsing rvinfo file.");
+        int num_rv_infos = parse_rv_info(rv_info_file, &rvinfo_array);
+        //Broadcast to workers
+        MPI_Datatype rvinfo_type;
+        construct_rvinfo_datatype(&rvinfo_type);
+        check_bcast(&num_rv_infos, 1, MPI_INT, 0, *manager_plus_workers_comm, "Error sending length of rvinfo data, aborting.", my_id);
+        check_bcast(rvinfo_array, num_rv_infos, rvinfo_type, 0, *manager_plus_workers_comm, "Error sending rvinfo data, aborting.", my_id);
+    }
 
 	//Get rupture list
 	char rup_list_file[256];
@@ -348,23 +365,30 @@ int parse_rupture_list(char rup_list_file[256], worker_task** task_list, long lo
 		}
 		//Also need to include space for rough_c, tsfac2_c, rtime2_c arrays, used when generating ruptures
 		//Each of these has size sizeof(struct complex)*(3.3*nstk)^2, plus 10% slop
-		//hard-coding for test
 		int size_struct_complex = 8;
-		long long generation_size = 3*size_struct_complex*10.89*num_cols*num_cols*1.1;
+		int nstk = num_cols;
+		if (num_rows>num_cols) {
+			nstk = num_rows;
+		}
+        long long generation_size = 3*size_struct_complex*10.89*nstk*nstk*1.1;
 		#endif
 		//Do not permit more than this amount to be used
 		//Usage is rupture variations, SGTs, memcached (32 MB/core), and gfmech; everything else is tiny
-		long long MAX_ALLOWED = (long long)(3.0 * 1024.0 * 1024.0 * 1024.0);
+		long long MAX_ALLOWED = (long long)(1.8 * 1024.0 * 1024.0 * 1024.0);
 		int memcached = 32*1024*1024;
 		//gfmech uses 1st power of 2 larger than 4*nt
 		int power = ceil(log2(nt))+2;
 		int gfmech_size = (int)(3.0*12.0*sizeof(float)*pow(2, power));
 		//printf("MAX_ALLOWED = %ld\n", MAX_ALLOWED);
 		int num_vars_per_task = (MAX_ALLOWED - sgt_size - memcached - generation_size)/(single_rv_size + gfmech_size);
-		//int num_vars_per_task = (MAX_ALLOWED - sgt_size)/single_rv_size;
-		//Change for debugging
-		//num_vars_per_task = 2;
-		printf("MAX_ALLOWED=%ld, sgt_size=%ld, single_rv_size=%ld\n", MAX_ALLOWED, sgt_size, single_rv_size);
+		if (num_vars_per_task<1) {
+			if (debug) {
+				char buf[256];
+				sprintf(buf, "Calculation resulted in %d num_vars_per_task, adjusting to minimum of 1.", num_vars_per_task);
+				write_log(buf);
+			}
+			num_vars_per_task = 1;
+		}
 		printf("num_vars_per_task = %d\n", num_vars_per_task);
 		int num_vars = num_slips * num_hypos;
 		int tasks_for_rupture = ceil(((float)num_vars)/((float)num_vars_per_task));
@@ -435,4 +459,45 @@ void get_point_mapping(int num_sgt_readers) {
 	check_bcast(proc_points, num_sgt_readers+1, MPI_INT, 0, MPI_COMM_WORLD, "Error broadcasting SGT point-to-process mapping to all, aborting.", 0);
 
 	free(proc_points);
+}
+
+int parse_rv_info(char* rv_info_file, rv_info** rvinfo_array) {
+    int num_rv_infos = 0;
+    int src_id, rup_id, rv_id, seed;
+    float rvfrac;
+    FILE* rv_info_fp_in;
+    fopfile_ro(rv_info_file, &rv_info_fp_in);
+    //File has format
+    //Number of entries
+    //<src id> <rup id> <rv_id> <rvfrac> <seed>
+    //If rvfrac or seed shouldn't be used, they're set to -1 in the file
+    fscanf(rv_info_fp_in, "%d", &num_rv_infos);
+	(*rvinfo_array) = check_malloc(sizeof(rv_info)*num_rv_infos);
+	int i;
+	for (i=0; i<num_rv_infos; i++) {
+    	fscanf(rv_info_fp_in, "%d %d %d %f %d", &src_id, &rup_id, &rv_id, &rvfrac, &seed);
+        (*rvinfo_array)[i].source_id = src_id;
+        (*rvinfo_array)[i].rupture_id = rup_id;
+        (*rvinfo_array)[i].rup_var_id = rv_id;
+        (*rvinfo_array)[i].rvfrac = rvfrac;
+        (*rvinfo_array)[i].seed = seed;
+    }
+    fclose(rv_info_fp_in);
+    //Sort for easy searching
+    qsort(&((*rvinfo_array)[0]), num_rv_infos, sizeof(rv_info), cmp_rvinfo);
+    return num_rv_infos;
+}
+
+int cmp_rvinfo(const void* a, const void* b) {
+	rv_info* rvi_a = (rv_info*)a;
+	rv_info* rvi_b = (rv_info*)b;
+	if (rvi_a->source_id != rvi_b->source_id) {
+		return (rvi_a->source_id - rvi_b->source_id);
+	} else {
+		if (rvi_a->rupture_id != rvi_b->rupture_id) {
+			return (rvi_a->rupture_id - rvi_b->rupture_id);
+		} else {
+			return (rvi_a->rup_var_id - rvi_b->rup_var_id);
+		}
+	}
 }

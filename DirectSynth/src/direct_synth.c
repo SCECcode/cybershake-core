@@ -71,14 +71,22 @@ int main(int argc, char** argv) {
 	int run_id;
 	mstpar("run_id","d",&run_id);
 
-	int run_PSA, run_rotd, run_duration;
+	int run_PSA, run_rotd, run_duration, run_period_duration, run_vert_rsp;
 	//Default is to run PSA and RotD but not duration
 	run_PSA = 1;
 	run_rotd = 1;
 	run_duration = 0;
+	run_period_duration = 0;
+	run_vert_rsp = 0;
 	getpar("run_psa","d",&run_PSA);
 	getpar("run_rotd","d",&run_rotd);
 	getpar("run_durations","d",&run_duration);
+	getpar("run_period_durations","d",&run_period_duration);
+
+	//Run vertical response if 3 components and we're doing RotD
+	if (run_rotd==1 && num_comps==3) {
+		run_vert_rsp = 1;
+	}
 
 	//track timing
 	int timing = 0;
@@ -101,16 +109,18 @@ int main(int argc, char** argv) {
 		write_log(buf);
 	}
 
-	MPI_Comm sgt_handler_comm, sgt_readers_comm;
+	MPI_Comm sgt_handler_comm, sgt_readers_comm, manager_plus_workers_comm;
 	//Includes ranks 0 through num_sgt_handlers - 1
         constructSGTHandlerComm(num_sgt_handlers, &sgt_handler_comm);
 	//Includes ranks 1 through num_sgt_handlers - 1, for reading in SGT files
 	constructSGTReaderComm(num_sgt_handlers, &sgt_readers_comm);
+    //Includes ranks num_sgt_handlers through num_procs-1, for broadcasting the rvfrac and seed info
+    constructManagerPlusWorkersComm(num_sgt_handlers, num_procs, &manager_plus_workers_comm);
 
 	if (my_id<num_sgt_handlers) {
 		if (my_id==0) {
 			if (debug) write_log("Entering master.");
-			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers, stat, run_id, run_PSA, run_rotd, run_duration);
+			master(&sgtfilepar, &sgt_handler_comm, num_sgt_handlers, stat, run_id, run_PSA, run_rotd, run_duration, run_period_duration, run_vert_rsp);
 		} else if (my_id<num_sgt_handlers) {
 			if (debug) write_log("Entering sgt handler.");
 			sgt_handler(&sgtfilepar, num_comps, &sgt_handler_comm, num_sgt_handlers, &sgt_readers_comm, my_id);
@@ -130,7 +140,7 @@ int main(int argc, char** argv) {
 		//Rupture variations
 		char rupture_spacing_string[20];
 		int rupture_spacing;
-		sprintf(rupture_spacing_string, "uniform");
+		sprintf(rupture_spacing_string, "random");
 		getpar("rupture_spacing", "s", rupture_spacing_string);
 		if (strcmp(rupture_spacing_string,"random")==0) {
 		        rupture_spacing = RUPGEN_RANDOM_HYPO;
@@ -153,7 +163,7 @@ int main(int argc, char** argv) {
 
 		if (my_id==num_sgt_handlers) {
 			if (debug) write_log("Entering task manager.");
-			task_manager(num_sgt_handlers, num_workers, num_procs, MAX_BUFFER_SIZE, rupture_spacing, my_id);
+			task_manager(num_sgt_handlers, num_workers, num_procs, MAX_BUFFER_SIZE, rupture_spacing, &manager_plus_workers_comm, my_id);
 		} else if (my_id<num_procs){
 			//Output options
 			int ntout;
@@ -161,7 +171,7 @@ int main(int argc, char** argv) {
 			mstpar("ntout","d",&ntout);
 
 			if (debug) write_log("Entering worker.");
-			worker(argc, argv, num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, my_id);
+			worker(argc, argv, num_sgt_handlers, &sgtfilepar, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, run_period_duration, run_vert_rsp, &manager_plus_workers_comm, my_id);
 		}
 	}
 

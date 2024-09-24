@@ -23,14 +23,14 @@
 		if work complete from process N:
 			exit
  */
-void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration);
+void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp);
 void write_to_file(int data_size, data_file_metadata* df, char* data);
 void distribute_sgt_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers);
 void send_header_data(struct sgtfileparams* sgtfilepar, struct sgtmaster* sgtmast, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
 void assign_sgt_points(struct sgtmaster* sgtmast, struct sgtindex* sgtindx, MPI_Comm* sgt_handler_comm, int num_sgt_readers, int* proc_points);
 
 
-int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd, int run_duration) {
+int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num_sgt_readers, char* stat, int run_id, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp) {
 	//Read in SGT header info
 	struct sgtmaster sgtmast;
 	struct sgtindex* sgtindx;
@@ -58,14 +58,14 @@ int master(struct sgtfileparams* sgtfilepar, MPI_Comm* sgt_handler_comm, int num
 	check_recv(task_tuples, num_ruptures*3, MPI_INT, num_sgt_readers, VARIATION_INFO_TAG, MPI_COMM_WORLD, "Error receiving variation info tuples from task manager, aborting.", 0);
 
 	//Listen for messages and respond accordingly
-	master_listen(task_tuples, num_ruptures, stat, run_id, run_PSA, run_rotd, run_duration);
+	master_listen(task_tuples, num_ruptures, stat, run_id, run_PSA, run_rotd, run_duration, run_period_duration, run_vert_rsp);
 
 	free(task_tuples);
 	//Everything is done; at least, it better be...
 	return 0;
 }
 
-void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration) {
+void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp) {
 	//Construct easy-access task tuples for monitoring status for restart
 	short src_rup_table[MAX_SOURCE_ID][MAX_RUPTURE_ID];
 	int i;
@@ -77,7 +77,7 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 	for (i=0; i<num_ruptures; i++) {
 		int src = task_tuples[3*i];
 		int rup = task_tuples[3*i+1];
-		int num_files = (1+run_PSA+run_rotd+run_duration)*(task_tuples[3*i+2]);
+		int num_files = (1+run_PSA+run_rotd+run_duration+run_period_duration+run_vert_rsp)*(task_tuples[3*i+2]);
 		if (debug) {
 			char buf[256];
 			sprintf(buf, "Source %d, rupture %d has %d files.", src, rup, num_files);
@@ -105,6 +105,14 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 		}
 		if (run_duration) {
 			sprintf(filename, "Duration_%s_%d_%d_%d.dur", site, run_id, src, rup);
+			unlink(filename);
+		}
+		if (run_period_duration) {
+			sprintf(filename, "PeriodDuration_%s_%d_%d_%d.dur", site, run_id, src, rup);
+			unlink(filename);
+		}
+		if (run_vert_rsp) {
+			sprintf(filename, "VerticalRSP_%s_%d_%d_%d.rsp", site, run_id, src, rup);
 			unlink(filename);
 		}
 	}
@@ -159,6 +167,10 @@ void master_listen(int* task_tuples, int num_ruptures, char* site, int run_id, i
 				if (run_duration) {
 					sprintf(filename, "Duration_%s_%d_%d_%d.dur", site, run_id, df.src_id, df.rup_id);
 					fsync_and_close(filename);
+				}
+				if (run_period_duration) {
+					sprintf(filename, "PeriodDuration_%s_%d_%d_%d.dur", site, run_id, df.src_id, df.rup_id);
+                    fsync_and_close(filename);
 				}
 				fprintf(checkpoint_fp, "%d %d\n", df.src_id, df.rup_id);
 				fflush(checkpoint_fp);

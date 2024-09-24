@@ -28,11 +28,11 @@
 		Send output data to process N to aggregate and write
 	exit
 */
-void do_work(int argc, char** argv, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtfileparams* sgtfilepar, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id);
+void do_work(int argc, char** argv, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtfileparams* sgtfilepar, int* proc_points, int num_sgt_handlers, int num_rv_infos, rv_info* rvinfo_array, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp, int my_id);
 void get_task(worker_msg* w_msg, MPI_Datatype* worker_msg_type, int task_manager_id, int my_id);
 
 
-int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id) {
+int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sgtfilepar, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp, MPI_Comm* manager_plus_workers_comm, int my_id) {
 	//Construct MPI datatype
 	MPI_Datatype sgtmast_type, sgtindx_type;
 	construct_sgtmast_datatype(&sgtmast_type);
@@ -53,18 +53,39 @@ int worker(int argc, char** argv, int num_sgt_handlers, struct sgtfileparams* sg
 	if (debug) write_log("Receiving SGT point-to-process mapping from master.");
 	check_bcast(proc_points, num_sgt_handlers+1, MPI_INT, 0, MPI_COMM_WORLD, "Error receiving SGT point-to-process mapping, aborting.", my_id);
 
+    //See if rvfrac and the rv seed are provided
+    char rv_info_file[256];
+    rv_info_file[0] = '\0';
+    getpar("rv_info_file","s",rv_info_file);
+    rv_info* rvinfo_array = NULL;
+    int num_rv_infos = 0;
+    if (rv_info_file[0]!='\0') {
+        //Receive rvinfo data from task manager
+        if (debug) write_log("Receiving rvinfo from task manager.");
+        check_bcast(&num_rv_infos, 1, MPI_INT, 0, *manager_plus_workers_comm, "Error receiving length of rvinfo data, aborting.", my_id);
+        rvinfo_array = check_malloc(sizeof(rv_info)*num_rv_infos);
+        MPI_Datatype rvinfo_type;
+        construct_rvinfo_datatype(&rvinfo_type);
+        check_bcast(rvinfo_array, num_rv_infos, rvinfo_type, 0, *manager_plus_workers_comm, "Error receiving rvinfo data, aborting.", my_id);
+    }
+
 	//Now start doing tasks
-	do_work(argc, argv, &sgtmast, sgtindx, sgtfilepar, proc_points, num_sgt_handlers, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, my_id);
+	do_work(argc, argv, &sgtmast, sgtindx, sgtfilepar, proc_points, num_sgt_handlers, num_rv_infos, rvinfo_array, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, run_period_duration, run_vert_rsp, my_id);
 
 	free(proc_points);
 	free(sgtindx);
+
+	//Shutdown Python if used
+	if (run_period_duration==1) {
+		python_finalize();
+	}
 
 	return 0;
 }
 
 
-void do_work(int argc, char** argv, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtfileparams* sgtfilepar, int* proc_points, int num_sgt_handlers, char stat[64],
-		float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id) {
+void do_work(int argc, char** argv, struct sgtmaster* sgtmast, struct sgtindex* sgtindx, struct sgtfileparams* sgtfilepar, int* proc_points, int num_sgt_handlers, int num_rv_infos, rv_info* rvinfo_array, char stat[64],
+		float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp, int my_id) {
 	int task_manager_id = num_sgt_handlers;
 
 	worker_msg msg;
@@ -76,7 +97,7 @@ void do_work(int argc, char** argv, struct sgtmaster* sgtmast, struct sgtindex* 
 	construct_worker_message_datatype(&worker_msg_type);
 	//Sleep for a bit, so that we don't overwhelm the task manager with a bunch of simultaneous requests while starting up, or overwhelm the low-rank SGT handlers
 	//Since the pair of 1 Hz SGTs takes about 6 minutes to read in, distribute the requests over about 10 minutes
-	sleep(my_id/6);
+	sleep(my_id/10);
 	while (1) {
 		if (debug) write_log("Requesting work from task manager.");
 		get_task(&msg, &worker_msg_type, task_manager_id, my_id);
@@ -89,7 +110,7 @@ void do_work(int argc, char** argv, struct sgtmaster* sgtmast, struct sgtindex* 
 			}
 			t_info.argc = argc;
 			t_info.argv = argv;
-			run_synth(&t_info, proc_points, num_sgt_handlers, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, my_id);
+			run_synth(&t_info, proc_points, num_sgt_handlers, num_rv_infos, rvinfo_array, stat, slat, slon, run_id, det_max_freq, stoch_max_freq, run_PSA, run_rotd, run_duration, run_period_duration, run_vert_rsp, my_id);
 		} else if (msg.msg_type==WORK_COMPLETE) {
 			if (debug) write_log("No more work to do, shutting down.");
 			break;

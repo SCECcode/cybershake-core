@@ -12,14 +12,27 @@
 
 #define X_COMP 0
 #define Y_COMP 1
+#define Z_COMP 2
 
 #define NUM_DURATION_MEASURES 9
+
+#define NUM_DURATION_PERIODS 27
+
+#define NUM_PERIOD_DURATION_MEASURES 3
 
 struct duration_record {
   int type;
   int type_value;
   int component;
   float value;
+};
+
+struct period_duration_record {
+	int type;
+	int type_value;
+	int component;
+	float period;
+	float value;
 };
 
 #endif

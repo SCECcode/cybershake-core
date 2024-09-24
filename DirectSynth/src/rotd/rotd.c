@@ -45,8 +45,11 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	float* acc_for_calc;
 
 	//Added periods for 1 Hz	
-	int num_periods = 22;
-	float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0};
+	int num_periods = 27;
+	float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0, 12.0, 13.0, 15.0, 17.0, 20.0};
+    //For PGV
+    int num_pgv_periods = 1;
+    float pgv_period[] = {1e-5};
 
 	calc_acc(acc, seis_data, num_comps, header->nt, header->dt);
 	//If there are 3 components, the vertical component is the first; want to pass just horizontal components to RotD calculation
@@ -88,9 +91,65 @@ int rotd(struct seisheader* header, float* seis_data, struct rotD_record* rotD_r
 	free(rotD50);
 	free(rD100ang);
 	free(acc);
+	free(vel_data);
 
 	return 0;
 }
+
+int vert_rsp(struct seisheader* header, float* seis_data, struct vertical_rsp_record* rsp_records) {
+    int i;
+    int inter_flag = 1;
+    int npairs = 1;
+
+    //Allocate buffers
+    int num_comps;
+    if (header->comps == (X_COMP_FLAG | Y_COMP_FLAG | Z_COMP_FLAG)) {
+        num_comps = 3;
+    } else if (header->comps == (X_COMP_FLAG | Y_COMP_FLAG )) {
+        num_comps = 2;
+    } else if (header->comps == X_COMP_FLAG || header->comps == Y_COMP_FLAG || header->comps == Z_COMP_FLAG) {
+        num_comps = 1;
+    } else {
+        fprintf(stderr, "Could not determine which components are included in this seismogram, aborting rotd.\n");
+        num_comps = 0;
+        return -1;
+    }
+
+	if (num_comps!=3) {
+		fprintf(stderr, "The vertical response code must be used with 3-component seismograms.\n");
+		return 2;
+	}
+
+	float* acc = check_malloc(sizeof(float) * header->nt);
+	float* rsp = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
+	float* rotD100_placeholder = check_malloc(sizeof(float) * NUM_INTERP * MAX_PERIODS);
+	int* angle_placeholder = check_malloc(sizeof(int) * NUM_INTERP * MAX_PERIODS);
+	float* acc_for_calc;
+
+	//Periods for 1 Hz
+	int num_periods = 27;
+    float periods[] = {1.0, 1.2, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.5, 4.0, 4.4, 5.0, 5.5, 6.0, 6.5, 7.5, 8.5, 10.0, 12.0, 13.0, 15.0, 17.0, 20.0};
+
+	//Just Z-component
+	calc_acc(acc, seis_data, 1, header->nt, header->dt);	
+
+	acc_for_calc = acc;
+
+	//Pass Z component twice
+	calc_rotd_(&inter_flag, &npairs, &(header->nt), &(header->dt), acc_for_calc, acc_for_calc, rotD100_placeholder, angle_placeholder, rsp, &num_periods, periods);
+	for (i=0; i<num_periods; i++) {
+		rsp_records[i].period = periods[i];
+		rsp_records[i].rsp = rsp[i*NUM_INTERP + (inter_flag-1)];
+	}
+
+	free(acc);
+	free(rsp);
+	free(rotD100_placeholder);
+	free(angle_placeholder);
+
+	return 0;
+}
+
 
 void calc_acc(float* acc, float* seis_data, int num_comps, int nt, float dt) {
 	int i, j;
@@ -103,6 +162,7 @@ void calc_acc(float* acc, float* seis_data, int num_comps, int nt, float dt) {
 		}
 	}
 }
+
 
 void copy_result(struct rotD_record* output, float* rotD100, int* rotD100ang, float* rotD50, int num_periods, float periods[], int inter_flag) {
 	int i;

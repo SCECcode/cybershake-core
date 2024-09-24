@@ -25,7 +25,7 @@ int get_handler_for_sgt_index(long long indx, long long* sgt_cutoffs, int num_sg
 void send_data_file(struct seisheader* header, char data_filename[256], int src_id, int rup_id, void* buf, int data_size_bytes, int my_id);
 
 //This duplicates some of seis_psa.c
-int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int my_id) {
+int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, int num_rv_infos, rv_info* rvinfo_array, char stat[64], float slat, float slon, int run_id, float det_max_freq, float stoch_max_freq, int run_PSA, int run_rotd, int run_duration, int run_period_duration, int run_vert_rsp, int my_id) {
     struct geoprojection geop;
     struct sgtindex statindx;
     int ip, i;
@@ -43,7 +43,6 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
     struct rup_geom_point* rg_points;
     int num_srf_pts = parse_rup_geom(t_info->task->rupture_filename, &rg_points);
 
-    //This is freed inside jbsim3d
     struct sgtparams* sgtparms = (struct sgtparams *) check_malloc ((num_srf_pts)*sizeof(struct sgtparams));
 
     int ptol = print_tol;
@@ -169,7 +168,7 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 	if (debug) write_log("Starting jbsim3d_synth.");
 	float** original_seis = jbsim3d_synth(&seis, &header, stat, slon, slat, ntout, seis_filename,
 			t_info->task->rupture_filename, t_info->sgtfilepar, sgtparms, *(t_info->sgtmast), t_info->sgtindx, geop, indx_master, nm, sgts_by_handler,
-			num_sgts_by_handler, num_sgt_handlers, num_rup_vars, rup_vars, my_id);
+			num_sgts_by_handler, num_sgt_handlers, num_rup_vars, rup_vars, num_rv_infos, rvinfo_array, my_id);
 
 	for(i=0; i<num_sgt_handlers; i++) {
 		free(sgts_by_handler[i]);
@@ -320,17 +319,50 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 		}
 		sprintf(rotd_filename, "RotD_%s_%d_%d_%d.rotd", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
         send_data_cluster(rotd_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, rotd_file_buffer, num_rup_vars*rotd_rv_file_size, my_id);
-	    free(rotd_file_buffer);
-	    free(rotD_data);
+
+        free(rotd_file_buffer);
+        free(rotD_data);
+
+		if (run_vert_rsp==1) {
+			//We're using NUM_ROTD_PERIODS-1 because vertical response doesn't include PGV
+			int num_vert_periods = NUM_ROTD_PERIODS-1;
+			int vert_rsp_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct vertical_rsp_record)*num_vert_periods;
+			char* vert_rsp_file_buffer = check_malloc(vert_rsp_rv_file_size*num_rup_vars);
+
+			struct vertical_rsp_record* vert_rsp_data = check_malloc(sizeof(int) + sizeof(struct vertical_rsp_record)*num_vert_periods);
+			char vert_rsp_filename[256];
+			//If we're calculating 3 component seismograms, also do vertical response
+			for (rv=0; rv<num_rup_vars; rv++) {
+				if (debug) {
+	                char buf[256];
+	                sprintf(buf, "Performing vertical response for rv %d.", rv);
+	                write_log(buf);
+	            }
+				header.rup_var_id = rup_vars[rv].rup_var_id;
+				//We offset by sizeof(int) because we'll put the # of periods into the first spot
+				char* start_ptr = ((char*)(vert_rsp_data))+sizeof(int);
+				int rc = vert_rsp(&header, seis[rv], (struct vertical_rsp_record*)start_ptr);
+	            if (rc!=0) {
+	                fprintf(stderr, "%d) Error in vertical rotd code, aborting.\n", my_id);
+	                if (debug) close_log();
+	                MPI_Finalize();
+	                exit(rc);
+	            }
+				//Also need to send # of periods as part of the file
+	            memcpy(vert_rsp_data, &num_vert_periods, sizeof(int));
+	            memcpy(vert_rsp_file_buffer+rv*vert_rsp_rv_file_size, &header, sizeof(struct seisheader));
+	            memcpy(vert_rsp_file_buffer+rv*vert_rsp_rv_file_size+sizeof(struct seisheader), vert_rsp_data, sizeof(int)+sizeof(struct vertical_rsp_record)*num_vert_periods);
+			}
+        	sprintf(vert_rsp_filename, "VerticalRSP_%s_%d_%d_%d.rsp", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
+        	send_data_cluster(vert_rsp_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, vert_rsp_file_buffer, num_rup_vars*vert_rsp_rv_file_size, my_id);
+
+	   		free(vert_rsp_file_buffer);
+	    	free(vert_rsp_data);
+		}
 
 	}
 
 	if (run_duration) {
-		if (debug) {
-                char buf[256];
-                sprintf(buf, "Performing duration calculations for rv %d.", rv);
-                write_log(buf);
-        }
 
 		if (!run_PSA) {
 			//Get nx, ny
@@ -350,6 +382,11 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 		char duration_filename[256];
 
 		for (rv=0; rv<num_rup_vars; rv++) {
+        	if (debug) {
+                char buf[256];
+                sprintf(buf, "Performing duration calculations for rv %d.", rv);
+                write_log(buf);
+        	}
 			header.rup_var_id = rup_vars[rv].rup_var_id;
 			//Put the # of measures into the first spot
 			int num_dur_measures = NUM_DURATION_MEASURES;
@@ -374,6 +411,60 @@ int run_synth(task_info* t_info, int* proc_points, int num_sgt_handlers, char st
 	    free(duration_data);
 	    free(duration_file_buffer);
 	}
+
+	if (run_period_duration) {
+
+		if (!run_PSA && !run_duration) {
+			//Get nx, ny
+			//setpar was called before run_PSA if statement
+			mstpar("simulation_out_pointsX","d",&nx);
+            mstpar("simulation_out_pointsY","d",&ny);
+			//Endpar after duration check
+		}
+
+		//Assume 2 components; no period-dependent duration calcuated for Z
+		int num_per_dur_comps = 2;
+		int period_duration_rv_file_size = sizeof(struct seisheader) + sizeof(int) + sizeof(struct period_duration_record)*num_per_dur_comps*NUM_DURATION_PERIODS*NUM_PERIOD_DURATION_MEASURES;
+		char* period_duration_file_buffer = check_malloc(period_duration_rv_file_size*num_rup_vars);
+		//printf("period_duration_file_buffer at %p\n", period_duration_file_buffer);
+
+		struct period_duration_record* period_duration_data = check_malloc(sizeof(int)+sizeof(struct period_duration_record)*num_per_dur_comps*NUM_DURATION_PERIODS*NUM_PERIOD_DURATION_MEASURES);
+		//printf("period_duration_data at %p\n", period_duration_data);
+		char period_duration_filename[256];
+
+        for (rv=0; rv<num_rup_vars; rv++) {
+        	if (debug) {
+                char buf[256];
+                sprintf(buf, "Performing period duration calculations for rv %d.", rv);
+                write_log(buf);
+        	}
+            header.rup_var_id = rup_vars[rv].rup_var_id;
+			//First, store # of periods
+			int num_dur_periods = NUM_DURATION_PERIODS;
+			memcpy(period_duration_data, &num_dur_periods, sizeof(int));
+			char* start_ptr = ((char*)(period_duration_data))+sizeof(int);
+			int rc = period_durations(&header, seis[rv], (struct period_duration_record*)start_ptr);
+			//fflush(stdout);
+			if (rc!=0) {
+                fprintf(stderr, "%d) Error in period duration code, aborting.\n", my_id);
+                if (debug) close_log();
+                MPI_Finalize();
+                exit(rc);
+            }
+			//printf("Copying buffers.\n");
+			//printf("Copying %d bytes from %p to %p.\n", sizeof(struct seisheader), &header, period_duration_file_buffer+rv*period_duration_rv_file_size);
+			//fflush(stdout);
+			memcpy(period_duration_file_buffer+rv*period_duration_rv_file_size, &header, sizeof(struct seisheader));
+			//printf("Copying %d bytes from %p to %p.\n", sizeof(int)+sizeof(struct period_duration_record)*num_per_dur_comps*NUM_DURATION_PERIODS*NUM_PERIOD_DURATION_MEASURES, period_duration_file_buffer+rv*period_duration_rv_file_size+sizeof(struct seisheader), period_duration_data);
+			//fflush(stdout);
+			memcpy(period_duration_file_buffer+rv*period_duration_rv_file_size+sizeof(struct seisheader), period_duration_data, sizeof(int)+sizeof(struct period_duration_record)*num_per_dur_comps*NUM_DURATION_PERIODS*NUM_PERIOD_DURATION_MEASURES);
+		}
+		sprintf(period_duration_filename, "PeriodDuration_%s_%d_%d_%d.dur", stat, run_id, t_info->task->source_id, t_info->task->rupture_id);
+		send_data_cluster(period_duration_filename, header.source_id, header.rupture_id, rup_vars[0].rup_var_id, rup_vars[num_rup_vars-1].rup_var_id+1, period_duration_file_buffer, num_rup_vars*period_duration_rv_file_size, my_id);
+		free(period_duration_data);
+		free(period_duration_file_buffer);
+	}
+
 	//endpar();
 	free(sgtparms);
 	free(indx_master);
