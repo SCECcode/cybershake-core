@@ -166,6 +166,11 @@ struct rotD_record {
   float rotD50;
 };
 
+struct vertical_rsp_record {
+  float period;
+  float rsp;
+};
+
 #define ARIAS_INTENSITY 0
 #define ENERGY_INTEGRAL 1
 #define CAV 2
@@ -177,12 +182,21 @@ struct rotD_record {
 
 #define X_COMP 0
 #define Y_COMP 1
+#define Z_COMP 2
 
 struct duration_record {
   int type;
   int type_value;
   int component;
   float value;
+};
+
+struct period_duration_record {
+        int type;
+        int type_value;
+        int component;
+        float period;
+        float value;
 };
 
 #endif

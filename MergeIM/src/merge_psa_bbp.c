@@ -88,7 +88,7 @@ int main(int argc, char**argv) {
 		for (i=0; i<num_comps; i++) {
 			rc = fread(lf_seis[rv][i], sizeof(float), lf_headers[rv].nt, lf_in);
 			if (rc!=lf_headers[rv].nt) {
-				fprintf(stderr, "Error reading from file %s.\n", lf_seis_name);
+				fprintf(stderr, "Error reading from file %s: supposed to read %d bytes, read %d.\n", lf_seis_name, sizeof(float)*lf_headers[rv].nt, rc);
 				perror("fread");
 	                        exit(11);
 			}
@@ -100,6 +100,8 @@ int main(int argc, char**argv) {
 			perror("");
             exit(12);
         }
+		printf("HF NT: %d\n", hf_headers[rv].nt);
+        printf("HF num_comps: %d\n", num_comps);
         if (hf_seis==NULL) {
         	hf_seis = check_malloc(sizeof(float**)*num_rup_vars);
             for (i=0; i<num_rup_vars; i++) {
@@ -197,8 +199,16 @@ int main(int argc, char**argv) {
         getpar("run_rotd", "d", &run_rotd);
         getpar("rotd_out", "s", rotd_filename);
 	FILE* rotd_fp = NULL;
+	int run_vert_rsp = 0;
+	char vert_rsp_filename[256];
+	FILE* vert_rsp_fp = NULL;
 	if (run_rotd) {
 		rotd_fp = fopfile(rotd_filename, "wb");
+		if (num_comps==3) {
+			getpar("run_vert_rsp", "d", &run_vert_rsp);
+			getpar("vert_rsp_out", "s", vert_rsp_filename);
+			vert_rsp_fp = fopfile(vert_rsp_filename, "wb");
+		}
 	}
 
 	//Duration
@@ -206,17 +216,28 @@ int main(int argc, char**argv) {
 	char duration_filename[256];
 	getpar("run_duration", "d", &run_duration);
 	getpar("duration_out", "s", duration_filename);
-	endpar();
-	FILE* duration_fp;
+	FILE* duration_fp = NULL;
 	if (run_duration) {
 		duration_fp = fopfile(duration_filename, "wb");
 	}
+
+	//Period-dependent duration
+	int run_period_duration = 0;
+	char period_duration_filename[256];
+    getpar("run_period_durations", "d", &run_period_duration);
+	getpar("period_duration_out", "s", period_duration_filename);
+	endpar();
+	FILE* period_duration_fp = NULL;
+	if (run_period_duration) {
+		period_duration_fp = fopfile(period_duration_filename, "wb");
+	}
+	
 	
 	//Now, operate on each LF rupture variation
 	float** merged_seis = check_malloc(sizeof(float*)*num_comps);
 	for (i=0; i<num_comps; i++) {
 		merged_seis[i] = check_malloc(sizeof(float)*hf_headers[0].nt);
-		printf("allocated ms addr: %x\n", merged_seis[i]);
+		//printf("allocated ms addr: %x\n", merged_seis[i]);
 	}
 	float* seis = NULL;
 
@@ -259,6 +280,13 @@ int main(int argc, char**argv) {
 	        	fprintf(stderr, "Error in rotd code, aborting.\n");
 	            exit(rc);
 	        }
+			if (run_vert_rsp) {
+				rc = vert_rsp(&merged_header, seis, vert_rsp_fp);
+				if (rc!=0) {
+                	fprintf(stderr, "Error in vert_rsp code, aborting.\n");
+                	exit(rc);
+				}
+			}
 	    }
 	
 		if (run_duration) {
@@ -267,6 +295,14 @@ int main(int argc, char**argv) {
 				fprintf(stderr, "Error in duration code, aborting.\n");
 				exit(rc);
 			}
+		}
+
+		if (run_period_duration) {
+			int rc = period_durations(merged_header, merged_seis, period_duration_fp);
+            if (rc!=0) {
+                fprintf(stderr, "Error in period-dependent duration code, aborting.\n");
+                exit(rc);
+            }
 		}
 	}
 
@@ -286,11 +322,22 @@ int main(int argc, char**argv) {
 	if (run_rotd) {
 		fflush(rotd_fp);
 		fclose(rotd_fp);
+		if (run_vert_rsp) {
+			fflush(vert_rsp_fp);
+			fclose(vert_rsp_fp);
+		}
 	}
 	if (run_duration) {
 		fflush(duration_fp);
 		fclose(duration_fp);
 	}
+
+    if (run_period_duration) {
+		fflush(period_duration_fp);
+		fclose(period_duration_fp);
+        python_finalize();
+    }
+
 	
 	free(psa_data);
 

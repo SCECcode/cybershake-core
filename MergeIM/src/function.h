@@ -1,3 +1,6 @@
+#ifndef FUNCTION_H
+#define FUNCTION_H
+
 void *check_malloc(size_t);
 void *check_realloc(void *,size_t);
 FILE *fopfile(char*, char*);
@@ -48,5 +51,9 @@ void merge(char* lf_seis_name, char* hf_seis_name, char* outfile, float match_fr
 void merge_data(float** lf_seis, struct seisheader lf_header, float** hf_seis, struct seisheader hf_header, float match_freq, int num_comps, float** merged_seis, struct seisheader* merged_header);
 
 int rotd(struct seisheader* header, float* seis_data, FILE* fp_out);
+int vert_rsp(struct seisheader* header, float* seis_data, FILE* fp_out);
 
 int duration(struct seisheader header, float** full_seis, FILE* fp_out);
+int period_durations(struct seisheader header, float** full_seis, FILE* fp_out);
+
+#endif
