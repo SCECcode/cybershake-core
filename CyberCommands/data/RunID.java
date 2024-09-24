@@ -28,6 +28,8 @@ public class RunID {
 			HOSTNAME = "moment.usc.edu";
 		} else if (server.equals("focal")) {
 			HOSTNAME = "focal.usc.edu";
+		} else if (server.equals("moment_carc")) {
+			HOSTNAME = "moment";
 		} else if (server.indexOf("sqlite:")==0) {
 			HOSTNAME = server;
 			isSQLite = true;

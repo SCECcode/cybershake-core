@@ -49,7 +49,7 @@ public class CheckDBDataForSite {
         run_id.setRequired(true);
         Option periods = OptionBuilder.withArgName("periods").hasArg().withDescription("Comma-separated list of periods to check, for geometric and rotd.").create("p");
         Option typeIDs = OptionBuilder.withArgName("type_ids").hasArg().withDescription("Comma-separated list of type IDs to check, for duration.").create("t");
-        Option component = OptionBuilder.withArgName("component").hasArg().withDescription("Component type (geometric, rotd, duration) to check.").create("c");
+        Option component = OptionBuilder.withArgName("component").hasArg().withDescription("Component type (geometric, rotd, rotd50, duration) to check.").create("c");
         Option output = OptionBuilder.withArgName("output").hasArg().withDescription("Path to output file, if something is missing (required).").create("o");
         Option serverOpt = OptionBuilder.withArgName("server").hasArg().withDescription("DB server to query against.").create("s");
         output.setRequired(true);
@@ -115,6 +115,9 @@ public class CheckDBDataForSite {
         			} else if (componentString.equals("rotd")) {
         				query = "select IM_Type_ID from IM_Types where abs(IM_Type_Value-" +
             					piece + ")<0.0001 and (IM_Type_Component='RotD50' or IM_Type_Component='RotD100');";
+        			} else if (componentString.equals("rotd50")) {
+        				query = "select IM_Type_ID from IM_Types where abs(IM_Type_Value-" +
+            					piece + ")<0.0001 and (IM_Type_Component='RotD50');";
         			}
     				ResultSet imTypeSet = dbc.selectData(query);
     				try {

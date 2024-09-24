@@ -41,7 +41,7 @@ public class CyberLoadamps {
         Option valuesToInsert = OptionBuilder.withArgName("insertion_values").hasArg().withDescription("Which values to insert -\ngm:\tgeometric mean PSA data (default)\nxy:\tX and Y component PSA data\ngmxy:  Geometric mean and X and Y components").create("i");
         Option periods = OptionBuilder.withArgName("periods").hasArg().withDescription("Comma-delimited periods to insert").create("periods");
         Option rotd = new Option("r", "Read rotd files (instead of bsa.)");
-        Option rotd50 = new Option("r5", "Read rotd files, but only insert RotD50 (not RotD100)");
+        Option rotd50 = new Option("rdf", "Read rotd files, but only insert RotD50 (not RotD100)");
         Option duration = new Option("u", "Read duration files (instead of bsa.)");
         Option convert = new Option("c", "Convert values from g to cm/sec^2");
         Option force = new Option("f", "Don't apply value checks to insertion values; use with care!.");
@@ -134,7 +134,7 @@ public class CyberLoadamps {
 					m = Mode.ROTD;
 				} else if (cmd.hasOption("u")) {
 					m = Mode.DURATION;
-				} else if (cmd.hasOption("r5")) {
+				} else if (cmd.hasOption("rdf")) {
 					m = Mode.ROTD50;
 				}
 				

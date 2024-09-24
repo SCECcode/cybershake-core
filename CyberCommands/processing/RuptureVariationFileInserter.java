@@ -119,6 +119,8 @@ public class RuptureVariationFileInserter {
 			hibernate_cfg_filename = "csep-x.cfg.xml";
 		} else if (serverName.equals("moment")) {
 			hibernate_cfg_filename = "moment.cfg.xml";
+		} else if (serverName.equals("moment_carc")) {
+			hibernate_cfg_filename = "moment_carc.cfg.xml";
 		} else if (serverName.indexOf("sqlite:")==0) {
 			hibernate_cfg_filename = "sqlite.cfg.xml";
 		} else {
@@ -191,9 +193,10 @@ public class RuptureVariationFileInserter {
 		} else if (fileMode==Mode.HEAD) {
 			insertRuptureVariationFilesWithHeader(sess);
 		} else if (fileMode==Mode.ROTD) {
-			insertRotDFiles(sess, true);
-		} else if (fileMode==Mode.ROTD50) {
 			insertRotDFiles(sess, false);
+		} else if (fileMode==Mode.ROTD50) {
+			System.out.println("Inserting Rotd50 only.");
+			insertRotDFiles(sess, true);
 		} else if (fileMode==Mode.DURATION) {
 			insertDurationFiles(sess);
 		} else {
@@ -244,12 +247,12 @@ public class RuptureVariationFileInserter {
 						DataInputStream ds = new DataInputStream(new ByteArrayInputStream(out_durations_bytes));
 						int num_durations = ds.readInt();
 						//16 bytes per duration entry (type, type_value, component, value)
-						//Times 2 because 2 components
-						byte[] durationEntryBytes = new byte[num_durations*2*16];
+						//Times num_comps
+						byte[] durationEntryBytes = new byte[num_durations*head.num_comps*16];
 						stream.read(durationEntryBytes);
 						byte[] outByteArray = SwapBytes.swapByteArrayToByteArrayForFloats(durationEntryBytes);
 						ds = new DataInputStream(new ByteArrayInputStream(outByteArray));
-						for (int i=0; i<2*num_durations; i++) {
+						for (int i=0; i<head.num_comps*num_durations; i++) {
 							DurationEntry de = new DurationEntry();
 							de.populate(ds);
 							entries.add(de);
@@ -782,6 +785,11 @@ public class RuptureVariationFileInserter {
 					if (convertGtoCM) {
 						rd100 = e.rotD100 * G_TO_CM_2;
 					}
+					//Sanity check
+					if (rd100<0.005) {
+						System.out.println("Found RotD100 value " + rd100 + " for source " + head.source_id + " rupture " + head.rupture_id + " rup var " + head.rup_var_id);
+						System.exit(1);
+					}
 					pa.setIM_Value(rd100);
 					try {
 						sess.save(pa);
@@ -807,6 +815,11 @@ public class RuptureVariationFileInserter {
 				float rd50 = e.rotD50;
 				if (convertGtoCM) {
 					rd50 = e.rotD50 * G_TO_CM_2;
+				}
+				//Sanity check
+				if (rd50<0.005) {
+					System.out.println("Found RotD100 value " + rd50 + " for source " + head.source_id + " rupture " + head.rupture_id + " rup var " + head.rup_var_id);
+					System.exit(1);
 				}
 				pa.setIM_Value(rd50);
 				try {
