@@ -15,7 +15,7 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 BASE_DIR = /work2/00349/scottcal/frontera/CyberShake
 GETPAR = ../../Getpar/getpar
 LIBCFU = ${BASE_DIR}/utils/libcfu_0.03
-CUR_RG_LIB = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-5.4.2/lib
+CUR_RG_LIB = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-5.5.2/lib
 V3_3_1_RG_LIB = -L${BASE_DIR}/software/RuptureCodes/RupGen-api-3.3.1/lib
 LDLIBS = -lrupgen -L${GETPAR}/lib -lget -L${BASE_DIR}/utils/libmemcached_1.0.18/lib -lmemcached -L${LIBCFU}/lib -lcfu -lm -L${TACC_FFTW3_LIB} -lfftw3f
 CUR_RG_INC = -I${BASE_DIR}/software/RuptureCodes/RupGen-api-5.5.2/include
@@ -25,15 +25,21 @@ IFLAGS = -I${GETPAR}/include -I${BASE_DIR}/utils/libmemcached_1.0.18/include -I$
 
 #UFLAGS = -O3 -Wuninitialized -dynamic -g
 UFLAGS = -O3 -g -mkl 
+#UFLAGS = -O3 -g
 
-CFLAGS = ${UFLAGS} ${IFLAGS}
+#For calling calculate_rvfac
+PYTHON_LIBS = -lpython3.6m
+PYTHON_INC = -I/usr/include/python3.6m/
+
+CFLAGS = ${UFLAGS} ${IFLAGS} ${PYTHON_INC}
 FFLAGS = ${UFLAGS} -132 -nofor-main
+#FFLAGS = ${UFLAGS} -ffixed-line-length-132
 #FFLAGS = ${UFLAGS} -qfixed=132
 
 CC = mpicc
 FC = mpif77
 
-direct_synth_v3.3.1 : CFLAGS = ${UFLAGS} ${IFLAGS} -fno-expensive-optimizations -D_V3_3_1
+direct_synth_v3.3.1 : CFLAGS = ${UFLAGS} ${IFLAGS} -fno-expensive-optimizations -D_V3_3_1 ${PYTHON_INC}
 
 all: $(TARGETS)
 	for TARGET in $(TARGETS); do \
@@ -43,14 +49,14 @@ all: $(TARGETS)
 
 direct_synth : direct_synth.c jbsim/jbsim3d.o ${OBJS} ${SYNTH_OBJS} ${PSA_OBJS} ${ROTD_OBJS} ${DURATION_OBJS}
 	-rm -f direct_synth.o
-	${CC} ${CFLAGS} ${CUR_RG_INC} -c -o direct_synth.o direct_synth.c
-	${FC} ${FFLAGS} -o direct_synth direct_synth.o jbsim/jbsim3d.o ${OBJS} ${SYNTH_OBJS} ${PSA_OBJS} ${ROTD_OBJS} ${DURATION_OBJS} ${CUR_RG_LIB} ${LDLIBS} -lstdc++
+	${CC} ${CFLAGS} ${CUR_RG_INC} -c -o direct_synth.o direct_synth.c 
+	${FC} ${FFLAGS} -o direct_synth direct_synth.o jbsim/jbsim3d.o ${OBJS} ${SYNTH_OBJS} ${PSA_OBJS} ${ROTD_OBJS} ${DURATION_OBJS} ${CUR_RG_LIB} ${LDLIBS} -lstdc++ ${PYTHON_LIBS}
 	cp direct_synth ../bin/
 
 direct_synth_v3.3.1 : direct_synth.c jbsim/jbsim3d_v3.3.1.o ${OBJS} ${SYNTH_OBJS} ${PSA_OBJS} ${ROTD_OBJS} ${DURATION_OBJS}
 	-rm -f direct_synth_v3.3.1.o
 	${CC} ${CFLAGS} ${V3_3_1_RG_INC} -D_V3_3_1 -c -o direct_synth_v3.3.1.o direct_synth.c
-	${FC} ${FFLAGS} -D_V3_3_1 -o direct_synth_v3.3.1 direct_synth_v3.3.1.o jbsim/jbsim3d_v3.3.1.o ${OBJS} ${SYNTH_OBJS} ${PSA_OBJS} ${ROTD_OBJS} ${DURATION_OBJS} ${V3_3_1_RG_LIB} ${LDLIBS} -lstdc++
+	${FC} ${FFLAGS} -D_V3_3_1 -o direct_synth_v3.3.1 direct_synth_v3.3.1.o jbsim/jbsim3d_v3.3.1.o ${OBJS} ${SYNTH_OBJS} ${PSA_OBJS} ${ROTD_OBJS} ${DURATION_OBJS} ${V3_3_1_RG_LIB} ${LDLIBS} -lstdc++ ${PYTHON_LIBS}
 	cp direct_synth_v3.3.1 ../bin/
 
 jbsim/jbsim3d.o : jbsim/jbsim3d.c
