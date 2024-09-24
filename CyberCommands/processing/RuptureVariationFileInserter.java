@@ -816,9 +816,10 @@ public class RuptureVariationFileInserter {
 				if (convertGtoCM) {
 					rd50 = e.rotD50 * G_TO_CM_2;
 				}
+				System.out.println("(" + head.source_id + ", " + head.rupture_id + ", " + head.rup_var_id + ", period " + e.period);
 				//Sanity check
 				if (rd50<0.005) {
-					System.out.println("Found RotD100 value " + rd50 + " for source " + head.source_id + " rupture " + head.rupture_id + " rup var " + head.rup_var_id);
+					System.out.println("Found RotD50 value " + rd50 + " for source " + head.source_id + " rupture " + head.rupture_id + " rup var " + head.rup_var_id);
 					System.exit(1);
 				}
 				pa.setIM_Value(rd50);
