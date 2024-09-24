@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "mpi.h"
 #include "include.h"
 #include "function.h"
@@ -827,9 +828,6 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 	getrusage(RUSAGE_SELF, &my_rusage);
 	//fprintf(stderr, "[%d] Using %ld kbytes.\n", my_id, my_rusage.ru_maxrss);
 	//fflush(stderr);
-	if (my_id==0) {
-		fprintf(stderr, "Querying for point (%lf, %lf)\n", (pts+s*pts_per_stripe)->coord[0], (pts+s*pts_per_stripe)->coord[1]);
-	}
 	//fprintf(stderr, "pts_per_stripe = %d, pts[0]=(%f, %f, %f), @tmp_props=%x\n", pts_per_stripe, (pts+s*pts_per_stripe)->coord[0], (pts+s*pts_per_stripe)->coord[1], (pts+s*pts_per_stripe)->coord[2], tmp_props);
 	//fflush(stderr);
 	if (ucvm_query(pts_per_stripe, pts+s*pts_per_stripe, tmp_props)!=UCVM_CODE_SUCCESS) {
@@ -905,8 +903,13 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
                     ely_props[i].depth = original_depths[i];
                 }
 				free(original_depths);
+                //Set the floors to something very low, so that we can handle the vp/vs ratio scaling in here instead
+                double ucvm_taper_floors[3] = {100.0, 500.0, 500.0};
+                ucvm_setfloor(ucvm_taper_floors);
+
 				ucvm_elygtl_model_query(UCVM_MAX_MODELS-1, z_query_mode, cutoff_index, pts+s*pts_per_stripe, ely_props);
 				//Now run interpolator
+
                 for (i=0; i<cutoff_index; i++) {
                     ucvm_interp_ely(0.0, ely_transition_value, z_query_mode, pts+s*pts_per_stripe+i, ely_props+i);
                 }
@@ -1009,13 +1012,10 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 
  	for (i=0; i<pts_per_stripe; i++) { 
 		//Check for nan, inf
-		if (my_id==0 && i<100) {
-			fprintf(stderr, "(%f, %f, %f) -> (%f, %f, %f)\n", pts[i].coord[0], pts[i].coord[1], pts[i].coord[2], props[i].cmb.vp, props[i].cmb.vs, props[i].cmb.rho);
-		}
 		if (isnan(props[i].cmb.vp) || isnan(props[i].cmb.vs) || isnan(props[i].cmb.rho) ||
 		   isinf(props[i].cmb.vp) || isinf(props[i].cmb.vs) || isinf(props[i].cmb.rho)) {
 			 fprintf(stderr, "NaN/Inf detected at (%f, %f, %f)\n", 
-			 pts[i].coord[0], pts[i].coord[1], pts[i].coord[2]);
+			 pts[s*pts_per_stripe+i].coord[0], pts[s*pts_per_stripe+i].coord[1], pts[s*pts_per_stripe+i].coord[2]);
 	 		 fflush(stderr);
 	 		 exit(-1);
 		}
@@ -1023,7 +1023,7 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 		//Check for negative values
 	       if ((props[i].cmb.vp < 0.0) || (props[i].cmb.vs < 0.0) || (props[i].cmb.rho < 0.0)) {
 		 fprintf(stderr, "Negative vals detected at (%f, %f, %f)\n", 
-			 pts[i].coord[0], pts[i].coord[1], pts[i].coord[2]);
+			 pts[s*pts_per_stripe+i].coord[0], pts[s*pts_per_stripe+i].coord[1], pts[s*pts_per_stripe+i].coord[2]);
 		 fprintf(stderr, "vp=%f, vs=%f, rho=%lf\n", 
 			 props[i].cmb.vp, props[i].cmb.vs, props[i].cmb.rho);
 		 fflush(stderr);
@@ -1032,9 +1032,22 @@ float LR_HR_VOXEL_HEIGHT = 100.0;
 
 		//Check for min Vp, Vs, Rho
 		if (props[i].cmb.vs<min_vs) {
-			//Calculate Vp/Vs ratio, and scale Vp to preserve ratio
+			//If we're doing z-slices, we can use the updated Vp/Vs ratio approach to avoid too-large Vp values, developed for Study 24.8
 			float vpvs_ratio=props[i].cmb.vp/props[i].cmb.vs;
-            props[i].cmb.vs = min_vs;
+			if (format==AWP_Z) {
+				//If this is the surface point, we'll calculate the ratio differently
+				//if (pts[s*pts_per_stripe+i].coord[2]==0.0 || pts[s*pts_per_stripe+i].coord[2]==surface_cvm_depth) {
+				if (props[i].depth==0.0 || props[i].depth==surface_cvm_depth) {
+					//Calculate Vp/Vs ratio at the next point, which is one grid point down
+					//printf("%d) Point index %d (%lf, %lf, %lf) has Vp=%lf, Vs=%lf, ratio=%f.  The next point is (%lf, %lf, %lf) with Vp=%lf, Vs=%lf, ratio=%f.\n", my_id, i, pts[s*pts_per_stripe+i].coord[0], pts[s*pts_per_stripe+i].coord[1], pts[s*pts_per_stripe+i].coord[2], props[i].cmb.vp, props[i].cmb.vs, vpvs_ratio, pts[s*pts_per_stripe+i+1].coord[0], pts[s*pts_per_stripe+i+1].coord[1], pts[s*pts_per_stripe+i+1].coord[2], props[i+1].cmb.vp, props[i+1].cmb.vs, props[i+1].cmb.vp/props[i+1].cmb.vs);
+					float next_vpvs_ratio = props[i+1].cmb.vp/props[i+1].cmb.vs;
+					if (next_vpvs_ratio>4.0) {
+						next_vpvs_ratio = 4.0;
+					}
+					vpvs_ratio = next_vpvs_ratio;
+				}
+			}
+	        props[i].cmb.vs = min_vs;
 			props[i].cmb.vp = min_vs*vpvs_ratio;
         }
 		if (props[i].cmb.vp<min_vp) {
