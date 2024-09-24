@@ -24,6 +24,9 @@ elif MPI_CMD=="jsrun":
 	#Start memcached once on each node
 	memcached_path = "/gpfs/alpine/proj-shared/geo112/CyberShake/utils/pegasus_wrappers/invoke_memcached.sh"
 	cmd = "jsrun -a 1 -c 1 -g 0 -r 1 -n %d %s" % (num_nodes, memcached_path)
+elif MPI_CMD=="ibrun":
+    memcached_path = "/work2/00349/scottcal/frontera/CyberShake/utils/pegasus_wrappers/invoke_memcached.sh"
+    cmd = "export IBRUN_TASKS_PER_NODE=1; ibrun %s &" % memcached_path
 else:
 	print("Don't know what to do with MPI_CMD=%s, aborting." % MPI_CMD)
 	sys.exit(2)
@@ -44,6 +47,10 @@ elif MPI_CMD=="jsrun":
 	#Can't have more than 42 resource sets/core
 	#cmd = "jsrun -n %d -a 4 -c 1 -g 0 -r 42 %s" % (num_res_sets, ds_path)
 	cmd = "%s; jsrun -n %d -a 1 -c 1 -g 0 -r 42 %s" % (module_cmd, num_res_sets, ds_path)
+elif MPI_CMD=="ibrun":
+	#cmd = "export IBRUN_TASKS_PER_NODE=56; ibrun %s" % ds_path
+	ds_path = "%s/bin/direct_synth_v3.3.1 %s" % (sys.path[0], " ".join(sys.argv[1:]))
+	cmd = "export PYTHONPATH=/work2/00349/scottcal/frontera/CyberShake/software/DirectSynth/src/duration:$PYTHONPATH; export LD_LIBRARY_PATH=/work2/00349/scottcal/frontera/CyberShake/utils/libmemcached_1.0.18/lib:$LD_LIBRARY_PATH; echo $PYTHONPATH > pythonpath.out; module list &> module.out; ibrun %s" % ds_path
 else:
         print("Don't know what to do with MPI_CMD=%s, aborting." % MPI_CMD)
         sys.exit(2)
