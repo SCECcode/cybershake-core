@@ -7,7 +7,7 @@ SYNTH_OBJS = jbsim/geoproj_subs.o jbsim/misc_subs.o jbsim/sgt3d_subs.o \
 		jbsim/srf_rupm.o jbsim/srf_subs.o jbsim/stf_subs.o jbsim/fourg.o
 PSA_OBJS = surfseis_rspectra.o setparm180.o sub_bandpass.o
 ROTD_OBJS = rotd/calcrsp.o rotd/fftsub.o rotd/ft_th.o rotd/sort.o rotd/spline.o rotd/splint.o rotd/rotd.o rotd/rotd100.o
-DURATION_OBJS = duration.o integ_diff.o
+DURATION_OBJS = duration/duration.o duration/integ_diff.o
 TEST_DURATION_OBJS = ${DURATION_OBJS} iofunc.o
 
 LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64

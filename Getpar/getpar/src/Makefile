@@ -54,8 +54,10 @@ MAN3DIR		= ../../doc/man/man3
 CHANGESDIR	= ../../doc/Changes
 
 include ../../../Compilers.mk
-CC		= $(MY_CC)
-F77		= $(MY_FC)
+#CC		= $(MY_CC)
+#F77		= $(MY_FC)
+CC		= gcc
+F77		= gfortran
 O		= -xO3 -xdepend -xlibmil -fsimple
 O		= -O3
 #O		= -g

@@ -4,8 +4,8 @@ CC = gcc
 CFLAGS = -O3
 
 MEMC = ../../../../utils/libmemcached_1.0.18
-INC = -I../include/ -I/../../../../software/Getpar/getpar/include -I${OLCF_FFTW_ROOT}/include -I${MEMC}/include
-LIBS = -L../lib -lrupgen -L../../../../software/Getpar/getpar/lib -lget -L${OLCF_FFTW_ROOT}/lib -lfftw3f -lm -L${MEMC}/lib -lmemcached
+INC = -I../include/ -I/../../../../software/Getpar/getpar/include -I${TACC_FFTW3_INC} -I${MEMC}/include
+LIBS = -L../lib -lrupgen -L../../../../software/Getpar/getpar/lib -lget -L${TACC_FFTW3_LIB} -lfftw3f -lm -L${MEMC}/lib -lmemcached
 
 all: $(TARGETS)
 

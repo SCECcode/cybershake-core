@@ -3,7 +3,7 @@
 
 #include "rupgen_api.h"
 
-const char* RUPTURE_ROOT = "/gpfs/alpine/proj-shared/geo112/CyberShake/ruptures";
+const char* RUPTURE_ROOT = "/work2/00349/scottcal/frontera/CyberShake/ruptures";
 
 int main(int argc, char** argv) {
 	set_memcached_server("localhost");
