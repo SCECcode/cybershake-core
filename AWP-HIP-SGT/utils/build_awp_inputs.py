@@ -25,6 +25,8 @@ path_add = os.path.dirname(os.path.dirname(os.path.dirname(full_path)))
 
 sys.path.append(path_add)
 
+print("Pythonpath: %s" % sys.path)
+
 import config
 import optparse
 
@@ -56,7 +58,7 @@ parser.add_option("--source-frequency", type=float, dest="source_freq", action="
 parser.add_option("--spacing", type=float, dest="spacing", action="store", default=None, help="Override default spacing, derived from frequency.")
 parser.add_option("--velocity-mesh", dest="vel_mesh", action="store", default=None, help="Provide path to velocity mesh.  If omitted, will assume mesh is named awp.<site>.media.")
 parser.add_option("--run_id", dest="run_id", type=int, action="store", help="Run ID.")
-parser.add_option("--z-component", dest="z_comp", action="store_true", default=False, help="Include Z component SGT calculations.")
+parser.add_option("--z_comp", dest="z_comp", action="store_true", default=False, help="Include Z component SGT calculations.")
 
 (option, args) = parser.parse_args()
 

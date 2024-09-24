@@ -19,6 +19,7 @@ grid_spacing = float(sys.argv[5])
 x_coord = int(sys.argv[6])
 y_coord = int(sys.argv[7])
 output_filename = sys.argv[8]
+output_data_filename = "%s.data" % ".".join(output_filename.split(".")[:-1])
 
 print("Reading velocity file.")
 
@@ -39,14 +40,24 @@ depths = []
 for i in range(0, nz):
 	depths.append(-1.0*grid_spacing*i)
 
+with open(output_data_filename, "w") as fp_out:
+	fp_out.write("Depth(m),Vp(m/s),Vs(m/s),rho(kg/m3)\n")
+	for i in range(0, nz):
+		fp_out.write("%f,%f,%f,%f\n" % (depths[i], profile[0][i], profile[1][i], profile[2][i]))
+	fp_out.flush()
+	fp_out.close()
+
 
 clf()
-labels = ["Vp (km/s)", "Vs (km/s)", "rho (kg/m3)"]
+labels = ["Vp (m/s)", "Vs (m/s)", "rho (kg/m3)"]
 for i in range(0, 3):
 	plot(profile[i], depths, label=labels[i])
 ylabel("Depth (km)")
 xlim(0, 8000)
-ylim(-1.0*grid_spacing*nz, 0)
+ymin = -3.0
+#print(profile[0])
+#ylim(-1.0*grid_spacing*nz, 0)
+ylim(ymin, 0.0)
 legend(loc="lower left")
 #grid(b=True, which='major')
 #minorticks_on()
@@ -54,10 +65,10 @@ legend(loc="lower left")
 gcf().set_size_inches(8, 10)
 savefig(output_filename, format="png")
 #Second plot of top 2 km
-ylim(-2.0, 0)
-xlim(0, 6000)
-legend(loc='upper right')
-savefig("zoomed_%s" % output_filename, format="png")
+#ylim(-2.0, 0)
+#xlim(0, 6000)
+#legend(loc='upper right')
+#savefig("zoomed_%s" % output_filename, format="png")
 
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import matplotlib
 matplotlib.use("AGG")
@@ -15,7 +15,7 @@ from mpl_toolkits.basemap import cm
 from operator import itemgetter
 
 if len(sys.argv)<10:
-	print "Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <grid spacing in km> <'x' or 'y' axis-parallel slice> <row or column value> <output file>" % sys.argv[0]
+	print("Usage: %s <velocity file> <model coords file> <nx> <ny> <nz> <grid spacing in km> <'x' or 'y' axis-parallel slice> <row or column value> <output file>" % sys.argv[0])
 	sys.exit(1)
 
 
@@ -30,7 +30,7 @@ column = int(sys.argv[8])
 output_file = sys.argv[9]
 
 if comp!='x' and comp!='y':
-	print "Component must be x or y."
+	print("Component must be x or y.")
 	sys.exit(1)
 
 if comp=='x':
@@ -39,7 +39,7 @@ elif comp=='y':
 	not_comp = 'x'
 
 coords = []
-print "Reading model coods file."
+print("Reading model coods file.")
 with open(model_coords_file, "r") as fp_in:
 	for line in fp_in:
 		pieces = line.split()
@@ -52,7 +52,7 @@ vs = []
 x_values = []
 y_values = []
 
-print "Reading velocity file."
+print("Reading velocity file.")
 with open(velocity_file, "rb") as fp_in:
 	for z in range(0, nz):
 		for c in coords:

@@ -529,11 +529,14 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
        return -1;
     }
     time_src += gethrtime();
+	printf("%d) After inisource.\n", rank);
+	fflush(stdout);
     if(rank==0) printf("After inisource. Time elapsed (seconds): %lf\n", time_src);
 
     if(rank==srcproc)
     {
        printf("rank=%d, source rank, npsrc=%d\n", rank, npsrc);
+	   fflush(stdout);
        num_bytes = sizeof(float)*npsrc*READ_STEP_GPU;
        cudaMalloc((void**)&d_taxx, num_bytes);
        cudaMemset(d_taxx, 0, num_bytes);
@@ -558,6 +561,8 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
        cudaMemset(d_tpsrc, 0, num_bytes);
        cudaMemcpy(d_tpsrc,tpsrc,num_bytes,cudaMemcpyHostToDevice);
     }
+	printf("%d) After source alloc.\n", rank);
+	fflush(stdout);
 
     d1     = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align); 
     mu     = Alloc3D(nxt+4+8*loop, nyt+4+8*loop, nzt+2*awp_align);
@@ -572,11 +577,13 @@ rank, READ_STEP, READ_STEP_GPU, NST, IFAULT);
 
     time_mesh -= gethrtime();
     if(rank==0) printf("Before inimesh\n");
+	fflush(stdout);
     inimesh(MEDIASTART, d1, mu, lam, qp, qs, &taumax, &taumin, NVAR, FP, FL, FH, 
             nxt, nyt, nzt, PX, PY, NX, NY, NZ, coord, MCW, IDYNA, NVE, SoCalQ, INVEL,
             vse, vpe, dde);
     time_mesh += gethrtime();
     if(rank==0) printf("After inimesh. Time elapsed (seconds): %lf\n", time_mesh);
+	fflush(stdout);
     if(rank==0)
       writeCHK(CHKFILE, NTISKP, DT, DH, nxt, nyt, nzt,
         nt, ARBC, NPC, NVE, FL, FH, FP, vse, vpe, dde);

@@ -9,18 +9,20 @@ LF_FLAGS = -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
 
 I_FLAGS = -I${GETPAR}/include -I../../../utils/libcfu_0.03/include
 
-UFLAGS = -O3
+UFLAGS = -O3 -g
 
 include ../../Compilers.mk
-CC = $(MY_MPICC)
-FC = $(MY_FC)
+#CC = $(MY_MPICC)
+#FC = $(MY_FC)
+CC = cc
+FC = ftn
 
 BIN_LIST = gen_sgtgrid
 
 ##### compile options
 
 CFLAGS = $(UFLAGS) $(I_FLAGS) $(LF_FLAGS) $(MY_CFLAGS)
-FFLAGS = $(UFLAGS) $(MY_FFLAGS)
+FFLAGS = $(UFLAGS) 
 
 all: $(BIN_LIST)
 	mkdir -p ../bin

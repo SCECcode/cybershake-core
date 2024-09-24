@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-'''This script collects Vs30 from UCVM, Vs30 from the velocity mesh, Z1.0, and Z2.5, and populates the database with them.'''
+'''This script collects Vs30 from UCVM, Vs30 from the velocity mesh, Z1.0, and Z2.5, and optionally populates the database with them.'''
 
 import sys
 import os
@@ -15,7 +15,7 @@ sys.path.append(path_add)
 
 import config
 
-parser = argparse.ArgumentParser(description = "'This script collects Vs30 from UCVM, Vs30 from the velocity mesh, Z1.0, and Z2.5, and populates the database with the data.")
+parser = argparse.ArgumentParser(description = "This script collects Vs30 from UCVM, Vs30 from the velocity mesh, Z1.0, and Z2.5, and writes the results to a file or populates the database with the data.")
 parser.add_argument("-lat", "--latitude", help="Latitude of site", type=float)
 parser.add_argument("-lon", "--longitude", help="Longitude of site", type=float)
 parser.add_argument("-m", "--models", help="Comma-separated string of UCVM velocity models",)
@@ -25,6 +25,7 @@ parser.add_argument("-go", "--gridout", help="Path to gridout file")
 parser.add_argument("-s", "--server", help="Database server to use.  Default is moment.usc.edu.  Can specify sqlite database with sqlite://<file>.  ***Note that if LOCAL_DB is defined in cybershake.cfg file, that value will be used instead of what is given here.***")
 parser.add_argument("-r", "--run_id", help="Run ID")
 parser.add_argument("-tm", "--taper_models", help="Comma-separate string of models to apply taper to.", type=str)
+parser.add_argument("-o", "--output_file", help="Write the results to a file INSTEAD OF the database.")
 
 args = parser.parse_args()
 if args.latitude==None or args.longitude==None or args.models==None or args.velocity_mesh==None or args.gridout==None or args.fdloc==None or args.run_id==None:
@@ -45,6 +46,10 @@ except KeyError:
 taper_models = ""
 if args.taper_models is not None:
 	taper_models = args.taper_models
+
+output_file = None
+if args.output_file is not None:
+	output_file = args.output_file
 
 #Call get_model_info_for_db to get model Vs30, Z1.0, Z2.5
 model_output_file = "ucvm_data.txt"
@@ -83,22 +88,35 @@ with open(model_output_file, "r") as fp_in:
 with open(mesh_output_file, "r") as fp_in:
 	[mesh_vp, mesh_vs, mesh_rho] = [float(i) for i in fp_in.readline().split()]
 	fp_in.close()
-	
-db_file = config.getProperty("DB_WR_FILE")
-with open(db_file, "r") as fp_in:
-    username = fp_in.readline().strip()
-    password = fp_in.readline().strip()
-    fp_in.close()
 
-if server.find("sqlite://")==0:
-	#Connect to local sqlite db
-	conn = sqlite3.connect(server[9:])
+if output_file is None:
+	#Then we write to the DB
+	db_file = config.getProperty("DB_WR_FILE")
+	with open(db_file, "r") as fp_in:
+	    username = fp_in.readline().strip()
+	    password = fp_in.readline().strip()
+	    fp_in.close()
+
+	if server.find("sqlite://")==0:
+		#Connect to local sqlite db
+		conn = sqlite3.connect(server[9:])
+	else:
+		conn = pymysql.connect(host=server, db="CyberShake", user=username, passwd=password)
+
+	cur = conn.cursor()
+	update = "update CyberShake_Runs set Model_Vs30=%f, Mesh_Vsitop=%f, Z1_0=%f, Z2_5=%f where Run_ID=%d" % (model_vs30, mesh_vs, model_z10, model_z25, int(args.run_id))
+	print(update)
+	cur.execute(update)
+	conn.commit()
+	cur.close()
 else:
-	conn = pymysql.connect(host=server, db="CyberShake", user=username, passwd=password)
+	#Write to a file
+	with open(output_file, 'w') as fp_out:
+		fp_out.write("Model_Vs30 = %f\n" % model_vs30)
+		fp_out.write("Mesh_Vsitop = %f\n" % mesh_vs)
+		fp_out.write("Z1_0 = %f\n" % model_z10)
+		fp_out.write("Z2_5 = %f\n" % model_z25)
+		fp_out.flush()
+		fp_out.close()
 
-cur = conn.cursor()
-update = "update CyberShake_Runs set Model_Vs30=%f, Mesh_Vsitop=%f, Z1_0=%f, Z2_5=%f where Run_ID=%d" % (model_vs30, mesh_vs, model_z10, model_z25, int(args.run_id))
-print(update)
-cur.execute(update)
-conn.commit()
-cur.close()
+sys.exit(0)
