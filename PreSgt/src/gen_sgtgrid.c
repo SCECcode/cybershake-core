@@ -92,7 +92,7 @@ struct timeval tv;
 struct timeval new_tv;
 
 
-PI_Init(&ac, &av);
+MPI_Init(&ac, &av);
 
 radiusfile[0] = '\0';
 faultlist[0] = '\0';
@@ -130,9 +130,9 @@ endpar();
 
 int num_procs = 1;
 
-PI_Comm_rank(MPI_COMM_WORLD, &my_id);
+MPI_Comm_rank(MPI_COMM_WORLD, &my_id);
 
-PI_Comm_size(MPI_COMM_WORLD, &num_procs);
+MPI_Comm_size(MPI_COMM_WORLD, &num_procs);
 
 gen_matrices(amat,ainv,&modelrot,&modellon,&modellat);
 
@@ -348,7 +348,7 @@ if (my_id==0) {
 	}
 	free(faultlist_data);
 	gettimeofday(&new_tv, NULL);
-	printf("%f sec for individual fault file creation.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
+	printf("%d) %f sec for individual fault file creation.\n", my_id, (new_tv.tv_sec - tv.tv_sec + (new_tv.tv_usec - tv.tv_usec)/1000000.0));
 } else {
 	MPI_Bcast(&num_lines, 1, MPI_INT, 0, MPI_COMM_WORLD);
 	avg_lines_per_proc = num_lines/num_procs;
@@ -376,14 +376,14 @@ gettimeofday(&tv, NULL);
 
 if(faultlist[0] != '\0')
    {
-   char outname[25];
-   sprintf(outname, "core_%d.out", my_id);
-   FILE* fp_out = fopen(outname, "w");
+   //char outname[25];
+   //sprintf(outname, "core_%d.out", my_id);
+   //FILE* fp_out = fopen(outname, "w");
  
     for (i0=0; i0<num_my_lines; i0++) {
       strcpy(str, local_faultlist_data[i0]);
       get_filepar(str,infile,&nhead,&latfirst);
-      printf("%d) Processing file %d of %d.\n", my_id, i0, num_my_lines);
+      printf("%d) Processing file %d of %d (%s).\n", my_id, i0, num_my_lines, str);
       fpr = fopfile(infile,"r");
 
       i = 0;
@@ -421,9 +421,10 @@ if(faultlist[0] != '\0')
 			hashvals[np].y = tmp_hashval.y;
 			hashvals[np].z = tmp_hashval.z;
 			hashvals[np].index = tmp_hashval.index;
+
 			cfuhash_put(hash, hashkey, &(hashvals[np]));
 			np++;
-			if (np > bcnt*BLOCK_SIZE) {
+			if (np >= bcnt*BLOCK_SIZE) {
 				bcnt++;
 				printf("%d) Expanding hashvals.\n", my_id);
 				fflush(stdout);
@@ -435,16 +436,19 @@ if(faultlist[0] != '\0')
 
       fclose(fpr);
       }
-	fflush(fp_out);
-	fclose(fp_out);
+	//fflush(fp_out);
+	//fclose(fp_out);
    }
 
-/*
-char outname[25];
+
+/*char outname[25];
 sprintf(outname, "core_%d.out", my_id);
 FILE* fp_out = fopen(outname, "w");
-for (i0=0; i<np; i++) {
-	fprintf(fp_out, "%d %d %d %ld\n", hashvals[i].x, hashvals[i].y, hashvals[i].z, hashvals[i].index);
+for (i=0; i<np; i++) {
+	if (hashvals[i].z==0) {
+		printf("Hashvals z is 0 at index %d\n.", i);
+	}
+	fprintf(fp_out, "%d %d %d %lld\n", hashvals[i].x, hashvals[i].y, hashvals[i].z, hashvals[i].index);
 }
 fflush(fp_out);
 fclose(fp_out);
@@ -454,7 +458,7 @@ fclose(fp_out);
 size_t num_fault_points = cfuhash_num_entries(hash);
 
 if (num_fault_points!=np) {
-	fprintf(stderr, "Error: we think we inserted %d keys but we actually have %d.  Aborting.\n", np, num_fault_points);
+	fprintf(stderr, "Error: we think we inserted %d keys but we actually have %lld.  Aborting.\n", np, num_fault_points);
 	exit(2);
 }
 
@@ -504,7 +508,7 @@ if (my_id==0) {
 	//Gather points, put in hashmap, read back out
 }
 
-PI_Datatype entry_type;
+MPI_Datatype entry_type;
 int blen[5] = {1, 1, 1, 1, 1};
 //Can't sent an 8-byte LONG via mpi, so use 2 ints
 int x_offset, y_offset, z_offset, index_offset;
@@ -513,13 +517,13 @@ y_offset = offsetof(struct entry, y);
 z_offset = offsetof(struct entry, z);
 index_offset = offsetof(struct entry, index);
 
-PI_Aint disps[5] = {x_offset, y_offset, z_offset, index_offset, index_offset+sizeof(int)};
+MPI_Aint disps[5] = {x_offset, y_offset, z_offset, index_offset, index_offset+sizeof(int)};
 
-PI_Datatype types[5] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
+MPI_Datatype types[5] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT};
 
-PI_Type_create_struct(5, blen, disps, types, &entry_type);
+MPI_Type_create_struct(5, blen, disps, types, &entry_type);
 
-PI_Type_commit(&entry_type);
+MPI_Type_commit(&entry_type);
 
 rc = MPI_Gatherv(hashvals, np, entry_type, recv_points, proc_nps, proc_disps, entry_type, 0, MPI_COMM_WORLD);
 if (rc!=MPI_SUCCESS) {
@@ -645,7 +649,7 @@ free(proc_disps);
 free(hashvals);
 
 
-PI_Finalize();
+MPI_Finalize();
 return 0;
 }
 

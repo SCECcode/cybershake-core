@@ -26,7 +26,11 @@ for i in range(5, len(data), 1):
 	x = int(pieces[0])
 	y = int(pieces[1])
 	z = int(pieces[2])
-        #Adjusted point_str to not add 1 to z-coordinate, since both AWP and RWG use z=1 to represent the free surface
+	#Check to make sure z-value is greater than 0
+	if z<1:
+		print("Z-value in coordinate file is %d, which is less than 1 and not permitted.  Aborting." % z, file=sys.stderr)
+		sys.exit(2)
+	#Adjusted point_str to not add 1 to z-coordinate, since both AWP and RWG use z=1 to represent the free surface
 	point_str = "%d %d %d\n" % (y+1, x+1, z)
 	if point_str in points:
 		print("Duplicate point entry %s" % point_str)
