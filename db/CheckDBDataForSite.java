@@ -1,4 +1,7 @@
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.sql.ResultSet;
@@ -52,6 +55,8 @@ public class CheckDBDataForSite {
         Option component = OptionBuilder.withArgName("component").hasArg().withDescription("Component type (geometric, rotd, rotd50, duration) to check.").create("c");
         Option output = OptionBuilder.withArgName("output").hasArg().withDescription("Path to output file, if something is missing (required).").create("o");
         Option serverOpt = OptionBuilder.withArgName("server").hasArg().withDescription("DB server to query against.").create("s");
+        Option ruptureList = OptionBuilder.withArgName("rupture_list").hasArg().withDescription("Path to rupture list specifying subset of ruptures.").create("rl");
+        
         output.setRequired(true);
 
         cmd_opts.addOption(help);
@@ -61,6 +66,7 @@ public class CheckDBDataForSite {
         cmd_opts.addOption(component);
         cmd_opts.addOption(output);
         cmd_opts.addOption(serverOpt);
+        cmd_opts.addOption(ruptureList);
         
         CommandLineParser parser = new GnuParser();
         if (args.length<1) {
@@ -99,6 +105,33 @@ public class CheckDBDataForSite {
         String componentString = "geometric";
         if (line.hasOption(component.getOpt())) {
         	componentString = line.getOptionValue(component.getOpt());
+        }
+        
+        //If rupture list, only check these
+        String ruptureListFilename = null;
+        if (line.hasOption(ruptureList.getOpt())) {
+        	ruptureListFilename = line.getOptionValue(ruptureList.getOpt());
+        }
+        
+        ArrayList<int[]> rupturesIncluded = null;
+        if (ruptureListFilename!=null) {
+        	try {
+        		BufferedReader br = new BufferedReader(new FileReader(ruptureListFilename));
+				String dataLine = br.readLine();
+				rupturesIncluded = new ArrayList<int[]>();
+				while (dataLine!=null) {
+					String[] pieces = dataLine.split(",");
+					int sourceID = Integer.parseInt(pieces[0]);
+					int ruptureID = Integer.parseInt(pieces[1]);
+					rupturesIncluded.add(new int[]{sourceID, ruptureID});
+					dataLine = br.readLine();
+				}
+				br.close();
+        	} catch (Exception ex) {
+        		ex.printStackTrace();
+        		System.exit(1);
+        	}
+        	
         }
         
         ArrayList<Integer> imTypesToCheck = new ArrayList<Integer>();
@@ -148,39 +181,75 @@ public class CheckDBDataForSite {
         	}
         }
         
-        checkDBData(runID, imTypesToCheck, componentString, outputFile);
+        checkDBData(runID, imTypesToCheck, componentString, outputFile, rupturesIncluded);
     }
 
-    private static void checkDBData(String runID, ArrayList<Integer> imTypesToCheck, String componentString, String outputFile) {
+    private static void checkDBData(String runID, ArrayList<Integer> imTypesToCheck, String componentString, String outputFile, ArrayList<int[]> rupturesIncluded) {
+        int rupVarsExpected = 0;
+    	if (rupturesIncluded!=null) {
+    		for (int[] r: rupturesIncluded) {
+    			String query = "select count(*) " + 
+    					"from Rupture_Variations V, CyberShake_Runs U, CyberShake_Site_Ruptures R " +
+            			"where U.Run_ID=" + runID + " " + 
+            			"and R.CS_Site_ID=U.Site_ID " +
+            			"and R.ERF_ID=U.ERF_ID " +
+            			"and V.ERF_ID=U.ERF_ID " +
+            			"and R.Source_ID=V.Source_ID " +
+            			"and R.Rupture_ID=V.Rupture_ID " +
+            			"and R.Source_ID=" + r[0] + " " +
+            			"and R.Rupture_ID=" + r[1] + " " +
+            			"and V.Rup_Var_Scenario_ID=U.Rup_Var_Scenario_ID";
+    			ResultSet rupVarSet = dbc.selectData(query);
+    	        
+            	try {
+            		rupVarSet.next();
+            		if (rupVarSet.getRow()==0 || rupVarSet.isClosed()) {
+            			System.err.println("No rup vars in DB.");
+            			System.exit(2);
+            		}
+                
+                rupVarsExpected += rupVarSet.getInt("count(*)");
+                rupVarSet.close();
+            	} catch (Exception ex) {
+            		ex.printStackTrace();
+            		System.exit(1);
+            	}    			
+    		}
+        } else {
         
+        	//Determine number of rupture variations
+        	String query = "select count(*) " +
+        			"from Rupture_Variations V, CyberShake_Runs U, CyberShake_Site_Ruptures R " +
+        			"where U.Run_ID=" + runID + " " + 
+        			"and R.CS_Site_ID=U.Site_ID " +
+        			"and R.ERF_ID=U.ERF_ID " +
+        			"and V.ERF_ID=U.ERF_ID " +
+        			"and R.Source_ID=V.Source_ID " +
+        			"and R.Rupture_ID=V.Rupture_ID " +
+        			"and V.Rup_Var_Scenario_ID=U.Rup_Var_Scenario_ID";
         
-        //Determine number of rupture variations
-        String query = "select count(*) " +
-        "from Rupture_Variations V, CyberShake_Runs U, CyberShake_Site_Ruptures R " +
-        "where U.Run_ID=" + runID + " " + 
-        "and R.CS_Site_ID=U.Site_ID " +
-        "and R.ERF_ID=U.ERF_ID " +
-        "and V.ERF_ID=U.ERF_ID " +
-        "and R.Source_ID=V.Source_ID " +
-        "and R.Rupture_ID=V.Rupture_ID " +
-        "and V.Rup_Var_Scenario_ID=U.Rup_Var_Scenario_ID";
+        	System.out.println(query);
         
-        System.out.println(query);
+        	ResultSet rupVarSet = dbc.selectData(query);
         
-        ResultSet rupVarSet = dbc.selectData(query);
-        
-        try {
-            rupVarSet.next();
-            if (rupVarSet.getRow()==0 || rupVarSet.isClosed()) {
-                System.err.println("No rup vars in DB.");
-                System.exit(2);
-            }
+        	try {
+        		rupVarSet.next();
+        		if (rupVarSet.getRow()==0 || rupVarSet.isClosed()) {
+        			System.err.println("No rup vars in DB.");
+        			System.exit(2);
+        		}
             
-            int rupVarsExpected = rupVarSet.getInt("count(*)");
-            
+            rupVarsExpected = rupVarSet.getInt("count(*)");
+            rupVarSet.close();
+        	} catch (Exception ex) {
+        		ex.printStackTrace();
+        		System.exit(1);
+        	}
+        }
+        try {    
             //For each component type
             for (int imTypeID: imTypesToCheck) {
-        		query = "select count(*) " +
+        		String query = "select count(*) " +
         				"from PeakAmplitudes " +
         				"where Run_ID=" + runID + " " + 
         				"and IM_Type_ID=" + imTypeID + ";";
@@ -197,7 +266,6 @@ public class CheckDBDataForSite {
                 if (rupVarsExpected!=ampSetNum) {
                     System.out.println(rupVarsExpected + " variations for run " + runID + " in RupVar table, but " + (ampSetNum) +
                     		" variations in PeakAmp table with IM_Type_ID " + imTypeID + ".");
-                    rupVarSet.close();
                     ampSet.close();
                     findDifferences2(dbc, runID, imTypeID, outputFile);
                     System.exit(3);
