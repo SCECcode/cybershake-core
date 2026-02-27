@@ -186,34 +186,41 @@ public class CheckDBDataForSite {
 
     private static void checkDBData(String runID, ArrayList<Integer> imTypesToCheck, String componentString, String outputFile, ArrayList<int[]> rupturesIncluded) {
         int rupVarsExpected = 0;
-    	if (rupturesIncluded!=null) {
-    		for (int[] r: rupturesIncluded) {
-    			String query = "select count(*) " + 
-    					"from Rupture_Variations V, CyberShake_Runs U, CyberShake_Site_Ruptures R " +
-            			"where U.Run_ID=" + runID + " " + 
-            			"and R.CS_Site_ID=U.Site_ID " +
-            			"and R.ERF_ID=U.ERF_ID " +
-            			"and V.ERF_ID=U.ERF_ID " +
-            			"and R.Source_ID=V.Source_ID " +
-            			"and R.Rupture_ID=V.Rupture_ID " +
-            			"and R.Source_ID=" + r[0] + " " +
-            			"and R.Rupture_ID=" + r[1] + " " +
-            			"and V.Rup_Var_Scenario_ID=U.Rup_Var_Scenario_ID";
-    			ResultSet rupVarSet = dbc.selectData(query);
+    	if (rupturesIncluded!=null) {    		
+    		String query = "select distinct V.Source_ID, V.Rupture_ID, count(*) " +
+    			"from CyberShake_Runs R, CyberShake_Site_Ruptures SR, Rupture_Variations V " +
+    			"where R.Run_ID=" + runID + " " +
+    			"and SR.CS_Site_ID=R.Site_ID " + 
+    			"and SR.ERF_ID=R.ERF_ID " +
+    			"and V.Rup_Var_Scenario_ID=R.Rup_Var_Scenario_ID " +
+    			"and V.ERF_ID=R.ERF_ID " +
+    			"and SR.Source_ID=V.Source_ID " +
+    			"and SR.Rupture_ID=V.Rupture_ID " +
+    			"group by V.Source_ID, V.Rupture_ID"; 
+    				    				
+    		ResultSet rupVarSet = dbc.selectData(query);
     	        
-            	try {
-            		rupVarSet.next();
-            		if (rupVarSet.getRow()==0 || rupVarSet.isClosed()) {
-            			System.err.println("No rup vars in DB.");
-            			System.exit(2);
-            		}
+            try {
+            	rupVarSet.next();
+            	if (rupVarSet.getRow()==0 || rupVarSet.isClosed()) {
+            		System.err.println("No rup vars in DB.");
+            		System.exit(2);
+            	}
                 
-                rupVarsExpected += rupVarSet.getInt("count(*)");
+            	while (!rupVarSet.isAfterLast()) {
+            		int src_id = rupVarSet.getInt("V.Source_ID");
+            		int rup_id = rupVarSet.getInt("V.Rupture_ID");
+            		int[] src_rup = {src_id, rup_id};
+            		if (rupturesIncluded.contains(src_rup)) {
+            			rupVarsExpected += rupVarSet.getInt("count(*)");
+            		}
+            		rupVarSet.next();
+            	}
+            	            	
                 rupVarSet.close();
-            	} catch (Exception ex) {
-            		ex.printStackTrace();
-            		System.exit(1);
-            	}    			
+            } catch (Exception ex) {
+            	ex.printStackTrace();
+            	System.exit(1);    			
     		}
         } else {
         
